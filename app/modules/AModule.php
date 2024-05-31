@@ -3,6 +3,7 @@
 namespace App\Modules;
 
 use App\Core\Configuration;
+use App\Exceptions\TemplateDoesNotExistException;
 use Exception;
 
 abstract class AModule {
@@ -61,7 +62,7 @@ abstract class AModule {
         } else if(!file_exists($customLayout) && file_exists($commonLayout)) {
             $layoutContent = file_get_contents($commonLayout);
         } else {
-            throw new Exception('No layout template exists!');
+            throw new TemplateDoesNotExistException('common.html');
         }
 
         return new TemplateObject($layoutContent);

@@ -7,7 +7,7 @@ require_once('app/app_loader.php');
 $app = new Application();
 
 if(!isset($_GET['page'])) {
-    $app->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
+    // default redirect address
 }
 
 try {

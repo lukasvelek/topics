@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\TemplateDoesNotExistException;
 use Exception;
 
@@ -90,7 +91,7 @@ abstract class APresenter {
         }
 
         if($ok === false) {
-            throw new Exception('Actions \'' . $handleAction . '\' or \'' . $renderAction . '\' are not defined!');
+            throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
         }
 
         foreach($this->beforeRenderCallbacks as $callback) {

@@ -2,7 +2,7 @@
 
 namespace App\Modules;
 
-use Exception;
+use App\Exceptions\ModuleDoesNotExistException;
 
 class ModuleManager {
     public function __construct() {
@@ -33,7 +33,7 @@ class ModuleManager {
 
             return new $className();
         } else {
-            throw new Exception('Module \'' . $name . '\' has not been implemented yet!');
+            throw new ModuleDoesNotExistException($name);
         }
     }
 }

@@ -12,8 +12,10 @@ class Configuration {
     private static function getCfg(string $param) {
         $path = getcwd() . '\\config.local.php';
 
-        if(!file_exists($path)) {
-            throw new Exception('Configuration file does not exist!');
+        try {
+            FileManager::loadFile($path);
+        } catch(Exception $e) {
+            throw $e;
         }
 
         require_once($path);

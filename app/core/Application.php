@@ -2,8 +2,9 @@
 
 namespace App\Core;
 
+use App\Exceptions\ModuleDoesNotExistException;
+use App\Exceptions\URLParamIsNotDefinedException;
 use App\Modules\ModuleManager;
-use Exception;
 
 class Application {
     private array $modules;
@@ -40,7 +41,7 @@ class Application {
 
     private function render() {
         if(!in_array($this->currentModule, $this->modules)) {
-            throw new Exception('There is no module named \'' . $this->currentModule . '\'!');   
+            throw new ModuleDoesNotExistException($this->currentModule);
         }
 
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
@@ -62,13 +63,13 @@ class Application {
             $this->currentModule = $pageParts[0];
             $this->currentPresenter = $pageParts[1] . 'Presenter';
         } else {
-            throw new Exception('No page is defined!');
+            throw new URLParamIsNotDefinedException('page');
         }
 
         if(isset($_GET['action'])) {
             $this->currentAction = htmlspecialchars($_GET['action']);
         } else {
-            throw new Exception('No action is defined!');
+            throw new URLParamIsNotDefinedException('action');
         }
     }
 
