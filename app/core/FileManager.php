@@ -16,6 +16,34 @@ class FileManager {
 
         return file_get_contents($filePath);
     }
+
+    public static function folderExists(string $dirPath) {
+        return is_dir($dirPath);
+    }
+
+    public static function getFilesInFolder(string $dirPath) {
+        $recursive = function (string $dirPath, array &$objects) {
+            $contents = scandir($dirPath);
+
+            unset($contents[0], $contents[1]);
+
+            foreach($contents as $content) {
+                $realObject = $dirPath . '\\' . $content;
+
+                if(!is_dir($realObject)) {
+                    $objects[$content] = $realObject;
+                } else {
+                    $this($realObject, $objects);
+                }
+            }
+        };
+
+        $objects = [];
+
+        $recursive($dirPath, $objects);
+
+        return $objects;
+    }
 }
 
 ?>

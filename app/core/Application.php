@@ -14,6 +14,7 @@ class Application {
     private ?string $currentAction;
 
     private ModuleManager $moduleManager;
+    private FileManager $fileManager;
 
     public function __construct() {
         $this->modules = [];
@@ -22,6 +23,8 @@ class Application {
         $this->currentAction = null;
 
         $this->moduleManager = new ModuleManager();
+
+        $this->fileManager = new FileManager();
         
         $this->loadModules();
     }
