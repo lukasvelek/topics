@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use App\Configuration;
 use App\Core\FileManager;
+use App\Core\HashManager;
 use App\Modules\TemplateObject;
 use Exception;
 use Throwable;
@@ -12,7 +13,9 @@ abstract class AException extends Exception {
     protected function __construct(string $name, string $message, ?Throwable $previous = null) {
         parent::__construct($message, 9999, $previous);
 
-        $this->createExceptionFile($name, $message);
+        if(FileManager::folderExists('logs\\')) {
+            $this->createExceptionFile($name, $message);
+        }
     }
 
     private function createExceptionFile(string $name, string $message) {
@@ -45,7 +48,9 @@ abstract class AException extends Exception {
         $to->render();
         $content = $to->getRenderedContent();
 
-        $filePath = 'logs\\' . 'exception_' . date('Y-m-d_H-i-s') . '.html';
+        $hash = HashManager::createHash(8, false);
+
+        $filePath = 'logs\\' . 'exception_' . date('Y-m-d_H-i-s') . '_' . $hash . '.html';
 
         FileManager::saveFile($filePath, $content);
     }
