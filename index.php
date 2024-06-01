@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 use App\Core\Application;
 
 require_once('app/app_loader.php');

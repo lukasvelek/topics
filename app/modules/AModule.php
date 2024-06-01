@@ -44,7 +44,7 @@ abstract class AModule {
     private function fillLayout(string $content, string $presenterTitle) {
         $template = $this->getTemplate();
 
-        $template->page_title = $presenterTitle . ' - ' . Configuration::getAppName();
+        $template->page_title = $presenterTitle;
         $template->page_content = $content;
 
         $template->render();
