@@ -20,19 +20,25 @@ class LoginPresenter extends APresenter {
         }
     }
 
+    public function handleLoginForm() {
+        if($this->httpGet('isSubmit') == 'true') {
+            
+        }
+    }
+
     public function renderLoginForm() {
         $fb = new FormBuilder();
         
         $fb ->setAction(['page' => 'AnonymModule:Login', 'action' => 'loginForm', 'isSubmit' => 'true'])
             ->addTextInput('username', 'Username:')
-            ->addSelect('gender', 'Gender:', [['value' => 'male', 'text' => 'Male', 'selected' => null], ['value' => 'female', 'text' => 'Female']])
             ->addPassword('password', 'Password:')
-            ->addSubmit()
+            ->addSubmit('Log in')
         ;
 
         $form = $fb->render();
 
         $this->template->form = $form;
+        $this->template->title = 'Login';
     }
 }
 

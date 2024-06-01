@@ -9,3 +9,9 @@ body {
 
     border: 1px solid black;
 }
+
+#page-title {
+    font-size: 27px;
+
+    text-align: center;
+}

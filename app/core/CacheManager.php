@@ -39,7 +39,7 @@ class CacheManager {
         return $filename;
     }
 
-    public static function loadCache(string $key, callable $callback, string $namespace = 'default') {
+    public static function loadCache(mixed $key, callable $callback, string $namespace = 'default') {
         $obj = self::getTemporaryObject();
         $file = $obj->loadCachedFiles($namespace);
         $save = false;

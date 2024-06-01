@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\CookieManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\TemplateDoesNotExistException;
 use Exception;
@@ -37,6 +38,30 @@ abstract class APresenter {
         $templateContent = file_get_contents($path);
 
         return new TemplateObject($templateContent);
+    }
+
+    protected function httpGet(string $key) {
+        if(isset($_GET[$key])) {
+            return htmlspecialchars($_GET[$key]);
+        } else {
+            return null;
+        }
+    }
+
+    protected function httpPost(string $key) {
+        if(isset($_POST[$key])) {
+            return htmlspecialchars($_POST[$key]);
+        } else {
+            return null;
+        }
+    }
+
+    protected function httpCookie(string $key) {
+        return CookieManager::getCookie($key);
+    }
+
+    protected function setCookie(string $key, mixed $value) {
+        CookieManager::setCookie($key, $value);
     }
 
     public function setParams(array $params) {

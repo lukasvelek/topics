@@ -4,8 +4,9 @@ namespace App\Logger;
 
 use App\Configuration;
 use App\Core\FileManager;
+use QueryBuilder\ILoggerCallable;
 
-class Logger {
+class Logger implements ILoggerCallable {
     public const LOG_INFO = 'info';
     public const LOG_WARNING = 'warning';
     public const LOG_ERROR = 'error';
