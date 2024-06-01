@@ -2,7 +2,7 @@
 
 namespace App\Modules;
 
-use App\Core\Configuration;
+use App\Configuration;
 use App\Exceptions\TemplateDoesNotExistException;
 use Exception;
 

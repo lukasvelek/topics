@@ -12,7 +12,7 @@ abstract class APresenter {
     private string $title;
     private ?string $action;
 
-    protected TemplateObject $template;
+    protected ?TemplateObject $template;
 
     private array $beforeRenderCallbacks;
     private array $afterRenderCallbacks;
@@ -24,6 +24,7 @@ abstract class APresenter {
         $this->beforeRenderCallbacks = [];
         $this->afterRenderCallbacks = [];
         $this->action = null;
+        $this->template = null;
     }
 
     protected function loadTemplate(string $templateName) {
@@ -53,7 +54,13 @@ abstract class APresenter {
 
         $this->afterRender();
 
-        return [$this->template->getRenderedContent(), $this->title];
+        $content = '';
+
+        if($this->template !== null) {
+            $content = $this->template->getRenderedContent();
+        }
+
+        return [$content, $this->title];
     }
 
     public function addBeforeRenderCallback(callable $function) {
@@ -100,7 +107,9 @@ abstract class APresenter {
     }
 
     private function afterRender() {
-        $this->template->render();
+        if($this->template !== null) {
+            $this->template->render();
+        }
 
         foreach($this->afterRenderCallbacks as $callback) {
             $callback();

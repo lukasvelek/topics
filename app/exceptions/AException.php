@@ -25,6 +25,7 @@ abstract class AException extends Exception {
         $trace = $this->getTrace();
         $callstack = '';
 
+        $i = 1;
         foreach($trace as $t) {
             $script = $t['file'];
             $line = $t['line'];
@@ -36,9 +37,11 @@ abstract class AException extends Exception {
                 $argString = '[' . implode(', ', $args) . ']';
             }
 
-            $line = 'Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '() with args ' . $argString;
+            $line = '#' . $i . ' Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '() with args ' . $argString;
 
-            $callstack .= $line . "\r\n";
+            $callstack .= $line . "<br>";
+
+            $i++;
         }
 
         $to->name = $name;

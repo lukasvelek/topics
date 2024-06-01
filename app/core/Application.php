@@ -89,7 +89,7 @@ class Application {
         $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
     }
 
-    private function composeURL(array $params) {
+    public function composeURL(array $params) {
         $url = '?';
 
         $tmp = [];
