@@ -14,9 +14,13 @@ class Logger {
     private int $logLevel;
     private int $sqlLogLevel;
 
-    public function __construct() {
-        $this->sqlLogLevel = Configuration::getLogLevelSQL();
-        $this->logLevel = Configuration::getLogLevel();
+    private array $cfg;
+
+    public function __construct(array $cfg) {
+        $this->cfg = $cfg;
+
+        $this->sqlLogLevel = $this->cfg['SQL_LOG_LEVEL'];
+        $this->logLevel = $this->cfg['LOG_LEVEL'];
     }
 
     public function info(string $text, string $method) {
@@ -66,9 +70,14 @@ class Logger {
     }
 
     private function writeLog(string $text) {
-        $file = Configuration::getAppRealDir() . Configuration::getLogDir() . Configuration::getAppName() . '_log_' . date('Y-m-d') . '.log';
+        $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
+        $file = $folder . $this->cfg['APP_NAME'] . '_log_' . date('Y-m-d') . '.log';
 
-        FileManager::saveFile($file, $text);
+        if(!FileManager::folderExists($folder)) {
+            FileManager::createFolder($folder);
+        }
+
+        FileManager::saveFile($file, $text . "\r\n");
     }
 }
 

@@ -56,6 +56,10 @@ class FileManager {
             return file_put_contents($filePath, $fileContent);
         }
     }
+
+    public static function createFolder(string $dirPath) {
+        return mkdir($dirPath);
+    }
 }
 
 ?>

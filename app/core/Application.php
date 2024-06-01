@@ -18,6 +18,8 @@ class Application {
     private Logger $logger;
 
     public function __construct() {
+        require_once('config.local.php');
+
         $this->modules = [];
         $this->currentModule = null;
         $this->currentPresenter = null;
@@ -25,8 +27,9 @@ class Application {
 
         $this->moduleManager = new ModuleManager();
 
-        $this->logger = new Logger();
+        $this->logger = new Logger($cfg);
         
+        $this->logger->info('Logger initialized.', __METHOD__);
         $this->loadModules();
     }
     
@@ -48,13 +51,17 @@ class Application {
             throw new ModuleDoesNotExistException($this->currentModule);
         }
 
+        $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
 
+        $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($moduleObject, $this->currentPresenter, $this->currentAction);
+        $this->logger->info('Rendering page content.', __METHOD__);
         return $re->render();
     }
 
     private function loadModules() {
+        $this->logger->info('Loading modules.', __METHOD__);
         $this->modules = $this->moduleManager->loadModules();
     }
 
@@ -75,6 +82,8 @@ class Application {
         } else {
             throw new URLParamIsNotDefinedException('action');
         }
+
+        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
     }
 
     private function composeURL(array $params) {
