@@ -13,10 +13,10 @@ class LoginPresenter extends APresenter {
     public function handleCheckLogin() {
         global $app;
 
-        if(isset($_COOKIE['userId'])) {
-            $app->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
-        } else {
+        if(is_null($this->httpCookie('userId'))) {
             $app->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
+        } else {
+            $app->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
         }
     }
 
