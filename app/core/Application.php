@@ -9,6 +9,7 @@ use App\Modules\ModuleManager;
 
 class Application {
     private array $modules;
+    public array $cfg;
 
     private ?string $currentModule;
     private ?string $currentPresenter;
@@ -20,6 +21,8 @@ class Application {
     public function __construct() {
         require_once('config.local.php');
 
+        $this->cfg = $cfg;
+
         $this->modules = [];
         $this->currentModule = null;
         $this->currentPresenter = null;
@@ -27,7 +30,7 @@ class Application {
 
         $this->moduleManager = new ModuleManager();
 
-        $this->logger = new Logger($cfg);
+        $this->logger = new Logger($this->cfg);
         
         $this->logger->info('Logger initialized.', __METHOD__);
         $this->loadModules();

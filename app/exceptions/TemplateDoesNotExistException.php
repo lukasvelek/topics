@@ -6,7 +6,7 @@ use Throwable;
 
 class TemplateDoesNotExistException extends AException {
     public function __construct(string $templateName, ?string $templatePath = null, ?Throwable $previous = null) {
-        parent::__construct($this->toString($templateName, $templatePath), $previous);
+        parent::__construct('TemplateDoesNotExistException', $this->toString($templateName, $templatePath), $previous);
     }
 
     private function toString(string $templateName, ?string $templatePath = null) {

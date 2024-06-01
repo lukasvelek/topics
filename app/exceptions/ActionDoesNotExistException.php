@@ -6,7 +6,7 @@ use Throwable;
 
 class ActionDoesNotExistException extends AException {
     public function __construct(string $action, ?Throwable $previous = null) {
-        parent::__construct(sprintf('Action \'%s\' does not exist!', $action), $previous);
+        parent::__construct('ActionDoesNotExistException', sprintf('Action \'%s\' does not exist!', $action), $previous);
     }
 }
 

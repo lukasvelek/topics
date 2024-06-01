@@ -6,7 +6,7 @@ use Throwable;
 
 class FileDoesNotExistException extends AException {
     public function __construct(string $filename, ?Throwable $previous = null) {
-        parent::__construct($this->toString($filename), $previous);
+        parent::__construct('FileDoesNotExistException', $this->toString($filename), $previous);
     }
 
     private function toString(string $filename) {
