@@ -4,6 +4,7 @@ namespace App\Core;
 
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
+use App\Logger\Logger;
 use App\Modules\ModuleManager;
 
 class Application {
@@ -14,7 +15,7 @@ class Application {
     private ?string $currentAction;
 
     private ModuleManager $moduleManager;
-    private FileManager $fileManager;
+    private Logger $logger;
 
     public function __construct() {
         $this->modules = [];
@@ -24,7 +25,7 @@ class Application {
 
         $this->moduleManager = new ModuleManager();
 
-        $this->fileManager = new FileManager();
+        $this->logger = new Logger();
         
         $this->loadModules();
     }

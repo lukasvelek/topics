@@ -14,8 +14,8 @@ class Configuration {
         return self::getCfg('LOG_LEVEL');
     }
 
-    public static function getSQLLogLevel() {
-        return self::getCfg('LOG_LEVEL_SQL');
+    public static function getLogLevelSql() {
+        return self::getCfg('SQL_LOG_LEVEL');
     }
 
     public static function getAppRealDir() {
@@ -31,7 +31,7 @@ class Configuration {
     }
 
     private static function getCfg(string $param) {
-        $path = 'C:\\xampp\\htdocs\\topics\\config.local.php';
+        $path = 'config.local.php';
 
         if(!FileManager::fileExists($path)) {
             throw new FileDoesNotExistException($path);

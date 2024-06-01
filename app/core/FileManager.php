@@ -44,6 +44,18 @@ class FileManager {
 
         return $objects;
     }
+
+    public static function saveFile(string $filePath, string|array $fileContent, bool $overwrite = false) {
+        if(is_array($fileContent)) {
+            $fileContent = implode('\r\n', $fileContent);
+        }
+
+        if($overwrite === false) {
+            return file_put_contents($filePath, $fileContent, FILE_APPEND);
+        } else {
+            return file_put_contents($filePath, $fileContent);
+        }
+    }
 }
 
 ?>
