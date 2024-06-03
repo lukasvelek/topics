@@ -18,12 +18,12 @@ class Application {
     private ?string $currentAction;
 
     private ModuleManager $moduleManager;
-    private Logger $logger;
+    public Logger $logger;
     private DatabaseConnection $db;
 
-    private UserAuthenticator $userAuth;
+    public UserAuthenticator $userAuth;
 
-    private UserRepository $userRepository;
+    public UserRepository $userRepository;
 
     public function __construct() {
         require_once('config.local.php');

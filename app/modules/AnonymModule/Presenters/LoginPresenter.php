@@ -11,18 +11,23 @@ class LoginPresenter extends APresenter {
     }
 
     public function handleCheckLogin() {
-        global $app;
-
-        if(is_null($this->httpCookie('userId'))) {
-            $app->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
+        if(is_null($this->httpSessionGet('userId'))) {
+            $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
         } else {
-            $app->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
         }
     }
 
     public function handleLoginForm() {
+        global $app;
+
         if($this->httpGet('isSubmit') == 'true') {
-            
+            if($app->userAuth->loginUser($this->httpPost('username'), $this->httpPost('password'))) {
+                $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
+                $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+            } else {
+                
+            }
         }
     }
 

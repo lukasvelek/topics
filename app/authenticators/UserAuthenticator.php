@@ -37,6 +37,8 @@ class UserAuthenticator {
             $_SESSION['loginHash'] = $hash;
 
             return true;
+        } else {
+            return false;
         }
     }
 

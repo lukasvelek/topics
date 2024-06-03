@@ -36,16 +36,26 @@ abstract class AModule {
         $presenter = new $realPresenterTitle();
         $presenter->setParams(['module' => $this->title]);
         $presenter->setAction($actionTitle);
-        [$pageContent, $pageTitle] = $presenter->render();
+        [$pageContent, $pageTitle, $flashMessages] = $presenter->render();
 
-        return $this->fillLayout($pageContent, $pageTitle);
+        return $this->fillLayout($pageContent, $pageTitle, $flashMessages);
     }
 
-    private function fillLayout(string $content, string $presenterTitle) {
+    private function fillLayout(string $content, string $presenterTitle, array $flashMessages) {
         $template = $this->getTemplate();
 
         $template->page_title = $presenterTitle;
         $template->page_content = $content;
+
+        $fmCode = '';
+
+        if(count($flashMessages) > 0) {
+            foreach($flashMessages as $fm) {
+                $fmCode .= $fm . '<br>';
+            }
+        }
+        
+        $template->flash_messages = $fmCode;
 
         $template->render();
         return $template->getRenderedContent();

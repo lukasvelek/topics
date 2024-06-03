@@ -12,6 +12,7 @@ abstract class APresenter {
     private string $name;
     private string $title;
     private ?string $action;
+    private array $flashMessages;
 
     protected ?TemplateObject $template;
 
@@ -26,18 +27,13 @@ abstract class APresenter {
         $this->afterRenderCallbacks = [];
         $this->action = null;
         $this->template = null;
+        $this->flashMessages = [];
     }
 
-    protected function loadTemplate(string $templateName) {
-        $path = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $templateName . '.html';
+    protected function flashMessage(string $text, string $type = 'info') {
+        $code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
 
-        if(!file_exists($path)) {
-            throw new TemplateDoesNotExistException($templateName, $path);
-        }
-
-        $templateContent = file_get_contents($path);
-
-        return new TemplateObject($templateContent);
+        $this->flashMessages[] = $code;
     }
 
     protected function httpGet(string $key) {
@@ -56,12 +52,22 @@ abstract class APresenter {
         }
     }
 
-    protected function httpCookie(string $key) {
-        return CookieManager::getCookie($key);
+    protected function redirect(array $url) {
+        global $app;
+
+        $app->redirect($url);
     }
 
-    protected function setCookie(string $key, mixed $value) {
-        CookieManager::setCookie($key, $value);
+    protected function httpSessionGet(string $key) {
+        if(isset($_SESSION[$key])) {
+            return $_SESSION[$key];
+        } else {
+            return null;
+        }
+    }
+
+    protected function httpSessionSet(string $key, mixed $value) {
+        $_SESSION[$key] = $value;
     }
 
     public function setParams(array $params) {
@@ -85,7 +91,7 @@ abstract class APresenter {
             $content = $this->template->getRenderedContent();
         }
 
-        return [$content, $this->title];
+        return [$content, $this->title, $this->flashMessages];
     }
 
     public function addBeforeRenderCallback(callable $function) {
