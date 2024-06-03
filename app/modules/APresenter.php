@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\CacheManager;
 use App\Core\CookieManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\TemplateDoesNotExistException;
@@ -32,6 +33,8 @@ abstract class APresenter {
 
     protected function flashMessage(string $text, string $type = 'info') {
         $code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
+
+        //$cm = 
 
         $this->flashMessages[] = $code;
     }

@@ -60,6 +60,24 @@ class FileManager {
     public static function createFolder(string $dirPath) {
         return mkdir($dirPath);
     }
+
+    public static function deleteFolderRecursively(string $dirPath) {
+        if (is_dir($dirPath)) { 
+            $objects = scandir($dirPath);
+            
+            foreach ($objects as $object) { 
+                if ($object != "." && $object != "..") { 
+                    if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
+                        self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
+                    } else {
+                        unlink($dirPath. DIRECTORY_SEPARATOR .$object); 
+                    }
+                } 
+            }
+
+            rmdir($dirPath);
+        }
+    }
 }
 
 ?>

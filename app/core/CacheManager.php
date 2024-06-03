@@ -55,15 +55,41 @@ class CacheManager {
                 $result = $file[$key];
             } else {
                 $result[$key] = $callback();
+                $file[$key] = $result[$key];
                 $save = true;
             }
         }
 
         if($save === true) {
-            $obj->saveCachedFiles($namespace, $result);
+            $obj->saveCachedFiles($namespace, $file);
         }
 
         return $result;
+    }
+
+    public static function saveFlashMessageToCache(mixed $key, string $text) {
+        $obj = self::getTemporaryObject();
+        $file = $obj->loadCachedFiles('flashMessages');
+
+        $file = unserialize($file);
+
+        $file[$key] = $text;
+
+        $obj->saveCachedFiles('flashMessages', $file);
+
+        return true;
+    }
+
+    public static function loadFlashMessages() {
+        $obj = self::getTemporaryObject();
+        $file = $obj->loadCachedFiles('flashMessages');
+        $file = unserialize($file);
+
+        return $file;
+    }
+
+    public static function invalidateCache(string $namespace) {
+        FileManager::deleteFolderRecursively()
     }
 
     private static function getTemporaryObject() {
