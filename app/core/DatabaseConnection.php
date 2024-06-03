@@ -2,6 +2,9 @@
 
 namespace App\Core;
 
+use App\Exceptions\DatabaseConnectionException;
+use Exception;
+use mysqli_sql_exception;
 use QueryBuilder\IDbQueriable;
 
 class DatabaseConnection implements IDbQueriable {
@@ -16,7 +19,13 @@ class DatabaseConnection implements IDbQueriable {
     }
 
     private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName) {
-        $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName);
+        try {
+            $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName);
+        } catch (Exception $e) {
+            throw new DatabaseConnectionException($e->getMessage());
+        } catch (mysqli_sql_exception $e) {
+            throw new DatabaseConnectionException($e->getMessage());
+        }
     }
 }
 

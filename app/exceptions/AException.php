@@ -34,7 +34,7 @@ abstract class AException extends Exception {
             $argString = '[]';
 
             if(count($args) > 1) {
-                $argString = '[' . implode(', ', $args) . ']';
+                $argString = '[\'' . implode('\', \'', $args) . '\']';
             }
 
             $line = '#' . $i . ' Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '() with args ' . $argString;

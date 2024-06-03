@@ -3,10 +3,15 @@
 session_start();
 
 use App\Core\Application;
+use App\Exceptions\ApplicationInitializationException;
 
 require_once('app/app_loader.php');
 
-$app = new Application();
+try {
+    $app = new Application();
+} catch(Exception $e) {
+    throw new ApplicationInitializationException($e->getMessage());
+}
 
 if(!isset($_GET['page'])) {
     // default redirect address

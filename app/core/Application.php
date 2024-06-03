@@ -17,6 +17,7 @@ class Application {
 
     private ModuleManager $moduleManager;
     private Logger $logger;
+    private DatabaseConnection $db;
 
     public function __construct() {
         require_once('config.local.php');
@@ -31,8 +32,10 @@ class Application {
         $this->moduleManager = new ModuleManager();
 
         $this->logger = new Logger($this->cfg);
-        
         $this->logger->info('Logger initialized.', __METHOD__);
+        $this->db = new DatabaseConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
+        $this->logger->info('Database connection established', __METHOD__);
+        
         $this->loadModules();
     }
     
@@ -49,6 +52,20 @@ class Application {
         exit;
     }
 
+    public function composeURL(array $params) {
+        $url = '?';
+
+        $tmp = [];
+
+        foreach($params as $key => $value) {
+            $tmp[] = $key . '=' . $value;
+        }
+
+        $url .= implode('&', $tmp);
+
+        return $url;
+    }
+    
     private function render() {
         if(!in_array($this->currentModule, $this->modules)) {
             throw new ModuleDoesNotExistException($this->currentModule);
@@ -87,20 +104,6 @@ class Application {
         }
 
         $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
-    }
-
-    public function composeURL(array $params) {
-        $url = '?';
-
-        $tmp = [];
-
-        foreach($params as $key => $value) {
-            $tmp[] = $key . '=' . $value;
-        }
-
-        $url .= implode('&', $tmp);
-
-        return $url;
     }
 }
 
