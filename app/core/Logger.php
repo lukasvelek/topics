@@ -14,7 +14,7 @@ class Logger implements ILoggerCallable {
 
     private int $logLevel;
     private int $sqlLogLevel;
-
+    private ?string $specialFilename;
     private array $cfg;
 
     public function __construct(array $cfg) {
@@ -22,6 +22,7 @@ class Logger implements ILoggerCallable {
 
         $this->sqlLogLevel = $this->cfg['SQL_LOG_LEVEL'];
         $this->logLevel = $this->cfg['LOG_LEVEL'];
+        $this->specialFilename = null;
     }
 
     public function info(string $text, string $method) {
@@ -70,9 +71,18 @@ class Logger implements ILoggerCallable {
         }
     }
 
+    public function setFilename(string $filename) {
+        $this->specialFilename = $filename;
+    }
+
     private function writeLog(string $text) {
         $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
-        $file = $folder . $this->cfg['APP_NAME'] . '_log_' . date('Y-m-d') . '.log';
+        
+        if($this->specialFilename !== null) {
+            $file = $folder . $this->specialFilename . '_' . date('Y-m-d') . '.log';
+        } else {
+            $file = $folder . 'log_' . date('Y-m-d') . '.log';
+        }
 
         if(!FileManager::folderExists($folder)) {
             FileManager::createFolder($folder);

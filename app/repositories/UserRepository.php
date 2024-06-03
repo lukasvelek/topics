@@ -17,7 +17,7 @@ class UserRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('users')
-            ->where('id_user = ?', [$id]);
+            ->where('userId = ?', [$id]);
 
         $entity = CacheManager::loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
@@ -28,6 +28,44 @@ class UserRepository extends ARepository {
         }, 'users');
 
         return $entity;
+    }
+
+    public function getUserForAuthentication(string $username) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('username = ?', [$username])
+            ->execute();
+
+        return $qb;
+    }
+
+    public function saveLoginHash(int $userId, string $hash) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('users')
+            ->set(['loginHash' => $hash])
+            ->where('userId = ?', [$userId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function getLoginHashForUserId(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['loginHash'])
+            ->from('users')
+            ->where('userId = ?', [$userId])
+            ->execute();
+
+        $loginHash = null;
+        while($row = $qb->fetchAssoc()) {
+            $loginHash = $row['loginHash'];
+        }
+        
+        return $loginHash;
     }
 }
 
