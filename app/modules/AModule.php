@@ -13,11 +13,15 @@ abstract class AModule {
     protected array $presenters;
 
     private array $flashMessages;
+    protected ?TemplateObject $template;
+    private ?APresenter $presenter;
 
     protected function __construct(string $title) {
         $this->presenters = [];
         $this->title = $title;
         $this->flashMessages = [];
+        $this->template = null;
+        $this->presenter = null;
     }
 
     public function loadPresenters() {
@@ -35,28 +39,23 @@ abstract class AModule {
     }
 
     public function render(string $presenterTitle, string $actionTitle) {
-        $this->beforePresenterRender();
+        $this->beforePresenterRender($presenterTitle, $actionTitle);
 
-        return $this->renderPresenter($presenterTitle, $actionTitle);
+        $this->renderPresenter();
+        $this->renderModule();
+
+        return $this->template->render()->getRenderedContent();
     }
 
-    public function renderPresenter(string $presenterTitle, string $actionTitle) {
-        $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
+    public function renderModule() {}
 
-        $presenter = new $realPresenterTitle();
-        $presenter->setParams(['module' => $this->title]);
-        $presenter->setAction($actionTitle);
-        [$pageContent, $pageTitle] = $presenter->render();
+    public function renderPresenter() {
+        $this->template = $this->presenter->render();
 
-        return $this->fillLayout($pageContent, $pageTitle, $this->flashMessages);
+        return $this->fillLayout($this->flashMessages);
     }
 
-    private function fillLayout(string $content, string $presenterTitle, array $flashMessages) {
-        $template = $this->getTemplate();
-
-        $template->page_title = $presenterTitle;
-        $template->page_content = $content;
-
+    private function fillLayout(array $flashMessages) {
         $fmCode = '';
 
         if(count($flashMessages) > 0) {
@@ -65,10 +64,7 @@ abstract class AModule {
             }
         }
         
-        $template->flash_messages = $fmCode;
-
-        $template->render();
-        return $template->getRenderedContent();
+        $this->template->flash_messages = $fmCode;
     }
 
     private function getTemplate() {
@@ -88,7 +84,21 @@ abstract class AModule {
         return new TemplateObject($layoutContent);
     }
 
-    private function beforePresenterRender() {
+    private function beforePresenterRender(string $presenterTitle, string $actionTitle) {
+        $this->template = $this->getTemplate();
+
+        $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
+
+        $this->presenter = new $realPresenterTitle();
+        $this->presenter->setTemplate($this->getTemplate());
+        $this->presenter->setParams(['module' => $this->title]);
+        $this->presenter->setAction($actionTitle);
+
+        /**
+         * FLASH MESSAGES
+         */
+
+        // flash messages must be last
         $flashMessages = CacheManager::loadFlashMessages();
 
         if($flashMessages === null) {

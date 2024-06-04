@@ -48,6 +48,7 @@ class CacheManager {
 
         if($file === null) {
             $result[$key] = $callback();
+            $file[$key] = $result[$key];
             $save = true;
         } else {
             $file = unserialize($file);
@@ -62,6 +63,8 @@ class CacheManager {
         }
 
         if($save === true) {
+            $file = serialize($file);
+            
             $obj->saveCachedFiles($namespace, $file);
         }
 

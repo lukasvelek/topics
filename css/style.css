@@ -46,3 +46,45 @@ div[class^="fm-"], div[class*="fm-"] {
     border-radius: 5px;
     border: 1px solid rgb(140, 0, 0);
 }
+
+#left {
+    text-align: left;
+}
+
+#center {
+    text-align: center;
+}
+
+#right {
+    text-align: right;
+}
+
+#navbar {
+    background-color: black;
+
+    color: white;
+
+    font-size: 20px;
+
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+}
+
+.navbar-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+#left .navbar-link {
+    margin-right: 5px;
+}
+
+#right .navbar-link {
+    margin-left: 5px;
+}

@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Authenticators\UserAuthenticator;
+use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
@@ -12,6 +13,7 @@ use App\Repositories\UserRepository;
 class Application {
     private array $modules;
     public array $cfg;
+    public ?UserEntity $currentUser;
 
     private ?string $currentModule;
     private ?string $currentPresenter;
@@ -34,6 +36,8 @@ class Application {
         $this->currentModule = null;
         $this->currentPresenter = null;
         $this->currentAction = null;
+        
+        $this->currentUser = null;
 
         $this->moduleManager = new ModuleManager();
 
@@ -52,7 +56,12 @@ class Application {
     public function run() {
         $this->getCurrentModulePresenterAction();
 
-        $this->userAuth->fastAuthUser();
+        if($this->userAuth->fastAuthUser()) {
+            // login
+            $this->currentUser = $this->userRepository->getUserById($_SESSION['userId']);
+        } else {
+            $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+        }
 
         echo $this->render();
     }

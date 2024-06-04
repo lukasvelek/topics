@@ -30,13 +30,7 @@ abstract class APresenter {
     }
 
     protected function flashMessage(string $text, string $type = 'info') {
-        //$code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
-
-        //$cm = 
-
-        //$this->flashMessages[] = $code;
-
-        $cm = CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
 
     protected function httpGet(string $key) {
@@ -78,23 +72,22 @@ abstract class APresenter {
     }
 
     public function render() {
-        $this->beforeRender();
-
+        $contentTemplate = $this->beforeRender();
+        
+        $this->template->join($contentTemplate);
+        
         $renderAction = 'render' . ucfirst($this->action);
-
+        
         if(method_exists($this, $renderAction)) {
             $this->$renderAction();
         }
-
+        
+        $this->template->page_content = $contentTemplate->render()->getRenderedContent();
+        $this->template->page_title = $this->title;
+        
         $this->afterRender();
 
-        $content = '';
-
-        if($this->template !== null) {
-            $content = $this->template->getRenderedContent();
-        }
-
-        return [$content, $this->title];
+        return $this->template;
     }
 
     public function addBeforeRenderCallback(callable $function) {
@@ -107,6 +100,10 @@ abstract class APresenter {
 
     public function setAction(string $title) {
         $this->action = $title;
+    }
+
+    public function setTemplate(TemplateObject $template) {
+        $this->template = $template;
     }
 
     private function beforeRender() {
@@ -128,7 +125,7 @@ abstract class APresenter {
                 throw new TemplateDoesNotExistException($this->action, $templatePath);
             }
 
-            $this->template = new TemplateObject(file_get_contents($templatePath));
+            $templateContent = new TemplateObject(file_get_contents($templatePath));
         }
 
         if($ok === false) {
@@ -138,6 +135,8 @@ abstract class APresenter {
         foreach($this->beforeRenderCallbacks as $callback) {
             $callback();
         }
+
+        return $templateContent;
     }
 
     private function afterRender() {
