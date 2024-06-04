@@ -26,7 +26,7 @@ class LoginPresenter extends APresenter {
                 $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
             } else {
-                
+                $this->flashMessage('Bad credentials entered. Please try again.', 'error');
             }
         }
     }

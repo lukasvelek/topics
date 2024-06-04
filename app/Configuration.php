@@ -37,7 +37,7 @@ class Configuration {
             throw new FileDoesNotExistException($path);
         }
 
-        include_once($path);
+        require_once($path);
 
         if(isset($cfg)) {
             if(array_key_exists($param, $cfg)) {

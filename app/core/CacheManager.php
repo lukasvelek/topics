@@ -11,7 +11,7 @@ class CacheManager {
     public function loadCachedFiles(string $namespace) {
         $filename = $this->generateFilename($namespace);
         
-        $path = $this->createFilepath($namespace, $filename);
+        $path = $this->createPath($namespace) . $filename;
         
         if(!FileManager::fileExists($path)) {
             return null;
@@ -20,16 +20,17 @@ class CacheManager {
         }
     }
 
-    public function saveCachedFiles(string $namespace, string $content) {
+    public function saveCachedFiles(string $namespace, array|string $content) {
         $filename = $this->generateFilename($namespace);
 
-        $path = $this->createFilepath($namespace, $filename);
+        $path = $this->createPath($namespace);
 
-        return FileManager::saveFile($path, $content, true);
+        return FileManager::saveFile($path, $filename, $content, true);
     }
 
-    private function createFilepath(string $namespace, string $filename) {
-        return Configuration::getAppRealDir() . Configuration::getCacheDir() . $namespace . '/' . $filename . '.tmp';
+    private function createPath(string $namespace) {
+        global $app;
+        return $app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\';
     }
 
     private function generateFilename(string $namespace) {
@@ -67,13 +68,17 @@ class CacheManager {
         return $result;
     }
 
-    public static function saveFlashMessageToCache(mixed $key, string $text) {
+    public static function saveFlashMessageToCache(array $data) {
         $obj = self::getTemporaryObject();
         $file = $obj->loadCachedFiles('flashMessages');
 
-        $file = unserialize($file);
+        if($file !== null && $file !== false) {
+            $file = unserialize($file);
+        }
 
-        $file[$key] = $text;
+        $file[] = $data;
+
+        $file = serialize($file);
 
         $obj->saveCachedFiles('flashMessages', $file);
 
@@ -83,13 +88,17 @@ class CacheManager {
     public static function loadFlashMessages() {
         $obj = self::getTemporaryObject();
         $file = $obj->loadCachedFiles('flashMessages');
-        $file = unserialize($file);
+        
+        if($file !== null && $file !== false) {
+            $file = unserialize($file);
+        }
 
         return $file;
     }
 
     public static function invalidateCache(string $namespace) {
-        FileManager::deleteFolderRecursively()
+        global $app;
+        FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
 
     private static function getTemporaryObject() {

@@ -79,16 +79,16 @@ class Logger implements ILoggerCallable {
         $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
         
         if($this->specialFilename !== null) {
-            $file = $folder . $this->specialFilename . '_' . date('Y-m-d') . '.log';
+            $file = $this->specialFilename . '_' . date('Y-m-d') . '.log';
         } else {
-            $file = $folder . 'log_' . date('Y-m-d') . '.log';
+            $file = 'log_' . date('Y-m-d') . '.log';
         }
 
         if(!FileManager::folderExists($folder)) {
             FileManager::createFolder($folder);
         }
 
-        FileManager::saveFile($file, $text . "\r\n");
+        FileManager::saveFile($folder, $file, $text . "\r\n");
     }
 }
 

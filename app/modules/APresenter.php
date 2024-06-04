@@ -13,7 +13,6 @@ abstract class APresenter {
     private string $name;
     private string $title;
     private ?string $action;
-    private array $flashMessages;
 
     protected ?TemplateObject $template;
 
@@ -28,15 +27,16 @@ abstract class APresenter {
         $this->afterRenderCallbacks = [];
         $this->action = null;
         $this->template = null;
-        $this->flashMessages = [];
     }
 
     protected function flashMessage(string $text, string $type = 'info') {
-        $code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
+        //$code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
 
         //$cm = 
 
-        $this->flashMessages[] = $code;
+        //$this->flashMessages[] = $code;
+
+        $cm = CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
 
     protected function httpGet(string $key) {
@@ -94,7 +94,7 @@ abstract class APresenter {
             $content = $this->template->getRenderedContent();
         }
 
-        return [$content, $this->title, $this->flashMessages];
+        return [$content, $this->title];
     }
 
     public function addBeforeRenderCallback(callable $function) {

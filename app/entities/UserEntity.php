@@ -26,7 +26,7 @@ class UserEntity {
     }
 
     public static function createEntity(mixed $row) {
-        return new self($row['id'], $row['username'], $row['email']);
+        return new self($row['userId'], $row['username'], '');
     }
 }
 

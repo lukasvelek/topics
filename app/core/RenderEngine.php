@@ -19,7 +19,7 @@ class RenderEngine {
     public function render() {
         $this->beforeRender();
 
-        return $this->module->renderPresenter($this->presenterTitle, $this->actionTitle);
+        return $this->module->render($this->presenterTitle, $this->actionTitle);
     }
     
     private function beforeRender() {
