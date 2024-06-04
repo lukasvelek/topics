@@ -19,6 +19,8 @@ abstract class AException extends Exception {
     }
 
     private function createExceptionFile(string $name, string $message) {
+        global $app;
+
         $templateContent = FileManager::loadFile(__DIR__ . '\\templates\\common.html');
         $to = new TemplateObject($templateContent);
 
@@ -53,9 +55,9 @@ abstract class AException extends Exception {
 
         $hash = HashManager::createHash(8, false);
 
-        $filePath = 'logs\\' . 'exception_' . date('Y-m-d_H-i-s') . '_' . $hash . '.html';
+        $filePath = 'exception_' . date('Y-m-d_H-i-s') . '_' . $hash . '.html';
 
-        FileManager::saveFile($filePath, $content);
+        FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $content);
     }
 }
 
