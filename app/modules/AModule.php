@@ -50,7 +50,7 @@ abstract class AModule {
     public function renderModule() {}
 
     public function renderPresenter() {
-        $this->template = $this->presenter->render();
+        $this->template = $this->presenter->render($this->title);
 
         return $this->fillLayout($this->flashMessages);
     }

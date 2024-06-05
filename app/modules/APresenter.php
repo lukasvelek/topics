@@ -85,15 +85,19 @@ abstract class APresenter {
         $this->params = $params;
     }
 
-    public function render() {
-        $contentTemplate = $this->beforeRender();
+    public function render(string $moduleName) {
+        global $app;
+
+        $contentTemplate = $this->beforeRender($moduleName);
         
         $this->template->join($contentTemplate);
         
         $renderAction = 'render' . ucfirst($this->action);
         
         if(method_exists($this, $renderAction)) {
-            $this->$renderAction();
+            $app->logger->stopwatch(function() use ($renderAction) {
+                return $this->$renderAction();
+            }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $renderAction);
         }
         
         $this->template->page_content = $contentTemplate->render()->getRenderedContent();
@@ -120,7 +124,9 @@ abstract class APresenter {
         $this->template = $template;
     }
 
-    private function beforeRender() {
+    private function beforeRender(string $moduleName) {
+        global $app;
+
         $ok = false;
 
         $handleAction = 'handle' . ucfirst($this->action);
@@ -128,7 +134,9 @@ abstract class APresenter {
 
         if(method_exists($this, $handleAction)) {
             $ok = true;
-            $this->$handleAction();
+            $app->logger->stopwatch(function() use ($handleAction) {
+                return $this->$handleAction();
+            }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $handleAction);
         }
 
         if(method_exists($this, $renderAction)) {

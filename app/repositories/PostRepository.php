@@ -17,9 +17,14 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
-            ->limit($count)
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+            
+
+        if($count > 0) {
+            $qb->limit($count);
+        }
+
+        $qb->execute();
 
         $posts = [];
         while($row = $qb->fetchAssoc()) {
@@ -35,10 +40,14 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
-            ->limit($count)
             ->orderBy('likes', 'DESC')
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($count > 0) {
+            $qb->limit($count);
+        }
+
+        $qb->execute();
 
         $posts = [];
         while($row = $qb->fetchAssoc()) {
@@ -54,10 +63,14 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
-            ->limit($count)
             ->orderBy('likes', 'DESC')
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($count > 0) {
+            $qb->limit($count);
+        }
+
+        $qb->execute();
 
         $posts = [];
         while($row = $qb->fetchAssoc()) {
@@ -160,6 +173,33 @@ class PostRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('likes');
+    }
+
+    public function getPostIdsForTopicId(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['postId'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        $posts = [];
+        while($row = $qb->fetchAssoc()) {
+            $posts[] = $row['postId'];
+        }
+
+        return $posts;
+    }
+
+    public function getPostCountForTopicId(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch('cnt') ?? 0;
     }
 }
 

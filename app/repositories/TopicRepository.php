@@ -55,6 +55,33 @@ class TopicRepository extends ARepository {
 
         return $entities;
     }
+
+    public function getFollowersForTopicId(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('user_topic_follows')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        $followers = [];
+        while($row = $qb->fetchAssoc()) {
+            $followers[] = $row['userId'];
+        }
+
+        return $followers;
+    }
+
+    public function getFollowerCountForTopicId(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(topicId) AS cnt'])
+            ->from('user_topic_follows')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch('cnt') ?? 0;
+    }
 }
 
 ?>

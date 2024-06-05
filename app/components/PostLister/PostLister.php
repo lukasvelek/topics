@@ -9,6 +9,8 @@ use App\Repositories\UserRepository;
 class PostLister {
     private array $posts;
     private array $topics;
+
+    private bool $topicLinkHidden;
     
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
@@ -21,6 +23,8 @@ class PostLister {
 
         $this->posts = [];
         $this->topics = [];
+
+        $this->topicLinkHidden = false;
     }
 
     public function setPosts(array $posts) {
@@ -29,6 +33,10 @@ class PostLister {
 
     public function setTopics(array $topics) {
         $this->topics = $topics;
+    }
+
+    public function setTopicLinkHidden(bool $hidden = true) {
+        $this->topicLinkHidden = $hidden;
     }
 
     public function render() {
@@ -50,13 +58,13 @@ class PostLister {
                 $topics[$topic->getId()] = $topic;
             }
 
-            $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile">' . $post->getTitle() . '</a>';
-            $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
+            $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
+            $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
 
             $code = '<div class="row" id="post-' . $post->getId() . '">';
             $code .= '<div class="col-md">';
 
-            $code .= '<p class="post-title">' . $topicLink . ' | ' . $postLink . '</p>';
+            $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
             $code .= '<hr>';
 
             $code .= '<p class="post-text">' . $post->getShortenedText(100) . '</p>';
