@@ -43,13 +43,20 @@ class PostLister {
         foreach($this->posts as $post) {
             $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
             $likeLink = self::createLikeLink($post->getAuthorId(), $post->getId(), $liked);
+            
+            $topics = [];
+
+            foreach($this->topics as $topic) {
+                $topics[$topic->getId()] = $topic;
+            }
 
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile">' . $post->getTitle() . '</a>';
+            $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
 
             $code = '<div class="row" id="post-' . $post->getId() . '">';
             $code .= '<div class="col-md">';
 
-            $code .= $postLink;
+            $code .= '<p class="post-title">' . $topicLink . ' | ' . $postLink . '</p>';
             $code .= '<hr>';
 
             $code .= '<p class="post-text">' . $post->getShortenedText(100) . '</p>';

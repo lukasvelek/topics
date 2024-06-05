@@ -89,11 +89,17 @@ div[class^="fm-"], div[class*="fm-"] {
     margin-left: 5px;
 }
 
-.post-title-link {
+.post-title, .post-title-link, .post-title-link-smaller {
     font-size: 24px;
 
     color: black;
+}
 
+.post-title-link-smaller {
+    font-size: 20px;
+}
+
+.post-title-link {
     text-decoration: underline;
 }
 
