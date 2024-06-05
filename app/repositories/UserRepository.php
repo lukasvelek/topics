@@ -22,7 +22,7 @@ class UserRepository extends ARepository {
         $entity = CacheManager::loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
 
-            $entity = UserEntity::createEntity($row);
+            $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
         }, 'users');

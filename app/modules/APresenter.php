@@ -13,6 +13,7 @@ abstract class APresenter {
     private string $name;
     private string $title;
     private ?string $action;
+    private array $presenterCache;
 
     protected ?TemplateObject $template;
 
@@ -27,6 +28,19 @@ abstract class APresenter {
         $this->afterRenderCallbacks = [];
         $this->action = null;
         $this->template = null;
+        $this->presenterCache = [];
+    }
+
+    protected function saveToPresenterCache(mixed $key, mixed $value) {
+        $this->presenterCache[$key] = $value;
+    }
+
+    protected function loadFromPresenterCache(mixed $key) {
+        if(array_key_exists($key, $this->presenterCache)) {
+            return $this->presenterCache[$key];
+        } else {
+            return null;
+        }
     }
 
     protected function flashMessage(string $text, string $type = 'info') {

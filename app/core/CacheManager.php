@@ -47,8 +47,8 @@ class CacheManager {
         $result = null;
 
         if($file === null) {
-            $result[$key] = $callback();
-            $file[$key] = $result[$key];
+            $result = $callback();
+            $file[$key] = $result;
             $save = true;
         } else {
             $file = unserialize($file);
@@ -56,8 +56,8 @@ class CacheManager {
             if(array_key_exists($key, $file)) {
                 $result = $file[$key];
             } else {
-                $result[$key] = $callback();
-                $file[$key] = $result[$key];
+                $result = $callback();
+                $file[$key] = $result;
                 $save = true;
             }
         }

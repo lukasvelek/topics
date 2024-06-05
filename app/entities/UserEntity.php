@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserEntity {
+class UserEntity implements ICreatableFromRow {
     private int $id;
     private string $username;
     private string $email;
@@ -25,7 +25,7 @@ class UserEntity {
         return $this->email;
     }
 
-    public static function createEntity(mixed $row) {
+    public static function createEntityFromDbRow(mixed $row) {
         return new self($row['userId'], $row['username'], '');
     }
 }

@@ -32,6 +32,32 @@ class DatabaseInstaller {
                 'username' => 'VARCHAR(256) NOT NULL',
                 'password' => 'VARCHAR(256) NOT NULL',
                 'loginHash' => 'VARCHAR(256) NULL'
+            ],
+            'topics' => [
+                'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'managerId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_topic_follows' => [
+                'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'topicId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL'
+            ],
+            'posts' => [
+                'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'topicId' => 'INT(32) NOT NULL',
+                'authorId' => 'INT(32) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'likes' => 'INT(32) NOT NULL DEFAULT 0'
+            ],
+            'post_likes' => [
+                'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'postId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL'
             ]
         ];
 

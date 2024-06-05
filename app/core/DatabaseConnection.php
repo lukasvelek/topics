@@ -10,12 +10,14 @@ use QueryBuilder\IDbQueriable;
 
 class DatabaseConnection implements IDbQueriable {
     private \mysqli $conn;
+    private array $cfg;
 
     public function __construct(array $cfg) {
-        $this->establishConnection($cfg['DB_SERVER'], $cfg['DB_USER'], $cfg['DB_PASS'], $cfg['DB_NAME']);
+        $this->cfg = $cfg;
+        $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
 
-        if(!FileManager::fileExists($cfg['APP_REAL_DIR'] . "app\\core\\install")) {
-            $this->installDb($cfg);
+        if(!FileManager::fileExists($this->cfg['APP_REAL_DIR'] . "app\\core\\install")) {
+            $this->installDb($this->cfg);
         }
     }
 
@@ -38,7 +40,7 @@ class DatabaseConnection implements IDbQueriable {
 
         $installer->install();
         
-        FileManager::saveFile($cfg['APP_REAL_DIR'] . 'app\\core\\install', 'installed - ' . date('Y-m-d H:i:s'));
+        FileManager::saveFile($cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . date('Y-m-d H:i:s'));
     }
 }
 

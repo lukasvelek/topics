@@ -8,6 +8,8 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Modules\ModuleManager;
+use App\Repositories\PostRepository;
+use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
 
 class Application {
@@ -26,6 +28,8 @@ class Application {
     public UserAuthenticator $userAuth;
 
     public UserRepository $userRepository;
+    public TopicRepository $topicRepository;
+    public PostRepository $postRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -47,10 +51,16 @@ class Application {
         $this->logger->info('Database connection established', __METHOD__);
         
         $this->userRepository = new UserRepository($this->db, $this->logger);
+        $this->topicRepository = new TopicRepository($this->db, $this->logger);
+        $this->postRepository = new PostRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository);
 
         $this->loadModules();
+    }
+
+    public function ajaxRun(int $currentUserId) {
+        $this->currentUser = $this->userRepository->getUserById($currentUserId);
     }
     
     public function run() {

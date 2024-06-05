@@ -88,3 +88,29 @@ div[class^="fm-"], div[class*="fm-"] {
 #right .navbar-link {
     margin-left: 5px;
 }
+
+.post-title-link {
+    font-size: 24px;
+
+    color: black;
+
+    text-decoration: underline;
+}
+
+.post-text {
+    font-size: 18px;
+
+    text-align: left;
+}
+
+.post-data {
+    font-size: 16px;
+
+    color: black;
+}
+
+.post-like, .post-data-link {
+    color: black;
+
+    text-decoration: underline;
+}

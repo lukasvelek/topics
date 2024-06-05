@@ -20,7 +20,7 @@ class UserAuthenticator {
 
         while($row = $rows->fetchAssoc()) {
             if(password_verify($password, $row['password'])) {
-                $user = UserEntity::createEntity($row);
+                $user = UserEntity::createEntityFromDbRow($row);
 
                 break;
             }
