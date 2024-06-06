@@ -214,6 +214,17 @@ class PostRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function getPostById(int $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('postId = ?', [$postId])
+            ->execute();
+
+        return PostEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>

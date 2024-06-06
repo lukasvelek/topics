@@ -8,6 +8,7 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Modules\ModuleManager;
+use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
@@ -30,6 +31,7 @@ class Application {
     public UserRepository $userRepository;
     public TopicRepository $topicRepository;
     public PostRepository $postRepository;
+    public PostCommentRepository $postCommentRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -53,6 +55,7 @@ class Application {
         $this->userRepository = new UserRepository($this->db, $this->logger);
         $this->topicRepository = new TopicRepository($this->db, $this->logger);
         $this->postRepository = new PostRepository($this->db, $this->logger);
+        $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository);
 
