@@ -41,11 +41,13 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
-    public function addTextInput(string $name, ?string $label = null, mixed $value = null) {
+    public function addTextInput(string $name, ?string $label = null, mixed $value = null, bool $required = false) {
         $ti = new TextInput($name, $value);
 
+        $ti->setRequired($required);
+
         if($label !== null) {
-            $ti = new ElementDuo($ti, new Label($label, $name));
+            $ti = new ElementDuo($ti, new Label($label, $name, $required));
         }
 
         $this->addElement($name, $ti);
@@ -73,14 +75,31 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
-    public function addPassword(string $name, ?string $label = null, mixed $value = null) {
+    public function addPassword(string $name, ?string $label = null, mixed $value = null, bool $required = false) {
         $pi = new PasswordInput($name, $value);
 
+        $pi->setRequired($required);
+
         if($label !== null) {
-            $pi = new ElementDuo($pi, new Label($label, $name));
+            $pi = new ElementDuo($pi, new Label($label, $name, $required));
         }
 
         $this->addElement($name, $pi);
+
+        return $this;
+    }
+
+    public function addTextArea(string $name, ?string $label = null, mixed $value = null, bool $required = false, int $rows = 3) {
+        $ta = new TextArea($name, $value);
+
+        $ta->setRows($rows);
+        $ta->setRequired($required);
+
+        if($label !== null) {
+            $ta = new ElementDuo($ta, new Label($label, $name, $required));
+        }
+
+        $this->addElement($name, $ta);
 
         return $this;
     }

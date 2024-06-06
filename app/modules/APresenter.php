@@ -90,7 +90,9 @@ abstract class APresenter {
 
         $contentTemplate = $this->beforeRender($moduleName);
         
-        $this->template->join($contentTemplate);
+        if($contentTemplate !== null) {
+            $this->template->join($contentTemplate);
+        }
         
         $renderAction = 'render' . ucfirst($this->action);
         
@@ -100,7 +102,12 @@ abstract class APresenter {
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $renderAction);
         }
         
-        $this->template->page_content = $contentTemplate->render()->getRenderedContent();
+        if($contentTemplate !== null) {
+            $this->template->page_content = $contentTemplate->render()->getRenderedContent();
+        } else {
+            $this->template->page_content = '';
+        }
+
         $this->template->page_title = $this->title;
         
         $this->afterRender();
@@ -128,6 +135,7 @@ abstract class APresenter {
         global $app;
 
         $ok = false;
+        $templateContent = null;
 
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);

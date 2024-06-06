@@ -201,6 +201,16 @@ class PostRepository extends ARepository {
 
         return $qb->fetch('cnt') ?? 0;
     }
+
+    public function createNewPost(int $topicId, int $authorId, string $title, string $text) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('posts', ['topicId', 'authorId', 'title', 'description'])
+            ->values([$topicId, $authorId, $title, $text])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

@@ -2,7 +2,7 @@ body {
     overflow-x: hidden;
 }
 
-#form input, #form select {
+#form input, #form select, #form textarea {
     width: 100%;
 
     padding: 5px;
@@ -17,22 +17,34 @@ body {
 }
 
 #flash-messages {
-    width: 100%;
+    position: absolute;
+    z-index: 9999;
+    
+    width: 90%;
+    
+    margin-left: 5%;
+    margin-top: 15px;
 }
 
 .fm-info {
     color: blue;
     background-color: rgb(100, 150, 250);
+
+    border: 1px solid blue;
 }
 
 .fm-error {
     color: rgb(140, 0, 0);
     background-color: rgb(255, 100, 100);
+
+    border: 1px solid rgb(140, 0, 0);
 }
 
 .fm-success {
-    color: green;
+    color: rgb(1, 80, 1);
     background-color: rgb(100, 200, 100);
+
+    border: 1px solid rgb(1, 80, 1);
 }
 
 div[class^="fm-"], div[class*="fm-"] {
@@ -40,11 +52,12 @@ div[class^="fm-"], div[class*="fm-"] {
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 5px;
-    
-    margin: 10px;
 
     border-radius: 5px;
-    border: 1px solid rgb(140, 0, 0);
+}
+
+.fm-link:hover {
+    color: black;
 }
 
 #left {

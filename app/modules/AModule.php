@@ -109,7 +109,9 @@ abstract class AModule {
             $type = $flashMessage['type'];
             $text = $flashMessage['text'];
 
-            $code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
+            $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . count($this->flashMessages) . '\')">&times;</p>';
+
+            $code = '<div id="fm-' . count($this->flashMessages) . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . $removeLink . '</div></div>';
 
             $this->flashMessages[] = $code;
         }
