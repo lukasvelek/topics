@@ -2,8 +2,6 @@
 
 namespace App\Modules\UserModule;
 
-use App\Components\PostLister\PostLister;
-use App\Components\PostLister\PostLister2;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
