@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
+use App\Components\PostLister\PostLister2;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -22,14 +23,7 @@ class TopicsPresenter extends APresenter {
         $this->saveToPresenterCache('topic', $topic);
 
         // posts
-        $posts = $app->postRepository->getLatestPostsForTopicId($topicId, 0);
-
-        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository);
-        $postLister->setPosts($posts);
-        $postLister->setTopics([$topic]);
-        $postLister->setTopicLinkHidden();
-
-        $this->saveToPresenterCache('postLister', $postLister);
+        $this->saveToPresenterCache('posts', '<script type="text/javascript">loadPostsForTopic(' . $topicId .', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="post-list"></div><div id="post-list-link"></div><br>');
 
         // topic data
         $manager = $app->userRepository->getUserById($topic->getManagerId());
@@ -46,7 +40,7 @@ class TopicsPresenter extends APresenter {
             <p class="post-data">Posts: ' . $postCount . '</p>
         ';
 
-        $this->saveToPresenterCache('postData', $code);
+        $this->saveToPresenterCache('topicData', $code);
 
         // new post form
         $fb = new FormBuilder();
@@ -62,14 +56,14 @@ class TopicsPresenter extends APresenter {
 
     public function renderProfile() {
         $topic = $this->loadFromPresenterCache('topic');
-        $postLister = $this->loadFromPresenterCache('postLister');
-        $postData = $this->loadFromPresenterCache('postData');
+        $posts = $this->loadFromPresenterCache('posts');
+        $topicData = $this->loadFromPresenterCache('topicData');
         $fb = $this->loadFromPresenterCache('newPostForm');
 
         $this->template->topic_title = $topic->getTitle();
         $this->template->topic_description = $topic->getDescription();
-        $this->template->latest_posts = $postLister->render();
-        $this->template->topic_data = $postData;
+        $this->template->latest_posts = $posts;
+        $this->template->topic_data = $topicData;
         $this->template->new_post_form = $fb->render();
     }
 

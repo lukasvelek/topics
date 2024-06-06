@@ -11,7 +11,7 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $count = 5) {
+    public function getLatestPostsForTopicId(int $topicId, int $count = 5, int $offset = 0) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -19,9 +19,12 @@ class PostRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('dateCreated', 'DESC');
             
-
         if($count > 0) {
             $qb->limit($count);
+        }
+
+        if($offset > 0) {
+            $qb->offset($offset);
         }
 
         $qb->execute();

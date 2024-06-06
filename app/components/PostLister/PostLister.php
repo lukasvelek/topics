@@ -45,7 +45,8 @@ class PostLister {
 
     private function build() {
         $codeArr = [
-            '<script type="text/javascript" src="js/PostListerControl.js"></script>'
+            '<script type="text/javascript" src="js/PostListerControl.js"></script>',
+            '<div id="post-lister">'
         ];
 
         foreach($this->posts as $post) {
@@ -77,6 +78,8 @@ class PostLister {
             
             $codeArr[] = $code;
         }
+
+        $codeArr[] = '</div>';
 
         return $codeArr;
     }
