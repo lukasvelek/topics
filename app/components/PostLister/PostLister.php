@@ -53,30 +53,31 @@ class PostLister {
             $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
             $likeLink = self::createLikeLink($post->getAuthorId(), $post->getId(), $liked);
             
-            $topics = [];
+            if(!empty($this->topics)) {
+                $topics = [];
 
-            foreach($this->topics as $topic) {
-                $topics[$topic->getId()] = $topic;
+                foreach($this->topics as $topic) {
+                    $topics[$topic->getId()] = $topic;
+                }
+
+                $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
+                $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
+
+                $code = '<div class="row" id="post-' . $post->getId() . '">';
+                $code .= '<div class="col-md">';
+
+                $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
+                $code .= '<hr>';
+
+                $code .= '<p class="post-text">' . $post->getShortenedText(100) . '</p>';
+                $code .= '<hr>';
+
+                $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
+                $code .= '</div></div>';
+                $code .= '<br><br>';
+
+                $codeArr[] = $code;
             }
-
-            $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
-            $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
-
-            $code = '<div class="row" id="post-' . $post->getId() . '">';
-            $code .= '<div class="col-md">';
-
-            $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
-            $code .= '<hr>';
-
-            $code .= '<p class="post-text">' . $post->getShortenedText(100) . '</p>';
-            $code .= '<hr>';
-
-            $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
-
-            $code .= '</div></div>';
-            $code .= '<br><br>';
-            
-            $codeArr[] = $code;
         }
 
         $codeArr[] = '</div>';
