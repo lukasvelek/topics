@@ -64,7 +64,7 @@ abstract class AModule {
             }
         }
         
-        $this->template->flash_messages = $fmCode;
+        $this->template->sys_flash_messages = $fmCode;
     }
 
     private function getTemplate() {

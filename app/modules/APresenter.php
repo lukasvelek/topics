@@ -103,12 +103,15 @@ abstract class APresenter {
         }
         
         if($contentTemplate !== null) {
-            $this->template->page_content = $contentTemplate->render()->getRenderedContent();
+            $this->template->sys_page_content = $contentTemplate->render()->getRenderedContent();
         } else {
-            $this->template->page_content = '';
+            $this->template->sys_page_content = '';
         }
 
-        $this->template->page_title = $this->title;
+        $this->template->sys_page_title = $this->title;
+        $this->template->sys_app_name = $app->cfg['APP_NAME'];
+        $this->template->sys_copyright = ((date('Y') > 2024) ? ('2024-' . date('Y')) : (date('Y')));
+        $this->template->sys_user_id = $app->currentUser->getId();
         
         $this->afterRender();
 

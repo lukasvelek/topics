@@ -3,14 +3,14 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="css/bootstrap.css">
         <link rel="stylesheet" href="css/style.css">
-        <title>$PAGE_TITLE$</title>
+        <title>$SYS_PAGE_TITLE$</title>
         <script type="text/javascript" src="js/jquery-3.7.1.js"></script>
         <script type="text/javascript" src="js/Topics.js"></script>
     </head>
     <body>
         <div class="row">
             <div class="col-md" id="flash-messages">
-                $FLASH_MESSAGES$
+                $SYS_FLASH_MESSAGES$
             </div>
         </div>
 
@@ -18,16 +18,31 @@
             <div class="col-md">
                 <div class="row">
                     <div class="col-md" id="navbar">
-                        $NAVBAR$
+                        $SYS_NAVBAR$
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md">
-                        $PAGE_CONTENT$
+                        $SYS_PAGE_CONTENT$
                     </div>
                 </div>
             </div>
         </div>
     </body>
+    <footer>
+        <br>
+        <hr>
+        <div class="row">
+            <div class="col-md-2"></div>
+
+            <div class="col-md" id="center">
+                <p>$SYS_APP_NAME$&copy; $SYS_COPYRIGHT$ All rights reserved.</p>
+                <a class="footer-link" href="?page=AnonymModule:StatusCheck&action=list">Show status</a>
+                <a class="footer-link" href="?page=AnonymModule:Help&action=form&userId=$SYS_USER_ID$">Suggestions</a>
+            </div>
+
+            <div class="col-md-2"></div>
+        </div>
+    </footer>
 </html>

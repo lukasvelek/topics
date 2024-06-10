@@ -150,3 +150,7 @@ div[class^="fm-"], div[class*="fm-"] {
 .post-comment-border {
     border-left: 1px solid lightgrey;
 }
+
+.footer-link {
+    color: black;
+}
