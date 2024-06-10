@@ -154,3 +154,16 @@ div[class^="fm-"], div[class*="fm-"] {
 .footer-link {
     color: black;
 }
+
+.topic-title {
+    font-size: 16px;
+    color: black;
+}
+
+.topic-title-link {
+    color: black;
+}
+
+.topic-title-link:hover {
+    color: cadetblue;
+}

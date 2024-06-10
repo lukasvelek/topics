@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicEntity;
+use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
 
 class TopicRepository extends ARepository {
@@ -81,6 +82,56 @@ class TopicRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt') ?? 0;
+    }
+
+    public function searchTopics(string $query) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where('title LIKE ?', ['%' . $query . '%'])
+            ->orWhere('description LIKE ?', ['%' . $query . '%'])
+            ->execute();
+
+        $topics = [];
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        return $topics;
+    }
+
+    public function createNewTopic(int $managerId, string $title, string $description) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('topics', ['title', 'description', 'managerId'])
+            ->values([$title, $description, $managerId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function getLastTopicIdForManagerId(int $managerId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['topicId'])
+            ->from('topics')
+            ->where('managerId = ?', [$managerId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return $qb->fetch('topicId');
+    }
+
+    public function tryGetLastTopicIdForManagerId(int $managerId) {
+        $result = $this->getLastTopicIdForManagerId($managerId);
+
+        if($result === null) {
+            throw new CouldNotFetchLastEntityIdException('topic');
+        }
+
+        return $result;
     }
 }
 

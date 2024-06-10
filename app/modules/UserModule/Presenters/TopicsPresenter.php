@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use Exception;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -83,6 +84,83 @@ class TopicsPresenter extends APresenter {
 
         $this->flashMessage('Post created.', 'success');
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+    }
+
+    public function handleSearch() {
+        global $app;
+
+        $query = $this->httpGet('q');
+
+        $topics = $app->topicRepository->searchTopics($query);
+
+        $topicCode = '';
+        if(!empty($topics)) {
+            foreach($topics as $topic) {
+                $tmp = '
+                    <div class="row">
+                        <div class="col-md">
+                            <p class="topic-title">' . $topic->getTitle() . '</p>
+                        </div>
+                    </div>
+                ';
+                
+                $topicCode .= $tmp;
+            }
+        } else {
+            $tmp = '
+                <div class="row">
+                    <div class="col-md">
+                        <p class="topic-title">No topics found. :(</p>
+                        <p class="topic-title">But you can <a class="topic-title-link" href="?page=UserModule:Topics&action=form">start a new one</a>!</p>
+                    </div>
+                </div>
+            ';
+
+            $topicCode = $tmp;
+        }
+        
+        $this->saveToPresenterCache('topics', $topicCode);
+    }
+
+    public function renderSearch() {
+        $this->template->search_data = $this->loadFromPresenterCache('topics');
+    }
+
+    public function handleForm() {
+        global $app;
+
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            // process submitted form
+
+            $title = $this->httpPost('title');
+            $description = $this->httpPost('description');
+
+            $topicId = null;
+
+            try {
+                $app->topicRepository->createNewTopic($app->currentUser->getId(), $title, $description);
+                $topicId = $app->topicRepository->getLastTopicIdForManagerId($app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not create a new topic. Reason: ' . $e->getMessage(), 'error');
+                $app->redirect(['page' => 'UserMOdule:Topics', 'action' => 'discover']);
+            }
+
+            $this->flashMessage('Topic \'' . $title . '\' created.', 'success');
+            $app->redirect(['page' => 'UserModule:Topics&action=profile&topicId=' . $topicId]);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'form', 'isSubmit' => '1'])
+                ->addTextInput('title', 'Title:', null, true)
+                ->addTextArea('description', 'Description:', null, true)
+                ->addSubmit('Create topic');
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderForm() {
+        $this->template->form = $this->loadFromPresenterCache('form')->render();
     }
 }
 

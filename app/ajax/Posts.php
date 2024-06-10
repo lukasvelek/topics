@@ -42,7 +42,7 @@ function loadPostsForTopic() {
     $code = [];
 
     if(empty($posts)) {
-        return json_encode(['posts' => implode('', $code), 'loadMoreLink' => '']);
+        return json_encode(['posts' => '<p class="post-text" id="center">No posts found. Create one!</p>', 'loadMoreLink' => '']);
     }
 
     foreach($posts as $post) {
@@ -91,7 +91,7 @@ function loadCommentsForPost() {
     $code = [];
 
     if(empty($comments)) {
-        return json_encode(['comments' => implode('', $code), 'loadMoreLink' => '']);
+        return json_encode(['comments' => '<p class="post-data">No comments found.</p>', 'loadMoreLink' => '']);
     }
 
     foreach($comments as $comment) {

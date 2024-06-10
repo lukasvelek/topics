@@ -34,6 +34,19 @@ class Navbar {
         $profileLinkArray['userId'] = $app->currentUser->getId();
 
         $this->template->user_info = [$this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+        $this->template->search_bar = $this->createSearchBar();
+    }
+
+    private function createSearchBar() {
+        global $app;
+
+        $code = '
+            <input type="text" name="searchQuery" id="searchQuery" placeholder="Search topics...">
+            <button type="button" onclick="doSearch(' . $app->currentUser->getId() . ')">Search</button>
+            <script type="text/javascript" src="js/NavbarSearch.js"></script>
+        ';
+
+        return $code;
     }
 
     private function createLink(array $url, string $title) {
