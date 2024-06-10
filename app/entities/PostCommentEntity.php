@@ -8,13 +8,15 @@ class PostCommentEntity implements ICreatableFromRow {
     private int $authorId;
     private string $text;
     private string $dateCreated;
+    private int $likes;
 
-    public function __construct(int $commentId, int $postId, int $authorId, string $text, string $dateCreated) {
+    public function __construct(int $commentId, int $postId, int $authorId, string $text, string $dateCreated, int $likes) {
         $this->commentId = $commentId;
         $this->postId = $postId;
         $this->authorId = $authorId;
         $this->text = $text;
         $this->dateCreated = $dateCreated;
+        $this->likes = $likes;
     }
 
     public function getId() {
@@ -37,8 +39,12 @@ class PostCommentEntity implements ICreatableFromRow {
         return $this->dateCreated;
     }
 
+    public function getLikes() {
+        return $this->likes;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['commentId'], $row['postId'], $row['authorId'], $row['commentText'], $row['dateCreated']);
+        return new self($row['commentId'], $row['postId'], $row['authorId'], $row['commentText'], $row['dateCreated'], $row['likes']);
     }
 }
 

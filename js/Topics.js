@@ -38,3 +38,41 @@ function likePost(_postId, _userId, _like) {
         }
     )
 }
+
+function loadCommentsForPost(_postId, _limit, _offset, _userId) {
+    $.get(
+        "app/ajax/Posts.php",
+        {
+            postId: _postId,
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'loadCommentsForPost'
+        }
+    )
+    .done(function ( data ) {
+        var obj = JSON.parse(data);
+
+        $("#comments-list").append(obj.posts);
+        $("#comments-list-link").html(obj.loadMoreLink);
+    });
+}
+
+function likePostComment(_commentId, _userId, _like) {
+    $.post(
+        "app/ajax/Posts.php",
+        {
+            commentId: _commentId,
+            userId: _userId,
+            action: "likePostComment",
+            callingUserId: _userId,
+            like: _like
+        }
+    )
+    .done(function ( data ) {
+        var obj = JSON.parse(data);
+
+        $("#post-comment-" + _commentId + "-link").html(obj.link);
+        $("#post-comment-" + _commentId + "-likes").html(obj.likes);
+    });
+}

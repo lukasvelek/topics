@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -73,10 +74,15 @@ class TopicsPresenter extends APresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
-        $app->postRepository->createNewPost($topicId, $userId, $title, $text);
+        try {
+            $app->postRepository->createNewPost($topicId, $userId, $title, $text);
+        } catch (AException $e) {
+            $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
 
         $this->flashMessage('Post created.', 'success');
-        $app->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 }
 
