@@ -76,3 +76,34 @@ function likePostComment(_commentId, _userId, _like) {
         $("#post-comment-" + _commentId + "-likes").html(obj.likes);
     });
 }
+
+function createNewCommentForm(_commentId, _userId, _postId) {
+    const divId = "#post-comment-" + _commentId + "-comment-form";
+    const linkId = "#post-comment-" + _commentId + "-add-comment-link";
+
+    $.get(
+        "app/ajax/Posts.php",
+        {
+            callingUserId: _userId,
+            parentCommentId: _commentId,
+            postId: _postId,
+            action: "createNewPostCommentForm"
+        }
+    )
+    .done(function ( data ) {
+        const obj = JSON.parse(data);
+
+        $(divId).html(obj.code);
+        $(linkId).attr('onclick', 'hideNewCommentForm(' + _commentId + ', ' + _userId + ', ' + _postId + ')')
+        $(linkId).html('Hide comment form');
+    });
+}
+
+function hideNewCommentForm(_commentId, _userId, _postId) {
+    const divId = "#post-comment-" + _commentId + "-comment-form";
+    const linkId = "#post-comment-" + _commentId + "-add-comment-link";
+
+    $(divId).html("");
+    $(linkId).attr('onclick', 'createNewCommentForm(' + _commentId + ', ' + _userId + ', ' + _postId + ')');
+    $(linkId).html("Add comment");
+}

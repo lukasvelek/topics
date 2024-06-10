@@ -42,6 +42,7 @@ class PostCommentRepository extends ARepository {
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
+            ->andWhere('parentCommentId IS NULL')
             ->orderBy('dateCreated', 'DESC');
 
         if($limit > 0) {
@@ -62,11 +63,19 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function createNewComment(int $postId, int $authorId, string $text) {
+    public function createNewComment(int $postId, int $authorId, string $text, ?int $parentCommentId = null) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('post_comments', ['postId', 'authorId', 'commentText'])
-            ->values([$postId, $authorId, $text])
+        $keys = ['postId', 'authorId', 'commentText'];
+        $values = [$postId, $authorId, $text];
+
+        if($parentCommentId !== null) {
+            $keys[] = 'parentCommentId';
+            $values[] = $parentCommentId;
+        }
+
+        $qb ->insert('post_comments', $keys)
+            ->values($values)
             ->execute();
 
         return $qb->fetch();
@@ -180,6 +189,25 @@ class PostCommentRepository extends ARepository {
             ->execute();
 
         return true;
+    }
+
+    public function getLatestCommentsForCommentId(int $postId, int $commentId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('parentCommentId = ?', [$commentId])
+            ->andWhere('postId = ?', [$postId])
+            ->orderBy('dateCreated', 'DESC');
+
+        $qb->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
     }
 }
 

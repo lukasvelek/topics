@@ -65,7 +65,8 @@ class DatabaseInstaller {
                 'authorId' => 'INT(32) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'likes' => 'INT(32) NOT NULL DEFAULT 0'
+                'likes' => 'INT(32) NOT NULL DEFAULT 0',
+                'parentCommentId' => 'INT(32) NULL'
             ],
             'post_comment_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',

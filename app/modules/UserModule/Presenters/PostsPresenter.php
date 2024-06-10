@@ -22,10 +22,12 @@ class PostsPresenter extends APresenter {
 
         $this->saveToPresenterCache('comments', '<script type="text/javascript">loadCommentsForPost(' . $postId . ', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="comments-list"></div><div id="comments-list-link"></div><br>');
 
+        $parentCommentId = $this->httpGet('parentCommentId');
+
         // new comment form
         $fb = new FormBuilder();
 
-        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId])
+        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId])
             ->addTextArea('text', 'Comment:', null, true)
             ->addSubmit('Post')
         ;
@@ -56,9 +58,10 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
         $authorId = $app->currentUser->getId();
         $text = $this->httpPost('text');
+        $parentCommentId = $this->httpGet('parentCommentId');
 
         try {
-            $app->postCommentRepository->createNewComment($postId, $authorId, $text);
+            $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
         } catch (AException $e) {
             $this->flashMessage('Comment could not be created. Error: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);

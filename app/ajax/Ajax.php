@@ -8,11 +8,19 @@ chdir('..');
 require_once('app/app_loader.php');
 
 function httpGet(mixed $key) {
-    return htmlspecialchars($_GET[$key]);
+    if(isset($_GET[$key])) {
+        return htmlspecialchars($_GET[$key]);
+    } else {
+        return null;
+    }
 }
 
 function httpPost(mixed $key) {
-    return htmlspecialchars($_POST[$key]);
+    if(isset($_POST[$key])) {
+        return htmlspecialchars($_POST[$key]);
+    } else {
+        return null;
+    }
 }
 
 $currentUserId = null;

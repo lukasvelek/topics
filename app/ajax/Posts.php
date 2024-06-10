@@ -1,6 +1,8 @@
 <?php
 
 use App\Components\PostLister\PostLister;
+use App\Entities\PostCommentEntity;
+use App\UI\FormBuilder\FormBuilder;
 
 require_once('Ajax.php');
 
@@ -93,23 +95,7 @@ function loadCommentsForPost() {
     }
 
     foreach($comments as $comment) {
-        $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
-
-        $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
-        $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
-
-        $tmp = [
-            '<div class="row" id="post-comment-' . $comment->getId() . '">',
-            '<div class="col-md">',
-            '<p class="post-text">' . $comment->getText() . '</p>',
-            '<hr>',
-            '<p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>',
-            ' | Author: ' . $userProfileLink . '</p>',
-            '</div></div><br>'
-        ];
-
-        $code[] = implode('', $tmp);
+        $code[] = _createPostComment($postId, $comment);
     }
 
     if(($offset + $limit) >= $commentCount) {
@@ -144,6 +130,60 @@ function likePostComment() {
     $link = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
     return json_encode(['link' => $link, 'likes' => $likes]);
+}
+
+function createNewPostCommentForm() {
+    $postId = httpGet('postId');
+    $parentCommentId = httpGet('parentCommentId');
+
+    $fb = new FormBuilder();
+
+    $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId])
+        ->addTextArea('text', 'Comment:', null, true)
+        ->addSubmit('Post')
+    ;
+
+    return json_encode(['code' => $fb->render()]);
+}
+
+function _createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
+    global $app;
+
+    $author = $app->userRepository->getUserById($comment->getAuthorId());
+    $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+
+    $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
+    $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+
+    $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
+    $childCommentsCode = [];
+
+    if(!empty($childComments)) {
+        foreach($childComments as $cc) {
+            $childCommentsCode[] = _createPostComment($postId, $cc, false);
+        }
+    }
+
+    $code = '
+        <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
+            ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+            <div class="col-md">
+                <div>
+                    <p class="post-text">' . $comment->getText() . '</p>
+                    <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
+                                          | Author: ' . $userProfileLink . '
+                    </p>
+                    <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
+                </div>
+                <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                ' . implode('', $childCommentsCode) .  '
+                ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+            </div>
+        </div>
+        <br>
+    ';
+
+    return $code;
 }
 
 exit;

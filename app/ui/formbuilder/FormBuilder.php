@@ -25,7 +25,9 @@ class FormBuilder implements IRenderable {
         $tmp = [];
 
         foreach($action as $k => $v) {
-            $tmp[] = $k . '=' . $v;
+            if($v !== null) {
+                $tmp[] = $k . '=' . $v;
+            }
         }
 
         $url = '?' . implode('&', $tmp);

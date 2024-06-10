@@ -126,10 +126,18 @@ div[class^="fm-"], div[class*="fm-"] {
     font-size: 16px;
 
     color: black;
+
+    text-align: left;
 }
 
 .post-like, .post-data-link {
     color: black;
 
     text-decoration: underline;
+
+    text-align: left;
+}
+
+.post-comment-border {
+    border-left: 1px solid lightgrey;
 }
