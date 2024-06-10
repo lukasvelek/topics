@@ -225,6 +225,17 @@ class PostRepository extends ARepository {
 
         return PostEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getPostCountForUserId(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt'])
+            ->from('posts')
+            ->where('authorId = ?', [$userId])
+            ->execute();
+
+        return $qb->fetch('cnt') ?? 0;
+    }
 }
 
 ?>

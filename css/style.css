@@ -116,10 +116,19 @@ div[class^="fm-"], div[class*="fm-"] {
     text-decoration: underline;
 }
 
-.post-text {
+.post-text, .post-text-link {
     font-size: 18px;
 
     text-align: left;
+}
+
+.post-text-link {
+    color: darkgrey;
+    text-decoration: none;
+}
+
+.post-text-link:hover {
+    text-decoration: underline;
 }
 
 .post-data {

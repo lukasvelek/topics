@@ -60,6 +60,24 @@ class PostsPresenter extends APresenter {
         $text = $this->httpPost('text');
         $parentCommentId = $this->httpGet('parentCommentId');
 
+        $matches = [];
+        preg_match_all("/[@]\w*/m", $text, $matches);
+
+        $matches = $matches[0];
+
+        $users = [];
+        foreach($matches as $match) {
+            $username = substr($match, 1);
+            $user = $app->userRepository->getUserByUsername($username);
+            $link = '<a class="post-text-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">@' . $username . '</a>';
+            
+            $users[$match] = $link;
+        }
+
+        foreach($users as $k => $v) {
+            $text = str_replace($k, $v, $text);
+        }
+
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
         } catch (AException $e) {

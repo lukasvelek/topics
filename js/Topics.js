@@ -1,3 +1,7 @@
+async function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
 function closeFlashMessage(_id) {
     $("#" + _id).remove();
 }
@@ -106,4 +110,15 @@ function hideNewCommentForm(_commentId, _userId, _postId) {
     $(divId).html("");
     $(linkId).attr('onclick', 'createNewCommentForm(' + _commentId + ', ' + _userId + ', ' + _postId + ')');
     $(linkId).html("Add comment");
+}
+
+async function autoHideFlashMessage(_divId) {
+    const sleepLength = 500; // 5s
+
+    for(var s = 1; s <= sleepLength; s++) {
+        $("#" + _divId + "-progress-bar").css("width", "" + (100 / sleepLength * s) + "%")
+        await sleep((sleepLength / sleepLength));
+    }
+
+    closeFlashMessage(_divId);
 }

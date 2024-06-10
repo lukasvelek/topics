@@ -67,6 +67,17 @@ class UserRepository extends ARepository {
         
         return $loginHash;
     }
+
+    public function getUserByUsername(string $username) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('username = ?', [$username])
+            ->execute();
+
+        return UserEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
