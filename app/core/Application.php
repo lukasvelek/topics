@@ -73,7 +73,9 @@ class Application {
             // login
             $this->currentUser = $this->userRepository->getUserById($_SESSION['userId']);
         } else {
-            $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+            if((!isset($_GET['page']) || (isset($_GET['page']) && $_GET['page'] != 'UserModule:Logout')) && !isset($_SESSION['is_logging_in'])) {
+                $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+            }
         }
 
         echo $this->render();
@@ -98,6 +100,10 @@ class Application {
         $url .= implode('&', $tmp);
 
         return $url;
+    }
+
+    public function flashMessage(string $text, string $type = 'info') {
+        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
     
     private function render() {
