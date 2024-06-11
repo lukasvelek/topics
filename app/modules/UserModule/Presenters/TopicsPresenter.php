@@ -2,10 +2,10 @@
 
 namespace App\Modules\UserModule;
 
+use App\Core\CacheManager;
 use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
-use Exception;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -33,8 +33,13 @@ class TopicsPresenter extends APresenter {
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
         $postCount = $app->postRepository->getPostCountForTopicId($topicId);
 
+        $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
+        $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
+        $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
+        $isManager = $app->currentUser->getId() == $topic->getManagerId();
+
         $code = '
-            <p class="post-data">Followers: ' . count($topicFollowers) . '</p>
+            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . $topic->getDateCreated() . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
@@ -96,10 +101,12 @@ class TopicsPresenter extends APresenter {
         $topicCode = '';
         if(!empty($topics)) {
             foreach($topics as $topic) {
+                $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
+
                 $tmp = '
                     <div class="row">
                         <div class="col-md">
-                            <p class="topic-title">' . $topic->getTitle() . '</p>
+                            ' . $topicLink . '
                         </div>
                     </div>
                 ';
@@ -111,7 +118,7 @@ class TopicsPresenter extends APresenter {
                 <div class="row">
                     <div class="col-md">
                         <p class="topic-title">No topics found. :(</p>
-                        <p class="topic-title">But you can <a class="topic-title-link" href="?page=UserModule:Topics&action=form">start a new one</a>!</p>
+                        <p class="topic-title">But you can <a class="topic-title-link" href="?page=UserModule:Topics&action=form&title=' . $query . '">start a new one</a>!</p>
                     </div>
                 </div>
             ';
@@ -140,18 +147,23 @@ class TopicsPresenter extends APresenter {
             try {
                 $app->topicRepository->createNewTopic($app->currentUser->getId(), $title, $description);
                 $topicId = $app->topicRepository->getLastTopicIdForManagerId($app->currentUser->getId());
+                $app->topicRepository->followTopic($app->currentUser->getId(), $topicId);
+
+                CacheManager::invalidateCache('topics');
             } catch(AException $e) {
                 $this->flashMessage('Could not create a new topic. Reason: ' . $e->getMessage(), 'error');
-                $app->redirect(['page' => 'UserMOdule:Topics', 'action' => 'discover']);
+                $app->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
             }
 
             $this->flashMessage('Topic \'' . $title . '\' created.', 'success');
             $app->redirect(['page' => 'UserModule:Topics&action=profile&topicId=' . $topicId]);
         } else {
+            $title = $this->httpGet('title');
+
             $fb = new FormBuilder();
 
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'form', 'isSubmit' => '1'])
-                ->addTextInput('title', 'Title:', null, true)
+                ->addTextInput('title', 'Title:', $title, true)
                 ->addTextArea('description', 'Description:', null, true)
                 ->addSubmit('Create topic');
 

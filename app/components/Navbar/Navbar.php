@@ -40,8 +40,14 @@ class Navbar {
     private function createSearchBar() {
         global $app;
 
+        $query = '';
+
+        if(isset($_GET['q'])) {
+            $query = ' value="' . htmlspecialchars($_GET['q']) . '"';
+        }
+
         $code = '
-            <input type="text" name="searchQuery" id="searchQuery" placeholder="Search topics...">
+            <input type="text" name="searchQuery" id="searchQuery" placeholder="Search topics..."' . $query . '>
             <button type="button" onclick="doSearch(' . $app->currentUser->getId() . ')">Search</button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';

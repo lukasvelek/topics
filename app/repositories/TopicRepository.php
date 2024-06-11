@@ -133,6 +133,48 @@ class TopicRepository extends ARepository {
 
         return $result;
     }
+
+    public function checkFollow(int $userId, int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['followId'])
+            ->from('user_topic_follows')
+            ->where('userId = ?', [$userId])
+            ->andWhere('topicId = ?', [$topicId])
+            ->execute();
+
+        return !($qb->fetch('followId') === null);
+    }
+
+    public function followTopic(int $userId, int $topicId) {
+        if($this->checkFollow($userId, $topicId)) {
+            return false;
+        }
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('user_topic_follows', ['userId', 'topicId'])
+            ->values([$userId, $topicId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function unfollowTopic(int $userId, int $topicId) {
+        if(!$this->checkFollow($userId, $topicId)) {
+            return false;
+        }
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('user_topic_follows')
+            ->where('userId = ?', [$userId])
+            ->andWhere('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
