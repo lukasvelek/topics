@@ -8,11 +8,13 @@ class Navbar {
     private array $links;
     private TemplateObject $template;
     private bool $hideSearchBar;
+    private bool $hasCustomLinks;
 
     public function __construct() {
         $this->links = [];
         $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template.html'));
         $this->hideSearchBar = false;
+        $this->hasCustomLinks = false;
 
         $this->getLinks();
     }
@@ -23,6 +25,7 @@ class Navbar {
 
     public function setCustomLinks(array $links) {
         $this->links = $links;
+        $this->hasCustomLinks = true;
     }
 
     private function getLinks() {
@@ -38,7 +41,7 @@ class Navbar {
             $linksCode .= $this->createLink($link, $title);
         }
 
-        if($app->currentUser->isAdmin()) {
+        if($this->hasCustomLinks !== true && $app->currentUser->isAdmin()) {
             $linksCode .= $this->createLink(NavbarLinks::ADMINISTRATION, 'administration');
         }
 
