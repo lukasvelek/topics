@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
 class DatabaseInstaller {
@@ -19,6 +20,7 @@ class DatabaseInstaller {
 
         $this->createTables();
         $this->createUsers();
+        $this->createSystems();
 
         $this->logger->info('Database installation finished.', __METHOD__);
     }
@@ -74,6 +76,13 @@ class DatabaseInstaller {
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
                 'commentId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL'
+            ],
+            'system_status' => [
+                'systemId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'name' => 'VARCHAR(256) NOT NULL',
+                'status' => 'INT(4) NOT NULL',
+                'description' => 'TEXT NULL',
+                'dateUpdated' => 'DATETIME NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()'
             ]
         ];
 
@@ -120,6 +129,27 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Created ' . $i . ' users.', __METHOD__);
+    }
+
+    private function createSystems() {
+        $this->logger->info('Creating systems.', __METHOD__);
+
+        $systems = [
+            'Core' => SystemStatus::ONLINE
+        ];
+
+        $i = 0;
+        foreach($systems as $name => $status) {
+            $sql = 'INSERT INTO system_status (`name`, `status`)
+                    SELECT \'' . $name . '\', \'' . $status . '\'
+                    WHERE NOT EXISTS (SELECT 1 FROM system_status WHERE name = \'' . $name . '\')';
+
+            $this->db->query($sql);
+
+            $i++;
+        }
+
+        $this->logger->info('Created ' . $i . ' systems.', __METHOD__);
     }
 }
 

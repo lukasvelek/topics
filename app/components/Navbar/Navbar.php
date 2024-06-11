@@ -7,12 +7,22 @@ use App\Modules\TemplateObject;
 class Navbar {
     private array $links;
     private TemplateObject $template;
+    private bool $hideSearchBar;
 
     public function __construct() {
         $this->links = [];
         $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template.html'));
+        $this->hideSearchBar = false;
 
         $this->getLinks();
+    }
+
+    public function hideSearchBar(bool $hide = true) {
+        $this->hideSearchBar = $hide;
+    }
+
+    public function setCustomLinks(array $links) {
+        $this->links = $links;
     }
 
     private function getLinks() {
@@ -30,11 +40,20 @@ class Navbar {
 
         $this->template->links = $linksCode;
 
-        $profileLinkArray = NavbarLinks::USER_PROFILE;
-        $profileLinkArray['userId'] = $app->currentUser->getId();
+        if($app->currentUser !== null) {
+            $profileLinkArray = NavbarLinks::USER_PROFILE;
+            $profileLinkArray['userId'] = $app->currentUser->getId();
 
-        $this->template->user_info = [$this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
-        $this->template->search_bar = $this->createSearchBar();
+            $this->template->user_info = [$this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+        } else {
+            $this->template->user_info = '';
+        }
+        
+        if($this->hideSearchBar || $app->currentUser === null) {
+            $this->template->search_bar = '';
+        } else {
+            $this->template->search_bar = $this->createSearchBar();
+        }
     }
 
     private function createSearchBar() {

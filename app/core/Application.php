@@ -10,6 +10,7 @@ use App\Logger\Logger;
 use App\Modules\ModuleManager;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
+use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
 
@@ -32,6 +33,7 @@ class Application {
     public TopicRepository $topicRepository;
     public PostRepository $postRepository;
     public PostCommentRepository $postCommentRepository;
+    public SystemStatusRepository $systemStatusRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -56,6 +58,7 @@ class Application {
         $this->topicRepository = new TopicRepository($this->db, $this->logger);
         $this->postRepository = new PostRepository($this->db, $this->logger);
         $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
+        $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository);
 

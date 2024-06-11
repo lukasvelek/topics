@@ -167,3 +167,7 @@ div[class^="fm-"], div[class*="fm-"] {
 .topic-title-link:hover {
     color: cadetblue;
 }
+
+.system-status-item {
+    font-size: 25px;
+}
