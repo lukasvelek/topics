@@ -171,3 +171,11 @@ div[class^="fm-"], div[class*="fm-"] {
 .system-status-item {
     font-size: 25px;
 }
+
+.changelog-title {
+    font-size: 25px;
+}
+
+.changelog-item {
+    font-size: 20px;
+}
