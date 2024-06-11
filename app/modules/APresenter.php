@@ -3,10 +3,8 @@
 namespace App\Modules;
 
 use App\Core\CacheManager;
-use App\Core\CookieManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\TemplateDoesNotExistException;
-use Exception;
 
 abstract class APresenter {
     private array $params;
