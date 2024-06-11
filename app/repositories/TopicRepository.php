@@ -5,9 +5,7 @@ namespace App\Repositories;
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicEntity;
-use App\Exceptions\AException;
 use App\Exceptions\CouldNotFetchLastEntityIdException;
-use App\Exceptions\TopicFollowExistsException;
 use App\Logger\Logger;
 
 class TopicRepository extends ARepository {
@@ -176,6 +174,26 @@ class TopicRepository extends ARepository {
             ->execute();
 
         return $qb->fetch();
+    }
+
+    public function getNotFollowedTopics(int $userId, array $followedTopics = []) {
+        $qb = $this->qb(__METHOD__);
+        
+        if(empty($followedTopics)) {
+            $followedTopics = $this->getFollowedTopicIdsForUser($userId);
+        }
+
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where($qb->getColumnNotInValues('topicId', $followedTopics))
+            ->execute();
+
+        $topics = [];
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        return $topics;
     }
 }
 

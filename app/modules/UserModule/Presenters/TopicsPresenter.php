@@ -212,16 +212,27 @@ class TopicsPresenter extends APresenter {
         $followedTopics = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
 
         $code = [];
-        foreach($followedTopics as $topicId) {
-            $topic = $app->topicRepository->getTopicById($topicId);
 
+        if(!empty($followedTopics)) {
+            foreach($followedTopics as $topicId) {
+                $topic = $app->topicRepository->getTopicById($topicId);
+    
+                $code[] = '
+                    <div class="row">
+                        <div class="col-md">
+                            <a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>
+                        </div>
+                    </div>
+                    <hr>
+                ';
+            }
+        } else {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>
+                        <p class="post-text">No data found.</p>
                     </div>
                 </div>
-                <hr>
             ';
         }
 
@@ -230,7 +241,44 @@ class TopicsPresenter extends APresenter {
 
     public function renderFollowed() {
         $topics = $this->loadFromPresenterCache('topics');
+        $this->template->topics = $topics;
+    }
 
+    public function handleDiscover() {
+        global $app;
+
+        $notFollowedTopics = $app->topicRepository->getNotFollowedTopics($app->currentUser->getId());
+
+        $code = [];
+
+        if(!empty($notFollowedTopics)) {
+            foreach($notFollowedTopics as $topic) {
+                $topicId = $topic->getId();
+    
+                $code[] = '
+                    <div class="row">
+                        <div class="col-md">
+                            <a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>
+                        </div>
+                    </div>
+                    <hr>
+                ';
+            }
+        } else {
+            $code[] = '
+                <div class="row">
+                    <div class="col-md">
+                        <p class="post-text">No data found.</p>
+                    </div>
+                </div>
+            ';
+        }
+
+        $this->saveToPresenterCache('topics', implode('', $code));
+    }
+
+    public function renderDiscover() {
+        $topics = $this->loadFromPresenterCache('topics');
         $this->template->topics = $topics;
     }
 }
