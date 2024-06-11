@@ -83,6 +83,14 @@ class DatabaseInstaller {
                 'status' => 'INT(4) NOT NULL',
                 'description' => 'TEXT NULL',
                 'dateUpdated' => 'DATETIME NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()'
+            ],
+            'user_suggestions' => [
+                'suggestionId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'category' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
