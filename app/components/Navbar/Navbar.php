@@ -38,6 +38,10 @@ class Navbar {
             $linksCode .= $this->createLink($link, $title);
         }
 
+        if($app->currentUser->isAdmin()) {
+            $linksCode .= $this->createLink(NavbarLinks::ADMINISTRATION, 'administration');
+        }
+
         $this->template->links = $linksCode;
 
         if($app->currentUser !== null) {
