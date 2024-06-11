@@ -10,6 +10,7 @@ use App\Logger\Logger;
 use App\Modules\ModuleManager;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
+use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
@@ -34,6 +35,7 @@ class Application {
     public PostRepository $postRepository;
     public PostCommentRepository $postCommentRepository;
     public SystemStatusRepository $systemStatusRepository;
+    public SuggestionRepository $suggestionRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -59,6 +61,7 @@ class Application {
         $this->postRepository = new PostRepository($this->db, $this->logger);
         $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
         $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
+        $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository);
 
@@ -85,7 +88,14 @@ class Application {
     }
 
     public function redirect(array $urlParams) {
-        $url = $this->composeURL($urlParams);
+        $url = '';
+
+        if(empty($urlParams)) {
+            $url = '?';
+        } else {
+            $url = $this->composeURL($urlParams);
+        }
+
 
         header('Location: ' . $url);
         exit;

@@ -2,8 +2,6 @@
 
 namespace App\UI\FormBuilder;
 
-use App\UI\IRenderable;
-
 class Select extends AElement {
     public function __construct(string $name, array $options = []) {
         $content = $this->processOptions($options);
@@ -35,6 +33,10 @@ class Select extends AElement {
         }
 
         return $code;
+    }
+
+    public function setDisabled($disabled = true) {
+        $this->disabled = $disabled;
     }
 }
 

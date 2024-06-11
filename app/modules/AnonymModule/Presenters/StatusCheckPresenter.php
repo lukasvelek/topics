@@ -30,7 +30,7 @@ class StatusCheckPresenter extends APresenter {
                 <div class="row">
                     <div class="col-md">
                         <div class="system-status-item">
-                            <p>' . $status->getName() . '</p>
+                            <p class="system-status-item-title">' . $status->getName() . '</p>
                             <span style="font-size: 18px"><span style="color: ' . $color . '; font-size: 25px">&#x25cf;</span> ' . $statusText . '</span>
                             ' . $description . '
                         </div>

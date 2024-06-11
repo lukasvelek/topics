@@ -61,7 +61,7 @@ abstract class APresenter {
         }
     }
 
-    protected function redirect(array $url) {
+    protected function redirect(array $url = []) {
         global $app;
 
         $app->redirect($url);

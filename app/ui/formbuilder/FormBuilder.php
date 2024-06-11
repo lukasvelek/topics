@@ -108,6 +108,8 @@ class FormBuilder implements IRenderable {
 
     public function addElement(string $name, IRenderable $object) {
         $this->elements[$name] = $object;
+
+        return $this;
     }
 
     public function render() {

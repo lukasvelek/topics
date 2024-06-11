@@ -99,6 +99,10 @@ abstract class AModule {
          */
 
         // flash messages must be last
+        if(isset($_GET['page']) && $_GET['page'] == 'AnonymModule:Login' && isset($_GET['action']) && $_GET['action'] == 'checkLogin') {
+            return;
+        }
+
         $flashMessages = CacheManager::loadFlashMessages();
 
         if($flashMessages === null) {
