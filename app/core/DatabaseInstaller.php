@@ -35,7 +35,8 @@ class DatabaseInstaller {
                 'password' => 'VARCHAR(256) NOT NULL',
                 'loginHash' => 'VARCHAR(256) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'email' => 'VARCHAR(256) NULL'
+                'email' => 'VARCHAR(256) NULL',
+                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'topics' => [
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
