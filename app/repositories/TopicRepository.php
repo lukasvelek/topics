@@ -5,7 +5,9 @@ namespace App\Repositories;
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicEntity;
+use App\Exceptions\AException;
 use App\Exceptions\CouldNotFetchLastEntityIdException;
+use App\Exceptions\TopicFollowExistsException;
 use App\Logger\Logger;
 
 class TopicRepository extends ARepository {
@@ -143,7 +145,7 @@ class TopicRepository extends ARepository {
             ->andWhere('topicId = ?', [$topicId])
             ->execute();
 
-        return !($qb->fetch('followId') === null);
+        return $qb->fetch('followId') !== null;
     }
 
     public function followTopic(int $userId, int $topicId) {

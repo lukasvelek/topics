@@ -22,6 +22,10 @@ class TemplateObject {
 
     public function render() {
         foreach($this->__values as $__value) {
+            if($this->$__value === null) {
+                continue;
+            }
+
             $upperValue = strtoupper($__value);
 
             if($this->$__value instanceof TemplateObject) {
@@ -36,6 +40,10 @@ class TemplateObject {
     }
 
     public function replace(string $key, string|array $value, string $object) {
+        if($value === null) {
+            return false;
+        }
+
         if(is_array($value)) {
             $tmp = '';
 

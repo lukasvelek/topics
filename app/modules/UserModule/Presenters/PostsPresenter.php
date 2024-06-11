@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -38,6 +39,25 @@ class PostsPresenter extends APresenter {
         $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
 
         $this->saveToPresenterCache('topic', $topicLink);
+
+        // post data
+        $likes = $post->getLikes();
+        $likeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=like&postId=' . $postId . '">Like</a>';
+        $unlikeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=unlike&postId=' . $postId . '">Unlike</a>';
+        $liked = $app->postRepository->checkLike($app->currentUser->getId(), $postId);
+
+        $author = $app->userRepository->getUserById($post->getAuthorId());
+        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
+
+        $postData = '
+            <div>
+                <p class="post-data">Likes: ' . $likes . ' ' . ($liked ? $unlikeLink : $likeLink) . '</p>
+                <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                <p class="post-data">Author: ' . $authorLink . '</p>
+            </div>
+        ';
+
+        $this->saveToPresenterCache('postData', $postData);
     }
 
     public function renderProfile() {
@@ -45,11 +65,13 @@ class PostsPresenter extends APresenter {
         $comments = $this->loadFromPresenterCache('comments');
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topic');
+        $postData = $this->loadFromPresenterCache('postData');
 
         $this->template->post_title = $topicLink . ' | ' . $post->getTitle();
         $this->template->post_text = $post->getText();
         $this->template->latest_comments = $comments;
         $this->template->new_comment_form = $form->render();
+        $this->template->post_data = $postData;
     }
 
     public function handleNewComment() {

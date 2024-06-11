@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Core\CacheManager;
 use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -41,7 +42,7 @@ class TopicsPresenter extends APresenter {
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
-            <p class="post-data">Topic started on: ' . $topic->getDateCreated() . '</p>
+            <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
         ';
 
@@ -173,6 +174,36 @@ class TopicsPresenter extends APresenter {
 
     public function renderForm() {
         $this->template->form = $this->loadFromPresenterCache('form')->render();
+    }
+
+    public function handleFollow() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        if($app->topicRepository->followTopic($app->currentUser->getId(), $topicId) !== false) {
+            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' followed.', 'success');
+        } else {
+            $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'', 'error');
+        }
+
+        $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+    }
+
+    public function handleUnfollow() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        if($app->topicRepository->unfollowTopic($app->currentUser->getId(), $topicId) !== false) {
+            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' unfollowed.', 'success');
+        } else {
+            $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'', 'error');
+        }
+
+        $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 }
 
