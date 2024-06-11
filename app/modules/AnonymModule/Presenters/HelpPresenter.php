@@ -4,6 +4,7 @@ namespace App\Modules\AnonymModule;
 
 use App\Constants\SuggestionCategory;
 use App\Exceptions\AException;
+use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
@@ -34,9 +35,11 @@ class HelpPresenter extends APresenter {
             $app->flashMessage('Suggestion created. Thank you :)', 'success');
             $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
         } else {
-            if($this->httpGet('userId') === null) {
+            try {
+                $this->httpGet('userId', true);
+            } catch(AException $e) {
                 $this->flashMessage('No user specified. Please try again.', 'error');
-                $this->redirect();
+                $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
             }
             
             $user = $app->currentUser;

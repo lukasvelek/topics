@@ -4,6 +4,7 @@ namespace App\Modules;
 
 use App\Core\CacheManager;
 use App\Exceptions\ActionDoesNotExistException;
+use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 
 abstract class APresenter {
@@ -45,11 +46,15 @@ abstract class APresenter {
         CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
 
-    protected function httpGet(string $key) {
+    protected function httpGet(string $key, bool $throwException = false) {
         if(isset($_GET[$key])) {
             return htmlspecialchars($_GET[$key]);
         } else {
-            return null;
+            if($throwException) {
+                throw new RequiredAttributeIsNotSetException($key, '$_GET');
+            } else {
+                return null;
+            }
         }
     }
 
