@@ -8,7 +8,7 @@ use QueryBuilder\QueryBuilder;
 
 abstract class ARepository {
     private DatabaseConnection $conn;
-    private Logger $logger;
+    protected Logger $logger;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;

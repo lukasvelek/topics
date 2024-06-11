@@ -2,7 +2,7 @@ body {
     overflow-x: hidden;
 }
 
-#form input, #form select {
+#form input, #form select, #form textarea {
     width: 100%;
 
     padding: 5px;
@@ -17,22 +17,34 @@ body {
 }
 
 #flash-messages {
-    width: 100%;
+    position: absolute;
+    z-index: 9999;
+    
+    width: 90%;
+    
+    margin-left: 5%;
+    margin-top: 15px;
 }
 
 .fm-info {
     color: blue;
     background-color: rgb(100, 150, 250);
+
+    border: 1px solid blue;
 }
 
 .fm-error {
     color: rgb(140, 0, 0);
     background-color: rgb(255, 100, 100);
+
+    border: 1px solid rgb(140, 0, 0);
 }
 
 .fm-success {
-    color: green;
+    color: rgb(1, 80, 1);
     background-color: rgb(100, 200, 100);
+
+    border: 1px solid rgb(1, 80, 1);
 }
 
 div[class^="fm-"], div[class*="fm-"] {
@@ -40,9 +52,130 @@ div[class^="fm-"], div[class*="fm-"] {
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 5px;
-    
-    margin: 10px;
 
     border-radius: 5px;
-    border: 1px solid rgb(140, 0, 0);
+}
+
+.fm-link:hover {
+    color: black;
+}
+
+#left {
+    text-align: left;
+}
+
+#center {
+    text-align: center;
+}
+
+#right {
+    text-align: right;
+}
+
+#navbar {
+    background-color: black;
+
+    color: white;
+
+    font-size: 20px;
+
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+}
+
+.navbar-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+#left .navbar-link {
+    margin-right: 5px;
+}
+
+#right .navbar-link {
+    margin-left: 5px;
+}
+
+.post-title, .post-title-link, .post-title-link-smaller {
+    font-size: 24px;
+
+    color: black;
+}
+
+.post-title-link-smaller {
+    font-size: 20px;
+}
+
+.post-title-link {
+    text-decoration: underline;
+}
+
+.post-text, .post-text-link {
+    font-size: 18px;
+
+    text-align: left;
+}
+
+.post-text-link {
+    color: darkgrey;
+    text-decoration: none;
+}
+
+.post-text-link:hover {
+    text-decoration: underline;
+}
+
+.post-data {
+    font-size: 16px;
+
+    color: black;
+
+    text-align: left;
+}
+
+.post-like, .post-data-link {
+    color: black;
+
+    text-decoration: underline;
+
+    text-align: left;
+}
+
+.post-comment-border {
+    border-left: 1px solid lightgrey;
+}
+
+.footer-link {
+    color: black;
+}
+
+.topic-title {
+    font-size: 16px;
+    color: black;
+}
+
+.topic-title-link {
+    color: black;
+}
+
+.topic-title-link:hover {
+    color: cadetblue;
+}
+
+.system-status-item-title {
+    font-size: 25px;
+}
+
+.changelog-title {
+    font-size: 25px;
+}
+
+.changelog-item {
+    font-size: 20px;
 }

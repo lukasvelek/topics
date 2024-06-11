@@ -35,8 +35,12 @@ abstract class AException extends Exception {
             $args = $t['args'];
             $argString = '[]';
 
-            if(count($args) > 1) {
-                $argString = '[\'' . implode('\', \'', $args) . '\']';
+            if(!is_array($args) || (count($args) > 1 && is_object($args[0]))) {
+                $argString = '[\'' . var_export($args, true) . '\']';
+            } else {
+                if(count($args) > 1) {
+                    $argString = '[\'' . implode('\', \'', $args) . '\']';
+                }
             }
 
             $line = '#' . $i . ' Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '() with args ' . $argString;

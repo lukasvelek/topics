@@ -8,9 +8,13 @@ class Label implements IRenderable {
     private string $text;
     private ?string $for;
 
-    public function __construct(string $text, ?string $for = null) {
+    public function __construct(string $text, ?string $for = null, bool $required = false) {
         $this->text = $text;
         $this->for = $for;
+
+        if($required === true) {
+            $this->text .= ' <span style="color: red">*</span>';
+        }
     }
 
     public function render() {

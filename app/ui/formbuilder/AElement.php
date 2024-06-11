@@ -29,7 +29,7 @@ abstract class AElement implements IRenderable {
         $elements = [];
 
         foreach($this->__elements as $element) {
-            if(in_array($element, ['content', 'input', 'select', 'option', 'label'])) continue;
+            if(in_array($element, ['content', 'input', 'select', 'option', 'label', 'textarea'])) continue;
 
             $value = $this->$element;
 
@@ -43,7 +43,7 @@ abstract class AElement implements IRenderable {
         $code .= implode(' ', $elements) . '>';
 
         
-        if(in_array($this->__name, ['select', 'label', 'option'])) {
+        if(in_array($this->__name, ['select', 'label', 'option', 'textarea'])) {
             $code .= $this->content . '</' . $this->__name . '>';
         }
 

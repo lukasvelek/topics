@@ -11,6 +11,7 @@ class Logger implements ILoggerCallable {
     public const LOG_WARNING = 'warning';
     public const LOG_ERROR = 'error';
     public const LOG_SQL = 'sql';
+    public const LOG_STOPWATCH = 'stopwatch';
 
     private int $logLevel;
     private int $sqlLogLevel;
@@ -23,6 +24,20 @@ class Logger implements ILoggerCallable {
         $this->sqlLogLevel = $this->cfg['SQL_LOG_LEVEL'];
         $this->logLevel = $this->cfg['LOG_LEVEL'];
         $this->specialFilename = null;
+    }
+
+    public function stopwatch(callable $function, string $method) {
+        $time = time();
+
+        $result = $function();
+
+        $diff = time() - $time;
+
+        $diff = $diff / 1000;
+
+        $this->log($method, 'Time taken: ' . $diff . ' seconds', self::LOG_STOPWATCH);
+
+        return $result;
     }
 
     public function info(string $text, string $method) {
@@ -45,6 +60,7 @@ class Logger implements ILoggerCallable {
         $text = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($type) . '] ' . $method . '(): ' . $text;
 
         switch($type) {
+            case self::LOG_STOPWATCH:
             case self::LOG_INFO:
                 if($this->logLevel >= 3) {
                     $this->writeLog($text);

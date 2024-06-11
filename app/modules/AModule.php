@@ -13,11 +13,15 @@ abstract class AModule {
     protected array $presenters;
 
     private array $flashMessages;
+    protected ?TemplateObject $template;
+    private ?APresenter $presenter;
 
     protected function __construct(string $title) {
         $this->presenters = [];
         $this->title = $title;
         $this->flashMessages = [];
+        $this->template = null;
+        $this->presenter = null;
     }
 
     public function loadPresenters() {
@@ -35,28 +39,23 @@ abstract class AModule {
     }
 
     public function render(string $presenterTitle, string $actionTitle) {
-        $this->beforePresenterRender();
+        $this->beforePresenterRender($presenterTitle, $actionTitle);
 
-        return $this->renderPresenter($presenterTitle, $actionTitle);
+        $this->renderPresenter();
+        $this->renderModule();
+
+        return $this->template->render()->getRenderedContent();
     }
 
-    public function renderPresenter(string $presenterTitle, string $actionTitle) {
-        $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
+    public function renderModule() {}
 
-        $presenter = new $realPresenterTitle();
-        $presenter->setParams(['module' => $this->title]);
-        $presenter->setAction($actionTitle);
-        [$pageContent, $pageTitle] = $presenter->render();
+    public function renderPresenter() {
+        $this->template = $this->presenter->render($this->title);
 
-        return $this->fillLayout($pageContent, $pageTitle, $this->flashMessages);
+        return $this->fillLayout($this->flashMessages);
     }
 
-    private function fillLayout(string $content, string $presenterTitle, array $flashMessages) {
-        $template = $this->getTemplate();
-
-        $template->page_title = $presenterTitle;
-        $template->page_content = $content;
-
+    private function fillLayout(array $flashMessages) {
         $fmCode = '';
 
         if(count($flashMessages) > 0) {
@@ -65,10 +64,7 @@ abstract class AModule {
             }
         }
         
-        $template->flash_messages = $fmCode;
-
-        $template->render();
-        return $template->getRenderedContent();
+        $this->template->sys_flash_messages = $fmCode;
     }
 
     private function getTemplate() {
@@ -88,7 +84,25 @@ abstract class AModule {
         return new TemplateObject($layoutContent);
     }
 
-    private function beforePresenterRender() {
+    private function beforePresenterRender(string $presenterTitle, string $actionTitle) {
+        $this->template = $this->getTemplate();
+
+        $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
+
+        $this->presenter = new $realPresenterTitle();
+        $this->presenter->setTemplate($this->getTemplate());
+        $this->presenter->setParams(['module' => $this->title]);
+        $this->presenter->setAction($actionTitle);
+
+        /**
+         * FLASH MESSAGES
+         */
+
+        // flash messages must be last
+        if(isset($_GET['page']) && $_GET['page'] == 'AnonymModule:Login' && isset($_GET['action']) && $_GET['action'] == 'checkLogin') {
+            return;
+        }
+
         $flashMessages = CacheManager::loadFlashMessages();
 
         if($flashMessages === null) {
@@ -99,7 +113,11 @@ abstract class AModule {
             $type = $flashMessage['type'];
             $text = $flashMessage['text'];
 
-            $code = '<div id="fm-' . count($this->flashMessages) . '" class="fm-' . $type . '"><p class="fm-text">' . $text . '</p></div>';
+            $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . count($this->flashMessages) . '\')">&times;</p>';
+
+            $jsAutoRemoveScript = '<script type="text/javascript">autoHideFlashMessage(\'fm-' . count($this->flashMessages) . '\')</script>';
+
+            $code = '<div id="fm-' . count($this->flashMessages) . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . $removeLink . '</div><div id="fm-' . count($this->flashMessages) . '-progress-bar" style="position: absolute; left: 0; top: 70%; border-bottom: 2px solid black"></div>' . $jsAutoRemoveScript . '</div>';
 
             $this->flashMessages[] = $code;
         }

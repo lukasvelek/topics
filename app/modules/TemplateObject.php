@@ -22,6 +22,10 @@ class TemplateObject {
 
     public function render() {
         foreach($this->__values as $__value) {
+            if($this->$__value === null) {
+                continue;
+            }
+
             $upperValue = strtoupper($__value);
 
             if($this->$__value instanceof TemplateObject) {
@@ -29,12 +33,45 @@ class TemplateObject {
                 $this->$__value = $this->$__value->getRenderedContent();
             }
 
-            $this->__templateContent = str_replace('$' . $upperValue . '$', $this->$__value, $this->__templateContent);
+            $this->replace($upperValue, $this->$__value, $this->__templateContent);
         }
+
+        return $this;
+    }
+
+    public function replace(string $key, string|array $value, string $object) {
+        if($value === null) {
+            return false;
+        }
+
+        if(is_array($value)) {
+            $tmp = '';
+
+            foreach($value as $v) {
+                $tmp .= $v;
+            }
+
+            $value = $tmp;
+        }
+        
+        $this->__templateContent = str_replace('$' . $key . '$', $value, $object);
     }
 
     public function getRenderedContent() {
         return $this->__templateContent;
+    }
+
+    public function getValues() {
+        return $this->__values;
+    }
+
+    public function join(TemplateObject $extendingObject) {
+        $extendingValues = $extendingObject->getValues();
+
+        foreach($extendingValues as $ev) {
+            $this->replace($ev, $extendingObject->$ev, $this->__templateContent);
+            $this->$ev = $extendingObject->$ev;
+        }
     }
 }
 

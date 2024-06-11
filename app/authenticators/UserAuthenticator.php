@@ -20,7 +20,7 @@ class UserAuthenticator {
 
         while($row = $rows->fetchAssoc()) {
             if(password_verify($password, $row['password'])) {
-                $user = UserEntity::createEntity($row);
+                $user = UserEntity::createEntityFromDbRow($row);
 
                 break;
             }
@@ -35,6 +35,10 @@ class UserAuthenticator {
             $this->userRepository->saveLoginHash($user->getId(), $hash);
 
             $_SESSION['loginHash'] = $hash;
+
+            if(isset($_SESSION['is_logging_in'])) {
+                unset($_SESSION['is_logging_in']);
+            }
 
             return true;
         } else {
@@ -56,7 +60,7 @@ class UserAuthenticator {
     }
 
     public function fastAuthUser() {
-        if(isset($_SESSION['userId'], $_SESSION['username'], $_SESSION['loginHash'])) {
+        if(isset($_SESSION['userId']) && isset($_SESSION['username']) && isset($_SESSION['loginHash'])) {
             $dbLoginHash = $this->userRepository->getLoginHashForUserId($_SESSION['userId']);
 
             if($dbLoginHash != $_SESSION['loginHash']) {
@@ -66,7 +70,7 @@ class UserAuthenticator {
                 return true;
             }
         } else {
-            return true;
+            return false;
         }
     }
 }

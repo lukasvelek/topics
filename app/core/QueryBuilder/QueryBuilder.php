@@ -2,6 +2,9 @@
 
 namespace QueryBuilder;
 
+use App\Exceptions\AException;
+use App\Exceptions\DatabaseConnectionException;
+
 /**
  * QueryBuilder allows users to create an SQL query.
  * 
@@ -399,7 +402,11 @@ class QueryBuilder
      * @return self
      */
     public function orderBy(string $key, string $order = 'ASC') {
-        $this->queryData['order'] = ' ORDER BY `' . $key . '` ' . $order;
+        if(array_key_exists('order', $this->queryData)) {
+            $this->queryData['order'] .= ', `' . $key . '` ' . $order;
+        } else {
+            $this->queryData['order'] = ' ORDER BY `' . $key . '` ' . $order;
+        }
 
         return $this;
     }
@@ -521,7 +528,7 @@ class QueryBuilder
      * @return self
      */
     public function execute() {
-        $useSafe = true;
+        $useSafe = false;
 
         if($this->hasCustomSQL) {
             $this->queryResult = $this->conn->query($this->sql);
@@ -547,10 +554,16 @@ class QueryBuilder
             die('QueryBuilder: No connection has been found!');
         }
 
-        if($useSafe && in_array($this->queryType, ['insert'])) {
-            $this->queryResult = $this->conn->query($this->sql, $this->queryData['values']);
-        } else {
-            $this->queryResult = $this->conn->query($this->sql);
+        try {
+            if($useSafe && in_array($this->queryType, ['insert'])) {
+                $this->queryResult = $this->conn->query($this->sql, $this->queryData['values']);
+            } else {
+                $this->queryResult = $this->conn->query($this->sql);
+            }
+        } catch(\mysqli_sql_exception $e) {
+            $this->log();
+            
+            throw new DatabaseConnectionException($e->getMessage());
         }
 
         $this->log();

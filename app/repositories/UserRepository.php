@@ -22,7 +22,7 @@ class UserRepository extends ARepository {
         $entity = CacheManager::loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
 
-            $entity = UserEntity::createEntity($row);
+            $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
         }, 'users');
@@ -66,6 +66,17 @@ class UserRepository extends ARepository {
         }
         
         return $loginHash;
+    }
+
+    public function getUserByUsername(string $username) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('username = ?', [$username])
+            ->execute();
+
+        return UserEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

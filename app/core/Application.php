@@ -3,15 +3,22 @@
 namespace App\Core;
 
 use App\Authenticators\UserAuthenticator;
+use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Modules\ModuleManager;
+use App\Repositories\PostCommentRepository;
+use App\Repositories\PostRepository;
+use App\Repositories\SuggestionRepository;
+use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
 
 class Application {
     private array $modules;
     public array $cfg;
+    public ?UserEntity $currentUser;
 
     private ?string $currentModule;
     private ?string $currentPresenter;
@@ -24,6 +31,11 @@ class Application {
     public UserAuthenticator $userAuth;
 
     public UserRepository $userRepository;
+    public TopicRepository $topicRepository;
+    public PostRepository $postRepository;
+    public PostCommentRepository $postCommentRepository;
+    public SystemStatusRepository $systemStatusRepository;
+    public SuggestionRepository $suggestionRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -34,6 +46,8 @@ class Application {
         $this->currentModule = null;
         $this->currentPresenter = null;
         $this->currentAction = null;
+        
+        $this->currentUser = null;
 
         $this->moduleManager = new ModuleManager();
 
@@ -43,22 +57,45 @@ class Application {
         $this->logger->info('Database connection established', __METHOD__);
         
         $this->userRepository = new UserRepository($this->db, $this->logger);
+        $this->topicRepository = new TopicRepository($this->db, $this->logger);
+        $this->postRepository = new PostRepository($this->db, $this->logger);
+        $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
+        $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
+        $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository);
 
         $this->loadModules();
     }
+
+    public function ajaxRun(int $currentUserId) {
+        $this->currentUser = $this->userRepository->getUserById($currentUserId);
+    }
     
     public function run() {
         $this->getCurrentModulePresenterAction();
 
-        $this->userAuth->fastAuthUser();
+        if($this->userAuth->fastAuthUser()) {
+            // login
+            $this->currentUser = $this->userRepository->getUserById($_SESSION['userId']);
+        } else {
+            if((!isset($_GET['page']) || (isset($_GET['page']) && $_GET['page'] != 'UserModule:Logout')) && !isset($_SESSION['is_logging_in'])) {
+                $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+            }
+        }
 
         echo $this->render();
     }
 
     public function redirect(array $urlParams) {
-        $url = $this->composeURL($urlParams);
+        $url = '';
+
+        if(empty($urlParams)) {
+            $url = '?';
+        } else {
+            $url = $this->composeURL($urlParams);
+        }
+
 
         header('Location: ' . $url);
         exit;
@@ -76,6 +113,10 @@ class Application {
         $url .= implode('&', $tmp);
 
         return $url;
+    }
+
+    public function flashMessage(string $text, string $type = 'info') {
+        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
     
     private function render() {
