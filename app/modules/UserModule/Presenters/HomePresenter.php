@@ -16,12 +16,13 @@ class HomePresenter extends APresenter {
         $followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
         $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($followedTopicIds, 5);
+        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($followedTopicIds, 10);
 
         $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);
+        $postLister->shufflePosts();
         
         $this->saveToPresenterCache('postLister', $postLister);
     }
