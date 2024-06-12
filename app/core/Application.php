@@ -63,7 +63,7 @@ class Application {
         $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
         $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
 
-        $this->userAuth = new UserAuthenticator($this->userRepository);
+        $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger);
 
         $this->loadModules();
     }

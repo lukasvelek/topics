@@ -4,13 +4,17 @@ namespace App\Authenticators;
 
 use App\Core\HashManager;
 use App\Entities\UserEntity;
+use App\Exceptions\BadCredentialsException;
+use App\Logger\Logger;
 use App\Repositories\UserRepository;
 
 class UserAuthenticator {
     private UserRepository $userRepository;
+    private Logger $logger;
 
-    public function __construct(UserRepository $userRepository) {
+    public function __construct(UserRepository $userRepository, Logger $logger) {
         $this->userRepository = $userRepository;
+        $this->logger = $logger;
     }
 
     public function loginUser(string $username, string $password) {
@@ -52,8 +56,13 @@ class UserAuthenticator {
         $result = false;
         while($row = $rows->fetchAssoc()) {
             if(password_verify($password, $row['password'])) {
+                $this->logger->warning('Authenticated user with username \'' . $_SESSION['username'] . '\'.', __METHOD__);
                 $result = true;
             }
+        }
+
+        if($result === false) {
+            throw new BadCredentialsException(null, $_SESSION['username']);
         }
 
         return $result;

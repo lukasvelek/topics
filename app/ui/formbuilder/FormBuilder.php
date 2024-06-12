@@ -2,6 +2,7 @@
 
 namespace App\UI\FormBuilder;
 
+use App\Core\HashManager;
 use App\UI\IRenderable;
 
 class FormBuilder implements IRenderable {
@@ -108,6 +109,14 @@ class FormBuilder implements IRenderable {
 
     public function addElement(string $name, IRenderable $object) {
         $this->elements[$name] = $object;
+
+        return $this;
+    }
+
+    public function addButton(string $text, string $onclickAction) {
+        $b = new Button($text, $onclickAction);
+
+        $this->elements['btn_' . HashManager::createHash()] = $b;
 
         return $this;
     }

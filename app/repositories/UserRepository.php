@@ -111,6 +111,17 @@ class UserRepository extends ARepository {
 
         return $users;
     }
+
+    public function updateUser(int $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('users')
+            ->set($data)
+            ->where('userId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
