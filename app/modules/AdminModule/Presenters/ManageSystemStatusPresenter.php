@@ -70,6 +70,7 @@ class ManageSystemStatusPresenter extends APresenter {
         global $app;
 
         $systemId = $this->httpGet('systemId');
+        $system = $app->systemStatusRepository->getSystemStatusById($systemId);
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $status = $this->httpPost('status');
@@ -79,12 +80,13 @@ class ManageSystemStatusPresenter extends APresenter {
                 $description = null;
             }
 
+            $app->logger->warning('User #' . $app->currentUser->getId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
+
             $app->systemStatusRepository->updateStatus($systemId, $status, ($description === null));
 
             $this->flashMessage('System status updated.', 'success');
             $this->redirect(['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
         } else {
-            $system = $app->systemStatusRepository->getSystemStatusById($systemId);
             $statusArray = [];
             foreach(SystemStatus::getAll() as $code => $text) {
                 $tmp = [
