@@ -75,7 +75,7 @@ class Navbar {
 
         $code = '
             <input type="text" name="searchQuery" id="searchQuery" placeholder="Search topics..."' . $query . '>
-            <button type="button" onclick="doSearch(' . $app->currentUser->getId() . ')">Search</button>
+            <button type="button" style="border: 1px solid black;" onclick="doSearch(' . $app->currentUser->getId() . ')">Search</button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';
 
