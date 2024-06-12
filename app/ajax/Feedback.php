@@ -86,11 +86,13 @@ function getSuggestions() {
         $categoryFilterLink = '<a class="post-data-link" style="color: ' . SuggestionCategory::getColorByKey($suggestion->getCategory()) . '" href="?page=AdminModule:FeedbackSuggestions&action=list&filterType=category&filterKey=' . $suggestion->getCategory() . '">' . SuggestionCategory::toString($suggestion->getCategory()) . '</a>';
         $statusFilterLink = '<a class="post-data-link" style="color: ' . SuggestionStatus::getColorByStatus($suggestion->getStatus()) . '" href="?page=AdminModule:FeedbackSuggestions&action=list&filterType=status&filterKey=' . $suggestion->getStatus() . '">' . SuggestionStatus::toString($suggestion->getStatus()) . '</a>';
         $authorFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackSuggestions&action=list&filterType=user&filterKey=' . $suggestion->getUserId() . '">' . $author->getUsername() . '</a>';
+
+        $suggestionLink = '<a class="post-title-link" href="?page=AdminModule:FeedbackSuggestions&action=profile&suggestionId=' . $suggestion->getId() . '">' . $suggestion->getTitle() . '</a>';
         
         $code[] = '
             <div class="row">
                 <div class="col-md">
-                    <p class="post-title">' . $suggestion->getTitle() . '</p>
+                    <p class="post-title">' . $suggestionLink . '</p>
                     <p class="post-text">' . $suggestion->getShortenedText(100) . '</p>
                     <p class="post-data">Category: ' . $categoryFilterLink . ' Status: ' . $statusFilterLink . ' Author: ' . $authorFilterLink . ' (' . $authorLink . ')</p>
                 </div>
