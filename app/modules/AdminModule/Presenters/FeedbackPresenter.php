@@ -15,6 +15,15 @@ class FeedbackPresenter extends APresenter {
         });
     }
 
+    private function createSidebar() {
+        $sb = new Sidebar();
+        $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard'], true);
+        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list']);
+        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+
+        return $sb->render();
+    }
+
     public function handleDashboard() {
         global $app;
 
@@ -35,14 +44,6 @@ class FeedbackPresenter extends APresenter {
         $widget1 = $this->loadFromPresenterCache('widget1');
 
         $this->template->widget1 = $widget1;
-    }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions&action=list']);
-        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports&action=list']);
-
-        return $sb->render();
     }
 }
 

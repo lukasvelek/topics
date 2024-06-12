@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Constants\SuggestionStatus;
 use App\Core\DatabaseConnection;
+use App\Entities\UserSuggestionEntity;
 use App\Logger\Logger;
 
 class SuggestionRepository extends ARepository {
@@ -36,6 +37,103 @@ class SuggestionRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function getOpenSuggestionsForList(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]));
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $suggestions = [];
+        while($row = $qb->fetchAssoc()) {
+            $suggestions[] = UserSuggestionEntity::createEntityFromDbRow($row);
+        }
+
+        return $suggestions;
+    }
+
+    public function getOpenSuggestionsForListFilterCategory(string $category, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]))
+            ->andWhere('category = ?', [$category]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $suggestions = [];
+        while($row = $qb->fetchAssoc()) {
+            $suggestions[] = UserSuggestionEntity::createEntityFromDbRow($row);
+        }
+
+        return $suggestions;
+    }
+
+    public function getSuggestionsForListFilterStatus(int $status, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where('status = ?', [$status]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $suggestions = [];
+        while($row = $qb->fetchAssoc()) {
+            $suggestions[] = UserSuggestionEntity::createEntityFromDbRow($row);
+        }
+
+        return $suggestions;
+    }
+
+    public function getOpenSuggestionsForListFilterAuthor(int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where('userId = ?', [$userId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $suggestions = [];
+        while($row = $qb->fetchAssoc()) {
+            $suggestions[] = UserSuggestionEntity::createEntityFromDbRow($row);
+        }
+
+        return $suggestions;
     }
 }
 

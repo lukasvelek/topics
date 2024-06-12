@@ -36,6 +36,10 @@ class UserSuggestionEntity implements ICreatableFromRow {
     public function getText() {
         return $this->text;
     }
+    
+    public function getShortenedText(int $length = 32) {
+        return substr($this->text, 0, $length);
+    }
 
     public function getCategory() {
         return $this->category;

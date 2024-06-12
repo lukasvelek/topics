@@ -122,3 +122,23 @@ async function autoHideFlashMessage(_divId) {
 
     closeFlashMessage(_divId);
 }
+
+function loadSuggestions(_limit, _offset, _userId, _filterType, _filterKey) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getSuggestions',
+            filterType: _filterType,
+            filterKey: _filterKey
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#suggestion-list").append(obj.suggestions);
+        $("#suggestion-list-link").html(obj.loadMoreLink);
+    });
+}
