@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\PostEntity;
 use App\Logger\Logger;
@@ -220,10 +221,17 @@ class PostRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('posts')
-            ->where('postId = ?', [$postId])
-            ->execute();
+            ->where('postId = ?', [$postId]);
 
-        return PostEntity::createEntityFromDbRow($qb->fetch());
+        $entity = CacheManager::loadCache($postId, function() use ($qb) {
+            $row = $qb->execute()->fetch();
+
+            $entity = PostEntity::createEntityFromDbRow($row);
+
+            return $entity;
+        }, 'posts');
+
+        return $entity;
     }
 
     public function getPostCountForUserId(int $userId) {
