@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\SuggestionStatus;
 use App\Core\DatabaseConnection;
 use App\Logger\Logger;
 
@@ -18,6 +19,23 @@ class SuggestionRepository extends ARepository {
             ->execute();
         
         return $qb->fetch();
+    }
+
+    public function getOpenSuggestionCount() {
+        $statuses = [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED];
+
+        return $this->getSuggestionCountByStatuses($statuses);
+    }
+
+    public function getSuggestionCountByStatuses(array $statuses) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(suggestionId) AS cnt'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', $statuses))
+            ->execute();
+
+        return $qb->fetch('cnt');
     }
 }
 

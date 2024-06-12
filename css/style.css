@@ -95,11 +95,11 @@ div[class^="fm-"], div[class*="fm-"] {
 }
 
 #left .navbar-link {
-    margin-right: 5px;
+    margin-right: 10px;
 }
 
 #right .navbar-link {
-    margin-left: 5px;
+    margin-left: 10px;
 }
 
 .post-title, .post-title-link, .post-title-link-smaller {
@@ -178,4 +178,20 @@ div[class^="fm-"], div[class*="fm-"] {
 
 .changelog-item {
     font-size: 20px;
+}
+
+.sidebar-link {
+    font-size: 20px;
+
+    color: black;
+
+    text-decoration: none;
+
+    margin-left: 10px;
+}
+
+.system-status-item-link {
+    color: black;
+
+    text-decoration: none;
 }

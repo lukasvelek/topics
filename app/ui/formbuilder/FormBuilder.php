@@ -57,11 +57,11 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
-    public function addSelect(string $name, ?string $label = null, array $options = []) {
+    public function addSelect(string $name, ?string $label = null, array $options = [], bool $required = false) {
         $s = new Select($name, $options);
 
         if($label !== null) {
-            $s = new ElementDuo($s, new Label($label, $name));
+            $s = new ElementDuo($s, new Label($label, $name, $required));
         }
 
         $this->addElement($name, $s);

@@ -41,6 +41,16 @@ class SuggestionCategory {
 
         return $tmp;
     }
+
+    public static function getColorByKey(string $key) {
+        return match($key) {
+            self::BUG => '#bb00bb',
+            self::SECURITY => '#bb0000',
+            self::FUNCTION_REQUEST => '#0000bb',
+            self::PERFORMANCE => '#bbbb00',
+            self::OTHER => '#222222'
+        };
+    }
 }
 
 ?>

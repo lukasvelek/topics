@@ -91,6 +91,15 @@ class DatabaseInstaller {
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'category' => 'VARCHAR(256) NOT NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_suggestion_comments' => [
+                'commentId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'suggestionId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'commentText' => 'TEXT NOT NULL',
+                'adminOnly' => 'INT(2) NOT NULL DEFAULT 1',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];

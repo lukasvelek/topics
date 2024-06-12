@@ -14,7 +14,9 @@ class TextArea extends AElement {
     }
 
     public function setRequired(bool $required = true) {
-        $this->required = $required;
+        if($required === true) {
+            $this->required = null;
+        }
     }
 }
 

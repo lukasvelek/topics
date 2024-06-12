@@ -21,6 +21,7 @@ class Navbar {
 
     public function hideSearchBar(bool $hide = true) {
         $this->hideSearchBar = $hide;
+        $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template-no-searchbar.html'));
     }
 
     public function setCustomLinks(array $links) {
