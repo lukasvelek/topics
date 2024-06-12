@@ -195,3 +195,9 @@ div[class^="fm-"], div[class*="fm-"] {
 
     text-decoration: none;
 }
+
+#grid table {
+    width: 100%;
+
+    text-align: center;
+}

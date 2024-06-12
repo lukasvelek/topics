@@ -25,8 +25,42 @@ class UserEntity implements ICreatableFromRow {
         return $this->username;
     }
 
-    public function getEmail() {
-        return $this->email;
+    public function getEmail(bool $anonymized = false) {
+        if(!$anonymized) {
+            return $this->email;
+        } else {
+            $left = explode('@', $this->email)[0];
+            $right = explode('@', $this->email)[1];
+            $rightLeft = explode('.', $right)[0];
+
+            $result = '';
+
+            for($i = 0; $i < strlen($left); $i++) {
+                if($i < 3) {
+                    $result .= $left[$i];
+                }
+
+                $result .= '*';
+            }
+
+            $result .= '@';
+
+            for($i = 0; $i < strlen($rightLeft); $i++) {
+                if($i < 1) {
+                    $result .= $rightLeft[$i];
+                }
+
+                $result .= '*';
+            }
+
+            for($i = 0; $i < strlen($right); $i++) {
+                if($i < strlen($rightLeft)) continue;
+
+                $result .= $right[$i];
+            }
+
+            return $result;
+        }
     }
 
     public function getDateCreated() {
