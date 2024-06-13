@@ -135,10 +135,13 @@ function getSuggestionComments() {
         $publicLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=1&suggestionId=' . $suggestionId . '">Public</a>';
         $hide = $comment->isAdminOnly() ? $hiddenLink : $publicLink;
 
+        $deleteLink = ' <a class="post-data-link" style="color: red" href="?page=AdminModule:FeedbackSuggestions&action=deleteComment&commentId=' . $comment->getId() . '&suggestionId=' . $suggestionId . '">Delete</a>';
+        $delete = ($app->currentUser->isAdmin() && !$comment->isStatusChange()) ? $deleteLink : '';
+
         $tmp = '
             <div id="comment-' . $comment->getId() . '">
                 <p class="post-data">' . $comment->getText() . '</p>
-                <p class="post-data">Author: ' . $authorLink . ' Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' ' . $hide . '</p>
+                <p class="post-data">Author: ' . $authorLink . ' Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' ' . $hide . '' . $delete . '</p>
             </div>
         ';
 

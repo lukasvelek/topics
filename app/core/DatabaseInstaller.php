@@ -99,7 +99,8 @@ class DatabaseInstaller {
                 'suggestionId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
-                'adminOnly' => 'INT(2) NOT NULL DEFAULT 1',
+                'adminOnly' => 'INT(2) NOT NULL DEFAULT 0',
+                'statusChange' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];

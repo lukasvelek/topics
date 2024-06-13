@@ -9,14 +9,16 @@ class UserSuggestionCommentEntity implements ICreatableFromRow {
     private string $text;
     private bool $adminOnly;
     private string $dateCreated;
+    private bool $statusChange;
 
-    public function __construct(int $id, int $suggestionId, int $userId, string $text, bool $adminOnly, string $dateCreated) {
+    public function __construct(int $id, int $suggestionId, int $userId, string $text, bool $adminOnly, string $dateCreated, bool $statusChange) {
         $this->id = $id;
         $this->suggestionId = $suggestionId;
         $this->userId = $userId;
         $this->text = $text;
         $this->adminOnly = $adminOnly;
         $this->dateCreated = $dateCreated;
+        $this->statusChange = $statusChange;
     }
 
     public function getId() {
@@ -43,8 +45,12 @@ class UserSuggestionCommentEntity implements ICreatableFromRow {
         return $this->dateCreated;
     }
 
+    public function isStatusChange() {
+        return $this->statusChange;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['commentId'], $row['suggestionId'], $row['userId'], $row['commentText'], $row['adminOnly'], $row['dateCreated']);
+        return new self($row['commentId'], $row['suggestionId'], $row['userId'], $row['commentText'], $row['adminOnly'], $row['dateCreated'], $row['statusChange']);
     }
 }
 

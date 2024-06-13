@@ -119,9 +119,9 @@ class FeedbackSuggestionsPresenter extends APresenter {
         $text = $this->httpPost('text');
         $adminOnly = false;
 
-        if( $this->httpPost('adminOnly') !== null &&
-            ($this->httpPost('adminOnly') == '1' || $this->httpPost('adminOnly') == 1) &&
-            $app->currentUser->isAdmin()) {
+        if($this->httpPost('adminOnly') !== null &&
+           $this->httpPost('adminOnly') == 'on' &&
+           $app->currentUser->isAdmin()) {
             $adminOnly = true;
         }
 
@@ -218,6 +218,18 @@ class FeedbackSuggestionsPresenter extends APresenter {
         $app->suggestionRepository->updateComment($commentId, ['adminOnly' => $hidden]);
 
         $this->flashMessage('Comment ' . (($hidden == '1') ? 'hidden' : 'made public') . '.', 'success');
+        $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
+    }
+
+    public function handleDeleteComment() {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $suggestionId = $this->httpGet('suggestionId');
+
+        $app->suggestionRepository->deleteComment($commentId);
+
+        $this->flashMessage('Comment deleted.', 'success');
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 }

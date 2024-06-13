@@ -250,6 +250,17 @@ class SuggestionRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function deleteComment(int $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('user_suggestion_comments')
+            ->where('commentId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
