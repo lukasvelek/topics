@@ -175,14 +175,21 @@ class FormBuilder implements IRenderable {
     public function render() {
         $code = '<form action="' . $this->handlerUrl . '" method="' . $this->method . '">';
 
+        $i = 0;
         foreach($this->elements as $element) {
             if($element instanceof Section) {
                 $code .= $element->render();
             } else if($element instanceof IRenderable) {
-                $code .= $element->render() . '<br><br>';
+                if(($i + 1) == count($this->elements)) {
+                    $code .= $element->render();
+                } else {
+                    $code .= $element->render() . '<br><br>';
+                }
             } else {
                 $code .= $element;
             }
+
+            $i++;
         }
 
         $code .= '</form>';

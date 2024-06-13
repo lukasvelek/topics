@@ -102,6 +102,17 @@ class DatabaseInstaller {
                 'adminOnly' => 'INT(2) NOT NULL DEFAULT 0',
                 'statusChange' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'reports' => [
+                'reportId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'entityId' => 'INT(32) NOT NULL',
+                'entityType' => 'INT(4) NOT NULL',
+                'category' => 'INT(4) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'statusComment' => 'VARCHAR(256) NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

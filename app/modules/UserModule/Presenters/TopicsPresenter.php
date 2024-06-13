@@ -292,7 +292,14 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            
+            $category = $this->httpPost('category');
+            $description = $this->httpPost('description');
+            $userId = $app->currentUser->getId();
+
+            $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
+
+            $this->flashMessage('Topic reported.', 'success');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
             $topic = $app->topicRepository->getTopicById($topicId);
             $this->saveToPresenterCache('topic', $topic);
@@ -309,7 +316,8 @@ class TopicsPresenter extends APresenter {
             $fb = new FormBuilder();
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'reportForm', 'isSubmit' => '1', 'topicId' => $topicId])
                 ->addSelect('category', 'Category:', $categoryArray, true)
-                ->addTextArea('additionalNotes', 'Additional notes:')
+                ->addTextArea('description', 'Additional notes:', null, true)
+                ->addSubmit('Send')
                 ;
 
             $this->saveToPresenterCache('form', $fb);
