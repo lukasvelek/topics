@@ -3,7 +3,9 @@
 namespace App\Repositories;
 
 use App\Constants\ReportEntityType;
+use App\Constants\ReportStatus;
 use App\Core\DatabaseConnection;
+use App\Entities\ReportEntity;
 use App\Logger\Logger;
 
 class ReportRepository extends ARepository {
@@ -27,6 +29,104 @@ class ReportRepository extends ARepository {
 
     public function createPostReport(int $userId, int $postId, int $category, string $description) {
         return $this->createNewReport($userId, $postId, ReportEntityType::POST, $category, $description);
+    }
+
+    public function getOpenReportsForList(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('status = ?', [ReportStatus::OPEN]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $reports;
+    }
+
+    public function getOpenReportsForListFilterUser(int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('status = ?', [ReportStatus::OPEN])
+            ->andWhere('userId = ?', [$userId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $reports;
+    }
+
+    public function getOpenReportsForListFilterCategory(int $category, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('status = ?', [ReportStatus::OPEN])
+            ->andWhere('category = ?', [$category]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $reports;
+    }
+
+    public function getReportsForListFilterStatus(int $status, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('status = ?', [$status]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $reports;
     }
 }
 

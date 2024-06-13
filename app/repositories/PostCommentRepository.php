@@ -209,6 +209,17 @@ class PostCommentRepository extends ARepository {
 
         return $entities;
     }
+
+    public function getCommentById(int $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('commentId = ?', [$id])
+            ->execute();
+
+        return PostCommentEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
