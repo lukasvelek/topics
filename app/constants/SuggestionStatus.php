@@ -28,6 +28,16 @@ class SuggestionStatus {
             self::PLANNED => '#bb0000'
         };
     }
+
+    public static function getAll() {
+        return [
+            self::OPEN => self::toString(self::OPEN),
+            self::RESOLVED => self::toString(self::RESOLVED),
+            self::MORE_INFORMATION_NEEDED => self::toString(self::MORE_INFORMATION_NEEDED),
+            self::NOT_PLANNED => self::toString(self::NOT_PLANNED),
+            self::PLANNED => self::toString(self::PLANNED)
+        ];
+    }
 }
 
 ?>

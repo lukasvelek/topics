@@ -142,3 +142,22 @@ function loadSuggestions(_limit, _offset, _userId, _filterType, _filterKey) {
         $("#suggestion-list-link").html(obj.loadMoreLink);
     });
 }
+
+function loadFeedbackSuggestionComments(_suggestionId, _limit, _offset, _userId) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getSuggestionComments',
+            suggestionId: _suggestionId
+        }
+    )
+    .done(function ( data ) {
+        const obj = JSON.parse(data);
+
+        $("#comments-content").append(obj.comments);
+        $("#comments-load-more").html(obj.loadMoreLink);
+    });
+}

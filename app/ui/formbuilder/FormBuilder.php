@@ -121,6 +121,18 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addCheckbox(string $name, ?string $label = null, bool $checked = false) {
+        $ci = new CheckboxInput($name, $checked);
+
+        if($label !== null) {
+            $ci = new ElementDuo($ci, new Label($label, $name));
+        }
+
+        $this->addElement($name, $ci);
+
+        return $this;
+    }
+
     public function render() {
         $code = '<form action="' . $this->handlerUrl . '" method="' . $this->method . '">';
 

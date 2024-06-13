@@ -2,6 +2,7 @@
 
 use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
+use App\Helpers\DateTimeFormatHelper;
 
 require_once('Ajax.php');
 
@@ -107,6 +108,51 @@ function getSuggestions() {
     }
 
     return json_encode(['suggestions' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);
+}
+
+function getSuggestionComments() {
+    global $app;
+
+    $suggestionId = httpGet('suggestionId');
+    $limit = httpGet('limit');
+    $offset = httpGet('offset');
+
+    $comments = $app->suggestionRepository->getCommentsForSuggestion($suggestionId, $limit, $offset);
+    $commentCount = $app->suggestionRepository->getCommentCountForSuggestion($suggestionId);
+
+    if(empty($comments)) {
+        return json_encode(['comments' => 'No data found', 'loadMoreLink' => '']);
+    }
+
+    $commentCode = [];
+    foreach($comments as $comment) {
+        if($comment->isAdminOnly() && !$app->currentUser->isAdmin()) continue;
+        
+        $author = $app->userRepository->getUserById($comment->getUserId());
+        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $comment->getUserId() . '">' . $author->getUsername() . '</a>';
+
+        $hiddenLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=0&suggestionId=' . $suggestionId . '">Hidden</a>';
+        $publicLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=1&suggestionId=' . $suggestionId . '">Public</a>';
+        $hide = $comment->isAdminOnly() ? $hiddenLink : $publicLink;
+
+        $tmp = '
+            <div id="comment-' . $comment->getId() . '">
+                <p class="post-data">' . $comment->getText() . '</p>
+                <p class="post-data">Author: ' . $authorLink . ' Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' ' . $hide . '</p>
+            </div>
+        ';
+
+        $commentCode[] = $tmp;
+    }
+
+    $loadMoreLink = '';
+    if(($offset + $limit) >= $commentCount) {
+        $loadMoreLink = '';
+    } else {
+        $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadFeedbackSuggestionComments(' . $suggestionId . ', ' . $limit . ', ' . ($offset + $limit) . ', ' . $app->currentUser->getId() . ')">Load more</a>';
+    }
+
+    return json_encode(['comments' => implode('<hr>', $commentCode), 'loadMoreLink' => $loadMoreLink]);
 }
 
 ?>
