@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 
 class UsersPresenter extends APresenter {
@@ -28,7 +29,7 @@ class UsersPresenter extends APresenter {
 
         $this->template->username = $user->getUsername();
         $this->template->post_count = $postCount;
-        $this->template->first_login_date = $user->getDateCreated();
+        $this->template->first_login_date = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated());
     }
 }
 
