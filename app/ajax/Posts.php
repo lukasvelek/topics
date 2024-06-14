@@ -2,6 +2,7 @@
 
 use App\Components\PostLister\PostLister;
 use App\Entities\PostCommentEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 
 require_once('Ajax.php');
@@ -62,7 +63,7 @@ function loadPostsForTopic() {
             '<p class="post-text">' . $post->getShortenedText(100) . '</p>',
             '<hr>',
             '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
-            ' | Author: ' . $userProfileLink . '</p>',
+            ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
             '</div></div><br>'
         ];
 
@@ -171,7 +172,7 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
                 <div>
                     <p class="post-text">' . $comment->getText() . '</p>
                     <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                          | Author: ' . $userProfileLink . '
+                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
                     </p>
                     <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
                 </div>
