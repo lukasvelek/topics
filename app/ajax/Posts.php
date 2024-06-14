@@ -175,7 +175,15 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
                     </p>
                     <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
                 </div>
-                <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                <div class="row">
+                    <div class="col-md-2"></div>
+
+                    <div class="col-md" id="form">
+                        <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                    </div>
+                    
+                    <div class="col-md-2"></div>
+                </div>
                 ' . implode('', $childCommentsCode) .  '
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
             </div>
