@@ -145,12 +145,18 @@ class DatabaseInstaller {
             'admin' => 'admin'
         ];
 
+        $admins = [
+            'admin'
+        ];
+
         $i = 0;
         foreach($users as $username => $password) {
             $password = password_hash($password, PASSWORD_BCRYPT);
 
-            $sql = 'INSERT INTO users (`username`, `password`)
-                    SELECT \'' . $username . '\', \'' . $password . '\'
+            $isAdmin = in_array($username, $admins) ? '1' : '0';
+
+            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`)
+                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . '
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);
