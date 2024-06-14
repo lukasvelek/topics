@@ -104,6 +104,11 @@ class PostsPresenter extends APresenter {
             $text = str_replace($k, $v, $text);
         }
 
+        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+        $replacement = '<a class="post-text-link" href="$2">$1</a>';
+
+        $text = preg_replace($pattern, $replacement, $text);
+
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
         } catch (AException $e) {
