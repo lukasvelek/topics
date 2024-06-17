@@ -250,6 +250,17 @@ class PostRepository extends ARepository {
 
         return $qb->fetch('cnt') ?? 0;
     }
+
+    public function updatePost(int $postId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('posts')
+            ->set($data)
+            ->where('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

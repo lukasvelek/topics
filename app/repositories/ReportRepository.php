@@ -7,6 +7,7 @@ use App\Constants\ReportStatus;
 use App\Core\DatabaseConnection;
 use App\Entities\ReportEntity;
 use App\Logger\Logger;
+use QueryBuilder\ExpressionBuilder;
 
 class ReportRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -153,6 +154,51 @@ class ReportRepository extends ARepository {
             ->execute();
 
         return $qb->fetch();
+    }
+
+    public function updateRelevantReports(int $reportId, int $entityType, int $entityId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('reports')
+            ->set($data)
+            ->where($this->xb() ->lb()
+                                    ->where('reportId <> ?', [$reportId])
+                                ->rb()
+                                ->and()
+                                ->lb()
+                                    ->where('entityType = ?', [$entityType])
+                                    ->andWhere('entityId = ?', [$entityId])
+                                ->rb()
+                                ->build())
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function getRelevantReports(int $reportId) {
+        $report = $this->getReportById($reportId);
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where($this->xb() ->lb()
+                                    ->where('reportId <> ?', [$reportId])
+                                ->rb()
+                                ->and()
+                                ->lb()
+                                    ->where('entityType = ?', [$report->getEntityType()])
+                                    ->andWhere('entityId = ?', [$report->getEntityId()])
+                                ->rb()
+                                ->build())
+            ->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $reports;
     }
 }
 

@@ -14,6 +14,7 @@ use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
 
 class Application {
@@ -38,6 +39,7 @@ class Application {
     public SystemStatusRepository $systemStatusRepository;
     public SuggestionRepository $suggestionRepository;
     public ReportRepository $reportRepository;
+    public UserProsecutionRepository $userProsecutionRepository;
 
     public function __construct() {
         require_once('config.local.php');
@@ -65,6 +67,7 @@ class Application {
         $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
         $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
         $this->reportRepository = new ReportRepository($this->db, $this->logger);
+        $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger);
 

@@ -6,6 +6,7 @@ use App\Components\Sidebar\Sidebar;
 use App\Constants\ReportCategory;
 use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
+use App\Constants\UserProsecutionType;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -107,20 +108,49 @@ class FeedbackReportsPresenter extends APresenter {
 
             switch($report->getEntityType()) {
                 case ReportEntityType::COMMENT:
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deleteComment&commentId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete comment</a>';
+                    $comment = $app->postCommentRepository->getCommentById($report->getEntityId());
+
+                    if($comment->isDeleted() !== true) {
+                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deleteComment&commentId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete comment</a>';
+                    }
+
                     break;
 
                 case ReportEntityType::USER:
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '">Ban user</a>';
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '">Ban user</a>';
+                    $userProsecution = $app->userProsecutionRepository->getLastProsecutionForUserId($report->getEntityId());
+
+                    if($userProsecution !== null) {
+                        if($userProsecution->getType() == UserProsecutionType::PERMA_BAN) break;
+
+                        if( $userProsecution->getType() == UserProsecutionType::WARNING ||
+                            ((strtotime($userProsecution->getStartDate()) > time()) && (strtotime($userProsecution->getEndDate() > time()) && ($userProsecution->getType() == UserProsecutionType::BAN)))) {
+                            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Ban user</a>';
+                        } else {
+                            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Warn user</a>';
+                        }
+                    } else {
+                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Ban user</a>';
+                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Warn user</a>';
+                    }
+
                     break;
 
                 case ReportEntityType::POST:
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deletePost&postId=' . $report->getEntityId() . '">Delete post</a>';
+                    $post = $app->postRepository->getPostById($report->getEntityId());
+
+                    if($post->isDeleted() !== true) {
+                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deletePost&postId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete post</a>';
+                    }
+
                     break;
 
                 case ReportEntityType::TOPIC:
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageTopics&action=deleteTopic&topicId=' . $report->getEntityId() . '">Delete topic</a>';
+                    $topic = $app->topicRepository->getTopicById($report->getEntityId());
+
+                    if($topic->isDeleted() !== true) {
+                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageTopics&action=deleteTopic&topicId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete topic</a>';
+                    }
+
                     break;
             }
         } else {
@@ -147,15 +177,33 @@ class FeedbackReportsPresenter extends APresenter {
         global $app;
 
         $reportId = $this->httpGet('reportId', true);
+        $report = $app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $comment = $this->httpPost('comment');
-            $userLink = '<a class="post-data-link" href="UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
+            $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
             $text = 'User ' . $userLink . ' closed this report with comment: ' . $comment;
 
             $app->reportRepository->updateReport($reportId, ['statusComment' => $text, 'status' => ReportStatus::RESOLVED]);
+            
+            
+            $reportLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '">' . ReportEntityType::toString($report->getEntityType()) . ' report</a>';
+            $relevantText = 'User ' . $userLink . ' closed report ' . $reportLink . ' that is relevant to this. Thus this report has been closed as well.';
+            
+            $relevantReports = $app->reportRepository->getRelevantReports($reportId);
+            $idReleveantReports = [];
+            foreach($relevantReports as $rr) {
+                $idReleveantReports[] = $rr->getId();
+            }
+            
+            $app->reportRepository->updateRelevantReports($reportId, $report->getEntityType(), $report->getEntityId(), ['statusComment' => $relevantText, 'status' => ReportStatus::RESOLVED]);
 
             $this->flashMessage('Closed report #' . $reportId . '.');
+            
+            if(!empty($idReleveantReports)) {
+                $this->flashMessage('Closed relevant reports: #' . implode(', #', $idReleveantReports));
+            }
+
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $fb = new FormBuilder();

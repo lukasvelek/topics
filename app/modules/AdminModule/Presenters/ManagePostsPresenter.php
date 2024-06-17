@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
+use App\Core\CacheManager;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -55,6 +56,42 @@ class ManagePostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
+        $this->template->form = $form->render();
+    }
+
+    public function handleDeletePost() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $post = $app->postRepository->getPostById($postId);
+        $reportId = $this->httpGet('reportId');
+
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
+
+            CacheManager::invalidateCache('posts');
+
+            $this->flashMessage('Post deleted.', 'success');
+            $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
+        } else {
+            $this->saveToPresenterCache('post', $post);
+
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $postId, 'isSubmit' => '1', 'reportId' => $reportId])
+                ->addSubmit('Delete post \'' . $post->getTitle() . '\'')
+                ->addButton('Don\'t delete', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'');
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeletePost() {
+        $post = $this->loadFromPresenterCache('post');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->post_title = '\'' . $post->getTitle() . '\'';
         $this->template->form = $form->render();
     }
 }
