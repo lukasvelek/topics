@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
+use App\Core\CacheManager;
 use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -172,6 +173,8 @@ class ManageUsersPresenter extends APresenter {
             $endDate = $this->httpPost('endDate');
 
             $app->userProsecutionRepository->createNewProsecution($userId, $type, $reason, $startDate, $endDate);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User \'' . $user->getUsername() . '\' has been banned.');
             $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
