@@ -209,6 +209,17 @@ class TopicRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function removeAllTopicFollows(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('user_topic_follows')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

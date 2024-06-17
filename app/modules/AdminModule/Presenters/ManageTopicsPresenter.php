@@ -35,6 +35,8 @@ class ManageTopicsPresenter extends APresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $app->topicRepository->updateTopic($topicId, ['isDeleted' => '1']);
 
+            $app->topicRepository->removeAllTopicFollows($topicId);
+
             $postIds = $app->postRepository->getPostIdsForTopicId($topicId);
 
             foreach($postIds as $postId) {
