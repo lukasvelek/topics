@@ -181,3 +181,20 @@ function loadReports(_limit, _offset, _userId, _filterType, _filterKey) {
         $("#report-list-link").html(obj.loadMoreLink);
     });
 }
+
+function getUserProsecutions(_page, _userId) {
+    $.get(
+        "app/ajax/UserProsecutions.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            action: "getProsecutions"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}

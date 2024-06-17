@@ -45,7 +45,11 @@ class UserAuthenticator {
         if($lastProsecution !== null) {
             if($lastProsecution->getType() == UserProsecutionType::PERMA_BAN ||
                 ($lastProsecution->getType() == UserProsecutionType::BAN && strtotime($lastProsecution->getEndDate()) > time())) {
-                throw new GeneralException('You have been banned for "' . $lastProsecution->getReason() . '" until ' . DateTimeFormatHelper::formatDateToUserFriendly($lastProsecution->getEndDate()) . '.');
+                if($lastProsecution->getEndDate() !== null) {
+                    throw new GeneralException('You have been banned for "' . $lastProsecution->getReason() . '" until ' . DateTimeFormatHelper::formatDateToUserFriendly($lastProsecution->getEndDate()) . '.');
+                } else {
+                    throw new GeneralException('You have been banned for "' . $lastProsecution->getReason() . '".');
+                }
             }
         }
 

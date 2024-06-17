@@ -55,6 +55,72 @@ class UserProsecutionRepository extends ARepository {
 
         return $prosecution;
     }
+
+    public function getActiveProsecutionsCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(prosecutionId) AS cnt'])
+            ->from('user_prosecutions')
+            ->where(
+                $this->xb()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::PERMA_BAN])
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::BAN])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::WARNING])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                ->build()
+            );
+
+        return $qb->execute()->fetch('cnt');
+    }
+
+    public function getActiveProsecutionsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_prosecutions')
+            ->where(
+                $this->xb()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::PERMA_BAN])
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::BAN])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::WARNING])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                ->build()
+            );
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $prosecutions = [];
+        while($row = $qb->fetchAssoc()) {
+            $prosecutions[] = UserProsecutionEntity::createEntityFromDbRow($row);
+        }
+
+        return $prosecutions;
+    }
 }
 
 ?>
