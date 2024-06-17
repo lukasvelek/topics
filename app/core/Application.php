@@ -69,7 +69,7 @@ class Application {
         $this->reportRepository = new ReportRepository($this->db, $this->logger);
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
 
-        $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger);
+        $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->loadModules();
     }
@@ -81,12 +81,17 @@ class Application {
     public function run() {
         $this->getCurrentModulePresenterAction();
 
-        if($this->userAuth->fastAuthUser()) {
+        $message = '';
+        if($this->userAuth->fastAuthUser($message)) {
             // login
             $this->currentUser = $this->userRepository->getUserById($_SESSION['userId']);
         } else {
             if((!isset($_GET['page']) || (isset($_GET['page']) && $_GET['page'] != 'UserModule:Logout')) && !isset($_SESSION['is_logging_in'])) {
                 $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+
+                if($message != '') {
+                    $this->flashMessage($message);
+                }
             }
         }
 

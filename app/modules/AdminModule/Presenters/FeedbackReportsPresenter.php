@@ -123,7 +123,7 @@ class FeedbackReportsPresenter extends APresenter {
                         if($userProsecution->getType() == UserProsecutionType::PERMA_BAN) break;
 
                         if( $userProsecution->getType() == UserProsecutionType::WARNING ||
-                            ((strtotime($userProsecution->getStartDate()) > time()) && (strtotime($userProsecution->getEndDate() > time()) && ($userProsecution->getType() == UserProsecutionType::BAN)))) {
+                            ((strtotime($userProsecution->getStartDate()) < time()) && (strtotime($userProsecution->getEndDate() < time()) && ($userProsecution->getType() == UserProsecutionType::BAN)))) {
                             $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Ban user</a>';
                         } else {
                             $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Warn user</a>';

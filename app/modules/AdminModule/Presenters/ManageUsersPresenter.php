@@ -138,7 +138,7 @@ class ManageUsersPresenter extends APresenter {
             $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
 
             $this->flashMessage('User \'' . $user->getUsername() . '\' has been warned.');
-            $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
+            $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $fb = new FormBuilder();
 
