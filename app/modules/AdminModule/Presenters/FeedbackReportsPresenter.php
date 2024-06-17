@@ -154,7 +154,7 @@ class FeedbackReportsPresenter extends APresenter {
                     break;
             }
         } else {
-            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=reopen&reportId=' . $report->getId() . '">Reopen</a>';
+            //$adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=reopen&reportId=' . $report->getId() . '">Reopen</a>';
         }
 
         $this->saveToPresenterCache('adminLinks', implode('&nbsp;', $adminLinks));
