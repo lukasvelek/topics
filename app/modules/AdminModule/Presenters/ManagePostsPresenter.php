@@ -69,9 +69,15 @@ class ManagePostsPresenter extends APresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
 
+            $comments = $app->postCommentRepository->getCommentsForPostId($postId);
+
+            foreach($comments as $comment) {
+                $app->postCommentRepository->updateComment($comment->getId(), ['isDeleted' => '1']);
+            }
+
             CacheManager::invalidateCache('posts');
 
-            $this->flashMessage('Post deleted.', 'success');
+            $this->flashMessage('Post deleted with all its comments.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $this->saveToPresenterCache('post', $post);

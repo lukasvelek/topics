@@ -198,6 +198,17 @@ class TopicRepository extends ARepository {
 
         return $topics;
     }
+
+    public function updateTopic(int $topicId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('topics')
+            ->set($data)
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

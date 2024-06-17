@@ -104,6 +104,12 @@ class CacheManager {
         FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
 
+    public static function invalidateCacheBulk(array $namespaces) {
+        foreach($namespaces as $namespace) {
+            self::invalidateCache($namespace);
+        }
+    }
+
     private static function getTemporaryObject() {
         return new self();
     }
