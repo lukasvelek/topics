@@ -105,7 +105,7 @@ class PostsPresenter extends APresenter {
         }
 
         $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
-        $replacement = '<a class="post-text-link" href="$2">$1</a>';
+        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
 
         $text = preg_replace($pattern, $replacement, $text);
 
