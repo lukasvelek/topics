@@ -18,6 +18,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
             
         if($count > 0) {
@@ -44,6 +45,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -67,6 +69,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
+            ->andWhere('isDeleted = 0')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -185,6 +188,7 @@ class PostRepository extends ARepository {
         $qb ->select(['postId'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         $posts = [];
@@ -201,6 +205,7 @@ class PostRepository extends ARepository {
         $qb ->select(['COUNT(postId) AS cnt'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt') ?? 0;
@@ -240,6 +245,7 @@ class PostRepository extends ARepository {
         $qb ->select(['COUNT(postId) AS cnt'])
             ->from('posts')
             ->where('authorId = ?', [$userId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt') ?? 0;
