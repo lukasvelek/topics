@@ -224,6 +224,17 @@ class PostCommentRepository extends ARepository {
 
         return PostCommentEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function updateComment(int $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('post_comments')
+            ->set($data)
+            ->where('commentId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

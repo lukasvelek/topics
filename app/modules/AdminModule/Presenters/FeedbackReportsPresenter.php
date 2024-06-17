@@ -58,6 +58,10 @@ class FeedbackReportsPresenter extends APresenter {
 
         switch($report->getEntityType()) {
             case ReportEntityType::COMMENT:
+                $comment = $app->postCommentRepository->getCommentById($report->getEntityId());
+                $post = $app->postRepository->getPostById($comment->getPostId());
+                $author = $app->userRepository->getUserById($comment->getAuthorId());
+                $entityLink .= 'Posts&action=profile&postId=' . $comment->getPostId() . '">Comment on post \'' . $post->getTitle() . '\' from user \'' . $author->getUsername() . '\' created on \'' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) .'\'</a>';
                 break;
 
             case ReportEntityType::POST:
@@ -103,7 +107,7 @@ class FeedbackReportsPresenter extends APresenter {
 
             switch($report->getEntityType()) {
                 case ReportEntityType::COMMENT:
-                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deleteComment&commentId=' . $report->getEntityId() . '">Delete comment</a>';
+                    $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deleteComment&commentId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete comment</a>';
                     break;
 
                 case ReportEntityType::USER:
@@ -143,7 +147,6 @@ class FeedbackReportsPresenter extends APresenter {
         global $app;
 
         $reportId = $this->httpGet('reportId', true);
-        //$report = $app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $comment = $this->httpPost('comment');

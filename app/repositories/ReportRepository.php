@@ -31,6 +31,10 @@ class ReportRepository extends ARepository {
         return $this->createNewReport($userId, $postId, ReportEntityType::POST, $category, $description);
     }
 
+    public function createCommentReport(int $userId, int $commentId, int $category, string $description) {
+        return $this->createNewReport($userId, $commentId, ReportEntityType::COMMENT, $category, $description);
+    }
+
     public function getOpenReportsForList(int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 

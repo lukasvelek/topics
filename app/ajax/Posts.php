@@ -165,6 +165,8 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
         }
     }
 
+    $reportForm = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+
     $code = '
         <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
             ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
@@ -172,7 +174,7 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
                 <div>
                     <p class="post-text">' . $comment->getText() . '</p>
                     <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
+                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' | ' . $reportForm . '
                     </p>
                     <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
                 </div>

@@ -165,6 +165,52 @@ class PostsPresenter extends APresenter {
         $this->template->post_title = $post->getTitle();
         $this->template->form = $form->render();
     }
+
+    public function handleReportComment() {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $comment = $app->postCommentRepository->getCommentById($commentId);
+
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $category = $this->httpPost('category');
+            $description = $this->httpPost('description');
+            $userId = $app->currentUser->getId();
+
+            $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+
+            $this->flashMessage('Comment reported.', 'success');
+            $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
+        } else {
+            $this->saveToPresenterCache('comment', $comment);
+
+            $categories = ReportCategory::getArray();
+            $categoryArray = [];
+            foreach($categories as $k => $v) {
+                $categoryArray[] = [
+                    'value' => $k,
+                    'text' => $v
+                ];
+            }
+
+            $fb = new FormBuilder();
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'reportComment', 'isSubmit' => '1', 'commentId' => $commentId])
+                ->addSelect('category', 'Category:', $categoryArray, true)
+                ->addTextArea('description', 'Additional notes:', null, true)
+                ->addSubmit('Send')
+                ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderReportComment() {
+        $comment = $this->loadFromPresenterCache('comment');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->comment_id = $comment->getId();
+        $this->template->form = $form->render();
+    }
 }
 
 ?>
