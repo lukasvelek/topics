@@ -27,9 +27,6 @@ class ManageUserProsecutionsPresenter extends APresenter {
     public function handleList() {
         global $app;
 
-        $filterKey = 'null';
-        $filterType = 'null';
-
         $gridScript = '<script type="text/javascript">getUserProsecutions(0, ' . $app->currentUser->getId() . ')</script>';
 
         $this->saveToPresenterCache('gridScript', $gridScript);

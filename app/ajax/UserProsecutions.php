@@ -4,6 +4,7 @@ use App\Constants\UserProsecutionType;
 use App\Entities\UserProsecutionEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 require_once('Ajax.php');
 
@@ -38,6 +39,13 @@ function getProsecutions() {
     $gb->addOnColumnRender('dateTo', function(UserProsecutionEntity $userProsecution) {
         if($userProsecution->getEndDate() !== null) {
             return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate());
+        } else {
+            return '-';
+        }
+    });
+    $gb->addAction(function(UserProsecutionEntity $userProsecution) {
+        if($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) {
+            return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'post-data-link');
         } else {
             return '-';
         }
