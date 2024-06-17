@@ -43,7 +43,8 @@ class DatabaseInstaller {
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'managerId' => 'INT(32) NOT NULL',
-                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'user_topic_follows' => [
                 'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -57,7 +58,8 @@ class DatabaseInstaller {
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'likes' => 'INT(32) NOT NULL DEFAULT 0'
+                'likes' => 'INT(32) NOT NULL DEFAULT 0',
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'post_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -71,7 +73,8 @@ class DatabaseInstaller {
                 'commentText' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
-                'parentCommentId' => 'INT(32) NULL'
+                'parentCommentId' => 'INT(32) NULL',
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'post_comment_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -102,6 +105,25 @@ class DatabaseInstaller {
                 'adminOnly' => 'INT(2) NOT NULL DEFAULT 0',
                 'statusChange' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'reports' => [
+                'reportId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'entityId' => 'INT(32) NOT NULL',
+                'entityType' => 'INT(4) NOT NULL',
+                'category' => 'INT(4) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'statusComment' => 'VARCHAR(256) NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_prosecutions' => [
+                'prosecutionId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'reason' => 'TEXT NOT NULL',
+                'type' => 'INT(4) NOT NULL',
+                'startDate' => 'DATETIME NULL DEFAULT current_timestamp()',
+                'endDate' => 'DATETIME NULL'
             ]
         ];
 
@@ -134,12 +156,18 @@ class DatabaseInstaller {
             'admin' => 'admin'
         ];
 
+        $admins = [
+            'admin'
+        ];
+
         $i = 0;
         foreach($users as $username => $password) {
             $password = password_hash($password, PASSWORD_BCRYPT);
 
-            $sql = 'INSERT INTO users (`username`, `password`)
-                    SELECT \'' . $username . '\', \'' . $password . '\'
+            $isAdmin = in_array($username, $admins) ? '1' : '0';
+
+            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`)
+                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . '
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);

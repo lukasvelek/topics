@@ -19,6 +19,7 @@ class ManagePresenter extends APresenter {
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], true);
         $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
+        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
         $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
 
         return $sb->render();

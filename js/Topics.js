@@ -161,3 +161,23 @@ function loadFeedbackSuggestionComments(_suggestionId, _limit, _offset, _userId)
         $("#comments-load-more").html(obj.loadMoreLink);
     });
 }
+
+function loadReports(_limit, _offset, _userId, _filterType, _filterKey) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getReports',
+            filterType: _filterType,
+            filterKey: _filterKey
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#report-list").append(obj.reports);
+        $("#report-list-link").html(obj.loadMoreLink);
+    });
+}

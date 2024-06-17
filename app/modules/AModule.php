@@ -7,7 +7,7 @@ use App\Core\CacheManager;
 use App\Exceptions\TemplateDoesNotExistException;
 use Exception;
 
-abstract class AModule {
+abstract class AModule extends AGUICore {
     protected string $title;
 
     protected array $presenters;
@@ -59,9 +59,7 @@ abstract class AModule {
         $fmCode = '';
 
         if(count($flashMessages) > 0) {
-            foreach($flashMessages as $fm) {
-                $fmCode .= $fm . '<br>';
-            }
+            $fmCode = implode('<br>', $flashMessages);
         }
         
         $this->template->sys_flash_messages = $fmCode;
@@ -110,16 +108,7 @@ abstract class AModule {
         }
 
         foreach($flashMessages as $flashMessage) {
-            $type = $flashMessage['type'];
-            $text = $flashMessage['text'];
-
-            $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . count($this->flashMessages) . '\')">&times;</p>';
-
-            $jsAutoRemoveScript = '<script type="text/javascript">autoHideFlashMessage(\'fm-' . count($this->flashMessages) . '\')</script>';
-
-            $code = '<div id="fm-' . count($this->flashMessages) . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . $removeLink . '</div><div id="fm-' . count($this->flashMessages) . '-progress-bar" style="position: absolute; left: 0; top: 70%; border-bottom: 2px solid black"></div>' . $jsAutoRemoveScript . '</div>';
-
-            $this->flashMessages[] = $code;
+            $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
         }
 
         CacheManager::invalidateCache('flashMessages');

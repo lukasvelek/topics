@@ -1,5 +1,8 @@
 <?php
 
+use App\Constants\ReportCategory;
+use App\Constants\ReportEntityType;
+use App\Constants\ReportStatus;
 use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
 use App\Helpers\DateTimeFormatHelper;
@@ -15,30 +18,26 @@ function getSuggestions() {
     $filterKey = httpGet('filterKey');
 
     $suggestions = [];
-    $suggestionCount = 0;
 
     switch($filterType) {
         case 'null':
             $suggestions = $app->suggestionRepository->getOpenSuggestionsForList($limit, $offset);
-            $suggestionCount = $app->suggestionRepository->getOpenSuggestionCount();
             break;
 
         case 'category':
             $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $limit, $offset);
-            $suggestionCount = count($suggestions);
             break;
 
         case 'status':
             $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $limit, $offset);
-            $suggestionCount = count($suggestions);
             break;
 
         case 'user':
             $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $limit, $offset);
-            $suggestionCount = count($suggestions);
             break;
     }
 
+    $suggestionCount = count($suggestions);
 
     if(empty($suggestions)) {
         return json_encode(['suggestions' => '<p class="post-text" id="center">No suggestions found.</p>', 'loadMoreLink' => '']);
@@ -104,7 +103,7 @@ function getSuggestions() {
     if(($offset + $limit) >= $suggestionCount) {
         $loadMoreLink = '';
     } else {
-        $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadSuggestions(' . $limit . ', ' . ($offset + $limit) . ', ' . $app->currentUser->getId() . ')">Load more</a>';
+        $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadSuggestions(' . $limit . ', ' . ($offset + $limit) . ', ' . $app->currentUser->getId() . ', \'' . $filterType . '\', \'' . $filterKey . '\')">Load more</a>';
     }
 
     return json_encode(['suggestions' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);
@@ -156,6 +155,111 @@ function getSuggestionComments() {
     }
 
     return json_encode(['comments' => implode('<hr>', $commentCode), 'loadMoreLink' => $loadMoreLink]);
+}
+
+function getReports() {
+    global $app;
+
+    $limit = (int)(httpGet('limit'));
+    $offset = (int)(httpGet('offset'));
+    $filterType = httpGet('filterType');
+    $filterKey = httpGet('filterKey');
+
+    $reports = [];
+
+    switch($filterType) {
+        case 'null':
+            $reports = $app->reportRepository->getOpenReportsForList($limit, $offset);
+            break;
+
+        case 'user':
+            $reports = $app->reportRepository->getOpenReportsForListFilterUser($filterKey, $limit, $offset);
+            break;
+
+        case 'category':
+            $reports = $app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $limit, $offset);
+            break;
+
+        case 'status':
+            $reports = $app->reportRepository->getReportsForListFilterStatus($filterKey, $limit, $offset);
+            break;
+    }
+
+    $reportCount = count($reports);
+
+    if(empty($reports)) {
+        return json_encode(['reports' => '<p class="post-text" id="center">No reports found</p>', 'loadMoreLink' => '']);
+    }
+
+    $code = [];
+
+    if($filterType != 'null') {
+        $name = '';
+        $link = '';
+
+        switch($filterType) {
+            case 'category':
+                $name = 'Category';
+                $link = ReportCategory::toString($filterKey);
+                break;
+
+            case 'status':
+                $name = 'Status';
+                $link = ReportStatus::toString($filterKey);
+                break;
+
+            case 'user':
+                $user = $app->userRepository->getUserById($filterKey);
+                $name = 'User';
+                $link = $user->getUsername();
+                break;
+        }
+
+        $code[] = '
+            <div class="row">
+                <div class="col-md">
+                    <p class="post-text">Filter</p>
+                    <p class="post-data">' . $name . ': ' . $link . '</p>
+                    <a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list">Clear filter</a>
+                </div>
+            </div>
+            <hr>
+        ';
+    }
+
+    foreach($reports as $report) {
+        $author = $app->userRepository->getUserById($report->getUserId());
+        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">Profile</a>';
+
+        $statusFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list&filterType=status&filterKey=' . $report->getStatus() . '">' . ReportStatus::toString($report->getStatus()) . '</a>';
+        $authorFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list&filterType=user&filterKey=' . $report->getUserId() . '">' . $author->getUsername() . '</a>';
+        $categoryFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list&filterType=category&filterKey=' . $report->getCategory() . '">' . ReportCategory::toString($report->getCategory()) . '</a>';
+
+        $title = ReportEntityType::toString($report->getEntityType()) . ' report';
+
+        $reportLink = '<a class="post-title-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $report->getId() . '">' . $title . '</a>';
+
+        $code[] = '
+            <div class="row">
+                <div class="col-md">
+                    <p class="post-title">' . $reportLink . '</p>
+                    <p class="post-data">Category: ' . $categoryFilterLink . ' Author: ' . $authorFilterLink . ' (' . $authorLink . ') Status: ' . $statusFilterLink . '</p>
+                </div>
+            </div>
+        ';
+    }
+
+    if(($offset + $limit) >= $reportCount) {
+        $loadMoreLink = '';
+    } else {
+        $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadReports(' . $limit . ', ' . ($offset + $limit) . ', ' . $app->currentUser->getId() . ', \'' . $filterType . '\', \'' . $filterKey . '\')">Load more</a>';
+    }
+
+    return json_encode(['reports' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);
+}
+
+function cleanOutputCode(string $code) {
+    return preg_replace('/\s+/', ' ', trim($code));
 }
 
 ?>

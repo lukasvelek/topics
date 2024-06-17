@@ -9,6 +9,7 @@ class Select extends AElement {
         parent::__construct('select', $content);
 
         $this->name = $name;
+        $this->id = $name;
     }
 
     private function processOptions(array $options = []) {

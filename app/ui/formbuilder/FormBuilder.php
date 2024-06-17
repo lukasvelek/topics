@@ -9,11 +9,42 @@ class FormBuilder implements IRenderable {
     private string $handlerUrl;
     private string $method;
     private array $elements;
+    private bool $isInSection;
+    private ?Section $currentSection;
 
     public function __construct() {
         $this->handlerUrl = '';
         $this->method = 'POST';
         $this->elements = [];
+        $this->isInSection = false;
+        $this->currentSection = null;
+    }
+
+    public function startSection(string $name, bool $isHiddenInDefault = false) {
+        $section = new Section($name);
+        $section->setHidden($isHiddenInDefault);
+        $this->isInSection = true;
+
+        if($this->currentSection !== null) {
+            $section->parentSection = $this->currentSection;
+        }
+
+        $this->currentSection = $section;
+
+        return $this;
+    }
+
+    public function endSection() {
+        $this->elements[$this->currentSection->name] = $this->currentSection;
+
+        if($this->currentSection->parentSection !== null) {
+            $this->currentSection = $this->currentSection->parentSection;
+        } else {
+            $this->isInSection = false;
+            $this->currentSection = null;
+        }
+
+        return $this;
     }
 
     public function setMethod(string $method = 'POST') {
@@ -50,7 +81,7 @@ class FormBuilder implements IRenderable {
         $ti->setRequired($required);
 
         if($label !== null) {
-            $ti = new ElementDuo($ti, new Label($label, $name, $required));
+            $ti = new ElementDuo($ti, new Label($label, $name, $required), $name);
         }
 
         $this->addElement($name, $ti);
@@ -62,7 +93,7 @@ class FormBuilder implements IRenderable {
         $s = new Select($name, $options);
 
         if($label !== null) {
-            $s = new ElementDuo($s, new Label($label, $name, $required));
+            $s = new ElementDuo($s, new Label($label, $name, $required), $name);
         }
 
         $this->addElement($name, $s);
@@ -84,7 +115,7 @@ class FormBuilder implements IRenderable {
         $pi->setRequired($required);
 
         if($label !== null) {
-            $pi = new ElementDuo($pi, new Label($label, $name, $required));
+            $pi = new ElementDuo($pi, new Label($label, $name, $required), $name);
         }
 
         $this->addElement($name, $pi);
@@ -99,7 +130,7 @@ class FormBuilder implements IRenderable {
         $ta->setRequired($required);
 
         if($label !== null) {
-            $ta = new ElementDuo($ta, new Label($label, $name, $required));
+            $ta = new ElementDuo($ta, new Label($label, $name, $required), $name);
         }
 
         $this->addElement($name, $ta);
@@ -108,7 +139,11 @@ class FormBuilder implements IRenderable {
     }
 
     public function addElement(string $name, IRenderable $object) {
-        $this->elements[$name] = $object;
+        if($this->isInSection) {
+            $this->currentSection->addElement($name, $object);
+        } else {    
+            $this->elements[$name] = $object;
+        }
 
         return $this;
     }
@@ -125,7 +160,7 @@ class FormBuilder implements IRenderable {
         $ci = new CheckboxInput($name, $checked);
 
         if($label !== null) {
-            $ci = new ElementDuo($ci, new Label($label, $name));
+            $ci = new ElementDuo($ci, new Label($label, $name), $name);
         }
 
         $this->addElement($name, $ci);
@@ -133,16 +168,43 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addDatetime(string $name, ?string $label = null, ?string $value = null, bool $required = false) {
+        $di = new DateTimeInput($name, $value);
+
+        $di->setRequired($required);
+
+        if($label !== null) {
+            $di = new ElementDuo($di, new Label($label, $name, $required), $name);
+        }
+
+        $this->addElement($name, $di);
+
+        return $this;
+    }
+
+    public function addJSHandler(string $handlerLink) {
+        $this->elements['js_handler'] = '<script type="text/javascript" src="' . $handlerLink . '"></script>';
+    }
+
     public function render() {
         $code = '<form action="' . $this->handlerUrl . '" method="' . $this->method . '">';
 
-        $elementCodes = [];
-
+        $i = 0;
         foreach($this->elements as $element) {
-            $elementCodes[] = $element->render();
-        }
+            if($element instanceof Section) {
+                $code .= $element->render();
+            } else if($element instanceof IRenderable) {
+                if(($i + 1) == count($this->elements)) {
+                    $code .= $element->render();
+                } else {
+                    $code .= $element->render() . '<br><br>';
+                }
+            } else {
+                $code .= $element;
+            }
 
-        $code .= implode('<br><br>', $elementCodes);
+            $i++;
+        }
 
         $code .= '</form>';
 

@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Logger\Logger;
+use QueryBuilder\ExpressionBuilder;
 use QueryBuilder\QueryBuilder;
 
 abstract class ARepository {
@@ -17,6 +18,10 @@ abstract class ARepository {
 
     protected function qb(string $method = __METHOD__) {
         return new QueryBuilder($this->conn, $this->logger, $method);
+    }
+
+    protected function xb() {
+        return new ExpressionBuilder();
     }
 }
 

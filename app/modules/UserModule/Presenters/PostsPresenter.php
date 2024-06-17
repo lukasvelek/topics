@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Constants\ReportCategory;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
@@ -49,11 +50,14 @@ class PostsPresenter extends APresenter {
         $author = $app->userRepository->getUserById($post->getAuthorId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
 
+        $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report</a>';
+
         $postData = '
             <div>
                 <p class="post-data">Likes: ' . $likes . ' ' . ($liked ? $unlikeLink : $likeLink) . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
+                <p class="post-data">' . $reportLink . '</p>
             </div>
         ';
 
@@ -100,6 +104,11 @@ class PostsPresenter extends APresenter {
             $text = str_replace($k, $v, $text);
         }
 
+        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+        $text = preg_replace($pattern, $replacement, $text);
+
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
         } catch (AException $e) {
@@ -109,6 +118,98 @@ class PostsPresenter extends APresenter {
         
         $this->flashMessage('Comment posted.', 'success');
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+    }
+
+    public function handleReportForm() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+        
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $category = $this->httpPost('category');
+            $description = $this->httpPost('description');
+            $userId = $app->currentUser->getId();
+
+            $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+
+            $this->flashMessage('Post reported.', 'success');
+            $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+        } else {
+            $post = $app->postRepository->getPostById($postId);
+            $this->saveToPresenterCache('post', $post);
+
+            $categories = ReportCategory::getArray();
+            $categoryArray = [];
+            foreach($categories as $k => $v) {
+                $categoryArray[] = [
+                    'value' => $k,
+                    'text' => $v
+                ];
+            }
+
+            $fb = new FormBuilder();
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'reportForm', 'isSubmit' => '1', 'postId' => $postId])
+                ->addSelect('category', 'Category:', $categoryArray, true)
+                ->addTextArea('description', 'Additional notes:', null, true)
+                ->addSubmit('Send')
+                ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderReportForm() {
+        $post = $this->loadFromPresenterCache('post');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->post_title = $post->getTitle();
+        $this->template->form = $form->render();
+    }
+
+    public function handleReportComment() {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $comment = $app->postCommentRepository->getCommentById($commentId);
+
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $category = $this->httpPost('category');
+            $description = $this->httpPost('description');
+            $userId = $app->currentUser->getId();
+
+            $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+
+            $this->flashMessage('Comment reported.', 'success');
+            $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
+        } else {
+            $this->saveToPresenterCache('comment', $comment);
+
+            $categories = ReportCategory::getArray();
+            $categoryArray = [];
+            foreach($categories as $k => $v) {
+                $categoryArray[] = [
+                    'value' => $k,
+                    'text' => $v
+                ];
+            }
+
+            $fb = new FormBuilder();
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'reportComment', 'isSubmit' => '1', 'commentId' => $commentId])
+                ->addSelect('category', 'Category:', $categoryArray, true)
+                ->addTextArea('description', 'Additional notes:', null, true)
+                ->addSubmit('Send')
+                ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderReportComment() {
+        $comment = $this->loadFromPresenterCache('comment');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->comment_id = $comment->getId();
+        $this->template->form = $form->render();
     }
 }
 

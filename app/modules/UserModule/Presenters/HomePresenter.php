@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
+use App\Constants\UserProsecutionType;
 use App\Modules\APresenter;
 
 class HomePresenter extends APresenter {
@@ -25,13 +26,27 @@ class HomePresenter extends APresenter {
         $postLister->shufflePosts();
         
         $this->saveToPresenterCache('postLister', $postLister);
+        
+        $permaFlashMessages = [];
+
+        $userProsecution = $app->userProsecutionRepository->getLastProsecutionForUserId($app->currentUser->getId());
+
+        if($userProsecution !== null) {
+            if($userProsecution->getType() == UserProsecutionType::WARNING) {
+                $permaFlashMessages[] = $this->createCustomFlashMessage('info', 'You have been warned for: ' . $userProsecution->getReason() . '.');
+            }
+        }
+
+        $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessages);
     }
 
     public function renderDashboard() {
         $postLister = $this->loadFromPresenterCache('postLister');
+        $permaFlashMessages = $this->loadFromPresenterCache('permaFlashMessages');
 
         $this->template->title = 'Dashboard';
         $this->template->latest_posts = $postLister->render();
+        $this->template->permanent_flash_messages = $permaFlashMessages;
     }
 }
 
