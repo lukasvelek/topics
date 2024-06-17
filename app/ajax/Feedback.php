@@ -235,7 +235,7 @@ function getReports() {
         $authorFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list&filterType=user&filterKey=' . $report->getUserId() . '">' . $author->getUsername() . '</a>';
         $categoryFilterLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=list&filterType=category&filterKey=' . $report->getCategory() . '">' . ReportCategory::toString($report->getCategory()) . '</a>';
 
-        $title = 'Report of ' . ReportEntityType::toString($report->getEntityType());
+        $title = ReportEntityType::toString($report->getEntityType()) . ' report';
 
         $reportLink = '<a class="post-title-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $report->getId() . '">' . $title . '</a>';
 

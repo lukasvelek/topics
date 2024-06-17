@@ -128,6 +128,28 @@ class ReportRepository extends ARepository {
 
         return $reports;
     }
+
+    public function getReportById(int $reportId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('reportId = ?', [$reportId])
+            ->execute();
+
+        return ReportEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function updateReport(int $reportId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('reports')
+            ->set($data)
+            ->where('reportId = ?', [$reportId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
