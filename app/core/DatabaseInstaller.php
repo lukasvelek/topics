@@ -122,8 +122,8 @@ class DatabaseInstaller {
                 'userId' => 'INT(32) NOT NULL',
                 'reason' => 'TEXT NOT NULL',
                 'type' => 'INT(4) NOT NULL',
-                'startDate' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'endDate' => 'DATETIME NOT NULL'
+                'startDate' => 'DATETIME NULL DEFAULT current_timestamp()',
+                'endDate' => 'DATETIME NULL'
             ]
         ];
 
