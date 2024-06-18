@@ -89,8 +89,9 @@ class TopicRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('topics')
-            ->where('title LIKE ?', ['%' . $query . '%'])
-            ->orWhere('description LIKE ?', ['%' . $query . '%'])
+            ->where('(title LIKE ?', ['%' . $query . '%'])
+            ->orWhere('description LIKE ?)', ['%' . $query . '%'])
+            ->andWhere('(isDeleted = 0)')
             ->execute();
 
         $topics = [];
@@ -118,6 +119,7 @@ class TopicRepository extends ARepository {
             ->from('topics')
             ->where('managerId = ?', [$managerId])
             ->orderBy('dateCreated', 'DESC')
+            ->andWhere('isDeleted = 0')
             ->limit(1)
             ->execute();
 
@@ -186,6 +188,7 @@ class TopicRepository extends ARepository {
         $qb ->select(['*'])
             ->from('topics')
             ->where($qb->getColumnNotInValues('topicId', $followedTopics))
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         $topics = [];
@@ -194,6 +197,28 @@ class TopicRepository extends ARepository {
         }
 
         return $topics;
+    }
+
+    public function updateTopic(int $topicId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('topics')
+            ->set($data)
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function removeAllTopicFollows(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('user_topic_follows')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch();
     }
 }
 

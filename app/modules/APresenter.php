@@ -7,7 +7,7 @@ use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 
-abstract class APresenter {
+abstract class APresenter extends AGUICore {
     private array $params;
     private string $name;
     private string $title;
@@ -28,6 +28,10 @@ abstract class APresenter {
         $this->action = null;
         $this->template = null;
         $this->presenterCache = [];
+    }
+
+    protected function createCustomFlashMessage(string $type, string $text) {
+        return $this->createFlashMessage($type, $text, 0, true);
     }
 
     protected function saveToPresenterCache(mixed $key, mixed $value) {

@@ -2,6 +2,7 @@
 
 use App\Components\PostLister\PostLister;
 use App\Entities\PostCommentEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 
 require_once('Ajax.php');
@@ -62,7 +63,7 @@ function loadPostsForTopic() {
             '<p class="post-text">' . $post->getShortenedText(100) . '</p>',
             '<hr>',
             '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
-            ' | Author: ' . $userProfileLink . '</p>',
+            ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
             '</div></div><br>'
         ];
 
@@ -164,6 +165,8 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
         }
     }
 
+    $reportForm = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+
     $code = '
         <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
             ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
@@ -171,11 +174,19 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
                 <div>
                     <p class="post-text">' . $comment->getText() . '</p>
                     <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                          | Author: ' . $userProfileLink . '
+                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' | ' . $reportForm . '
                     </p>
                     <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
                 </div>
-                <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                <div class="row">
+                    <div class="col-md-2"></div>
+
+                    <div class="col-md" id="form">
+                        <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                    </div>
+                    
+                    <div class="col-md-2"></div>
+                </div>
                 ' . implode('', $childCommentsCode) .  '
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
             </div>

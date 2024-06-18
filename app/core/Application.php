@@ -7,12 +7,15 @@ use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
+use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
+use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
 
 class Application {
@@ -36,6 +39,10 @@ class Application {
     public PostCommentRepository $postCommentRepository;
     public SystemStatusRepository $systemStatusRepository;
     public SuggestionRepository $suggestionRepository;
+    public ReportRepository $reportRepository;
+    public UserProsecutionRepository $userProsecutionRepository;
+
+    public UserProsecutionManager $userProsecutionManager;
 
     public function __construct() {
         require_once('config.local.php');
@@ -62,8 +69,12 @@ class Application {
         $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
         $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
         $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
+        $this->reportRepository = new ReportRepository($this->db, $this->logger);
+        $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
 
-        $this->userAuth = new UserAuthenticator($this->userRepository);
+        $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
+
+        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
 
         $this->loadModules();
     }
@@ -75,12 +86,17 @@ class Application {
     public function run() {
         $this->getCurrentModulePresenterAction();
 
-        if($this->userAuth->fastAuthUser()) {
+        $message = '';
+        if($this->userAuth->fastAuthUser($message)) {
             // login
             $this->currentUser = $this->userRepository->getUserById($_SESSION['userId']);
         } else {
             if((!isset($_GET['page']) || (isset($_GET['page']) && $_GET['page'] != 'UserModule:Logout')) && !isset($_SESSION['is_logging_in'])) {
                 $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
+
+                if($message != '') {
+                    $this->flashMessage($message);
+                }
             }
         }
 

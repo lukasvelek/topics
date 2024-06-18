@@ -2,7 +2,7 @@ body {
     overflow-x: hidden;
 }
 
-#form input, #form select, #form textarea {
+#form input, #form select, #form textarea, #form button {
     width: 100%;
 
     padding: 5px;
@@ -47,6 +47,13 @@ body {
     border: 1px solid rgb(1, 80, 1);
 }
 
+.fm-warning {
+    color: red;
+    background-color: rgb(255, 190, 70);
+
+    border: 1px solid red;
+}
+
 div[class^="fm-"], div[class*="fm-"] {
     padding-top: 20px;
     padding-left: 20px;
@@ -82,6 +89,8 @@ div[class^="fm-"], div[class*="fm-"] {
     padding: 10px;
     padding-left: 20px;
     padding-right: 20px;
+
+    height: 60px;
 }
 
 .navbar-link {
@@ -95,11 +104,11 @@ div[class^="fm-"], div[class*="fm-"] {
 }
 
 #left .navbar-link {
-    margin-right: 5px;
+    margin-right: 10px;
 }
 
 #right .navbar-link {
-    margin-left: 5px;
+    margin-left: 10px;
 }
 
 .post-title, .post-title-link, .post-title-link-smaller {
@@ -178,4 +187,30 @@ div[class^="fm-"], div[class*="fm-"] {
 
 .changelog-item {
     font-size: 20px;
+}
+
+.sidebar-link {
+    font-size: 20px;
+
+    color: black;
+
+    text-decoration: none;
+
+    margin-left: 10px;
+}
+
+.system-status-item-link {
+    color: black;
+
+    text-decoration: none;
+}
+
+#grid table {
+    width: 100%;
+
+    text-align: center;
+}
+
+.grid-link {
+    color: black;
 }

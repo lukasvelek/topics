@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\PostEntity;
 use App\Logger\Logger;
@@ -17,6 +18,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
             
         if($count > 0) {
@@ -43,6 +45,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -66,6 +69,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
+            ->andWhere('isDeleted = 0')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -184,6 +188,7 @@ class PostRepository extends ARepository {
         $qb ->select(['postId'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         $posts = [];
@@ -200,6 +205,7 @@ class PostRepository extends ARepository {
         $qb ->select(['COUNT(postId) AS cnt'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt') ?? 0;
@@ -220,10 +226,17 @@ class PostRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('posts')
-            ->where('postId = ?', [$postId])
-            ->execute();
+            ->where('postId = ?', [$postId]);
 
-        return PostEntity::createEntityFromDbRow($qb->fetch());
+        $entity = CacheManager::loadCache($postId, function() use ($qb) {
+            $row = $qb->execute()->fetch();
+
+            $entity = PostEntity::createEntityFromDbRow($row);
+
+            return $entity;
+        }, 'posts');
+
+        return $entity;
     }
 
     public function getPostCountForUserId(int $userId) {
@@ -232,9 +245,21 @@ class PostRepository extends ARepository {
         $qb ->select(['COUNT(postId) AS cnt'])
             ->from('posts')
             ->where('authorId = ?', [$userId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt') ?? 0;
+    }
+
+    public function updatePost(int $postId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('posts')
+            ->set($data)
+            ->where('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetch();
     }
 }
 

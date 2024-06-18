@@ -8,6 +8,7 @@ class NavbarLinks {
     public const DISCOVER_TOPICS = ['page' => 'UserModule:Topics', 'action' => 'discover'];
     public const USER_PROFILE = ['page' => 'UserModule:Users', 'action' => 'profile'];
     public const USER_LOGOUT = ['page' => 'UserModule:Logout', 'action' => 'logout'];
+    public const ADMINISTRATION = ['page' => 'AdminModule:Home', 'action' => 'dashboard'];
 
     public static function toArray() {
         return [

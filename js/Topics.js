@@ -122,3 +122,96 @@ async function autoHideFlashMessage(_divId) {
 
     closeFlashMessage(_divId);
 }
+
+function loadSuggestions(_limit, _offset, _userId, _filterType, _filterKey) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getSuggestions',
+            filterType: _filterType,
+            filterKey: _filterKey
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#suggestion-list").append(obj.suggestions);
+        $("#suggestion-list-link").html(obj.loadMoreLink);
+    });
+}
+
+function loadFeedbackSuggestionComments(_suggestionId, _limit, _offset, _userId) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getSuggestionComments',
+            suggestionId: _suggestionId
+        }
+    )
+    .done(function ( data ) {
+        const obj = JSON.parse(data);
+
+        $("#comments-content").append(obj.comments);
+        $("#comments-load-more").html(obj.loadMoreLink);
+    });
+}
+
+function loadReports(_limit, _offset, _userId, _filterType, _filterKey) {
+    $.get(
+        "app/ajax/Feedback.php",
+        {
+            limit: _limit,
+            offset: _offset,
+            callingUserId: _userId,
+            action: 'getReports',
+            filterType: _filterType,
+            filterKey: _filterKey
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#report-list").append(obj.reports);
+        $("#report-list-link").html(obj.loadMoreLink);
+    });
+}
+
+function getUserProsecutions(_page, _userId) {
+    $.get(
+        "app/ajax/UserProsecutions.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            action: "getProsecutions"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}
+
+function getUserProsecutionLog(_page, _userId) {
+    $.get(
+        "app/ajax/UserProsecutions.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            action: "getProsecutionLog"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}
