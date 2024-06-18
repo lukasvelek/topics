@@ -47,6 +47,13 @@ body {
     border: 1px solid rgb(1, 80, 1);
 }
 
+.fm-warning {
+    color: red;
+    background-color: rgb(255, 190, 70);
+
+    border: 1px solid red;
+}
+
 div[class^="fm-"], div[class*="fm-"] {
     padding-top: 20px;
     padding-left: 20px;

@@ -33,7 +33,7 @@ class HomePresenter extends APresenter {
 
         if($userProsecution !== null) {
             if($userProsecution->getType() == UserProsecutionType::WARNING) {
-                $permaFlashMessages[] = $this->createCustomFlashMessage('info', 'You have been warned for: ' . $userProsecution->getReason() . '.');
+                $permaFlashMessages[] = $this->createCustomFlashMessage('warning', 'You have been warned for: ' . $userProsecution->getReason() . '.');
             }
         }
 
