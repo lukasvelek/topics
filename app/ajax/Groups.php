@@ -54,6 +54,13 @@ function getGroupMembers() {
         $user = $users[$entity->getUserId()];
         return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
     });
+    $gb->addAction(function(GroupMembershipEntity $entity) use ($app) {
+        if($app->actionAuthorizator->canRemoveMemberFromGroup($app->currentUser->getId()) && $entity->getUserId() != $app->currentUser->getId()) {
+            return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'post-data-link');
+        } else {
+            return '-';
+        }
+    });
 
     $paginator = $gb->createGridControls('getUserProsecutions', $page, $lastPage, $app->currentUser->getId());
 

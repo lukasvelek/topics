@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Authenticators\UserAuthenticator;
+use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
@@ -48,6 +49,7 @@ class Application {
     public UserProsecutionManager $userProsecutionManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
+    public ActionAuthorizator $actionAuthorizator;
 
     public function __construct() {
         require_once('config.local.php');
@@ -83,6 +85,7 @@ class Application {
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
 
         $this->loadModules();
     }

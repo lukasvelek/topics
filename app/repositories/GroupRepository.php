@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;
@@ -90,6 +91,22 @@ class GroupRepository extends ARepository {
         }
 
         return $members;
+    }
+
+    public function getGroupById(int $groupId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('groups')
+            ->where('groupId = ?', [$groupId]);
+
+        $entity = CacheManager::loadCache($groupId, function() use ($qb) {
+            $row = $qb->execute()->fetch();
+
+            return GroupEntity::createEntityFromDbRow($row);
+        }, 'groups');
+
+        return $entity;
     }
 }
 
