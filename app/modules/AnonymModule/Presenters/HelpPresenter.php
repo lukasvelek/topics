@@ -55,7 +55,7 @@ class HelpPresenter extends APresenter {
     
             $userSelect = new Select('user', $userOptions);
             $userLabel = new Label('User:', 'user', true);
-            $userDuo = new ElementDuo($userSelect, $userLabel);
+            $userDuo = new ElementDuo($userSelect, $userLabel, 'user');
             
             $fb = new FormBuilder();
             $fb ->setAction(['page' => 'AnonymModule:Help', 'action' => 'form', 'isSubmit' => '1'])
