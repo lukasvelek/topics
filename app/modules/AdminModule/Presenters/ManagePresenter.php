@@ -4,25 +4,14 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\SystemStatus;
-use App\Modules\APresenter;
 
-class ManagePresenter extends APresenter {
+class ManagePresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePresenter', 'Manage');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
-    }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], true);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
     }
 
     public function handleDashboard() {

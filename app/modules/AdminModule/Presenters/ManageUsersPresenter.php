@@ -4,28 +4,16 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
-use App\Core\CacheManager;
 use App\Exceptions\AException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
-class ManageUsersPresenter extends APresenter {
+class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
      
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
-    }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], true);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
     }
 
     public function handleList() {
