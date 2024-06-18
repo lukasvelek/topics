@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Constants\ReportCategory;
 use App\Core\CacheManager;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
@@ -39,11 +40,14 @@ class TopicsPresenter extends APresenter {
         $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
         $isManager = $app->currentUser->getId() == $topic->getManagerId();
 
+        $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
+            <p class="post-data">' . $reportLink . '</p>
         ';
 
         $this->saveToPresenterCache('topicData', $code);
@@ -280,6 +284,52 @@ class TopicsPresenter extends APresenter {
     public function renderDiscover() {
         $topics = $this->loadFromPresenterCache('topics');
         $this->template->topics = $topics;
+    }
+
+    public function handleReportForm() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $category = $this->httpPost('category');
+            $description = $this->httpPost('description');
+            $userId = $app->currentUser->getId();
+
+            $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
+
+            $this->flashMessage('Topic reported.', 'success');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        } else {
+            $topic = $app->topicRepository->getTopicById($topicId);
+            $this->saveToPresenterCache('topic', $topic);
+
+            $categories = ReportCategory::getArray();
+            $categoryArray = [];
+            foreach($categories as $k => $v) {
+                $categoryArray[] = [
+                    'value' => $k,
+                    'text' => $v
+                ];
+            }
+
+            $fb = new FormBuilder();
+            $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'reportForm', 'isSubmit' => '1', 'topicId' => $topicId])
+                ->addSelect('category', 'Category:', $categoryArray, true)
+                ->addTextArea('description', 'Additional notes:', null, true)
+                ->addSubmit('Send')
+                ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderReportForm() {
+        $topic = $this->loadFromPresenterCache('topic');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->topic_title = $topic->getTitle();
+        $this->template->form = $form->render();
     }
 }
 

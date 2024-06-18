@@ -16,7 +16,8 @@ class PostCommentRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('post_comments')
-            ->where('postId = ?', [$postId]);
+            ->where('postId = ?', [$postId])
+            ->andWhere('isDeleted = 0');
 
         if($limit > 0) {
             $qb->limit($limit);
@@ -43,6 +44,7 @@ class PostCommentRepository extends ARepository {
             ->from('post_comments')
             ->where('postId = ?', [$postId])
             ->andWhere('parentCommentId IS NULL')
+            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
 
         if($limit > 0) {
@@ -87,6 +89,7 @@ class PostCommentRepository extends ARepository {
         $qb ->select(['COUNT(commentId) AS cnt'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt');
@@ -198,6 +201,7 @@ class PostCommentRepository extends ARepository {
             ->from('post_comments')
             ->where('parentCommentId = ?', [$commentId])
             ->andWhere('postId = ?', [$postId])
+            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
 
         $qb->execute();
@@ -208,6 +212,28 @@ class PostCommentRepository extends ARepository {
         }
 
         return $entities;
+    }
+
+    public function getCommentById(int $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('commentId = ?', [$id])
+            ->execute();
+
+        return PostCommentEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function updateComment(int $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('post_comments')
+            ->set($data)
+            ->where('commentId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
     }
 }
 

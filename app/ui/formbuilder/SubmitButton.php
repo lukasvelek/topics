@@ -9,6 +9,7 @@ class SubmitButton extends AInput {
         parent::__construct('submit');
 
         $this->value = $text;
+        $this->id = 'formSubmit';
     }
 }
 

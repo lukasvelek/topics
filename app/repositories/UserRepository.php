@@ -78,6 +78,50 @@ class UserRepository extends ARepository {
 
         return UserEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getUsersCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(userId) AS cnt'])
+            ->from('users')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getUsersForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            $users[] = UserEntity::createEntityFromDbRow($row);
+        }
+
+        return $users;
+    }
+
+    public function updateUser(int $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('users')
+            ->set($data)
+            ->where('userId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>

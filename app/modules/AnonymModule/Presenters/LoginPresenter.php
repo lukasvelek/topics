@@ -2,6 +2,7 @@
 
 namespace App\Modules\AnonymModule;
 
+use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -22,11 +23,14 @@ class LoginPresenter extends APresenter {
         global $app;
 
         if($this->httpGet('isSubmit') == 'true') {
-            if($app->userAuth->loginUser($this->httpPost('username'), $this->httpPost('password'))) {
+            try {
+                $app->userAuth->loginUser($this->httpPost('username'), $this->httpPost('password'));
+                
                 $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
-            } else {
-                $this->flashMessage('Bad credentials entered. Please try again.', 'error');
+            } catch (AException $e) {
+                $this->flashMessage($e->getMessage(), 'error');
+                $this->redirect();
             }
         }
     }
@@ -35,8 +39,8 @@ class LoginPresenter extends APresenter {
         $fb = new FormBuilder();
         
         $fb ->setAction(['page' => 'AnonymModule:Login', 'action' => 'loginForm', 'isSubmit' => 'true'])
-            ->addTextInput('username', 'Username:')
-            ->addPassword('password', 'Password:')
+            ->addTextInput('username', 'Username:', null, true)
+            ->addPassword('password', 'Password:', null, true)
             ->addSubmit('Log in')
         ;
 

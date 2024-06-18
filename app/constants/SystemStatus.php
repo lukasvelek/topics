@@ -25,6 +25,15 @@ class SystemStatus {
             self::ISSUES_REPORTED => '#ffa500'
         };
     }
+
+    public static function getAll() {
+        return [
+            self::ONLINE => self::toString(self::ONLINE),
+            self::OFFLINE => self::toString(self::OFFLINE),
+            self::MAINTENANCE => self::toString(self::MAINTENANCE),
+            self::ISSUES_REPORTED => self::toString(self::ISSUES_REPORTED)
+        ];
+    }
 }
 
 ?>

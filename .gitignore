@@ -2,3 +2,4 @@ config.local.php
 logs/
 cache/
 app/core/install
+web.config

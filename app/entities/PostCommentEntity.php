@@ -10,8 +10,9 @@ class PostCommentEntity implements ICreatableFromRow {
     private string $dateCreated;
     private int $likes;
     private ?int $parentCommentId;
+    private bool $isDeleted;
 
-    public function __construct(int $commentId, int $postId, int $authorId, string $text, string $dateCreated, int $likes, ?int $parentCommentId) {
+    public function __construct(int $commentId, int $postId, int $authorId, string $text, string $dateCreated, int $likes, ?int $parentCommentId, bool $isDeleted) {
         $this->commentId = $commentId;
         $this->postId = $postId;
         $this->authorId = $authorId;
@@ -19,6 +20,7 @@ class PostCommentEntity implements ICreatableFromRow {
         $this->dateCreated = $dateCreated;
         $this->likes = $likes;
         $this->parentCommentId = $parentCommentId;
+        $this->isDeleted = $isDeleted;
     }
 
     public function getId() {
@@ -49,6 +51,10 @@ class PostCommentEntity implements ICreatableFromRow {
         return $this->parentCommentId;
     }
 
+    public function isDeleted() {
+        return $this->isDeleted;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         $parentCommentId = null;
 
@@ -56,7 +62,7 @@ class PostCommentEntity implements ICreatableFromRow {
             $parentCommentId = $row['parentCommentId'];
         }
 
-        return new self($row['commentId'], $row['postId'], $row['authorId'], $row['commentText'], $row['dateCreated'], $row['likes'], $parentCommentId);
+        return new self($row['commentId'], $row['postId'], $row['authorId'], $row['commentText'], $row['dateCreated'], $row['likes'], $parentCommentId, $row['isDeleted']);
     }
 }
 

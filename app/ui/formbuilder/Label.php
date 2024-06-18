@@ -13,12 +13,12 @@ class Label implements IRenderable {
         $this->for = $for;
 
         if($required === true) {
-            $this->text .= ' <span style="color: red">*</span>';
+            $this->text .= ' <span id="label_' . $this->for . '_required" style="color: red">*</span>';
         }
     }
 
     public function render() {
-        $code = '<label';
+        $code = '<label id="label_' . $this->for . '"';
 
         if($this->for !== null) {
             $code .= ' for="' . $this->for . '"';
