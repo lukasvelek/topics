@@ -48,7 +48,7 @@ class UserProsecutionManager {
             throw new GeneralException('Could not remove ban.');
         }
 
-        $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') removed ban of user \'' . $forUser->getUsername() . '\' (' . $forUserId . ').';
+        $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') removed ban of user \'' . $forUser->getUsername() . '\' (' . $forUserId . '). Reason: ' . $reason;
 
         $result = $this->userProsecutionRepository->createNewUserProsecutionHistoryEntry($prosecution->getId(), $byUserId, $message);
 
