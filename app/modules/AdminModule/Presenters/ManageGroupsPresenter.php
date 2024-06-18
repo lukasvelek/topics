@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\UI\FormBuilder\FormBuilder;
 use App\UI\LinkBuilder;
 
 class ManageGroupsPresenter extends AAdminPresenter {
@@ -62,6 +63,25 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $this->template->grid_paginator = '';
         $this->template->links = $links;
         $this->template->group_title = $group->getTitle();
+    }
+
+    public function handleNewMember() {
+        global $app;
+
+        $gruopId = $this->httpGet('groupId', true);
+
+        if($this->httpGet('isSubmit') == '1') {
+
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'isSubmit' => '1', 'groupId' => $groupId])
+            ;
+        }
+    }
+
+    public function renderNewMember() {
+
     }
 }
 
