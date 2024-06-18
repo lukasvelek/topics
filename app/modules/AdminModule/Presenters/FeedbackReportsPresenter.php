@@ -17,6 +17,13 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createFeedbackSidebar();
         });
+
+        global $app;
+
+        if(!$app->sidebarAuthorizator->canManageReports($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
+        }
     }
 
     public function handleList() {

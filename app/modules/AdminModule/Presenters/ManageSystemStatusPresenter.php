@@ -13,6 +13,13 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        if(!$app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
 
     public function handleList() {
