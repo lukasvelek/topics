@@ -12,7 +12,7 @@ Topics is currently being developed and thus has no user registration page. It i
     - User banning
 
 ## Current version
-    - 1.0.0 (6/18/2024)
+    - v1.0 (6/18/2024)
 
 ## Future plans
     - Administration groups
