@@ -3,7 +3,9 @@
 namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
+use App\Exceptions\AException;
 use App\Modules\APresenter;
+use App\UI\FormBuilder\FormBuilder;
 
 class ManageUserProsecutionsPresenter extends APresenter {
     public function __construct() {
@@ -40,6 +42,55 @@ class ManageUserProsecutionsPresenter extends APresenter {
         $this->template->grid_paginator = '';
 
         $this->template->links = [''];
+    }
+
+    public function handleRemoveProsecution() {
+        global $app;
+
+        $prosecutionId = $this->httpGet('prosecutionId', true);
+
+        if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            $reason = $this->httpPost('reason');
+            $password = $this->httpPost('password');
+
+            try {
+                $app->userAuth->authUser($password);
+            } catch(AException $e) {
+                $this->flashMessage('Could not authenticate user. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
+            }
+
+            $prosecution = $app->userProsecutionRepository->getProsecutionById($prosecutionId);
+            $user = $app->userRepository->getUserById($prosecution->getUserId());
+
+            try {
+                $app->userProsecutionManager->removeBan($prosecution->getUserId(), $app->currentUser->getId(), $reason);
+            } catch(AException $e) {
+                $this->flashMessage('Could not remove ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . '). Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
+            }
+
+            $this->flashMessage('Removed ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . ').');
+            $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'isSubmit' => '1', 'prosecutionId' => $prosecutionId])
+                ->addTextArea('reason', 'Reason:', null, true)
+                ->addPassword('password', 'Password:', null, true)
+                ->addPassword('passwordCheck', 'Password again:', null, true)
+                ->addSubmit('Remove ban')
+                ->addJSHandler('js/UserUnbanFormHandler.js')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderRemoveProsecution() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form->render();
     }
 }
 

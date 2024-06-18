@@ -172,9 +172,21 @@ class ManageUsersPresenter extends APresenter {
             $startDate = $this->httpPost('startDate');
             $endDate = $this->httpPost('endDate');
 
-            $app->userProsecutionRepository->createNewProsecution($userId, $type, $reason, $startDate, $endDate);
-
-            CacheManager::invalidateCache('users');
+            if($type == UserProsecutionType::PERMA_BAN) {
+                try {
+                    $app->userProsecutionManager->permaBanUser($userId, $app->currentUser->getId(), $reason);
+                } catch(AException $e) {
+                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Please try again.', 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
+                }
+            } else {
+                try {
+                    $app->userProsecutionManager->banUser($userId, $app->currentUser->getId(), $reason, $startDate, $endDate);
+                } catch(AException $e) {
+                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Please try again.', 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
+                }
+            }
 
             $this->flashMessage('User \'' . $user->getUsername() . '\' has been banned.');
             $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);

@@ -17,11 +17,6 @@ class UserProsecutionRepository extends ARepository {
         $values = [$userId, $type, $reason];
 
         if($type != UserProsecutionType::PERMA_BAN) {
-            if($type == UserProsecutionType::WARNING) {
-                $startDate = date('Y-m-d H:i:s');
-                $endDate = date('Y-m-d H:i:s', (time() + 86400)); // 24hrs
-            }
-
             $keys[] = 'startDate';
             $keys[] = 'endDate';
 
@@ -120,6 +115,38 @@ class UserProsecutionRepository extends ARepository {
         }
 
         return $prosecutions;
+    }
+
+    public function createNewUserProsecutionHistoryEntry(int $prosecutionId, int $userId, string $text) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('user_prosecutions_history', ['prosecutionId', 'userId', 'commentText'])
+            ->values([$prosecutionId, $userId, $text])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function updateProsecution(int $prosecutionId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('user_prosecutions')
+            ->set($data)
+            ->where('prosecutionId = ?', [$prosecutionId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function getProsecutionById(int $prosecutionId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_prosecutions')
+            ->where('prosecutionId = ?', [$prosecutionId])
+            ->execute();
+
+        return UserProsecutionEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

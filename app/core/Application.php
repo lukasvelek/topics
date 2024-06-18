@@ -7,6 +7,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
+use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
@@ -41,6 +42,8 @@ class Application {
     public ReportRepository $reportRepository;
     public UserProsecutionRepository $userProsecutionRepository;
 
+    public UserProsecutionManager $userProsecutionManager;
+
     public function __construct() {
         require_once('config.local.php');
 
@@ -70,6 +73,8 @@ class Application {
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
+
+        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
 
         $this->loadModules();
     }

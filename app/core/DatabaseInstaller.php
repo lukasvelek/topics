@@ -124,6 +124,13 @@ class DatabaseInstaller {
                 'type' => 'INT(4) NOT NULL',
                 'startDate' => 'DATETIME NULL DEFAULT current_timestamp()',
                 'endDate' => 'DATETIME NULL'
+            ],
+            'user_prosecutions_history' => [
+                'historyId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'prosecutionId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'commentText' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

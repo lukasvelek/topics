@@ -25,6 +25,18 @@ class DatabaseConnection implements IDbQueriable {
         return $this->conn->query($sql);
     }
 
+    public function beginTransaction() {
+        return $this->conn->begin_transaction();
+    }
+
+    public function rollback() {
+        return $this->conn->rollback();
+    }
+
+    public function commit() {
+        return $this->conn->commit();
+    }
+
     private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName) {
         try {
             $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName);
