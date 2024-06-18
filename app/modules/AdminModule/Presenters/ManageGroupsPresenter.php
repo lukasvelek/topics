@@ -68,7 +68,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
     public function handleNewMember() {
         global $app;
 
-        $gruopId = $this->httpGet('groupId', true);
+        $groupId = $this->httpGet('groupId', true);
 
         if($this->httpGet('isSubmit') == '1') {
 
