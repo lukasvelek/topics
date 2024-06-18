@@ -15,8 +15,13 @@ abstract class AAdminPresenter extends APresenter {
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard'], $dashboard);
-        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list'], $suggestions);
-        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list'], $reports);
+
+        if($app->sidebarAuthorizator->canManageSuggestions($app->currentUser->getId())) {
+            $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list'], $suggestions);
+        }
+        if($app->sidebarAuthorizator->canManageReports($app->currentUser->getId())) {
+            $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list'], $reports);
+        }
 
         return $sb->render();
     }
@@ -26,14 +31,21 @@ abstract class AAdminPresenter extends APresenter {
 
         $dashboard = $this->checkPage('AdminModule:Manage');
         $users = $this->checkPage('AdminModule:ManageUsers');
-        $userProsecutions = $this->checkPage('AdminModule:ManageUseProsecutions');
+        $userProsecutions = $this->checkPage('AdminModule:ManageUserProsecutions');
         $systemStatus = $this->checkPage('AdminModule:ManageSystemStatus');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], $users);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], $userProsecutions);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list'], $systemStatus);
+
+        if($app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
+            $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], $users);
+        }
+        if($app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
+            $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], $userProsecutions);
+        }
+        if($app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+            $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list'], $systemStatus);
+        }
 
         return $sb->render();
     }
