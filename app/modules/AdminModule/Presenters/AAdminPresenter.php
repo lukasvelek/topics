@@ -33,12 +33,14 @@ abstract class AAdminPresenter extends APresenter {
         $users = $this->checkPage('AdminModule:ManageUsers');
         $userProsecutions = $this->checkPage('AdminModule:ManageUserProsecutions');
         $systemStatus = $this->checkPage('AdminModule:ManageSystemStatus');
+        $groups = $this->checkPage('AdminModule:ManageGroups');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
 
         if($app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
             $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], $users);
+            $sb->addLink('Groups', ['page' => 'AdminModule:ManageGroups', 'action' => 'list'], $groups);
         }
         if($app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
             $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], $userProsecutions);
