@@ -15,4 +15,6 @@ $cfg['DB_USER'] = ''; // database user
 $cfg['DB_PASS'] = ''; // database user password
 $cfg['DB_NAME'] = ''; // database name
 
+$cfg['GRID_SIZE'] = 50; // grid row count
+
 ?>

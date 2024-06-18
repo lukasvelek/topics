@@ -122,6 +122,20 @@ class UserRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function getUsersByIdBulk(array $ids) {
+        $users = [];
+
+        foreach($ids as $id) {
+            $result = $this->getUserById($id);
+
+            if($result !== null) {
+                $users[] = $result;
+            }
+        }
+
+        return $users;
+    }
 }
 
 ?>

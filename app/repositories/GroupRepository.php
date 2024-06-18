@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\GroupEntity;
+use App\Entities\GroupMembershipEntity;
 use App\Logger\Logger;
 
 class GroupRepository extends ARepository {
@@ -20,6 +22,74 @@ class GroupRepository extends ARepository {
             ->execute();
 
         return $qb->fetch() !== null;
+    }
+
+    public function getGroupCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(groupId) AS cnt'])
+            ->from('groups')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getGroupsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('groups');
+
+        if($limit > 0){
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $groups = [];
+        while($row = $qb->fetchAssoc()) {
+            $groups[] = GroupEntity::createEntityFromDbRow($row);
+        }
+
+        return $groups;
+    }
+
+    public function getGroupMembersCount(int $groupId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(membershipId) AS cnt'])
+            ->from('group_membership')
+            ->where('groupId = ?', [$groupId])
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getGroupMembersForGrid(int $groupId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('group_membership')
+            ->where('groupId = ?', [$groupId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $members = [];
+        while($row = $qb->fetchAssoc()) {
+            $members[] = GroupMembershipEntity::createEntityFromDbRow($row);
+        }
+
+        return $members;
     }
 }
 

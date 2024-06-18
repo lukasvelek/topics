@@ -14,7 +14,7 @@ function getProsecutions() {
 
     $page = (int)(httpGet('page'));
 
-    $elementsOnPage = 50;
+    $elementsOnPage = $app->cfg['GRID_SIZE'];
 
     $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
     $lastPage = ceil($prosecutionCount / $elementsOnPage);
@@ -63,7 +63,7 @@ function getProsecutionLog() {
 
     $page = (int)(httpGet('page'));
 
-    $elementsOnPage = 50;
+    $elementsOnPage = $app->cfg['GRID_SIZE'];$elementsOnPage = 50;
 
     $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
     $lastPage = ceil($historyEntriesCount / $elementsOnPage);

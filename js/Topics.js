@@ -215,3 +215,38 @@ function getUserProsecutionLog(_page, _userId) {
         $("#grid-paginator").html(obj.paginator);
     });
 }
+
+function getGroups(_page, _userId) {
+    $.get(
+        "app/ajax/Groups.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            action: "getGroups"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}
+
+function getGroupMembers(_page, _groupId, _userId) {
+    $.get(
+        "app/ajax/Groups.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            groupId: _groupId,
+            action: "getGroupMembers"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}

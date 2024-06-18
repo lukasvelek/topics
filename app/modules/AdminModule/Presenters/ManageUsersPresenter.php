@@ -39,7 +39,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $this->template->grid_paginator = '';
 
         $newUserLink = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=newForm">New user</a>';
-        $this->template->links = [''];
+        $this->template->links = [];
     }
 
     public function handleUnsetAdmin() {

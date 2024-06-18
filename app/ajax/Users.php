@@ -10,7 +10,7 @@ function getUsersGrid() {
 
     $page = httpGet('page');
 
-    $elementsOnPage = 50;
+    $elementsOnPage = $app->cfg['GRID_SIZE'];
 
     $userCount = $app->userRepository->getUsersCount();
     $lastPage = ceil($userCount / $elementsOnPage);
