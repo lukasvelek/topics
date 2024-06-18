@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Constants\UserProsecutionType;
 use App\Core\DatabaseConnection;
 use App\Entities\UserProsecutionEntity;
+use App\Entities\UserProsecutionHistoryEntryEntity;
 use App\Logger\Logger;
 
 class UserProsecutionRepository extends ARepository {
@@ -147,6 +148,41 @@ class UserProsecutionRepository extends ARepository {
             ->execute();
 
         return UserProsecutionEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getProsecutionHistoryEntryCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(historyId) AS cnt'])
+            ->from('user_prosecutions_history')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getProsecutionHistoryEntriesForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_prosecutions_history')
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $entries = [];
+        while($row = $qb->fetchAssoc()) {
+            $entries[] = UserProsecutionHistoryEntryEntity::createEntityFromDbRow($row);
+        }
+
+        return $entries;
     }
 }
 

@@ -198,3 +198,20 @@ function getUserProsecutions(_page, _userId) {
         $("#grid-paginator").html(obj.paginator);
     });
 }
+
+function getUserProsecutionLog(_page, _userId) {
+    $.get(
+        "app/ajax/UserProsecutions.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            action: "getProsecutionLog"
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").append(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}

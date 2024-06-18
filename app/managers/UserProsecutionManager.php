@@ -48,7 +48,7 @@ class UserProsecutionManager {
             throw new GeneralException('Could not remove ban.');
         }
 
-        $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') removed ban of user \'' . $forUser->getUsername() . '\' (' . $forUserId . '). Reason: ' . $reason;
+        $message = 'User "' . $byUser->getUsername() . '" (' . $byUserId . ') removed ban of user "' . $forUser->getUsername() . '" (' . $forUserId . '). Reason: ' . $reason;
 
         $result = $this->userProsecutionRepository->createNewUserProsecutionHistoryEntry($prosecution->getId(), $byUserId, $message);
 
@@ -107,15 +107,15 @@ class UserProsecutionManager {
 
         switch($type) {
             case UserProsecutionType::WARNING:
-                $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') warned user \'' . $forUser->getUsername() . '\' (' . $forUserId . ').';
+                $message = 'User "' . $byUser->getUsername() . '" (' . $byUserId . ') warned user "' . $forUser->getUsername() . '" (' . $forUserId . ').';
                 break;
 
             case UserProsecutionType::BAN:
-                $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') banned user \'' . $forUser->getUsername() . '\' (' . $forUserId . ') from ' . DateTimeFormatHelper::formatDateToUserFriendly($prosecution->getStartDate()) . ' to ' . DateTimeFormatHelper::formatDateToUserFriendly($prosecution->getEndDate()) . '.';
+                $message = 'User "' . $byUser->getUsername() . '" (' . $byUserId . ') banned user "' . $forUser->getUsername() . '" (' . $forUserId . ') from ' . DateTimeFormatHelper::formatDateToUserFriendly($prosecution->getStartDate()) . ' to ' . DateTimeFormatHelper::formatDateToUserFriendly($prosecution->getEndDate()) . '.';
                 break;
 
             case UserProsecutionType::PERMA_BAN:
-                $message = 'User \'' . $byUser->getUsername() . '\' (' . $byUserId . ') banned user \'' . $forUser->getUsername() . '\' (' . $forUserId . ') permanently.';
+                $message = 'User "' . $byUser->getUsername() . '" (' . $byUserId . ') banned user "' . $forUser->getUsername() . '" (' . $forUserId . ') permanently.';
                 break;
         }        
         

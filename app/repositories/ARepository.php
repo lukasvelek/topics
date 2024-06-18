@@ -58,7 +58,7 @@ abstract class ARepository {
     }
 
     public function tryCommit() {
-        $result = $this->rollback();
+        $result = $this->commit();
 
         if($result === false) {
             throw new GeneralException('Could not commit database transaction');

@@ -6,6 +6,7 @@ use App\Components\Sidebar\Sidebar;
 use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\LinkBuilder;
 
 class ManageUserProsecutionsPresenter extends APresenter {
     public function __construct() {
@@ -32,16 +33,23 @@ class ManageUserProsecutionsPresenter extends APresenter {
         $gridScript = '<script type="text/javascript">getUserProsecutions(0, ' . $app->currentUser->getId() . ')</script>';
 
         $this->saveToPresenterCache('gridScript', $gridScript);
+
+        $links = [
+            LinkBuilder::createSimpleLink('Prosecution log', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'logList'], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
     }
 
     public function renderList() {
         $gridScript = $this->loadFromPresenterCache('gridScript');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->grid_script = $gridScript;
         $this->template->grid = '';
         $this->template->grid_paginator = '';
 
-        $this->template->links = [''];
+        $this->template->links = $links;
     }
 
     public function handleRemoveProsecution() {
@@ -91,6 +99,31 @@ class ManageUserProsecutionsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form->render();
+    }
+
+    public function handleLogList() {
+        global $app;
+
+        $gridScript = '<script type="text/javascript">getUserProsecutionLog(0, ' . $app->currentUser->getId() . ')</script>';
+
+        $this->saveToPresenterCache('gridScript', $gridScript);
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderLogList() {
+        $gridScript = $this->loadFromPresenterCache('gridScript');
+        $links = $this->loadFromPresenterCache('links');
+
+        $this->template->grid_script = $gridScript;
+        $this->template->grid = '';
+        $this->template->grid_paginator = '';
+
+        $this->template->links = $links;
     }
 }
 

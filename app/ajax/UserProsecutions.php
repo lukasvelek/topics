@@ -2,6 +2,7 @@
 
 use App\Constants\UserProsecutionType;
 use App\Entities\UserProsecutionEntity;
+use App\Entities\UserProsecutionHistoryEntryEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
@@ -44,16 +45,42 @@ function getProsecutions() {
         }
     });
     $gb->addAction(function(UserProsecutionEntity $userProsecution) {
-        if($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) {
+        if(($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) && 
+            (strtotime($userProsecution->getEndDate()) > time())) {
             return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'post-data-link');
         } else {
             return '-';
         }
     });
 
-    $paginator = $gb->createGridControls('getProsecutions()', $page, $lastPage, $app->currentUser->getId());
+    $paginator = $gb->createGridControls('getUserProsecutions', $page, $lastPage, $app->currentUser->getId());
 
     return json_encode(['grid' => $gb->build(), 'paginator' => $paginator]);
+}
+
+function getProsecutionLog() {
+    global $app;
+
+    $page = (int)(httpGet('page'));
+
+    $elementsOnPage = 50;
+
+    $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
+    $lastPage = ceil($historyEntriesCount / $elementsOnPage);
+    $historyEntries = $app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($elementsOnPage, ($page * $elementsOnPage));
+
+    $gb = new GridBuilder();
+    $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
+    $gb->addDataSource($historyEntries);
+    $gb->addOnColumnRender('user', function (UserProsecutionHistoryEntryEntity $entity) use ($app) {
+        $user = $app->userRepository->getUserById($entity->getUserId());
+        return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+    });
+    $gb->addOnColumnRender('dateCreated', function(UserProsecutionHistoryEntryEntity $entity) {
+        return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
+    });
+
+    return json_encode(['grid' => $gb->build(), 'paginator' => $gb->createGridControls('getUserProsecutionLog', $page, $lastPage, $app->currentUser->getId())]);
 }
 
 ?>
