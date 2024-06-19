@@ -1,6 +1,7 @@
 <?php
 
 use App\Entities\UserEntity;
+use App\UI\FormBuilder\Option;
 use App\UI\GridBuilder\GridBuilder;
 
 require_once('Ajax.php');
@@ -40,6 +41,29 @@ function getUsersGrid() {
     $paginator = $gb->createGridControls('getUsers()', $page, $lastPage, $app->currentUser->getId());
 
     return json_encode(['grid' => $gb->build(), 'paginator' => $paginator]);
+}
+
+function searchUsersByUsernameForSelectForNewGroupMember() {
+    global $app;
+
+    $username = httpGet('query');
+    $groupId = httpGet('groupId');
+    
+    $groupMembers = $app->groupRepository->getGroupMemberUserIds($groupId);
+
+    $qb = $app->userRepository->composeStandardQuery($username, __METHOD__);
+    $qb ->andWhere($qb->getColumnNotInValues('userId', $groupMembers));
+
+    $users = $app->userRepository->getUsersFromQb($qb);
+
+    $options = [];
+    foreach($users as $user) {
+        $option = new Option($user->getId(), $user->getUsername());
+
+        $options[] = $option->render();
+    }
+
+    return json_encode(['users' => $options, 'count' => count($options)]);
 }
 
 ?>

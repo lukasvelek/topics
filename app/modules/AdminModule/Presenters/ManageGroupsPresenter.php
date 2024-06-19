@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Core\CacheManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\LinkBuilder;
 
@@ -69,19 +70,37 @@ class ManageGroupsPresenter extends AAdminPresenter {
         global $app;
 
         $groupId = $this->httpGet('groupId', true);
+        $group = $app->groupRepository->getGroupById($groupId);
 
         if($this->httpGet('isSubmit') == '1') {
+            $user = $this->httpPost('user');
+            $userEntity = $app->userRepository->getUserById($user);
 
+            $app->groupRepository->addGroupMember($groupId, $user);
+
+            CacheManager::invalidateCache('groupMemberships');
+
+            $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
+            $this->redirect(['action' => 'listMembers']);
         } else {
             $fb = new FormBuilder();
 
             $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'isSubmit' => '1', 'groupId' => $groupId])
+                ->addJSHandler('js/NewGroupMemberFormHandler.js')
+                ->addTextInput('usernameSearch', 'Username:', null, true)
+                ->addButton('Search', 'searchUsers(' . $app->currentUser->getId() . ', ' . $groupId . ')')
+                ->addSelect('user', 'User:', [], true)
+                ->addSubmit('Add user')
             ;
+
+            $this->saveToPresenterCache('form', $fb);
         }
     }
 
     public function renderNewMember() {
+        $form = $this->loadFromPresenterCache('form');
 
+        $this->template->form = $form->render();
     }
 }
 

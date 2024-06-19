@@ -108,6 +108,44 @@ class GroupRepository extends ARepository {
 
         return $entity;
     }
+
+    public function getGroupMemberUserIds(int $groupId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('group_membership')
+            ->where('groupId = ?', [$groupId])
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['userId'];
+        }
+
+        return $ids;
+    }
+
+    public function addGroupMember(int $groupId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('group_membership', ['groupId', 'userId'])
+            ->values([$groupId, $userId])
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    public function removeGroupMember(int $groupId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('group_membership')
+            ->where('userId = ?', [$userId])
+            ->andWhere('groupId = ?', [$groupId])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
