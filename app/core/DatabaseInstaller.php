@@ -228,7 +228,8 @@ class DatabaseInstaller {
             AdministratorGroups::toString(AdministratorGroups::G_SUGGESTION_ADMINISTRATOR) => AdministratorGroups::G_SUGGESTION_ADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_SUPERADMINISTRATOR) => AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_SYSTEM_ADMINISTRATOR) => AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
-            AdministratorGroups::toString(AdministratorGroups::G_USER_ADMINISTRATOR) => AdministratorGroups::G_USER_ADMINISTRATOR
+            AdministratorGroups::toString(AdministratorGroups::G_USER_ADMINISTRATOR) => AdministratorGroups::G_USER_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
         ];
 
         $descriptions = [
@@ -236,7 +237,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUGGESTION_ADMINISTRATOR => 'Administrator group whose members manage suggestions',
             AdministratorGroups::G_SUPERADMINISTRATOR => 'Administrator group that allows performing all operations without limit',
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR => 'Administrator group whose members manage system status',
-            AdministratorGroups::G_USER_ADMINISTRATOR => 'Administrator group whose members manage users'
+            AdministratorGroups::G_USER_ADMINISTRATOR => 'Administrator group whose members manage users',
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content'
         ];
 
         foreach($groups as $title => $id) {
@@ -271,7 +273,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUGGESTION_ADMINISTRATOR,
             AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
-            AdministratorGroups::G_USER_ADMINISTRATOR
+            AdministratorGroups::G_USER_ADMINISTRATOR,
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
         ];
 
         foreach($groups as $groupId) {
