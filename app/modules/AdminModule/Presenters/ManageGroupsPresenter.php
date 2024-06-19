@@ -115,6 +115,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $app->groupRepository->removeGroupMember($groupId, $userId);
 
+            CacheManager::invalidateCache('groupMemberships');
+
             $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
             $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
         } else {

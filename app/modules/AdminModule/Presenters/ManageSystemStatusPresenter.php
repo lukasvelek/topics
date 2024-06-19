@@ -76,8 +76,9 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             }
 
             $app->logger->warning('User #' . $app->currentUser->getId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
+            $app->logger->warning('User #' . $app->currentUser->getId() . ' changed description for system #' . $systemId . ' from \'' . $system->getDescription() . '\' to \'' . $description . '\'.', __METHOD__);
 
-            $app->systemStatusRepository->updateStatus($systemId, $status, ($description === null));
+            $app->systemStatusRepository->updateStatus($systemId, $status, $description);
 
             $this->flashMessage('System status updated.', 'success');
             $this->redirect(['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);

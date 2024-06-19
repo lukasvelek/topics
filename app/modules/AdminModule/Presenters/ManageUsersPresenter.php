@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
+use App\Core\CacheManager;
 use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
@@ -62,6 +63,8 @@ class ManageUsersPresenter extends AAdminPresenter {
             $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
             $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
+            CacheManager::invalidateCache('users');
+
             $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
         } else {
@@ -101,6 +104,8 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
             $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
