@@ -28,7 +28,7 @@ function getUsersGrid() {
     });
     $gb->addAction(function (UserEntity $user) use ($app) {
         if($user->getId() == $app->currentUser->getId()) {
-            return null;
+            return '-';
         }
 
         if($user->isAdmin()) {
