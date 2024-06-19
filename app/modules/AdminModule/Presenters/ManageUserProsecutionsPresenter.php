@@ -4,29 +4,25 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Exceptions\AException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\LinkBuilder;
 
-class ManageUserProsecutionsPresenter extends APresenter {
+class ManageUserProsecutionsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageUserProsecutionsPresenter', 'Manage user prosecutions');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        if(!$app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], true);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
-    }
-
+    
     public function handleList() {
         global $app;
 

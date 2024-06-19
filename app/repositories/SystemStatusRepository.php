@@ -41,22 +41,13 @@ class SystemStatusRepository extends ARepository {
         }
     }
 
-    public function updateStatus(int $id, int $status, bool $clearDescription = true) {
+    public function updateStatus(int $id, int $status, ?string $description) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('system_status')
-            ->set(['status' => $status])
+            ->set(['status' => $status, 'description' => $description])
             ->where('systemId = ?', [$id])
             ->execute();
-
-        if($clearDescription) {
-            $qb->clean();
-
-            $qb ->update('system_status')
-                ->set(['description' => NULL])
-                ->where('systemId = ?', [$id])
-                ->execute();
-        }
 
         return true;
     }

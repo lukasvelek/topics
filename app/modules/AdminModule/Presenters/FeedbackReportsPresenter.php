@@ -8,25 +8,22 @@ use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
 use App\Constants\UserProsecutionType;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
-class FeedbackReportsPresenter extends APresenter {
+class FeedbackReportsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('FeedbackReportsPresenter', 'Reports');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createFeedbackSidebar();
         });
-    }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
-        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list']);
-        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list'], true);
+        global $app;
 
-        return $sb->render();
+        if(!$app->sidebarAuthorizator->canManageReports($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
+        }
     }
 
     public function handleList() {

@@ -220,6 +220,16 @@ class TopicRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function getTopicCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(topicId) AS cnt'])
+            ->from('topics')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
 }
 
 ?>

@@ -72,7 +72,7 @@ class UserEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin']);;
+        return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin']);
     }
 }
 

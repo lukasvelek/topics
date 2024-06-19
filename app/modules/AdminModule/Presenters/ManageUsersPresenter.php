@@ -5,27 +5,24 @@ namespace App\Modules\AdminModule;
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
 use App\Core\CacheManager;
+use App\Core\HashManager;
 use App\Exceptions\AException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 
-class ManageUsersPresenter extends APresenter {
+class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
      
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
-    }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], true);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
+        global $app;
 
-        return $sb->render();
+        if(!$app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
 
     public function handleList() {
@@ -44,7 +41,7 @@ class ManageUsersPresenter extends APresenter {
         $this->template->grid_paginator = '';
 
         $newUserLink = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=newForm">New user</a>';
-        $this->template->links = [''];
+        $this->template->links = [$newUserLink];
     }
 
     public function handleUnsetAdmin() {
@@ -65,6 +62,8 @@ class ManageUsersPresenter extends APresenter {
 
             $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
             $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -105,6 +104,8 @@ class ManageUsersPresenter extends APresenter {
 
             $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
             $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -207,6 +208,46 @@ class ManageUsersPresenter extends APresenter {
     }
 
     public function renderBanUser() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form->render();
+    }
+
+    public function handleNewForm() {
+        global $app;
+
+        if($this->httpGet('isSubmit') == '1') {
+            $username = $this->httpPost('username');
+            $password = $this->httpPost('password');
+            $email = $this->httpPost('email');
+            $isAdmin = $this->httpPost('isAdmin') == 'on';
+
+            if($email == '') {
+                $email = null;
+            }
+
+            $password = HashManager::hashPassword($password);
+
+            $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+
+            $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
+            $this->redirect(['action' => 'list']);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'newForm', 'isSubmit' => '1'])
+                ->addTextInput('username', 'Username:', null, true)
+                ->addEmailInput('email', 'Email:', null, false)
+                ->addPassword('password', 'Password:', null, true)
+                ->addCheckbox('isAdmin', 'Administrator?')
+                ->addSubmit('Create')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form->render();

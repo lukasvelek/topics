@@ -73,6 +73,12 @@ abstract class APresenter extends AGUICore {
     protected function redirect(array $url = []) {
         global $app;
 
+        if(!empty($url)) {
+            if(!array_key_exists('page', $url)) {
+                $url['page'] = $this->httpGet('page');
+            }
+        }
+
         $app->redirect($url);
     }
 

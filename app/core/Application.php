@@ -3,12 +3,15 @@
 namespace App\Core;
 
 use App\Authenticators\UserAuthenticator;
+use App\Authorizators\ActionAuthorizator;
+use App\Authorizators\SidebarAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
+use App\Repositories\GroupRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
@@ -41,8 +44,12 @@ class Application {
     public SuggestionRepository $suggestionRepository;
     public ReportRepository $reportRepository;
     public UserProsecutionRepository $userProsecutionRepository;
+    public GroupRepository $groupRepository;
 
     public UserProsecutionManager $userProsecutionManager;
+
+    public SidebarAuthorizator $sidebarAuthorizator;
+    public ActionAuthorizator $actionAuthorizator;
 
     public function __construct() {
         require_once('config.local.php');
@@ -71,10 +78,14 @@ class Application {
         $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
         $this->reportRepository = new ReportRepository($this->db, $this->logger);
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
+        $this->groupRepository = new GroupRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
+
+        $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
 
         $this->loadModules();
     }

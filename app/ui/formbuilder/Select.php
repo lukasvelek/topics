@@ -36,8 +36,14 @@ class Select extends AElement {
         return $code;
     }
 
-    public function setDisabled($disabled = true) {
+    public function setDisabled(bool $disabled = true) {
         $this->disabled = $disabled;
+    }
+
+    public function setRequired(bool $required = true) {
+        if($required) {
+            $this->required = null;
+        }
     }
 }
 

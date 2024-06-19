@@ -89,8 +89,24 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addEmailInput(string $name, ?string $label = null, mixed $value = null, bool $required = false) {
+        $ei = new EmailInput($name, $value);
+
+        $ei->setRequired($required);
+
+        if($label !== null) {
+            $ei = new ElementDuo($ei, new Label($label, $name, $required), $name);
+        }
+
+        $this->addElement($name, $ei);
+
+        return $this;
+    }
+
     public function addSelect(string $name, ?string $label = null, array $options = [], bool $required = false) {
         $s = new Select($name, $options);
+
+        $s->setRequired($required);
 
         if($label !== null) {
             $s = new ElementDuo($s, new Label($label, $name, $required), $name);
@@ -184,6 +200,8 @@ class FormBuilder implements IRenderable {
 
     public function addJSHandler(string $handlerLink) {
         $this->elements['js_handler'] = '<script type="text/javascript" src="' . $handlerLink . '"></script>';
+
+        return $this;
     }
 
     public function render() {
