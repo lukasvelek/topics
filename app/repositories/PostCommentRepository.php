@@ -235,6 +235,21 @@ class PostCommentRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function deleteComment(int $commentId, bool $hide = true) {
+        if($hide) {
+            return $this->updateComment($commentId, ['isDeleted' => '1']);
+        } else {
+            $qb = $this->qb(__METHOD__);
+
+            $qb ->delete()
+                ->from('post_comments')
+                ->where('commentId = ?', [$commentId])
+                ->execute();
+
+            return $qb->fetch();
+        }
+    }
 }
 
 ?>

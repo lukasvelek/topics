@@ -5,6 +5,7 @@ namespace App\Core;
 use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
+use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
@@ -50,6 +51,7 @@ class Application {
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
+    public VisibilityAuthorizator $visibilityAuthorizator;
 
     public function __construct() {
         require_once('config.local.php');
@@ -86,6 +88,7 @@ class Application {
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
+        $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
 
         $this->loadModules();
     }

@@ -14,6 +14,34 @@ class ActionAuthorizator extends AAuthorizator {
     }
 
     public function canRemoveMemberFromGroup(int $userId) {
+        return $this->commonGroupManagement($userId);
+    }
+
+    public function canAddMemberToGroup(int $userId) {
+        return $this->commonGroupManagement($userId);
+    }
+
+    public function canDeleteComment(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
+
+    public function canDeletePost(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
+
+    private function commonContentManagement(int $userId) {
+        if(!$this->isUserAdmin($userId)) {
+            return false;
+        }
+
+        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    private function commonGroupManagement(int $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -23,10 +51,6 @@ class ActionAuthorizator extends AAuthorizator {
         }
 
         return true;
-    }
-
-    public function canAddMemberToGroup(int $userId) {
-        return $this->canRemoveMemberFromGroup($userId);
     }
 }
 

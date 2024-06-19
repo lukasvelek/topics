@@ -272,6 +272,21 @@ class PostRepository extends ARepository {
 
         return $qb->fetch('cnt') ?? 0;
     }
+
+    public function deletePost(int $postId, bool $hide = true) {
+        if($hide) {
+            return $this->updatePost($postId, ['isDeleted' => '1']);
+        } else {
+            $qb = $this->qb(__METHOD__);
+
+            $qb ->delete()
+                ->from('posts')
+                ->where('postId = ?', [$postId])
+                ->execute();
+            
+            return $qb->fetch();
+        }
+    }
 }
 
 ?>

@@ -17,8 +17,12 @@ class PostsPresenter extends APresenter {
         global $app;
 
         $postId = $this->httpGet('postId');
-
         $post = $app->postRepository->getPostById($postId);
+
+        if(!$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
+            $this->flashMessage('This post does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $post->getTopicId()]);
+        }
 
         $this->saveToPresenterCache('post', $post);
 
@@ -52,12 +56,19 @@ class PostsPresenter extends APresenter {
 
         $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report</a>';
 
+        $deleteLink = '';
+
+        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId())) {
+            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete</a></p>';
+        }
+
         $postData = '
             <div>
                 <p class="post-data">Likes: ' . $likes . ' ' . ($liked ? $unlikeLink : $likeLink) . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
                 <p class="post-data">' . $reportLink . '</p>
+                ' . $deleteLink . '
             </div>
         ';
 
@@ -209,6 +220,63 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
+        $this->template->form = $form->render();
+    }
+
+    public function handleDeleteComment() {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $postId = $this->httpGet('postId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->postCommentRepository->deleteComment($commentId); // hide only
+
+            $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'postId' => $postId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deleteComment', 'isSubmit' => '1', 'commentId' => $commentId, 'postId' => $postId])
+                ->addSubmit('Delete comment')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeleteComment() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form->render();
+    }
+
+    public function handleDeletePost() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->postRepository->deletePost($postId); // hide only
+
+            $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'postId' => $postId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deletePost', 'isSubmit' => '1', 'postId' => $postId])
+                ->addSubmit('Delete post')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeletePost() {
+        $form = $this->loadFromPresenterCache('form');
+
         $this->template->form = $form->render();
     }
 }
