@@ -21,6 +21,10 @@ class HashManager {
 
         return $hash;
     }
+
+    public static function hashPassword(string $password) {
+        return password_hash($password, PASSWORD_BCRYPT);
+    }
 }
 
 ?>

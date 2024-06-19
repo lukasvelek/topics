@@ -81,7 +81,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
             CacheManager::invalidateCache('groupMemberships');
 
             $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
-            $this->redirect(['action' => 'listMembers']);
+            $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
         } else {
             $fb = new FormBuilder();
 
@@ -98,6 +98,38 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function renderNewMember() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form->render();
+    }
+
+    public function handleRemoveMember() {
+        global $app;
+
+        $groupId = $this->httpGet('groupId');
+        $group = $app->groupRepository->getGroupById($groupId);
+        
+        $userId = $this->httpGet('userId');
+        $user = $app->userRepository->getUserById($userId);
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->groupRepository->removeGroupMember($groupId, $userId);
+
+            $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
+            $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'isSubmit' => '1', 'groupId' => $groupId, 'userId' => $userId])
+                ->addSubmit('Remove user \'' . $user->getUsername() . ' from group \'' . $group->getTitle() . '\'')
+                ->addButton('&larr; Go back', 'location.href = \'?page=AdminModule:ManageGroups&action=listMembers&groupId=' . $groupId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderRemoveMember() {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form->render();

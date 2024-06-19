@@ -52,7 +52,9 @@ function searchUsersByUsernameForSelectForNewGroupMember() {
     $groupMembers = $app->groupRepository->getGroupMemberUserIds($groupId);
 
     $qb = $app->userRepository->composeStandardQuery($username, __METHOD__);
-    $qb ->andWhere($qb->getColumnNotInValues('userId', $groupMembers));
+    $qb ->andWhere($qb->getColumnNotInValues('userId', $groupMembers))
+        ->andWhere('isAdmin = 1')
+    ;
 
     $users = $app->userRepository->getUsersFromQb($qb);
 

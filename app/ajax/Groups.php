@@ -48,7 +48,7 @@ function getGroupMembers() {
     }
 
     $gb = new GridBuilder();
-    $gb->addColumns(['user' => 'User', 'dateCreated' => 'Since']);
+    $gb->addColumns(['user' => 'User', 'dateCreated' => 'Member since']);
     $gb->addDataSource($members);
     $gb->addOnColumnRender('user', function(GroupMembershipEntity $entity) use ($users) {
         $user = $users[$entity->getUserId()];

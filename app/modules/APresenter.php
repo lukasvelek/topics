@@ -75,7 +75,7 @@ abstract class APresenter extends AGUICore {
 
         if(!empty($url)) {
             if(!array_key_exists('page', $url)) {
-                $url[] = $this->httpGet('page');
+                $url['page'] = $this->httpGet('page');
             }
         }
 

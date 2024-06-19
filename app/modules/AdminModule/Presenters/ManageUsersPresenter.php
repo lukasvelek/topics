@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
+use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -39,7 +40,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $this->template->grid_paginator = '';
 
         $newUserLink = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=newForm">New user</a>';
-        $this->template->links = [];
+        $this->template->links = [$newUserLink];
     }
 
     public function handleUnsetAdmin() {
@@ -202,6 +203,46 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function renderBanUser() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form->render();
+    }
+
+    public function handleNewForm() {
+        global $app;
+
+        if($this->httpGet('isSubmit') == '1') {
+            $username = $this->httpPost('username');
+            $password = $this->httpPost('password');
+            $email = $this->httpPost('email');
+            $isAdmin = $this->httpPost('isAdmin') == 'on';
+
+            if($email == '') {
+                $email = null;
+            }
+
+            $password = HashManager::hashPassword($password);
+
+            $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+
+            $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
+            $this->redirect(['action' => 'list']);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'newForm', 'isSubmit' => '1'])
+                ->addTextInput('username', 'Username:', null, true)
+                ->addEmailInput('email', 'Email:', null, false)
+                ->addPassword('password', 'Password:', null, true)
+                ->addCheckbox('isAdmin', 'Administrator?')
+                ->addSubmit('Create')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form->render();

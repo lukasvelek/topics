@@ -161,6 +161,24 @@ class UserRepository extends ARepository {
         return $this->createUsersArrayFromQb($qb);
     }
 
+    public function createNewUser(string $username, string $password, ?string $email, bool $isAdmin) {
+        $qb = $this->qb(__METHOD__);
+
+        $keys = ['username', 'password', 'isAdmin'];
+        $values = [$username, $password, $isAdmin];
+
+        if($email !== null) {
+            $keys[] = 'email';
+            $values[] = $email;
+        }
+
+        $qb ->insert('users', $keys)
+            ->values($values)
+            ->execute();
+
+        return $qb->fetch();
+    }
+
     private function createUsersArrayFromQb(QueryBuilder $qb) {
         $users = [];
         while($row = $qb->fetchAssoc()) {
