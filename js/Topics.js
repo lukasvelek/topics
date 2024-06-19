@@ -250,3 +250,15 @@ function getGroupMembers(_page, _groupId, _userId) {
         $("#grid-paginator").html(obj.paginator);
     });
 }
+
+function getDeletedContent(_page, _userId, _filter) {
+    $.get(
+        "app/ajax/ContentManagement.php",
+        {
+            page: _page,
+            callingUserId: _userId,
+            filter: _filter,
+            action: "getDeletedContent"
+        }
+    )
+}

@@ -50,7 +50,7 @@ abstract class AAdminPresenter extends APresenter {
             $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list'], $systemStatus);
         }
         if($app->sidebarAuthorizator->canManageDeletedContent($app->currentUser->getId())) {
-            $sb->addLink('Deleted content', ['page' => 'AdminModule:ManageDeletedContent', 'action' => 'list', $deletedContent]);
+            $sb->addLink('Deleted content', ['page' => 'AdminModule:ManageDeletedContent', 'action' => 'list'], $deletedContent);
         }
 
         return $sb->render();
