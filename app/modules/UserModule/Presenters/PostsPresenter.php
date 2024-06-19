@@ -54,12 +54,12 @@ class PostsPresenter extends APresenter {
         $author = $app->userRepository->getUserById($post->getAuthorId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
 
-        $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report</a>';
+        $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
 
         $deleteLink = '';
 
         if($app->actionAuthorizator->canDeletePost($app->currentUser->getId())) {
-            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete</a></p>';
+            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
         }
 
         $postData = '
@@ -230,7 +230,7 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $app->postCommentRepository->deleteComment($commentId); // hide only
+            $app->contentManager->deleteComment($commentId);
 
             $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
             $this->redirect(['action' => 'profile', 'postId' => $postId]);
@@ -258,7 +258,7 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $app->postRepository->deletePost($postId); // hide only
+            $app->contentManager->deletePost($postId);
 
             $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
             $this->redirect(['action' => 'profile', 'postId' => $postId]);

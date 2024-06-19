@@ -19,6 +19,11 @@ class TopicsPresenter extends APresenter {
 
         $topicId = $this->httpGet('topicId');
 
+        if(!$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
+            $this->flashMessage('This topic does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
+
         // topic info
         $topic = $app->topicRepository->getTopicById($topicId);
 
@@ -42,12 +47,19 @@ class TopicsPresenter extends APresenter {
 
         $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
 
+        $deleteLink = '';
+
+        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId())) {
+            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p>';
+        }
+
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
+            ' . $deleteLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);
@@ -329,6 +341,34 @@ class TopicsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->topic_title = $topic->getTitle();
+        $this->template->form = $form->render();
+    }
+
+    public function handleDeleteTopic() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->contentManager->deleteTopic($topicId);
+
+            $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'deleteTopic', 'isSubmit' => '1', 'topicId' => $topicId])
+                ->addSubmit('Delete topic')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeleteTopic() {
+        $form = $this->loadFromPresenterCache('form');
+
         $this->template->form = $form->render();
     }
 }

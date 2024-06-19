@@ -14,6 +14,14 @@ class VisibilityAuthorizator extends AAuthorizator {
     }
 
     public function canViewDeletedPost(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
+
+    public function canViewDeletedTopic(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
+
+    private function commonContentManagement(int $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }

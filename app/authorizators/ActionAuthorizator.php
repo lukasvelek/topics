@@ -29,6 +29,10 @@ class ActionAuthorizator extends AAuthorizator {
         return $this->commonContentManagement($userId);
     }
 
+    public function canDeleteTopic(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
+
     private function commonContentManagement(int $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;

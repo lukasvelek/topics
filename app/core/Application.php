@@ -10,6 +10,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
+use App\Managers\ContentManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\GroupRepository;
@@ -48,6 +49,7 @@ class Application {
     public GroupRepository $groupRepository;
 
     public UserProsecutionManager $userProsecutionManager;
+    public ContentManager $contentManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -85,6 +87,7 @@ class Application {
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE']);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);

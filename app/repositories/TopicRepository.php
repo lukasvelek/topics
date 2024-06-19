@@ -226,9 +226,25 @@ class TopicRepository extends ARepository {
 
         $qb ->select(['COUNT(topicId) AS cnt'])
             ->from('topics')
+            ->where('isDeleted = 0')
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function deleteTopic(int $topicId, bool $hide = true) {
+        if($hide) {
+            return $this->updateTopic($topicId, ['isDeleted' => '1']);
+        } else {
+            $qb = $this->qb(__METHOD__);
+
+            $qb ->delete()
+                ->from('topics')
+                ->where('topicId = ?', [$topicId])
+                ->execute();
+
+            return $qb->fetch();
+        }
     }
 }
 
