@@ -43,13 +43,36 @@ class ManagePresenter extends AAdminPresenter {
             ';
         }
 
+        $userCount = $app->userRepository->getUsersCount();
+        $postCount = $app->postRepository->getPostCount();
+        $topicCount = $app->topicRepository->getTopicCount();
+
+        $infoCode = ['
+            <div class="row">
+                <div class="col-md">
+                    <div class="system-status-item">
+                        <span class="system-status-title">Users: </span><span style="font-size: 16px">' . $userCount . '</span>
+                    </div>
+                    <div class="system-status-item">
+                        <span class="system-status-title">Posts: </span><span style="font-size: 16px">' . $postCount . '</span>
+                    </div>
+                    <div class="system-status-item">
+                        <span class="system-status-title">Topics: </span><span style="font-size: 16px">' . $topicCount . '</span>
+                    </div>
+                </div>
+            </div>
+        '];
+
         $this->saveToPresenterCache('statusCode', implode('', $statusCode));
+        $this->saveToPresenterCache('infoCode', implode('', $infoCode));
     }
 
     public function renderDashboard() {
         $widget1 = $this->loadFromPresenterCache('statusCode');
+        $widget2 = $this->loadFromPresenterCache('infoCode');
 
         $this->template->widget1 = $widget1;
+        $this->template->widget2 = $widget2;
     }
 }
 

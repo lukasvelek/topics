@@ -261,6 +261,17 @@ class PostRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function getPostCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt'])
+            ->from('posts')
+            ->andWhere('isDeleted = 0')
+            ->execute();
+
+        return $qb->fetch('cnt') ?? 0;
+    }
 }
 
 ?>
