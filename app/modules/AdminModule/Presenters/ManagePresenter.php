@@ -43,6 +43,8 @@ class ManagePresenter extends AAdminPresenter {
             ';
         }
 
+        $this->saveToPresenterCache('statusCode', implode('', $statusCode));
+
         $userCount = $app->userRepository->getUsersCount();
         $postCount = $app->postRepository->getPostCount();
         $topicCount = $app->topicRepository->getTopicCount();
@@ -63,7 +65,6 @@ class ManagePresenter extends AAdminPresenter {
             </div>
         '];
 
-        $this->saveToPresenterCache('statusCode', implode('', $statusCode));
         $this->saveToPresenterCache('infoCode', implode('', $infoCode));
     }
 
