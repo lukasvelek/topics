@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Configuration;
+use App\Core\Datetypes\DateTime;
 use Exception;
 
 class CacheManager {
@@ -34,7 +35,10 @@ class CacheManager {
     }
 
     private function generateFilename(string $namespace) {
-        $filename = date('Y-m-d') . $namespace;
+        $date = new DateTime();
+        $date->format('Y-m-d');
+        
+        $filename = $date . $namespace;
         $filename = md5($filename);
 
         return $filename;

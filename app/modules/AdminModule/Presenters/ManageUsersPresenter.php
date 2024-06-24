@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
@@ -192,13 +193,15 @@ class ManageUsersPresenter extends AAdminPresenter {
             $this->flashMessage('User \'' . $user->getUsername() . '\' has been banned.');
             $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
+            $date = new DateTime();
+
             $fb = new FormBuilder();
 
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'banUser', 'isSubmit' => '1', 'userId' => $userId])
                 ->addTextArea('description', 'Reason:', null, true)
                 ->addSelect('type', 'Type:', [['value' => UserProsecutionType::BAN, 'text' => 'Ban'], ['value' => UserProsecutionType::PERMA_BAN, 'text' => 'Perma ban']], true)
-                ->addDatetime('startDate', 'Date from:', date('Y-m-d H:i:s'), true)
-                ->addDatetime('endDate', 'Date to:', date('Y-m-d H:i:s'), true)
+                ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
+                ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;

@@ -3,6 +3,7 @@
 namespace App\Modules;
 
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
@@ -121,9 +122,13 @@ abstract class APresenter extends AGUICore {
             $this->template->sys_page_content = '';
         }
 
+        $date = new DateTime();
+        $date->format('Y');
+        $date = $date->getResult();
+
         $this->template->sys_page_title = $this->title;
         $this->template->sys_app_name = $app->cfg['APP_NAME'];
-        $this->template->sys_copyright = ((date('Y') > 2024) ? ('2024-' . date('Y')) : (date('Y')));
+        $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
         
         if($app->currentUser !== null) {
             $this->template->sys_user_id = $app->currentUser->getId();
