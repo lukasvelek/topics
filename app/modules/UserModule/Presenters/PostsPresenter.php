@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
 use App\Exceptions\AException;
+use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -134,6 +135,10 @@ class PostsPresenter extends APresenter {
         $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
 
         $text = preg_replace($pattern, $replacement, $text);
+
+        $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
+
+        $text = $bannedWordsHelper->checkText($text);
 
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);

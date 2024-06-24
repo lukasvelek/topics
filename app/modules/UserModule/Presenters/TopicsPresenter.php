@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Constants\ReportCategory;
 use App\Core\CacheManager;
 use App\Exceptions\AException;
+use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -86,8 +87,10 @@ class TopicsPresenter extends APresenter {
 
         $this->saveToPresenterCache('newPostForm', $fb);
 
-        $this->addExternalScript('js/Reducer.js');
-        $this->addScript('reduceTopicProfile()');
+        if($topic->isDeleted()) {
+            $this->addExternalScript('js/Reducer.js');
+            $this->addScript('reduceTopicProfile()');
+        }
     }
 
     public function renderProfile() {
@@ -110,6 +113,11 @@ class TopicsPresenter extends APresenter {
         $text = $this->httpPost('text');
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
+
+        $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
+
+        $title = $bannedWordsHelper->checkText($title);
+        $text = $bannedWordsHelper->checkText($text);
 
         try {
             $app->postRepository->createNewPost($topicId, $userId, $title, $text);
@@ -172,6 +180,11 @@ class TopicsPresenter extends APresenter {
 
             $title = $this->httpPost('title');
             $description = $this->httpPost('description');
+
+            $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
+
+            $title = $bannedWordsHelper->checkText($title);
+            $description = $bannedWordsHelper->checkText($description);
 
             $topicId = null;
 
