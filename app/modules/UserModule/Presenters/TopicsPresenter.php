@@ -86,7 +86,7 @@ class TopicsPresenter extends APresenter {
 
         $this->saveToPresenterCache('newPostForm', $fb);
 
-        $this->addExternalScript('js/TopicReducer.js');
+        $this->addExternalScript('js/Reducer.js');
         $this->addScript('reduceTopicProfile()');
     }
 

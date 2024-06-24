@@ -85,7 +85,7 @@ class PostsPresenter extends APresenter {
         $this->saveToPresenterCache('postData', $postData);
 
         if($post->isDeleted()) {
-            $this->addExternalScript('js/PostReducer.js');
+            $this->addExternalScript('js/Reducer.js');
             $this->addScript('reducePostProfile()');
         }
     }
