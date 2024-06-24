@@ -4,8 +4,10 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\PostEntity;
 use App\Logger\Logger;
+use QueryBuilder\QueryBuilder;
 
 class PostRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -275,7 +277,8 @@ class PostRepository extends ARepository {
 
     public function deletePost(int $postId, bool $hide = true) {
         if($hide) {
-            return $this->updatePost($postId, ['isDeleted' => '1']);
+            $date = new DateTime();
+            return $this->updatePost($postId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
         } else {
             $qb = $this->qb(__METHOD__);
 
@@ -286,6 +289,46 @@ class PostRepository extends ARepository {
             
             return $qb->fetch();
         }
+    }
+
+    public function getDeletedPostsCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt'])
+            ->from('posts')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getDeletedPostsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 1');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    private function createPostsArrayFromQb(QueryBuilder $qb) {
+        $posts = [];
+
+        while($row = $qb->fetchAssoc()) {
+            $posts[] = PostEntity::createEntityFromDbRow($row);
+        }
+
+        return $posts;
     }
 }
 

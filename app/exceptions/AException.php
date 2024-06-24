@@ -61,6 +61,7 @@ abstract class AException extends Exception {
         $hash = HashManager::createHash(8, false);
 
         $date = new DateTime();
+        $date->format('Y-m-d_H-i-s');
 
         $filePath = 'exception_' . $date . '_' . $hash . '.html';
 

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\PostCommentEntity;
 use App\Logger\Logger;
 
@@ -161,8 +162,6 @@ class PostCommentRepository extends ARepository {
         
         // check
         $result = $this->checkLike($userId, $commentId);
-
-        $this->logger->info('Like check result: ' . ($result ? 'true' : 'false'), __METHOD__);
         
         if($result === false) {
             return false;
@@ -202,9 +201,8 @@ class PostCommentRepository extends ARepository {
             ->where('parentCommentId = ?', [$commentId])
             ->andWhere('postId = ?', [$postId])
             ->andWhere('isDeleted = 0')
-            ->orderBy('dateCreated', 'DESC');
-
-        $qb->execute();
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
 
         $entities = [];
         while($row = $qb->fetchAssoc()) {
@@ -238,7 +236,8 @@ class PostCommentRepository extends ARepository {
 
     public function deleteComment(int $commentId, bool $hide = true) {
         if($hide) {
-            return $this->updateComment($commentId, ['isDeleted' => '1']);
+            $date = new DateTime();
+            return $this->updateComment($commentId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
         } else {
             $qb = $this->qb(__METHOD__);
 
@@ -249,6 +248,33 @@ class PostCommentRepository extends ARepository {
 
             return $qb->fetch();
         }
+    }
+
+    public function getDeletedComments() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+
+    public function getDeletedCommentCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(commentId) AS cnt'])
+            ->from('post_comments')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        return $qb->fetch('cnt');
     }
 }
 

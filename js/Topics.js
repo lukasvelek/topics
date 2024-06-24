@@ -194,7 +194,7 @@ function getUserProsecutions(_page, _userId) {
     .done(function( data ) {
         const obj = JSON.parse(data);
 
-        $("#grid-content").append(obj.grid);
+        $("#grid-content").html(obj.grid);
         $("#grid-paginator").html(obj.paginator);
     });
 }
@@ -211,7 +211,7 @@ function getUserProsecutionLog(_page, _userId) {
     .done(function( data ) {
         const obj = JSON.parse(data);
 
-        $("#grid-content").append(obj.grid);
+        $("#grid-content").html(obj.grid);
         $("#grid-paginator").html(obj.paginator);
     });
 }
@@ -228,7 +228,7 @@ function getGroups(_page, _userId) {
     .done(function( data ) {
         const obj = JSON.parse(data);
 
-        $("#grid-content").append(obj.grid);
+        $("#grid-content").html(obj.grid);
         $("#grid-paginator").html(obj.paginator);
     });
 }
@@ -246,7 +246,7 @@ function getGroupMembers(_page, _groupId, _userId) {
     .done(function( data ) {
         const obj = JSON.parse(data);
 
-        $("#grid-content").append(obj.grid);
+        $("#grid-content").html(obj.grid);
         $("#grid-paginator").html(obj.paginator);
     });
 }
@@ -261,4 +261,10 @@ function getDeletedContent(_page, _userId, _filter) {
             action: "getDeletedContent"
         }
     )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").html(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
 }

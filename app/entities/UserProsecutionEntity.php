@@ -44,6 +44,9 @@ class UserProsecutionEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['prosecutionId'], $row['userId'], $row['type'], $row['reason'], $row['startDate'], $row['endDate']);
     }
 }

@@ -62,6 +62,9 @@ class ReportEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['reportId'], $row['userId'], $row['entityId'], $row['entityType'], $row['category'], $row['description'], $row['status'], $row['statusComment'], $row['dateCreated']);
     }
 }

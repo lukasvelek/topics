@@ -23,7 +23,9 @@ class ManagePostsPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->postCommentRepository->updateComment($commentId, ['isDeleted' => '1']);
+            //$app->postCommentRepository->updateComment($commentId, ['isDeleted' => '1']);
+
+            $app->contentManager->deleteComment($commentId);
 
             $this->flashMessage('Comment deleted.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
@@ -57,15 +59,7 @@ class ManagePostsPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
-
-            $comments = $app->postCommentRepository->getCommentsForPostId($postId);
-
-            foreach($comments as $comment) {
-                $app->postCommentRepository->updateComment($comment->getId(), ['isDeleted' => '1']);
-            }
-
-            CacheManager::invalidateCache('posts');
+            $app->contentManager->deletePost($postId);
 
             $this->flashMessage('Post deleted with all its comments.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);

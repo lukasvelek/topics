@@ -48,7 +48,9 @@ if(isset($_GET['action'])) {
 }
 
 if($action !== null) {
-    echo $action();
+    echo $app->logger->stopwatch(function() use ($action) {
+        return $action();
+    }, '(AJAX) ' . $action);
 }
 
 ?>

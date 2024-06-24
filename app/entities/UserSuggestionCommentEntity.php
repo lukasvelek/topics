@@ -50,6 +50,9 @@ class UserSuggestionCommentEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['commentId'], $row['suggestionId'], $row['userId'], $row['commentText'], $row['adminOnly'], $row['dateCreated'], $row['statusChange']);
     }
 }

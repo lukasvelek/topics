@@ -4,9 +4,11 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
+use QueryBuilder\QueryBuilder;
 
 class TopicRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -234,7 +236,8 @@ class TopicRepository extends ARepository {
 
     public function deleteTopic(int $topicId, bool $hide = true) {
         if($hide) {
-            return $this->updateTopic($topicId, ['isDeleted' => '1']);
+            $date = new DateTime();
+            return $this->updateTopic($topicId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
         } else {
             $qb = $this->qb(__METHOD__);
 
@@ -245,6 +248,46 @@ class TopicRepository extends ARepository {
 
             return $qb->fetch();
         }
+    }
+
+    public function getDeletedTopicsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where('isDeleted = 1');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function getDeletedTopicCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(topicId) AS cnt'])
+            ->from('topics')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    private function createTopicsArrayFromQb(QueryBuilder $qb) {
+        $topics = [];
+
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        return $topics;
     }
 }
 
