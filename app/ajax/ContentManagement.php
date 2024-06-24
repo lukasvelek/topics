@@ -1,6 +1,7 @@
 <?php
 
 use App\Constants\ReportEntityType;
+use App\Entities\BannedWordEntity;
 use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
@@ -114,6 +115,35 @@ function getDeletedContent() {
     }
 
     $paginator = _createDeletedContentGridControls('getDeletedContent', $page, $lastPage, $app->currentUser->getId(), $filter);
+
+    return json_encode(['grid' => $gb->build(), 'paginator' => $paginator]);
+}
+
+function getBannedWords() {
+    global $app;
+
+    $page = (int)(httpGet('page'));
+
+    $gridSize = $app->cfg['GRID_SIZE'];
+
+    $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
+    $lastPage = ceil($app->contentRegulationRepository->getBannedWordsCount() / $gridSize);
+
+    $gb = new GridBuilder();
+    $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
+    $gb->addDataSource($data);
+    $gb->addOnColumnRender('author', function(BannedWordEntity $bwe) use ($app) {
+        $user = $app->userRepository->getUserById($bwe->getAuthorId());
+        return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+    });
+    $gb->addOnColumnRender('date', function(BannedWordEntity $bwe) {
+        return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
+    });
+    $gb->addAction(function(BannedWordEntity $bwe) {
+        return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'post-data-link');
+    });
+
+    $paginator = $gb->createGridControls('getBannedWords', $page, $lastPage, $app->currentUser->getId());
 
     return json_encode(['grid' => $gb->build(), 'paginator' => $paginator]);
 }

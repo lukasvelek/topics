@@ -268,3 +268,20 @@ function getDeletedContent(_page, _userId, _filter) {
         $("#grid-paginator").html(obj.paginator);
     });
 }
+
+function getBannedWords(_page, _userId) {
+    $.get(
+        "app/ajax/ContentManagement.php",
+        {
+            page: _page,
+            action: "getBannedWords",
+            callingUserId: _userId
+        }
+    )
+    .done(function( data ) {
+        const obj = JSON.parse(data);
+
+        $("#grid-content").html(obj.grid);
+        $("#grid-paginator").html(obj.paginator);
+    });
+}

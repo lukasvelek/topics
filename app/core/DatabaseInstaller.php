@@ -148,6 +148,12 @@ class DatabaseInstaller {
                 'groupId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'banned_words' => [
+                'wordId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'word' => 'VARCHAR(256)',
+                'authorId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

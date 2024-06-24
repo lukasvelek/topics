@@ -48,6 +48,11 @@ if(isset($_GET['action'])) {
 }
 
 if($action !== null) {
+    if($action[0] == '_') {
+        echo 'Cannot call internal functions from outside!';
+        exit;
+    }
+
     echo $app->logger->stopwatch(function() use ($action) {
         return $action();
     }, '(AJAX) ' . $action);

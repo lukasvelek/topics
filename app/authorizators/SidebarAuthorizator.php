@@ -84,6 +84,18 @@ class SidebarAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canManageBannedWords(int $userId) {
+        if(!$this->isUserAdmin($userId)) {
+            return false;
+        }
+
+        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

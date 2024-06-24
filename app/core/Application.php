@@ -13,6 +13,7 @@ use App\Logger\Logger;
 use App\Managers\ContentManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
+use App\Repositories\ContentRegulationRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
@@ -47,6 +48,7 @@ class Application {
     public ReportRepository $reportRepository;
     public UserProsecutionRepository $userProsecutionRepository;
     public GroupRepository $groupRepository;
+    public ContentRegulationRepository $contentRegulationRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -83,6 +85,7 @@ class Application {
         $this->reportRepository = new ReportRepository($this->db, $this->logger);
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
         $this->groupRepository = new GroupRepository($this->db, $this->logger);
+        $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
