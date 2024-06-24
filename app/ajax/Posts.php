@@ -37,8 +37,10 @@ function loadPostsForTopic() {
     $limit = (int)(httpGet('limit'));
     $offset = (int)(httpGet('offset'));
 
-    $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset);
-    $postCount = $app->postRepository->getPostCountForTopicId($topicId);
+    $topic = $app->topicRepository->getTopicById($topicId);
+
+    $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
+    $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
     $code = [];
 
@@ -86,8 +88,10 @@ function loadCommentsForPost() {
     $limit = (int)(httpGet('limit'));
     $offset = (int)(httpGet('offset'));
 
-    $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset);
-    $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId);
+    $post = $app->postRepository->getPostById($postId);
+
+    $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
+    $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
 
     $code = [];
 
@@ -150,11 +154,17 @@ function createNewPostCommentForm() {
 function _createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
     global $app;
 
+    $post = $app->postRepository->getPostById($postId);
+
     $author = $app->userRepository->getUserById($comment->getAuthorId());
     $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
 
     $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
-    $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+    if(!$post->isDeleted()) {
+        $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+    } else {
+        $likeLink = '';
+    }
 
     $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
     $childCommentsCode = [];
@@ -165,10 +175,14 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
         }
     }
 
-    $reportForm = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+    if(!$post->isDeleted()) {
+        $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+    } else {
+        $reportForm = '';
+    }
     $deleteLink = '';
     
-    if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId())) {
+    if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId()) && !$post->isDeleted()) {
         $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
     }
 
@@ -179,9 +193,9 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
                 <div>
                     <p class="post-text">' . $comment->getText() . '</p>
                     <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' | ' . $reportForm . $deleteLink . '
+                                          | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
                     </p>
-                    <a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>
+                    ' . ($post->isDeleted() ? '' : '<a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $app->currentUser->getId() . ', ' . $postId . ')">Add comment</a>') . '
                 </div>
                 <div class="row">
                     <div class="col-md-2"></div>

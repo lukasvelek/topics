@@ -14,6 +14,7 @@ abstract class APresenter extends AGUICore {
     private string $title;
     private ?string $action;
     private array $presenterCache;
+    private array $scripts;
 
     protected ?TemplateObject $template;
 
@@ -29,6 +30,7 @@ abstract class APresenter extends AGUICore {
         $this->action = null;
         $this->template = null;
         $this->presenterCache = [];
+        $this->scripts = [];
     }
 
     protected function createCustomFlashMessage(string $type, string $text) {
@@ -129,6 +131,7 @@ abstract class APresenter extends AGUICore {
         $this->template->sys_page_title = $this->title;
         $this->template->sys_app_name = $app->cfg['APP_NAME'];
         $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
+        $this->template->sys_scripts = $this->scripts;
         
         if($app->currentUser !== null) {
             $this->template->sys_user_id = $app->currentUser->getId();
@@ -203,6 +206,14 @@ abstract class APresenter extends AGUICore {
         foreach($this->afterRenderCallbacks as $callback) {
             $callback();
         }
+    }
+
+    public function addExternalScript(string $scriptPath) {
+        $this->scripts[] = '<script type="text/javascript" src="' . $scriptPath . '"></script>';
+    }
+
+    public function addScript(string $scriptContent) {
+        $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 }
 

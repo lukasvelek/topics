@@ -38,15 +38,18 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function getLatestCommentsForPostId(int $postId, int $limit = 0, int $offset = 0) {
+    public function getLatestCommentsForPostId(int $postId, int $limit = 0, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
             ->andWhere('parentCommentId IS NULL')
-            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
 
         if($limit > 0) {
             $qb->limit($limit);
@@ -84,14 +87,17 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getCommentCountForPostId(int $postId) {
+    public function getCommentCountForPostId(int $postId, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
-            ->andWhere('isDeleted = 0')
             ->execute();
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
 
         return $qb->fetch('cnt');
     }

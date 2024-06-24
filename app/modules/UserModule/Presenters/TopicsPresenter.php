@@ -38,23 +38,34 @@ class TopicsPresenter extends APresenter {
         $managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
 
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
-        $postCount = $app->postRepository->getPostCountForTopicId($topicId);
+        $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
         $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
         $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
         $isManager = $app->currentUser->getId() == $topic->getManagerId();
+        $finalFollowLink = '';
 
-        $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+        if(!$topic->isDeleted()) {
+            $finalFollowLink = ($followed ? ($isManager ? '' : $unFollowLink) : $followLink);
+        }
+
+        $reportLink = '';
+
+        if(!$topic->isDeleted()) {
+            $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+        }
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId())) {
+        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId()) && !$topic->isDeleted()) {
             $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p>';
+        } else if($topic->isDeleted()) {
+            $deleteLink = '<p class="post-data">Topic deleted</p>';
         }
 
         $code = '
-            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
+            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
@@ -74,6 +85,9 @@ class TopicsPresenter extends APresenter {
         ;
 
         $this->saveToPresenterCache('newPostForm', $fb);
+
+        $this->addExternalScript('js/TopicReducer.js');
+        $this->addScript('reduceTopicProfile()');
     }
 
     public function renderProfile() {

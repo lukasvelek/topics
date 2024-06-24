@@ -14,19 +14,20 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $count = 5, int $offset = 0) {
+    public function getLatestPostsForTopicId(int $topicId, int $count = 5, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
-            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
-            
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }   
         if($count > 0) {
             $qb->limit($count);
         }
-
         if($offset > 0) {
             $qb->offset($offset);
         }
@@ -201,14 +202,18 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function getPostCountForTopicId(int $topicId) {
+    public function getPostCountForTopicId(int $topicId, bool $deletedOnly) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(postId) AS cnt'])
             ->from('posts')
-            ->where('topicId = ?', [$topicId])
-            ->andWhere('isDeleted = 0')
-            ->execute();
+            ->where('topicId = ?', [$topicId]);
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
+
+        $qb->execute();
 
         return $qb->fetch('cnt') ?? 0;
     }

@@ -50,21 +50,31 @@ class PostsPresenter extends APresenter {
         $likeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=like&postId=' . $postId . '">Like</a>';
         $unlikeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=unlike&postId=' . $postId . '">Unlike</a>';
         $liked = $app->postRepository->checkLike($app->currentUser->getId(), $postId);
+        $finalLikeLink = '';
+
+        if(!$post->isDeleted()) {
+            $finalLikeLink = ' ' . ($liked ? $unlikeLink : $likeLink);
+        }
 
         $author = $app->userRepository->getUserById($post->getAuthorId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
 
-        $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
+        $reportLink = '';
+        if(!$post->isDeleted()) {
+            $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
+        }
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId())) {
+        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId()) && !$post->isDeleted()) {
             $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
+        } else if($post->isDeleted()) {
+            $deleteLink = '<p class="post-data">Post deleted</p>';
         }
 
         $postData = '
             <div>
-                <p class="post-data">Likes: ' . $likes . ' ' . ($liked ? $unlikeLink : $likeLink) . '</p>
+                <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
                 <p class="post-data">' . $reportLink . '</p>
@@ -73,6 +83,11 @@ class PostsPresenter extends APresenter {
         ';
 
         $this->saveToPresenterCache('postData', $postData);
+
+        if($post->isDeleted()) {
+            $this->addExternalScript('js/PostReducer.js');
+            $this->addScript('reducePostProfile()');
+        }
     }
 
     public function renderProfile() {

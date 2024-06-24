@@ -52,6 +52,9 @@ function getDeletedContent() {
             $gb->addOnColumnRender('dateDeleted', function(TopicEntity $topic) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted()) ?? '-';
             });
+            $gb->addOnColumnRender('title', function(TopicEntity $topic) {
+                return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+            });
 
             break;
 
@@ -73,6 +76,9 @@ function getDeletedContent() {
             });
             $gb->addOnColumnRender('dateDeleted', function(PostEntity $post) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateDeleted()) ?? '-';
+            });
+            $gb->addOnColumnRender('title', function(PostEntity $post) {
+                return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
             });
 
             break;
