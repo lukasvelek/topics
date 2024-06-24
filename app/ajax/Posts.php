@@ -2,6 +2,7 @@
 
 use App\Components\PostLister\PostLister;
 use App\Entities\PostCommentEntity;
+use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 
@@ -48,21 +49,27 @@ function loadPostsForTopic() {
         return json_encode(['posts' => '<p class="post-text" id="center">No posts found. Create one!</p>', 'loadMoreLink' => '']);
     }
 
+    $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
     foreach($posts as $post) {
         $author = $app->userRepository->getUserById($post->getAuthorId());
         $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
 
-        $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
+        $title = $bwh->checkText($post->getTitle());
+
+        $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
         $liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
         $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $post->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+
+        $shortenedText = $bwh->checkText($post->getShortenedText(100));
 
         $tmp = [
             '<div class="row" id="post-' . $post->getId() . '">',
             '<div class="col-md">',
             '<p class="post-title">' . $postLink . '</p>',
             '<hr>',
-            '<p class="post-text">' . $post->getShortenedText(100) . '</p>',
+            '<p class="post-text">' . $shortenedText . '</p>',
             '<hr>',
             '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
             ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
@@ -154,6 +161,8 @@ function createNewPostCommentForm() {
 function _createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
     global $app;
 
+    $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
     $post = $app->postRepository->getPostById($postId);
 
     $author = $app->userRepository->getUserById($comment->getAuthorId());
@@ -186,12 +195,14 @@ function _createPostComment(int $postId, PostCommentEntity $comment, bool $paren
         $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
     }
 
+    $text = $bwh->checkText($comment->getText());
+
     $code = '
         <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
             ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
             <div class="col-md">
                 <div>
-                    <p class="post-text">' . $comment->getText() . '</p>
+                    <p class="post-text">' . $text . '</p>
                     <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
                                           | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
                     </p>

@@ -138,7 +138,7 @@ class PostsPresenter extends APresenter {
 
         $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
 
-        $text = $bannedWordsHelper->checkText($text);
+        //$text = $bannedWordsHelper->checkText($text);
 
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);

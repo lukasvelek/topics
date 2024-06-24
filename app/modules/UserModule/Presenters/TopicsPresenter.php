@@ -114,11 +114,6 @@ class TopicsPresenter extends APresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
-        $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
-
-        $title = $bannedWordsHelper->checkText($title);
-        $text = $bannedWordsHelper->checkText($text);
-
         try {
             $app->postRepository->createNewPost($topicId, $userId, $title, $text);
         } catch (AException $e) {
@@ -180,11 +175,6 @@ class TopicsPresenter extends APresenter {
 
             $title = $this->httpPost('title');
             $description = $this->httpPost('description');
-
-            $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
-
-            $title = $bannedWordsHelper->checkText($title);
-            $description = $bannedWordsHelper->checkText($description);
 
             $topicId = null;
 
