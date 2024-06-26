@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class ManageBannedWordsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -35,11 +36,11 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $this->template->links = $links;
     }
 
-    public function handleNewForm() {
+    public function handleNewForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') == '1') {
-            $word = $this->httpPost('word');
+            $word = $fr->word;
 
             $app->contentRegulationRepository->createNewBannedWord($word, $app->currentUser->getId());
 
@@ -59,7 +60,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
     public function handleDelete() {

@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\CacheManager;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
 
 class ManageGroupsPresenter extends AAdminPresenter {
@@ -66,14 +67,14 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $this->template->group_title = $group->getTitle();
     }
 
-    public function handleNewMember() {
+    public function handleNewMember(?FormResponse $fr = null) {
         global $app;
 
         $groupId = $this->httpGet('groupId', true);
         $group = $app->groupRepository->getGroupById($groupId);
 
         if($this->httpGet('isSubmit') == '1') {
-            $user = $this->httpPost('user');
+            $user = $fr->user;
             $userEntity = $app->userRepository->getUserById($user);
 
             $app->groupRepository->addGroupMember($groupId, $user);
@@ -100,10 +101,10 @@ class ManageGroupsPresenter extends AAdminPresenter {
     public function renderNewMember() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleRemoveMember() {
+    public function handleRemoveMember(?FormResponse $fr = null) {
         global $app;
 
         $groupId = $this->httpGet('groupId');
@@ -134,7 +135,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
     public function renderRemoveMember() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

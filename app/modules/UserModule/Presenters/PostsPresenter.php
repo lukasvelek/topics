@@ -8,6 +8,7 @@ use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class PostsPresenter extends APresenter {
     public function __construct() {
@@ -39,7 +40,13 @@ class PostsPresenter extends APresenter {
         // new comment form
         $fb = new FormBuilder();
 
-        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId])
+        $newCommentFormUrl = ['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId];
+
+        if($parentCommentId !== null) {
+            $newCommentFormUrl['parentCommentId'] = $parentCommentId;
+        }
+
+        $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
             ->addSubmit('Post')
         ;
@@ -112,16 +119,16 @@ class PostsPresenter extends APresenter {
         $this->template->post_title = $topicLink . ' | ' . $postTitle;
         $this->template->post_text = $postDescription;
         $this->template->latest_comments = $comments;
-        $this->template->new_comment_form = $form->render();
+        $this->template->new_comment_form = $form;
         $this->template->post_data = $postData;
     }
 
-    public function handleNewComment() {
+    public function handleNewComment(FormResponse $fr) {
         global $app;
 
+        $text = $fr->text;
         $postId = $this->httpGet('postId');
         $authorId = $app->currentUser->getId();
-        $text = $this->httpPost('text');
         $parentCommentId = $this->httpGet('parentCommentId');
 
         $matches = [];
@@ -147,10 +154,6 @@ class PostsPresenter extends APresenter {
 
         $text = preg_replace($pattern, $replacement, $text);
 
-        $bannedWordsHelper = new BannedWordsHelper($app->contentRegulationRepository);
-
-        //$text = $bannedWordsHelper->checkText($text);
-
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
         } catch (AException $e) {
@@ -162,14 +165,14 @@ class PostsPresenter extends APresenter {
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
 
-    public function handleReportForm() {
+    public function handleReportForm(?FormResponse $fr = null) {
         global $app;
 
         $postId = $this->httpGet('postId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createPostReport($userId, $postId, $category, $description);
@@ -205,18 +208,18 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->post_title = $post->getTitle();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleReportComment() {
+    public function handleReportComment(?FormResponse $fr = null) {
         global $app;
 
         $commentId = $this->httpGet('commentId');
         $comment = $app->postCommentRepository->getCommentById($commentId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
@@ -251,10 +254,10 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleDeleteComment() {
+    public function handleDeleteComment(?FormResponse $fr = null) {
         global $app;
 
         $commentId = $this->httpGet('commentId');
@@ -280,10 +283,10 @@ class PostsPresenter extends APresenter {
     public function renderDeleteComment() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleDeletePost() {
+    public function handleDeletePost(?FormResponse $fr = null) {
         global $app;
 
         $postId = $this->httpGet('postId');
@@ -308,7 +311,7 @@ class PostsPresenter extends APresenter {
     public function renderDeletePost() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

@@ -7,6 +7,7 @@ use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
+use App\UI\FormBuilder\FormResponse;
 
 abstract class APresenter extends AGUICore {
     private array $params;
@@ -171,8 +172,14 @@ abstract class APresenter extends AGUICore {
 
         if(method_exists($this, $handleAction)) {
             $ok = true;
-            $app->logger->stopwatch(function() use ($handleAction) {
-                return $this->$handleAction();
+            $params = $this->getQueryParams();
+            $app->logger->stopwatch(function() use ($handleAction, $params) {
+                if(isset($params['isFormSubmit']) == '1') {
+                    $fr = $this->createFormResponse();
+                    return $this->$handleAction($fr);
+                } else {
+                    return $this->$handleAction();
+                }
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $handleAction);
         }
 
@@ -208,12 +215,50 @@ abstract class APresenter extends AGUICore {
         }
     }
 
-    public function addExternalScript(string $scriptPath) {
+    protected function addExternalScript(string $scriptPath) {
         $this->scripts[] = '<script type="text/javascript" src="' . $scriptPath . '"></script>';
     }
 
-    public function addScript(string $scriptContent) {
+    protected function addScript(string $scriptContent) {
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
+    }
+
+    private function getQueryParams() {
+        $keys = array_keys($_GET);
+
+        $values = [];
+        foreach($keys as $key) {
+            if($key == 'page' || $key == 'action') {
+                continue;
+            }
+
+            $values[$key] = $this->httpGet($key);
+        }
+
+        return $values;
+    }
+
+    private function getPostParams() {
+        $keys = array_keys($_POST);
+
+        $values = [];
+        foreach($keys as $key) {
+            $values[$key] = $this->httpPost($key);
+        }
+
+        return $values;
+    }
+
+    private function createFormResponse() {
+        if(!empty($_POST)) {
+            $values = $this->getPostParams();
+
+            var_dump($values);
+
+            return FormResponse::createFormResponseFromPostData($values);
+        } else {
+            return null;
+        }
     }
 }
 

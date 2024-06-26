@@ -2,10 +2,10 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -103,16 +103,16 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $this->template->description = $suggestion->getText();
         $this->template->data = $data;
         $this->template->comments = $comments;
-        $this->template->comment_form = $form->render();
+        $this->template->comment_form = $form;
         $this->template->admin_part = $adminPart;
     }
 
-    public function handleNewComment() {
+    public function handleNewComment(?FormResponse $fr = null) {
         global $app;
 
         $userId = $app->currentUser->getId();
         $suggestionId = $this->httpGet('suggestionId');
-        $text = $this->httpPost('text');
+        $text = $fr->text;
         $adminOnly = false;
 
         if($this->httpPost('adminOnly') !== null &&
@@ -127,7 +127,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 
-    public function handleEditForm() {
+    public function handleEditForm(?FormResponse $fr = null) {
         global $app;
 
         $suggestionId = $this->httpGet('suggestionId', true);
@@ -138,8 +138,8 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $userId = $app->currentUser->getId();
             $user = $app->currentUser;
-            $category = $this->httpPost('category');
-            $status = $this->httpPost('status');
+            $category = $fr->category;
+            $status = $fr->status;
 
             $values = [];
 
@@ -200,7 +200,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $form = $this->loadFromPresenterCache('form');
         $suggestion = $this->loadFromPresenterCache('suggestion');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
         $this->template->suggestion_title = $suggestion->getTitle();
     }
 

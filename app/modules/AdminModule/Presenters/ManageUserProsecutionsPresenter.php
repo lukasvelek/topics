@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Components\Sidebar\Sidebar;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
 
 class ManageUserProsecutionsPresenter extends AAdminPresenter {
@@ -48,14 +49,14 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $this->template->links = $links;
     }
 
-    public function handleRemoveProsecution() {
+    public function handleRemoveProsecution(?FormResponse $fr = null) {
         global $app;
 
         $prosecutionId = $this->httpGet('prosecutionId', true);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $reason = $this->httpPost('reason');
-            $password = $this->httpPost('password');
+            $reason = $fr->reason;
+            $password = $fr->password;
 
             try {
                 $app->userAuth->authUser($password);
@@ -94,7 +95,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     public function renderRemoveProsecution() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
     public function handleLogList() {

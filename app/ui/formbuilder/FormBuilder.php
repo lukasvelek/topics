@@ -6,14 +6,14 @@ use App\Core\HashManager;
 use App\UI\IRenderable;
 
 class FormBuilder implements IRenderable {
-    private string $handlerUrl;
+    private array $handlerUrl;
     private string $method;
     private array $elements;
     private bool $isInSection;
     private ?Section $currentSection;
 
     public function __construct() {
-        $this->handlerUrl = '';
+        $this->handlerUrl = [];
         $this->method = 'POST';
         $this->elements = [];
         $this->isInSection = false;
@@ -54,19 +54,13 @@ class FormBuilder implements IRenderable {
     }
 
     public function setAction(array $action) {
-        $tmp = [];
-
-        foreach($action as $k => $v) {
-            if($v !== null) {
-                $tmp[] = $k . '=' . $v;
-            }
-        }
-
-        $url = '?' . implode('&', $tmp);
-
-        $this->handlerUrl = $url;
+        $this->handlerUrl = $action;
 
         return $this;
+    }
+
+    public function getAction() {
+        return $this->handlerUrl;
     }
 
     public function addLabel(string $text, ?string $for = null) {
@@ -205,7 +199,14 @@ class FormBuilder implements IRenderable {
     }
 
     public function render() {
-        $code = '<form action="' . $this->handlerUrl . '" method="' . $this->method . '">';
+        $tmp = [];
+        foreach($this->handlerUrl as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        $url = '?' . implode('&', $tmp);
+
+        $code = '<form action="' . $url . '" method="' . $this->method . '">';
 
         $i = 0;
         foreach($this->elements as $element) {

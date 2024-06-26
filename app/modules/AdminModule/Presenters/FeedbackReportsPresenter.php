@@ -2,13 +2,13 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\ReportCategory;
 use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
 use App\Constants\UserProsecutionType;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class FeedbackReportsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -170,14 +170,14 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $this->template->admin_part = $adminLinks;
     }
 
-    public function handleResolutionForm() {
+    public function handleResolutionForm(?FormResponse $fr = null) {
         global $app;
 
         $reportId = $this->httpGet('reportId', true);
         $report = $app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $comment = $this->httpPost('comment');
+            $comment = $fr->comment;
             $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
             $text = 'User ' . $userLink . ' closed this report with comment: ' . $comment;
 
@@ -217,7 +217,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
     public function renderResolutionForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

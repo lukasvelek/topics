@@ -9,6 +9,7 @@ use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
@@ -45,14 +46,14 @@ class ManageUsersPresenter extends AAdminPresenter {
         $this->template->links = [$newUserLink];
     }
 
-    public function handleUnsetAdmin() {
+    public function handleUnsetAdmin(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $password = $this->httpPost('password');
+            $password = $fr->password;
 
             try {
                 $app->userAuth->authUser($password);
@@ -84,17 +85,17 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function renderUnsetAdmin() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleSetAdmin() {
+    public function handleSetAdmin(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $password = $this->httpPost('password');
+            $password = $fr->password;
 
             try {
                 $app->userAuth->authUser($password);
@@ -126,10 +127,10 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function renderSetAdmin() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
     
-    public function handleWarnUser() {
+    public function handleWarnUser(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
@@ -137,7 +138,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $reason = $this->httpPost('description');
+            $reason = $fr->description;
 
             $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
 
@@ -158,10 +159,10 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function renderWarnUser() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleBanUser() {
+    public function handleBanUser(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
@@ -169,10 +170,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $reason = $this->httpPost('description');
-            $type = $this->httpPost('type');
-            $startDate = $this->httpPost('startDate');
-            $endDate = $this->httpPost('endDate');
+            $reason = $fr->description;
+            $type = $fr->type;
+            $startDate = $fr->startDate;
+            $endDate = $fr->endDate;
 
             if($type == UserProsecutionType::PERMA_BAN) {
                 try {
@@ -213,17 +214,17 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function renderBanUser() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleNewForm() {
+    public function handleNewForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') == '1') {
-            $username = $this->httpPost('username');
-            $password = $this->httpPost('password');
-            $email = $this->httpPost('email');
-            $isAdmin = $this->httpPost('isAdmin') == 'on';
+            $username = $fr->username;
+            $password = $fr->password;
+            $email = $fr->email;
+            $isAdmin = $fr->evalBool($fr->isAdmin, 'on');
 
             if($email == '') {
                 $email = null;
@@ -253,7 +254,7 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

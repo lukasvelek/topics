@@ -9,6 +9,7 @@ use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -115,11 +116,11 @@ class TopicsPresenter extends APresenter {
         $this->template->new_post_form = $fb->render();
     }
 
-    public function handleNewPost() {
+    public function handleNewPost(?FormResponse $fr = null) {
         global $app;
 
-        $title = $this->httpPost('title');
-        $text = $this->httpPost('text');
+        $title = $fr->title;
+        $text = $fr->text;
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
@@ -176,14 +177,14 @@ class TopicsPresenter extends APresenter {
         $this->template->search_data = $this->loadFromPresenterCache('topics');
     }
 
-    public function handleForm() {
+    public function handleForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             // process submitted form
 
-            $title = $this->httpPost('title');
-            $description = $this->httpPost('description');
+            $title = $fr->title;
+            $description = $fr->description;
 
             $topicId = null;
 
@@ -324,14 +325,14 @@ class TopicsPresenter extends APresenter {
         $this->template->topics = $topics;
     }
 
-    public function handleReportForm() {
+    public function handleReportForm(?FormResponse $fr = null) {
         global $app;
 
         $topicId = $this->httpGet('topicId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
@@ -367,10 +368,10 @@ class TopicsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->topic_title = $topic->getTitle();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleDeleteTopic() {
+    public function handleDeleteTopic(?FormResponse $fr = null) {
         global $app;
 
         $topicId = $this->httpGet('topicId');
@@ -395,7 +396,7 @@ class TopicsPresenter extends APresenter {
     public function renderDeleteTopic() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

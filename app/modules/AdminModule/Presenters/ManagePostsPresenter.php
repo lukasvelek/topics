@@ -2,9 +2,8 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
-use App\Core\CacheManager;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class ManagePostsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -15,7 +14,7 @@ class ManagePostsPresenter extends AAdminPresenter {
         });
     }
 
-    public function handleDeleteComment() {
+    public function handleDeleteComment(?FormResponse $fr = null) {
         global $app;
 
         $commentId = $this->httpGet('commentId', true);
@@ -23,8 +22,6 @@ class ManagePostsPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            //$app->postCommentRepository->updateComment($commentId, ['isDeleted' => '1']);
-
             $app->contentManager->deleteComment($commentId);
 
             $this->flashMessage('Comment deleted.', 'success');
@@ -48,10 +45,10 @@ class ManagePostsPresenter extends AAdminPresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleDeletePost() {
+    public function handleDeletePost(?FormResponse $fr = null) {
         global $app;
 
         $postId = $this->httpGet('postId', true);
@@ -82,7 +79,7 @@ class ManagePostsPresenter extends AAdminPresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->post_title = '\'' . $post->getTitle() . '\'';
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 
