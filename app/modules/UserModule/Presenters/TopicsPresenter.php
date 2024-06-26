@@ -18,6 +18,8 @@ class TopicsPresenter extends APresenter {
     public function handleProfile() {
         global $app;
 
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
         $topicId = $this->httpGet('topicId');
 
         if(!$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
@@ -27,8 +29,13 @@ class TopicsPresenter extends APresenter {
 
         // topic info
         $topic = $app->topicRepository->getTopicById($topicId);
-
         $this->saveToPresenterCache('topic', $topic);
+
+        $topicName = $bwh->checkText($topic->getTitle());
+        $this->saveToPresenterCache('topicName', $topicName);
+
+        $topicDescription = $bwh->checkText($topic->getDescription());
+        $this->saveToPresenterCache('topicDescription', $topicDescription);
 
         // posts
         $this->saveToPresenterCache('posts', '<script type="text/javascript">loadPostsForTopic(' . $topicId .', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="post-list"></div><div id="post-list-link"></div><br>');
@@ -98,9 +105,11 @@ class TopicsPresenter extends APresenter {
         $posts = $this->loadFromPresenterCache('posts');
         $topicData = $this->loadFromPresenterCache('topicData');
         $fb = $this->loadFromPresenterCache('newPostForm');
+        $topicName = $this->loadFromPresenterCache('topicName');
+        $topicDescription = $this->loadFromPresenterCache('topicDescription');
 
-        $this->template->topic_title = $topic->getTitle();
-        $this->template->topic_description = $topic->getDescription();
+        $this->template->topic_title = $topicName;
+        $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
         $this->template->new_post_form = $fb->render();

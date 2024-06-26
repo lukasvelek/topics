@@ -17,6 +17,8 @@ class PostsPresenter extends APresenter {
     public function handleProfile() {
         global $app;
 
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
@@ -26,6 +28,9 @@ class PostsPresenter extends APresenter {
         }
 
         $this->saveToPresenterCache('post', $post);
+        
+        $postTitle = $bwh->checkText($post->getTitle());
+        $this->saveToPresenterCache('postTitle', $postTitle);
 
         $this->saveToPresenterCache('comments', '<script type="text/javascript">loadCommentsForPost(' . $postId . ', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="comments-list"></div><div id="comments-list-link"></div><br>');
 
@@ -42,9 +47,14 @@ class PostsPresenter extends APresenter {
         $this->saveToPresenterCache('form', $fb);
 
         $topic = $app->topicRepository->getTopicById($post->getTopicId());
-        $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
 
+        $topicTitle = $bwh->checkText($topic->getTitle());
+
+        $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topicTitle . '</a>';
         $this->saveToPresenterCache('topic', $topicLink);
+
+        $postDescription = $bwh->checkText($post->getText());
+        $this->saveToPresenterCache('postDescription', $postDescription);
 
         // post data
         $likes = $post->getLikes();
@@ -92,14 +102,15 @@ class PostsPresenter extends APresenter {
     }
 
     public function renderProfile() {
-        $post = $this->loadFromPresenterCache('post');
         $comments = $this->loadFromPresenterCache('comments');
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topic');
         $postData = $this->loadFromPresenterCache('postData');
+        $postTitle = $this->loadFromPresenterCache('postTitle');
+        $postDescription = $this->loadFromPresenterCache('postDescription');
 
-        $this->template->post_title = $topicLink . ' | ' . $post->getTitle();
-        $this->template->post_text = $post->getText();
+        $this->template->post_title = $topicLink . ' | ' . $postTitle;
+        $this->template->post_text = $postDescription;
         $this->template->latest_comments = $comments;
         $this->template->new_comment_form = $form->render();
         $this->template->post_data = $postData;
