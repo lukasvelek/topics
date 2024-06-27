@@ -327,6 +327,62 @@ class GridBuilder {
 
         return $code;
     }
+
+    /**
+     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
+     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
+     * 
+     * @param string $jsHandlerName JS handler function
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $userId User ID
+     * @return string HTML code
+     */
+    public function createGridControls2(string $jsHandlerName, int $page, int $lastPage) {
+        $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if($page == 0) {
+            $firstButton .= '0)" disabled>';
+        } else {
+            $firstButton .= '0)">';
+        }
+
+        $firstButton .= '&lt;&lt;</button>';
+
+        $previousButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if($page == 0) {
+            $previousButton .= '0)" disabled>';
+        } else {
+            $previousButton .= ($page - 1) . ')">';
+        }
+
+        $previousButton .= '&lt;</button>';
+
+        $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if(($page + 1) >= $lastPage) {
+            $nextButton .= $lastPage . ')" disabled>';
+        } else {
+            $nextButton .= ($page + 1) . ')">';
+        }
+
+        $nextButton .= '&gt;</button>';
+
+        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if(($page + 1) >= $lastPage) {
+            $lastButton .= $lastPage . ')" disabled>';
+        } else {
+            $lastButton .= $lastPage . ')">';
+        }
+
+        $lastButton .= '&gt;&gt;</button>';
+        
+        $code = $firstButton . $previousButton . $nextButton . $lastButton;
+
+        return $code;
+    }
 }
 
 ?>

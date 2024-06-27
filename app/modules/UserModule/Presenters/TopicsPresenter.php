@@ -40,7 +40,9 @@ class TopicsPresenter extends APresenter {
         $this->saveToPresenterCache('topicDescription', $topicDescription);
 
         // posts
-        $this->ajax(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], 'get', ['topicId' => $topicId, 'limit' => 10, 'offset' => 0], $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink']));
+        $postLimit = 10;
+        $this->ajaxMethod('loadPostsForTopic', ['_limit', '_offset'], ['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], 'get', ['limit' => '$_limit', 'offset' => '$_offset', 'topicId' => $topicId], $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink'], ['latestPosts']));
+        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0)');
 
         // topic data
         $manager = $app->userRepository->getUserById($topic->getManagerId());
@@ -153,11 +155,7 @@ class TopicsPresenter extends APresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            $ajaxCode = $this->composeAjaxScript(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], ['topicId' => $topicId, 'limit' => $limit, 'offset' => ($offset + $limit)], 'get', $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink'], ['latestPosts']));
-
-            $ajaxCode = '<script type="text/javascript">function loadMorePostsForTopic() { ' . $ajaxCode . ' }</script>';
-
-            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadMorePostsForTopic()">Load more</a>' . $ajaxCode;
+            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ')">Load more</a>';
         }
 
         $this->ajaxSendResponse(['posts' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);

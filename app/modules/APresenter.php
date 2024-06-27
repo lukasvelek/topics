@@ -437,6 +437,10 @@ abstract class APresenter extends AGUICore {
         $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone));
     }
 
+    protected function ajaxMethod(string $methodName, array $methodParams, array $urlParams, string $method, array $headParams, string $codeWhenDone) {
+        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone, $methodName, $methodParams));
+    }
+
     /**
      * Creates a JS code that updates element content with given HTML ID. It implicitly performs .html() but if needed (and the page element is passed to the second parameter array) it can perform .append().
      * 
@@ -481,7 +485,7 @@ abstract class APresenter extends AGUICore {
      * @param string $codeWhenDone The code that is executed after the ajax request is performed.
      * @return string JS AJAX call code
      */
-    protected function composeAjaxScript(array $urlParams, array $headParams, string $method, string $codeWhenDone) {
+    protected function composeAjaxScript(array $urlParams, array $headParams, string $method, string $codeWhenDone, ?string $methodName = null, array $methodParams = []) {
         global $app;
 
         $url = $app->composeURL($urlParams);
@@ -492,10 +496,23 @@ abstract class APresenter extends AGUICore {
 
         $params = json_encode($headParams);
 
+        if($methodName !== null) {
+            foreach($methodParams as $mp) {
+                if(str_contains($params, '"$' . $mp . '"')) {
+    
+                    $params = str_replace('"$' . $mp . '"', $mp, $params);
+                }
+            }
+        }
+
         $code = '';
 
+        if($methodName !== null) {
+            $code = 'function ' . $methodName . '(' . implode(', ', $methodParams) . ') {';
+        }
+
         if(strtoupper($method) == 'GET') {
-            $code = '
+            $code .= '
                 $.get(
                     "' . $url . '",
                     ' . $params . '
@@ -505,6 +522,10 @@ abstract class APresenter extends AGUICore {
                     ' . $codeWhenDone . '
                 });
             ';
+        }
+
+        if($methodName !== null) {
+            $code .= '}';
         }
 
         return $code;

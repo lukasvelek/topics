@@ -2,14 +2,15 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
@@ -27,12 +28,46 @@ class ManageUsersPresenter extends AAdminPresenter {
         }
     }
 
-    public function handleList() {
+    public function actionLoadUsersGrid() {
         global $app;
 
-        $gridScript = '<script type="text/javascript" src="js/UserGrid.js"></script><script type="text/javascript">getUsers(0, ' . $app->currentUser->getId() . ')</script>';
+        $page = $this->httpGet('gridPage');
 
-        $this->saveToPresenterCache('gridScript', $gridScript);
+        $elementsOnPage = $app->cfg['GRID_SIZE'];
+
+        $userCount = $app->userRepository->getUsersCount();
+        $lastPage = ceil($userCount / $elementsOnPage) -1;
+        $users = $app->userRepository->getUsersForGrid($elementsOnPage, ($page * $elementsOnPage));
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
+        $gb->addDataSource($users);
+        $gb->addOnColumnRender('isAdmin', function(UserEntity $entity) {
+            return $entity->isAdmin() ? 'Yes' : 'No';
+        });
+        $gb->addAction(function (UserEntity $user) {
+            return '<a class="grid-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">Profile</a>';
+        });
+        $gb->addAction(function (UserEntity $user) use ($app) {
+            if($user->getId() == $app->currentUser->getId()) {
+                return '-';
+            }
+
+            if($user->isAdmin()) {
+                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=unsetAdmin&userId=' . $user->getId() . '">Unset as administrator</a>';
+            } else {
+                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=setAdmin&userId=' . $user->getId() . '">Set as administrator</a>';
+            }
+        });
+
+        $paginator = $gb->createGridControls2('getUsers', $page, $lastPage);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+    }
+
+    public function handleList() {
+        $this->ajaxMethod('getUsers', ['_page'], ['page' => 'AdminModule:ManageUsers', 'action' => 'loadUsersGrid'], 'get', ['gridPage' => '$_page'], $this->ajaxUpdateElements(['grid-content' => 'grid', 'grid-paginator' => 'paginator']));
+        $this->addScript('getUsers(0)');
     }
 
     public function renderList() {

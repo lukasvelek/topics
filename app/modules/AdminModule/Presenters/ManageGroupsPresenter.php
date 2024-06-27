@@ -3,8 +3,10 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\CacheManager;
+use App\Entities\GroupEntity;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageGroupsPresenter extends AAdminPresenter {
@@ -16,12 +18,32 @@ class ManageGroupsPresenter extends AAdminPresenter {
         });
     }
 
-    public function handleList() {
+    public function actionLoadGroupGrid() {
         global $app;
 
-        $script = '<script type="text/javascript">getGroups(0, '. $app->currentUser->getId() . ')</script>';
+        $page = $this->httpGet('gridPage');
 
-        $this->saveToPresenterCache('grid', $script);
+        $elementsOnPage = $app->cfg['GRID_SIZE'];
+
+        $count = $app->groupRepository->getGroupCount();
+        $lastPage = ceil($count / $elementsOnPage) - 1;
+        $groups = $app->groupRepository->getGroupsForGrid($elementsOnPage, ($page * $elementsOnPage));
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
+        $gb->addDataSource($groups);
+        $gb->addAction(function(GroupEntity $entity) {
+            return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'post-data-link');
+        });
+
+        $paginator = $gb->createGridControls2('getGroups', $page, $lastPage);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+    }
+
+    public function handleList() {
+        $this->ajaxMethod('getGroups', ['_page'], ['page' => 'AdminModule:ManageGroups', 'action' => 'loadGroupGrid'], 'get', ['gridPage' => '$_page'], $this->ajaxUpdateElements(['grid-content' => 'grid', 'grid-paginator' => 'paginator']));
+        $this->addScript('getGroups(0);');
     }
 
     public function renderList() {
