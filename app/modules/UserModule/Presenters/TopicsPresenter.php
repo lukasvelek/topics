@@ -10,6 +10,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\HTML\HTML;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -39,7 +40,7 @@ class TopicsPresenter extends APresenter {
         $this->saveToPresenterCache('topicDescription', $topicDescription);
 
         // posts
-        $this->saveToPresenterCache('posts', '<script type="text/javascript">loadPostsForTopic(' . $topicId .', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="post-list"></div><div id="post-list-link"></div><br>');
+        $this->ajax(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], 'get', ['topicId' => $topicId, 'limit' => 10, 'offset' => 0], $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink']));
 
         // topic data
         $manager = $app->userRepository->getUserById($topic->getManagerId());
@@ -101,8 +102,68 @@ class TopicsPresenter extends APresenter {
         }
     }
 
+    public function actionLoadPostsForTopic() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $limit = $this->httpGet('limit');
+        $offset = $this->httpGet('offset');
+
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
+        $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
+
+        if(empty($posts)) {
+            return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
+        }
+
+        $code = [];
+
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
+        foreach($posts as $post) {
+            $author = $app->userRepository->getUserById($post->getAuthorId());
+            $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+    
+            $title = $bwh->checkText($post->getTitle());
+    
+            $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
+    
+            $liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
+            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $post->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+    
+            $shortenedText = $bwh->checkText($post->getShortenedText(100));
+    
+            $tmp = [
+                '<div class="row" id="post-' . $post->getId() . '">',
+                '<div class="col-md">',
+                '<p class="post-title">' . $postLink . '</p>',
+                '<hr>',
+                '<p class="post-text">' . $shortenedText . '</p>',
+                '<hr>',
+                '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
+                ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
+                '</div></div><br>'
+            ];
+    
+            $code[] = implode('', $tmp);
+        }
+
+        if(($offset + $limit) >= $postCount) {
+            $loadMoreLink = '';
+        } else {
+            $ajaxCode = $this->composeAjaxScript(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], ['topicId' => $topicId, 'limit' => $limit, 'offset' => ($offset + $limit)], 'get', $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink'], ['latestPosts']));
+
+            $ajaxCode = '<script type="text/javascript">function loadMorePostsForTopic() { ' . $ajaxCode . ' }</script>';
+
+            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadMorePostsForTopic()">Load more</a>' . $ajaxCode;
+        }
+
+        $this->ajaxSendResponse(['posts' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);
+    }
+
     public function renderProfile() {
-        $topic = $this->loadFromPresenterCache('topic');
         $posts = $this->loadFromPresenterCache('posts');
         $topicData = $this->loadFromPresenterCache('topicData');
         $fb = $this->loadFromPresenterCache('newPostForm');

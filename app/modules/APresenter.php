@@ -434,32 +434,7 @@ abstract class APresenter extends AGUICore {
      * @param string $codeWhenDone The code that is executed after the ajax request is performed.
      */
     protected function ajax(array $urlParams, string $method, array $headParams, string $codeWhenDone) {
-        global $app;
-
-        $url = $app->composeURL($urlParams);
-
-        if(!array_key_exists('isAjax', $headParams)) {
-            $headParams['isAjax'] = '1';
-        }
-
-        $params = json_encode($headParams);
-
-        $code = '';
-
-        if(strtoupper($method) == 'GET') {
-            $code = '
-                $.get(
-                    "' . $url . '",
-                    ' . $params . '
-                )
-                .done(function ( data ) {
-                    const obj = JSON.parse(data);
-                    ' . $codeWhenDone . '
-                });
-            ';
-        }
-
-        $this->addScript($code);
+        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone));
     }
 
     /**
@@ -495,6 +470,44 @@ abstract class APresenter extends AGUICore {
      */
     protected function ajaxSendResponse(array $data) {
         $this->ajaxResponse = json_encode($data);
+    }
+
+    /**
+     * Creates a AJAX script call
+     * 
+     * @param array $urlParams Parameters of the URL the ajax will call
+     * @param array $headParams The ajax request head parameters
+     * @param string $method The method name
+     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
+     * @return string JS AJAX call code
+     */
+    protected function composeAjaxScript(array $urlParams, array $headParams, string $method, string $codeWhenDone) {
+        global $app;
+
+        $url = $app->composeURL($urlParams);
+
+        if(!array_key_exists('isAjax', $headParams)) {
+            $headParams['isAjax'] = '1';
+        }
+
+        $params = json_encode($headParams);
+
+        $code = '';
+
+        if(strtoupper($method) == 'GET') {
+            $code = '
+                $.get(
+                    "' . $url . '",
+                    ' . $params . '
+                )
+                .done(function ( data ) {
+                    const obj = JSON.parse(data);
+                    ' . $codeWhenDone . '
+                });
+            ';
+        }
+
+        return $code;
     }
 }
 
