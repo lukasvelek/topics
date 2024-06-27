@@ -16,10 +16,10 @@ class RenderEngine {
         $this->actionTitle = $action;
     }
 
-    public function render() {
+    public function render(bool $isAjax) {
         $this->beforeRender();
 
-        return $this->module->render($this->presenterTitle, $this->actionTitle);
+        return $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
     }
     
     private function beforeRender() {

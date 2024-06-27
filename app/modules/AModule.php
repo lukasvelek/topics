@@ -38,10 +38,10 @@ abstract class AModule extends AGUICore {
         $this->presenters = $presenters;
     }
 
-    public function render(string $presenterTitle, string $actionTitle) {
-        $this->beforePresenterRender($presenterTitle, $actionTitle);
+    public function render(string $presenterTitle, string $actionTitle, bool $isAjax) {
+        $this->beforePresenterRender($presenterTitle, $actionTitle, $isAjax);
 
-        $this->renderPresenter();
+        $this->renderPresenter($isAjax);
         $this->renderModule();
 
         return $this->template->render()->getRenderedContent();
@@ -49,20 +49,22 @@ abstract class AModule extends AGUICore {
 
     public function renderModule() {}
 
-    public function renderPresenter() {
-        $this->template = $this->presenter->render($this->title);
+    public function renderPresenter(bool $isAjax) {
+        $this->template = $this->presenter->render($this->title, $isAjax);
 
-        return $this->fillLayout($this->flashMessages);
+        return $this->fillLayout($this->flashMessages, $isAjax);
     }
 
-    private function fillLayout(array $flashMessages) {
+    private function fillLayout(array $flashMessages, bool $isAjax) {
         $fmCode = '';
 
         if(count($flashMessages) > 0) {
             $fmCode = implode('<br>', $flashMessages);
         }
         
-        $this->template->sys_flash_messages = $fmCode;
+        if(!$isAjax) {
+            $this->template->sys_flash_messages = $fmCode;
+        }
     }
 
     private function getTemplate() {
@@ -82,13 +84,13 @@ abstract class AModule extends AGUICore {
         return new TemplateObject($layoutContent);
     }
 
-    private function beforePresenterRender(string $presenterTitle, string $actionTitle) {
+    private function beforePresenterRender(string $presenterTitle, string $actionTitle, bool $isAjax) {
         $this->template = $this->getTemplate();
 
         $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
 
         $this->presenter = new $realPresenterTitle();
-        $this->presenter->setTemplate($this->getTemplate());
+        $this->presenter->setTemplate($isAjax ? null : $this->getTemplate());
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
 

@@ -33,6 +33,8 @@ class Application {
     private ?string $currentPresenter;
     private ?string $currentAction;
 
+    private bool $isAjaxRequest;
+
     private ModuleManager $moduleManager;
     public Logger $logger;
     private DatabaseConnection $db;
@@ -96,6 +98,8 @@ class Application {
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
 
+        $this->isAjaxRequest = false;
+
         $this->loadModules();
     }
 
@@ -118,6 +122,10 @@ class Application {
                     $this->flashMessage($message);
                 }
             }
+        }
+
+        if(isset($_GET['isAjax']) && $_GET['isAjax'] == '1') {
+            $this->isAjaxRequest = true;
         }
 
         echo $this->render();
@@ -166,7 +174,7 @@ class Application {
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($moduleObject, $this->currentPresenter, $this->currentAction);
         $this->logger->info('Rendering page content.', __METHOD__);
-        return $re->render();
+        return $re->render($this->isAjaxRequest);
     }
 
     private function loadModules() {

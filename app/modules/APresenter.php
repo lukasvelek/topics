@@ -16,6 +16,7 @@ abstract class APresenter extends AGUICore {
     private ?string $action;
     private array $presenterCache;
     private array $scripts;
+    private ?string $ajaxResponse;
 
     protected ?TemplateObject $template;
 
@@ -32,6 +33,7 @@ abstract class APresenter extends AGUICore {
         $this->template = null;
         $this->presenterCache = [];
         $this->scripts = [];
+        $this->ajaxResponse = null;
     }
 
     protected function createCustomFlashMessage(string $type, string $text) {
@@ -102,42 +104,50 @@ abstract class APresenter extends AGUICore {
         $this->params = $params;
     }
 
-    public function render(string $moduleName) {
+    public function render(string $moduleName, bool $isAjax) {
         global $app;
 
-        $contentTemplate = $this->beforeRender($moduleName);
+        $contentTemplate = $this->beforeRender($moduleName, $isAjax);
         
-        if($contentTemplate !== null) {
-            $this->template->join($contentTemplate);
-        }
-        
-        $renderAction = 'render' . ucfirst($this->action);
-        
-        if(method_exists($this, $renderAction)) {
-            $app->logger->stopwatch(function() use ($renderAction) {
-                return $this->$renderAction();
-            }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $renderAction);
-        }
-        
-        if($contentTemplate !== null) {
-            $this->template->sys_page_content = $contentTemplate->render()->getRenderedContent();
+        if(!$isAjax) {
+            if($contentTemplate !== null && $this->template !== null) {
+                $this->template->join($contentTemplate);
+            }
+            
+            $renderAction = 'render' . ucfirst($this->action);
+            
+            if(method_exists($this, $renderAction)) {
+                $app->logger->stopwatch(function() use ($renderAction) {
+                    return $this->$renderAction();
+                }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $renderAction);
+            }
+            
+            if($this->template !== null) {
+                if($contentTemplate !== null) {
+                    $this->template->sys_page_content = $contentTemplate->render()->getRenderedContent();
+                } else {
+                    $this->template->sys_page_content = '';
+                }
+            }
+    
+            $date = new DateTime();
+            $date->format('Y');
+            $date = $date->getResult();
+    
+            if($this->template !== null) {
+                $this->template->sys_page_title = $this->title;
+                $this->template->sys_app_name = $app->cfg['APP_NAME'];
+                $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
+                $this->template->sys_scripts = $this->scripts;
+            
+                if($app->currentUser !== null) {
+                    $this->template->sys_user_id = $app->currentUser->getId();
+                } else {
+                    $this->template->sys_user_id = '';
+                }
+            }
         } else {
-            $this->template->sys_page_content = '';
-        }
-
-        $date = new DateTime();
-        $date->format('Y');
-        $date = $date->getResult();
-
-        $this->template->sys_page_title = $this->title;
-        $this->template->sys_app_name = $app->cfg['APP_NAME'];
-        $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
-        $this->template->sys_scripts = $this->scripts;
-        
-        if($app->currentUser !== null) {
-            $this->template->sys_user_id = $app->currentUser->getId();
-        } else {
-            $this->template->sys_user_id = '';
+            $this->template = $contentTemplate;
         }
         
         $this->afterRender();
@@ -157,11 +167,11 @@ abstract class APresenter extends AGUICore {
         $this->action = $title;
     }
 
-    public function setTemplate(TemplateObject $template) {
+    public function setTemplate(?TemplateObject $template) {
         $this->template = $template;
     }
 
-    private function beforeRender(string $moduleName) {
+    private function beforeRender(string $moduleName, bool $isAjax) {
         global $app;
 
         $ok = false;
@@ -173,7 +183,7 @@ abstract class APresenter extends AGUICore {
         if(method_exists($this, $handleAction)) {
             $ok = true;
             $params = $this->getQueryParams();
-            $app->logger->stopwatch(function() use ($handleAction, $params) {
+            $handleResult = $app->logger->stopwatch(function() use ($handleAction, $params) {
                 if(isset($params['isFormSubmit']) == '1') {
                     $fr = $this->createFormResponse();
                     return $this->$handleAction($fr);
@@ -183,7 +193,15 @@ abstract class APresenter extends AGUICore {
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $handleAction);
         }
 
-        if(method_exists($this, $renderAction)) {
+        if($isAjax) {
+            if($this->ajaxResponse !== null) {
+                return new TemplateObject($this->ajaxResponse);
+            } else if($handleResult !== null) {
+                return new TemplateObject($handleResult);
+            }
+        }
+
+        if(method_exists($this, $renderAction) && !$isAjax) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -259,6 +277,58 @@ abstract class APresenter extends AGUICore {
         } else {
             return null;
         }
+    }
+
+    protected function ajax(array $urlParams, string $method, array $headParams, string $codeWhenDone) {
+        global $app;
+
+        $url = $app->composeURL($urlParams);
+
+        if(!array_key_exists('isAjax', $headParams)) {
+            $headParams['isAjax'] = '1';
+        }
+
+        $params = json_encode($headParams);
+
+        $code = '';
+
+        if(strtoupper($method) == 'GET') {
+            $code = '
+                $.get(
+                    "' . $url . '",
+                    ' . $params . '
+                )
+                .done(function ( data ) {
+                    const obj = JSON.parse(data);
+                    ' . $codeWhenDone . '
+                });
+            ';
+        }
+
+        $this->addScript($code);
+    }
+
+    protected function ajaxUpdateElements(array $pageElementsValuesBinding, array $appendPageElements = []) {
+        $tmp = [];
+        foreach($pageElementsValuesBinding as $pageElement => $jsonValue) {
+            $t = '$("#' . $pageElement . '").';
+
+            if(in_array($pageElement, $appendPageElements)) {
+                $t .= 'append';
+            } else {
+                $t .= 'html';
+            }
+
+            $t .= '(obj.' . $jsonValue . ');';
+
+            $tmp[] = $t;
+        }
+
+        return implode(' ', $tmp);
+    }
+
+    protected function ajaxSendResponse(array $data) {
+        $this->ajaxResponse = json_encode($data);
     }
 }
 

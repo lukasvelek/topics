@@ -272,6 +272,16 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
+     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
+     * 
+     * @param string $jsHandlerName JS handler function
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $userId User ID
+     * @return string HTML code
+     */
     public function createGridControls(string $jsHandlerName, int $page, int $lastPage, int $userId) {
         $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
 
