@@ -2,11 +2,14 @@
 
 namespace App\Modules;
 
-use App\Configuration;
 use App\Core\CacheManager;
 use App\Exceptions\TemplateDoesNotExistException;
-use Exception;
 
+/**
+ * The common module abstract class that every module must extend. It contains functions used for rendering the page content.
+ * 
+ * @author Lukas Velek
+ */
 abstract class AModule extends AGUICore {
     protected string $title;
 
@@ -16,6 +19,11 @@ abstract class AModule extends AGUICore {
     protected ?TemplateObject $template;
     private ?APresenter $presenter;
 
+    /**
+     * The class constructor
+     * 
+     * @param string $title Module title
+     */
     protected function __construct(string $title) {
         $this->presenters = [];
         $this->title = $title;
@@ -24,6 +32,9 @@ abstract class AModule extends AGUICore {
         $this->presenter = null;
     }
 
+    /**
+     * Loads all presenters associated with the extending module
+     */
     public function loadPresenters() {
         $presenters = [];
 
@@ -38,6 +49,14 @@ abstract class AModule extends AGUICore {
         $this->presenters = $presenters;
     }
 
+    /**
+     * Performs operations needed to be done before rendering, then renders the presenter and finally returns the rendered content
+     * 
+     * @param string $presenterTitle Presenter title
+     * @param string $actionTitle Action title
+     * @param bool $isAjax Is request called from AJAX?
+     * @return string Rendered page content
+     */
     public function render(string $presenterTitle, string $actionTitle, bool $isAjax) {
         $this->beforePresenterRender($presenterTitle, $actionTitle, $isAjax);
 
@@ -47,26 +66,42 @@ abstract class AModule extends AGUICore {
         return $this->template->render()->getRenderedContent();
     }
 
+    /**
+     * Renders custom module page content. Currently not in use.
+     */
     public function renderModule() {}
 
+    /**
+     * Renders the presenter and fetches the TemplateObject instance. It also renders flash messages.
+     * 
+     * @param bool $isAjax Is request called from AJAX?
+     */
     public function renderPresenter(bool $isAjax) {
         $this->template = $this->presenter->render($this->title, $isAjax);
 
-        return $this->fillLayout($this->flashMessages, $isAjax);
+        if(!$isAjax) {
+            $this->fillFlashMessages();
+        }
     }
 
-    private function fillLayout(array $flashMessages, bool $isAjax) {
+    /**
+     * Fills the template with flash messages
+     */
+    private function fillFlashMessages() {
         $fmCode = '';
 
-        if(count($flashMessages) > 0) {
-            $fmCode = implode('<br>', $flashMessages);
+        if(count($this->flashMessages) > 0) {
+            $fmCode = implode('<br>', $this->flashMessages);
         }
         
-        if(!$isAjax) {
-            $this->template->sys_flash_messages = $fmCode;
-        }
+        $this->template->sys_flash_messages = $fmCode;
     }
 
+    /**
+     * Returns the default layout template. It can be the common one used for all modules or it can be a custom one.
+     * 
+     * @return TemplateObject Page layout TemplateObject instance
+     */
     private function getTemplate() {
         $commonLayout = __DIR__ . '\\@layout\\common.html';
         $customLayout = __DIR__ . '\\' . $this->title . '\\Presenters\\templates\\@layout\\common.html';
@@ -84,6 +119,13 @@ abstract class AModule extends AGUICore {
         return new TemplateObject($layoutContent);
     }
 
+    /**
+     * Performs operations that must be done before rendering the presenter. Here is the default layout template loaded, presenter instantiated and flash messages loaded from cache.
+     * 
+     * @param string $presenterTitle Presenter title
+     * @param string $actionTitle Action title
+     * @param bool $isAjax Is the request called from AJAX?
+     */
     private function beforePresenterRender(string $presenterTitle, string $actionTitle, bool $isAjax) {
         $this->template = $this->getTemplate();
 

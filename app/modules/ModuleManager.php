@@ -4,11 +4,22 @@ namespace App\Modules;
 
 use App\Exceptions\ModuleDoesNotExistException;
 
+/**
+ * Class that manages modules. It loads all available modules.
+ * 
+ * @author Lukas Velek
+ */
 class ModuleManager {
-    public function __construct() {
+    /**
+     * The class constructor is not used for anything currently
+     */
+    public function __construct() {}
 
-    }
-
+    /**
+     * Loads modules
+     * 
+     * @return array Module array
+     */
     public function loadModules() {
         $modules = [];
 
@@ -27,6 +38,12 @@ class ModuleManager {
         return $modules;
     }
 
+    /**
+     * Create a single module instance
+     * 
+     * @param string $name Module name
+     * @return AModule Module class instance that extends AModule
+     */
     public function createModule(string $name) {
         if(is_dir(__DIR__ . '\\' . $name) && is_file(__DIR__ . '\\' . $name . '\\' . $name . '.php')) {
             $className = '\\App\\Modules\\' . $name . '\\' . $name;

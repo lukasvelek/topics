@@ -5,10 +5,16 @@ namespace App\Modules;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
+use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\UI\FormBuilder\FormResponse;
 
+/**
+ * Common presenter class that all presenters must extend. It contains useful methods and most importantly rendering functionality.
+ * 
+ * @author Lukas Velek
+ */
 abstract class APresenter extends AGUICore {
     private array $params;
     private string $name;
@@ -23,6 +29,12 @@ abstract class APresenter extends AGUICore {
     private array $beforeRenderCallbacks;
     private array $afterRenderCallbacks;
 
+    /**
+     * The class constructor
+     * 
+     * @param string $name Presenter name (the class name)
+     * @param string $title Presenter title (the friendly name)
+     */
     protected function __construct(string $name, string $title) {
         $this->title = $title;
         $this->name = $name;
@@ -36,15 +48,34 @@ abstract class APresenter extends AGUICore {
         $this->ajaxResponse = null;
     }
 
+    /**
+     * Creates a custom flash message but instead of saving it to cache, it returns its HTML code.
+     * 
+     * @param string $type Flash message type
+     * @param string $text Flash message text
+     * @return string HTML code
+     */
     protected function createCustomFlashMessage(string $type, string $text) {
         return $this->createFlashMessage($type, $text, 0, true);
     }
 
-    protected function saveToPresenterCache(mixed $key, mixed $value) {
+    /**
+     * Saves data to the "presenter cache" that is temporary. It is used when passing data from handleX() method to renderX() method.
+     * 
+     * @param string $key Data key
+     * @param mixed $value Data value
+     */
+    protected function saveToPresenterCache(string $key, mixed $value) {
         $this->presenterCache[$key] = $value;
     }
 
-    protected function loadFromPresenterCache(mixed $key) {
+    /**
+     * Returns data from the "presenter cache". If no data with given key is found that it returns null.
+     * 
+     * @param string $key Data key
+     * @return mixed Data value or null
+     */
+    protected function loadFromPresenterCache(string $key) {
         if(array_key_exists($key, $this->presenterCache)) {
             return $this->presenterCache[$key];
         } else {
@@ -52,10 +83,23 @@ abstract class APresenter extends AGUICore {
         }
     }
 
+    /**
+     * Saves a flash message to cache
+     * 
+     * @param string $text Flash message text
+     * @param string $type Flash message type
+     */
     protected function flashMessage(string $text, string $type = 'info') {
         CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
 
+    /**
+     * Returns escaped value from $_GET array. It can also throw an exception if the value is not provided.
+     * 
+     * @param string $key Array key
+     * @param bool $throwException True if exception should be thrown or false if not
+     * @return mixed Escaped value or null
+     */
     protected function httpGet(string $key, bool $throwException = false) {
         if(isset($_GET[$key])) {
             return htmlspecialchars($_GET[$key]);
@@ -68,14 +112,30 @@ abstract class APresenter extends AGUICore {
         }
     }
 
-    protected function httpPost(string $key) {
+    /**
+     * Returns escaped value from $_POST array. It can also throw an exception if the value is not provided.
+     * 
+     * @param string $key Array key
+     * @param bool $throwException True if exception should be thrown or false if not
+     * @return mixed Escaped value or null
+     */
+    protected function httpPost(string $key, bool $throwException = false) {
         if(isset($_POST[$key])) {
             return htmlspecialchars($_POST[$key]);
         } else {
-            return null;
+            if($throwException) {
+                throw new RequiredAttributeIsNotSetException($key, '$_POST');
+            } else {
+                return null;
+            }
         }
     }
 
+    /**
+     * Redirects the current page to other page. If no parameters are provided then it just refreshes the current page.
+     * 
+     * @param array $url URL params
+     */
     protected function redirect(array $url = []) {
         global $app;
 
@@ -88,6 +148,12 @@ abstract class APresenter extends AGUICore {
         $app->redirect($url);
     }
 
+    /**
+     * Returns data from the $_SESSION by the key
+     * 
+     * @param string $key Data key
+     * @return mixed Data value or null
+     */
     protected function httpSessionGet(string $key) {
         if(isset($_SESSION[$key])) {
             return $_SESSION[$key];
@@ -96,10 +162,21 @@ abstract class APresenter extends AGUICore {
         }
     }
 
+    /**
+     * Sets a value to the $_SESSION
+     * 
+     * @param string $key Data key
+     * @param mixed $value Data value
+     */
     protected function httpSessionSet(string $key, mixed $value) {
         $_SESSION[$key] = $value;
     }
 
+    /**
+     * Sets system parameters in the presenter
+     * 
+     * @param array $params
+     */
     public function setParams(array $params) {
         $this->params = $params;
     }
@@ -155,22 +232,50 @@ abstract class APresenter extends AGUICore {
         return $this->template;
     }
 
+    /**
+     * Adds a callback that is called before the presenter is rendered.
+     * 
+     * @param callable $function Callback
+     */
     public function addBeforeRenderCallback(callable $function) {
         $this->beforeRenderCallbacks[] = $function;
     }
 
+    /**
+     * Adds a callback that is called after the presenter is rendered.
+     * 
+     * @param callable $function Callback
+     */
     public function addAfterRenderCallback(callable $function) {
         $this->afterRenderCallbacks[] = $function;
     }
 
+    /**
+     * Sets the action that the presenter will perform
+     * 
+     * @param string $title Action name
+     */
     public function setAction(string $title) {
         $this->action = $title;
     }
 
+    /**
+     * Sets the page content template
+     * 
+     * @param null|TemplateObject $template Template or null
+     */
     public function setTemplate(?TemplateObject $template) {
         $this->template = $template;
     }
 
+    /**
+     * This method performs all necessary operations before the presenter content is rendered.
+     * E.g. it calls the 'handleX()' operation that might not need to be rendered.
+     * 
+     * @param string $moduleName the module name
+     * @param bool $isAjax Is request called from AJAX?
+     * @return null|TemplateObject Template content or null
+     */
     private function beforeRender(string $moduleName, bool $isAjax) {
         global $app;
 
@@ -179,6 +284,21 @@ abstract class APresenter extends AGUICore {
 
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
+        $actionAction = 'action' . ucfirst($this->action);
+
+        if($isAjax) {
+            if(method_exists($this, $actionAction)) {
+                $app->logger->stopwatch(function() use ($actionAction) {
+                    return $this->$actionAction();
+                }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
+            }
+
+            if($this->ajaxResponse !== null) {
+                return new TemplateObject($this->ajaxResponse);
+            } else {
+                throw new NoAjaxResponseException();
+            }
+        }
 
         if(method_exists($this, $handleAction)) {
             $ok = true;
@@ -193,12 +313,8 @@ abstract class APresenter extends AGUICore {
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $handleAction);
         }
 
-        if($isAjax) {
-            if($this->ajaxResponse !== null) {
-                return new TemplateObject($this->ajaxResponse);
-            } else if($handleResult !== null) {
-                return new TemplateObject($handleResult);
-            }
+        if($handleResult !== null) {
+            return new TemplateObject($handleResult);
         }
 
         if(method_exists($this, $renderAction) && !$isAjax) {
@@ -223,24 +339,44 @@ abstract class APresenter extends AGUICore {
         return $templateContent;
     }
 
+    /**
+     * Performs all after render operations. The template is rendered here. The presenter cache is erased and custom after render callbacks are called.
+     */
     private function afterRender() {
         if($this->template !== null) {
             $this->template->render();
         }
+
+        $this->presenterCache = [];
 
         foreach($this->afterRenderCallbacks as $callback) {
             $callback();
         }
     }
 
+    /**
+     * Adds external JS script to the page
+     * 
+     * @param string $scriptPath Path to the JS script
+     */
     protected function addExternalScript(string $scriptPath) {
         $this->scripts[] = '<script type="text/javascript" src="' . $scriptPath . '"></script>';
     }
 
+    /**
+     * Adds JS script to the page
+     * 
+     * @param string $scriptContent JS script content
+     */
     protected function addScript(string $scriptContent) {
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 
+    /**
+     * Returns all query params -> the $_GET array but without the 'page' and 'action' parameters.
+     * 
+     * @return array Query parameters
+     */
     private function getQueryParams() {
         $keys = array_keys($_GET);
 
@@ -256,6 +392,11 @@ abstract class APresenter extends AGUICore {
         return $values;
     }
 
+    /**
+     * Returns all post params -> the $_POST array
+     * 
+     * @return array POST parameters
+     */
     private function getPostParams() {
         $keys = array_keys($_POST);
 
@@ -267,6 +408,11 @@ abstract class APresenter extends AGUICore {
         return $values;
     }
 
+    /**
+     * Creates a form response object
+     * 
+     * @return null|FormResponse FormResponse or null
+     */
     private function createFormResponse() {
         if(!empty($_POST)) {
             $values = $this->getPostParams();
@@ -279,6 +425,14 @@ abstract class APresenter extends AGUICore {
         }
     }
 
+    /**
+     * Performs an ajax request
+     * 
+     * @param array $urlParams Parameters of the URL the ajax will call
+     * @param string $method The method name
+     * @param array $headParams The ajax request head parameters
+     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
+     */
     protected function ajax(array $urlParams, string $method, array $headParams, string $codeWhenDone) {
         global $app;
 
@@ -308,6 +462,13 @@ abstract class APresenter extends AGUICore {
         $this->addScript($code);
     }
 
+    /**
+     * Creates a JS code that updates element content with given HTML ID. It implicitly performs .html() but if needed (and the page element is passed to the second parameter array) it can perform .append().
+     * 
+     * @param array $pageElementsValuesBinding An array with page elements and the JSON values binding
+     * @param array $appendPageElements An array with page elements that must not be overwritten
+     * @return string JS code
+     */
     protected function ajaxUpdateElements(array $pageElementsValuesBinding, array $appendPageElements = []) {
         $tmp = [];
         foreach($pageElementsValuesBinding as $pageElement => $jsonValue) {
@@ -327,6 +488,11 @@ abstract class APresenter extends AGUICore {
         return implode(' ', $tmp);
     }
 
+    /**
+     * Sends AJAX response encoded to to JSON
+     * 
+     * @param array $data The response data.
+     */
     protected function ajaxSendResponse(array $data) {
         $this->ajaxResponse = json_encode($data);
     }
