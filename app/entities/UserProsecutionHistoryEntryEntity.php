@@ -38,6 +38,9 @@ class UserProsecutionHistoryEntryEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['historyId'], $row['prosecutionId'], $row['userId'], $row['commentText'], $row['dateCreated']);
     }
 }

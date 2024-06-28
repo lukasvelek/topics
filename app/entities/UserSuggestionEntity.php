@@ -38,7 +38,11 @@ class UserSuggestionEntity implements ICreatableFromRow {
     }
     
     public function getShortenedText(int $length = 32) {
-        return substr($this->text, 0, $length);
+        if(strlen($this->text) > $length) {
+            return substr($this->text, 0, $length) . '...';
+        } else {
+            return $this->getText();
+        }
     }
 
     public function getCategory() {
@@ -54,6 +58,9 @@ class UserSuggestionEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['suggestionId'], $row['userId'], $row['title'], $row['description'], $row['category'], $row['status'], $row['dateCreated']);
     }
 }

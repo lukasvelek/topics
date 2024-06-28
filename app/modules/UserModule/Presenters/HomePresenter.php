@@ -19,7 +19,7 @@ class HomePresenter extends APresenter {
 
         $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($followedTopicIds, 10);
 
-        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository);
+        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);

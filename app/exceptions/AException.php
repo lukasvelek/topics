@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use App\Configuration;
+use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 use App\Core\HashManager;
 use App\Modules\TemplateObject;
@@ -59,7 +60,10 @@ abstract class AException extends Exception {
 
         $hash = HashManager::createHash(8, false);
 
-        $filePath = 'exception_' . date('Y-m-d_H-i-s') . '_' . $hash . '.html';
+        $date = new DateTime();
+        $date->format('Y-m-d_H-i-s');
+
+        $filePath = 'exception_' . $date . '_' . $hash . '.html';
 
         FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $content);
     }

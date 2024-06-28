@@ -2,27 +2,15 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\SystemStatus;
-use App\Modules\APresenter;
 
-class ManagePresenter extends APresenter {
+class ManagePresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePresenter', 'Manage');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
-    }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], true);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
     }
 
     public function handleDashboard() {
@@ -55,12 +43,36 @@ class ManagePresenter extends APresenter {
         }
 
         $this->saveToPresenterCache('statusCode', implode('', $statusCode));
+
+        $userCount = $app->userRepository->getUsersCount();
+        $postCount = $app->postRepository->getPostCount();
+        $topicCount = $app->topicRepository->getTopicCount();
+
+        $infoCode = ['
+            <div class="row">
+                <div class="col-md">
+                    <div class="system-status-item">
+                        <span class="system-status-title">Users: </span><span style="font-size: 16px">' . $userCount . '</span>
+                    </div>
+                    <div class="system-status-item">
+                        <span class="system-status-title">Posts: </span><span style="font-size: 16px">' . $postCount . '</span>
+                    </div>
+                    <div class="system-status-item">
+                        <span class="system-status-title">Topics: </span><span style="font-size: 16px">' . $topicCount . '</span>
+                    </div>
+                </div>
+            </div>
+        '];
+
+        $this->saveToPresenterCache('infoCode', implode('', $infoCode));
     }
 
     public function renderDashboard() {
         $widget1 = $this->loadFromPresenterCache('statusCode');
+        $widget2 = $this->loadFromPresenterCache('infoCode');
 
         $this->template->widget1 = $widget1;
+        $this->template->widget2 = $widget2;
     }
 }
 

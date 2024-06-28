@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\UserEntity;
 use App\Logger\Logger;
+use QueryBuilder\QueryBuilder;
 
 class UserRepository extends ARepository {
     public function __construct(DatabaseConnection $conn, Logger $logger) {
@@ -104,12 +105,7 @@ class UserRepository extends ARepository {
 
         $qb->execute();
 
-        $users = [];
-        while($row = $qb->fetchAssoc()) {
-            $users[] = UserEntity::createEntityFromDbRow($row);
-        }
-
-        return $users;
+        return $this->createUsersArrayFromQb($qb);
     }
 
     public function updateUser(int $id, array $data) {
@@ -121,6 +117,75 @@ class UserRepository extends ARepository {
             ->execute();
 
         return $qb->fetch();
+    }
+
+    public function getUsersByIdBulk(array $ids) {
+        $users = [];
+
+        foreach($ids as $id) {
+            $result = $this->getUserById($id);
+
+            if($result !== null) {
+                $users[] = $result;
+            }
+        }
+
+        return $users;
+    }
+
+    public function searchUsersByUsername(string $username) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('username LIKE ?', ['%' . $username . '%'])
+            ->execute();
+
+        return $this->createUsersArrayFromQb($qb);
+    }
+
+    public function composeStandardQuery(string $username, string $method) {
+        $qb = $this->qb(__METHOD__ . ' from ' . $method);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('username LIKE ?', ['%' . $username . '%']);
+
+        return $qb;
+    }
+
+    public function getUsersFromQb(QueryBuilder $qb, bool $isExecuted = false) {
+        if(!$isExecuted) {
+            $qb->execute();
+        }
+        return $this->createUsersArrayFromQb($qb);
+    }
+
+    public function createNewUser(string $username, string $password, ?string $email, bool $isAdmin) {
+        $qb = $this->qb(__METHOD__);
+
+        $keys = ['username', 'password', 'isAdmin'];
+        $values = [$username, $password, $isAdmin];
+
+        if($email !== null) {
+            $keys[] = 'email';
+            $values[] = $email;
+        }
+
+        $qb ->insert('users', $keys)
+            ->values($values)
+            ->execute();
+
+        return $qb->fetch();
+    }
+
+    private function createUsersArrayFromQb(QueryBuilder $qb) {
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            $users[] = UserEntity::createEntityFromDbRow($row);
+        }
+
+        return $users;
     }
 }
 

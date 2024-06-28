@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Constants\AdministratorGroups;
 use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
@@ -21,6 +22,8 @@ class DatabaseInstaller {
         $this->createTables();
         $this->createUsers();
         $this->createSystems();
+        $this->createGroups();
+        $this->addAdminToGroups();
 
         $this->logger->info('Database installation finished.', __METHOD__);
     }
@@ -44,7 +47,8 @@ class DatabaseInstaller {
                 'description' => 'TEXT NOT NULL',
                 'managerId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
+                'dateDeleted' => 'DATETIME NULL'
             ],
             'user_topic_follows' => [
                 'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -59,7 +63,8 @@ class DatabaseInstaller {
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
-                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
+                'dateDeleted' => 'DATETIME NULL'
             ],
             'post_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -74,7 +79,8 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'parentCommentId' => 'INT(32) NULL',
-                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0'
+                'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
+                'dateDeleted' => 'DATETIME NULL'
             ],
             'post_comment_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -130,6 +136,23 @@ class DatabaseInstaller {
                 'prosecutionId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'groups' => [
+                'groupId' => 'INT(32) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL'
+            ],
+            'group_membership' => [
+                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'groupId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'banned_words' => [
+                'wordId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'word' => 'VARCHAR(256)',
+                'authorId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
@@ -204,6 +227,74 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Created ' . $i . ' systems.', __METHOD__);
+    }
+
+    private function createGroups() {
+        $this->logger->info('Creating administrator groups.', __METHOD__);
+
+        $groups = [
+            AdministratorGroups::toString(AdministratorGroups::G_REPORT_USER_PROSECUTION_ADMINISTRATOR) => AdministratorGroups::G_REPORT_USER_PROSECUTION_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_SUGGESTION_ADMINISTRATOR) => AdministratorGroups::G_SUGGESTION_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_SUPERADMINISTRATOR) => AdministratorGroups::G_SUPERADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_SYSTEM_ADMINISTRATOR) => AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_USER_ADMINISTRATOR) => AdministratorGroups::G_USER_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+        ];
+
+        $descriptions = [
+            AdministratorGroups::G_REPORT_USER_PROSECUTION_ADMINISTRATOR => 'Administrator group whose members manage reports and user prosecution',
+            AdministratorGroups::G_SUGGESTION_ADMINISTRATOR => 'Administrator group whose members manage suggestions',
+            AdministratorGroups::G_SUPERADMINISTRATOR => 'Administrator group that allows performing all operations without limit',
+            AdministratorGroups::G_SYSTEM_ADMINISTRATOR => 'Administrator group whose members manage system status',
+            AdministratorGroups::G_USER_ADMINISTRATOR => 'Administrator group whose members manage users',
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content'
+        ];
+
+        foreach($groups as $title => $id) {
+            $description = $descriptions[$id];
+
+            $sql = "INSERT INTO groups (`groupId`, `title`, `description`)
+                    SELECT '$id', '$title', '$description'
+                    WHERE NOT EXISTS (SELECT 1 FROM groups WHERE groupId = $id)";
+
+            $this->db->query($sql);
+        }
+
+        $this->logger->info('Created administrator groups.', __METHOD__);
+    }
+
+    private function addAdminToGroups() {
+        $this->logger->info('Adding admin to administrator groups.', __METHOD__);
+
+        $sql = "SELECT userId FROM users WHERE username = 'admin'";
+
+        $result = $this->db->query($sql);
+
+        $userId = null;
+        foreach($result as $r) {
+            $userId = $r['userId'];
+        }
+
+        if($userId === null) die();
+
+        $groups = [
+            AdministratorGroups::G_REPORT_USER_PROSECUTION_ADMINISTRATOR,
+            AdministratorGroups::G_SUGGESTION_ADMINISTRATOR,
+            AdministratorGroups::G_SUPERADMINISTRATOR,
+            AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
+            AdministratorGroups::G_USER_ADMINISTRATOR,
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+        ];
+
+        foreach($groups as $groupId) {
+            $sql = "INSERT INTO group_membership (`userId`, `groupId`)
+                    SELECT '$userId', '$groupId'
+                    WHERE NOT EXISTS (SELECT 1 FROM group_membership WHERE userId = $userId AND groupId = $groupId)";
+
+            $this->db->query($sql);
+        }
+
+        $this->logger->info('Added admin to administrator groups.', __METHOD__);
     }
 }
 

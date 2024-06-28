@@ -13,7 +13,9 @@ class UserModule extends AModule {
 
     public function renderModule() {
         $navbar = new Navbar();
-        $this->template->sys_navbar = $navbar->render();
+        if($this->template !== null) {
+            $this->template->sys_navbar = $navbar;
+        }
     }
 }
 

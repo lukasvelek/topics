@@ -2,12 +2,16 @@
 
 namespace App\Modules\UserModule;
 
+use App\Components\PostLister\PostLister;
 use App\Constants\ReportCategory;
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Exceptions\AException;
+use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -17,15 +21,52 @@ class TopicsPresenter extends APresenter {
     public function handleProfile() {
         global $app;
 
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
         $topicId = $this->httpGet('topicId');
+
+        if(!$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
+            $this->flashMessage('This topic does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         // topic info
         $topic = $app->topicRepository->getTopicById($topicId);
-
         $this->saveToPresenterCache('topic', $topic);
 
+        $topicName = $bwh->checkText($topic->getTitle());
+        $this->saveToPresenterCache('topicName', $topicName);
+
+        $topicDescription = $bwh->checkText($topic->getDescription());
+        $this->saveToPresenterCache('topicDescription', $topicDescription);
+
         // posts
-        $this->saveToPresenterCache('posts', '<script type="text/javascript">loadPostsForTopic(' . $topicId .', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="post-list"></div><div id="post-list-link"></div><br>');
+        $postLimit = 10;
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'])
+            ->setMethod('GET')
+            ->setHeader(['limit' => '_limit', 'offset' => '_offset', 'topicId' => '_topicId'])
+            ->setFunctionName('loadPostsForTopic')
+            ->setFunctionArguments(['_limit', '_offset', '_topicId'])
+            ->updateHTMLElement('latest-posts', 'posts', true)
+            ->updateHTMLElement('load-more-link', 'loadMoreLink')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0, ' . $topicId . ')');
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'likePost'])
+            ->setMethod('GET')
+            ->setHeader(['postId' => '_postId', 'userId' => '_userId', 'toLike' => '_toLike'])
+            ->setFunctionName('likePost')
+            ->setFunctionArguments(['_postId', '_userId', '_toLike'])
+            ->updateHTMLElementRaw('"#post-" + _postId + "-likes"', 'postLikes')
+            ->updateHTMLElementRaw('"#post-" + _postId + "-link"', 'postLink')
+        ;
+
+        $this->addScript($arb->build());
 
         // topic data
         $manager = $app->userRepository->getUserById($topic->getManagerId());
@@ -33,21 +74,39 @@ class TopicsPresenter extends APresenter {
         $managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
 
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
-        $postCount = $app->postRepository->getPostCountForTopicId($topicId);
+        $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
         $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
         $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
         $isManager = $app->currentUser->getId() == $topic->getManagerId();
+        $finalFollowLink = '';
 
-        $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+        if(!$topic->isDeleted()) {
+            $finalFollowLink = ($followed ? ($isManager ? '' : $unFollowLink) : $followLink);
+        }
+
+        $reportLink = '';
+
+        if(!$topic->isDeleted()) {
+            $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+        }
+
+        $deleteLink = '';
+
+        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId()) && !$topic->isDeleted()) {
+            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p>';
+        } else if($topic->isDeleted()) {
+            $deleteLink = '<p class="post-data">Topic deleted</p>';
+        }
 
         $code = '
-            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . ($followed ? ($isManager ? '' : $unFollowLink) : $followLink) . '</p>
+            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
+            ' . $deleteLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);
@@ -62,26 +121,110 @@ class TopicsPresenter extends APresenter {
         ;
 
         $this->saveToPresenterCache('newPostForm', $fb);
+
+        if($topic->isDeleted()) {
+            $this->addExternalScript('js/Reducer.js');
+            $this->addScript('reduceTopicProfile()');
+        }
+    }
+
+    public function actionLikePost() {
+        global $app;
+
+        $userId = $this->httpGet('userId');
+        $postId = $this->httpGet('postId');
+        $toLike = $this->httpGet('toLike');
+
+        $liked = false;
+
+        if($toLike == 'true') {
+            $app->postRepository->likePost($userId, $postId);
+            $liked = true;
+        } else {
+            $app->postRepository->unlikePost($userId, $postId);
+        }
+
+        $likes = $app->postRepository->getLikes($postId);
+
+        $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($userId, $postId, $liked), 'postLikes' => $likes]);
+    }
+
+    public function actionLoadPostsForTopic() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $limit = $this->httpGet('limit');
+        $offset = $this->httpGet('offset');
+
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
+        $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
+
+        if(empty($posts)) {
+            return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
+        }
+
+        $code = [];
+
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
+        foreach($posts as $post) {
+            $author = $app->userRepository->getUserById($post->getAuthorId());
+            $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+    
+            $title = $bwh->checkText($post->getTitle());
+    
+            $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
+
+            $liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
+            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+    
+            $shortenedText = $bwh->checkText($post->getShortenedText(100));
+    
+            $tmp = [
+                '<div class="row" id="post-' . $post->getId() . '">',
+                '<div class="col-md">',
+                '<p class="post-title">' . $postLink . '</p>',
+                '<hr>',
+                '<p class="post-text">' . $shortenedText . '</p>',
+                '<hr>',
+                '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
+                ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
+                '</div></div><br>'
+            ];
+    
+            $code[] = implode('', $tmp);
+        }
+
+        if(($offset + $limit) >= $postCount) {
+            $loadMoreLink = '';
+        } else {
+            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', ' . $topicId . ')" href="#">Load more</a>';
+        }
+
+        $this->ajaxSendResponse(['posts' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
     public function renderProfile() {
-        $topic = $this->loadFromPresenterCache('topic');
         $posts = $this->loadFromPresenterCache('posts');
         $topicData = $this->loadFromPresenterCache('topicData');
         $fb = $this->loadFromPresenterCache('newPostForm');
+        $topicName = $this->loadFromPresenterCache('topicName');
+        $topicDescription = $this->loadFromPresenterCache('topicDescription');
 
-        $this->template->topic_title = $topic->getTitle();
-        $this->template->topic_description = $topic->getDescription();
+        $this->template->topic_title = $topicName;
+        $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
-        $this->template->new_post_form = $fb->render();
+        $this->template->new_post_form = $fb;
     }
 
-    public function handleNewPost() {
+    public function handleNewPost(?FormResponse $fr = null) {
         global $app;
 
-        $title = $this->httpPost('title');
-        $text = $this->httpPost('text');
+        $title = $fr->title;
+        $text = $fr->text;
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
@@ -138,14 +281,14 @@ class TopicsPresenter extends APresenter {
         $this->template->search_data = $this->loadFromPresenterCache('topics');
     }
 
-    public function handleForm() {
+    public function handleForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             // process submitted form
 
-            $title = $this->httpPost('title');
-            $description = $this->httpPost('description');
+            $title = $fr->title;
+            $description = $fr->description;
 
             $topicId = null;
 
@@ -177,7 +320,7 @@ class TopicsPresenter extends APresenter {
     }
 
     public function renderForm() {
-        $this->template->form = $this->loadFromPresenterCache('form')->render();
+        $this->template->form = $this->loadFromPresenterCache('form');
     }
 
     public function handleFollow() {
@@ -286,14 +429,14 @@ class TopicsPresenter extends APresenter {
         $this->template->topics = $topics;
     }
 
-    public function handleReportForm() {
+    public function handleReportForm(?FormResponse $fr = null) {
         global $app;
 
         $topicId = $this->httpGet('topicId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
@@ -329,7 +472,35 @@ class TopicsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->topic_title = $topic->getTitle();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
+    }
+
+    public function handleDeleteTopic(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->contentManager->deleteTopic($topicId);
+
+            $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'deleteTopic', 'isSubmit' => '1', 'topicId' => $topicId])
+                ->addSubmit('Delete topic')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeleteTopic() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form;
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\Managers;
 
 use App\Constants\UserProsecutionType;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
@@ -30,7 +31,11 @@ class UserProsecutionManager {
     private function commonRemoveBan(int $forUserId, int $byUserId, string $reason) {
         $this->beginTransaction();
 
-        $newEndDate = date('Y-m-d H:i:s', (time() - $this->calculateDaysToSeconds(1)));
+        $date = new DateTime();
+        $date->modify('-1d');
+
+        //$newEndDate = date('Y-m-d H:i:s', (time() - $this->calculateDaysToSeconds(1)));
+        $newEndDate = $date->getResult();
 
         $forUser = $this->userRepository->getUserById($forUserId);
         $byUser = $this->userRepository->getUserById($byUserId);
@@ -62,7 +67,10 @@ class UserProsecutionManager {
 
     public function warnUser(int $who, int $byWhom, string $reason) {
         try {
-            $this->commonCreateProsecution($who, $byWhom, $reason, date('Y-m-d H:i:s'), date('Y-m-d H:i:s', (time() + $this->calculateDaysToSeconds(1))), UserProsecutionType::WARNING);
+            $date = new DateTime();
+            $date2 = new DateTime();
+            $date2->modify('+1d');
+            $this->commonCreateProsecution($who, $byWhom, $reason, $date->getResult(), $date2->getResult(), UserProsecutionType::WARNING);
         } catch(AException $e) {
             throw $e;
         }

@@ -2,31 +2,20 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Core\CacheManager;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
-class ManageTopicsPresenter extends APresenter {
+class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageTopicsPresenter', 'Manage topics');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
     }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
-    }
-
-    public function handleDeleteTopic() {
+    public function handleDeleteTopic(?FormResponse $fr = null) {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
@@ -73,7 +62,7 @@ class ManageTopicsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->topic_title = '\'' . $topic->getTitle() . '\'';
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

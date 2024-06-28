@@ -272,6 +272,16 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
+     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
+     * 
+     * @param string $jsHandlerName JS handler function
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $userId User ID
+     * @return string HTML code
+     */
     public function createGridControls(string $jsHandlerName, int $page, int $lastPage, int $userId) {
         $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
 
@@ -309,6 +319,78 @@ class GridBuilder {
             $lastButton .= $lastPage . ', ' . $userId . ')" disabled>';
         } else {
             $lastButton .= $lastPage . ', ' . $userId . ')">';
+        }
+
+        $lastButton .= '&gt;&gt;</button>';
+        
+        $code = $firstButton . $previousButton . $nextButton . $lastButton;
+
+        return $code;
+    }
+
+    /**
+     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
+     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
+     * 
+     * @param string $jsHandlerName JS handler function
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $userId User ID
+     * @return string HTML code
+     */
+    public function createGridControls2(string $jsHandlerName, int $page, int $lastPage, array $otherArguments = []) {
+        if(!empty($otherArguments)) {
+            $tmp = [];
+
+            foreach($otherArguments as $oa) {
+                if(is_numeric($oa)) {
+                    $tmp[] = $oa;
+                } else {
+                    $tmp[] = '\'' . $oa . '\'';
+                }
+            }
+
+            $otherArguments = ', ' . implode(', ', $tmp);
+        } else {
+            $otherArguments = '';
+        }
+
+        $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if($page == 0) {
+            $firstButton .= '0' . $otherArguments . ')" disabled>';
+        } else {
+            $firstButton .= '0' . $otherArguments . ')">';
+        }
+
+        $firstButton .= '&lt;&lt;</button>';
+
+        $previousButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if($page == 0) {
+            $previousButton .= '0' . $otherArguments . ')" disabled>';
+        } else {
+            $previousButton .= ($page - 1) . $otherArguments . ')">';
+        }
+
+        $previousButton .= '&lt;</button>';
+
+        $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if(($page + 1) >= $lastPage) {
+            $nextButton .= $lastPage . $otherArguments . ')" disabled>';
+        } else {
+            $nextButton .= ($page + 1) . $otherArguments . ')">';
+        }
+
+        $nextButton .= '&gt;</button>';
+
+        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+
+        if(($page + 1) >= $lastPage) {
+            $lastButton .= $lastPage . $otherArguments . ')" disabled>';
+        } else {
+            $lastButton .= $lastPage . $otherArguments . ')">';
         }
 
         $lastButton .= '&gt;&gt;</button>';
