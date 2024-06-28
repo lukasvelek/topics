@@ -421,8 +421,6 @@ abstract class APresenter extends AGUICore {
         if(!empty($_POST)) {
             $values = $this->getPostParams();
 
-            var_dump($values);
-
             return FormResponse::createFormResponseFromPostData($values);
         } else {
             return null;

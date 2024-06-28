@@ -3,6 +3,8 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
+use App\Core\AjaxRequestBuilder;
+use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -33,11 +35,47 @@ class PostsPresenter extends APresenter {
         $postTitle = $bwh->checkText($post->getTitle());
         $this->saveToPresenterCache('postTitle', $postTitle);
 
-        $this->saveToPresenterCache('comments', '<script type="text/javascript">loadCommentsForPost(' . $postId . ', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="comments-list"></div><div id="comments-list-link"></div><br>');
+        $arb = new AjaxRequestBuilder();
 
-        $parentCommentId = $this->httpGet('parentCommentId');
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'loadCommentsForPost'])
+            ->setMethod('GET')
+            ->setHeader(['postId' => '_postId', 'limit' => '_limit', 'offset' => '_offset'])
+            ->setFunctionName('loadCommentsForPost')
+            ->setFunctionArguments(['_postId', '_limit', '_offset'])
+            ->updateHTMLElement('post-comments', 'comments', true)
+            ->updateHTMLElement('post-comments-load-more-link', 'loadMoreLink')
+        ;
 
+        $this->addScript($arb->build());
+        $this->addScript('loadCommentsForPost(' . $postId . ', 10, 0)');
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'likePostComment'])
+            ->setMethod('GET')
+            ->setHeader(['commentId' => '_commentId', 'toLike' => '_toLike'])
+            ->setFunctionName('likePostComment')
+            ->setFunctionArguments(['_commentId', '_toLike'])
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-likes"', 'likes')
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-link"', 'link');
+        ;
+
+        $this->addScript($arb->build());
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'createNewCommentForm'])
+            ->setMethod('GET')
+            ->setHeader(['commentId' => '_commentId', 'postId' => '_postId'])
+            ->setFunctionName('createNewCommentForm')
+            ->setFunctionArguments(['_commentId', '_postId'])
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-comment-form"', 'form')
+        ;
+
+        $this->addScript($arb->build());
+        
         // new comment form
+        $parentCommentId = $this->httpGet('parentCommentId');
         $fb = new FormBuilder();
 
         $newCommentFormUrl = ['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId];
@@ -109,7 +147,6 @@ class PostsPresenter extends APresenter {
     }
 
     public function renderProfile() {
-        $comments = $this->loadFromPresenterCache('comments');
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topic');
         $postData = $this->loadFromPresenterCache('postData');
@@ -118,9 +155,147 @@ class PostsPresenter extends APresenter {
 
         $this->template->post_title = $topicLink . ' | ' . $postTitle;
         $this->template->post_text = $postDescription;
-        $this->template->latest_comments = $comments;
         $this->template->new_comment_form = $form;
         $this->template->post_data = $postData;
+    }
+
+    public function actionCreateNewCommentForm() {
+        $postId = $this->httpGet('postId');
+        $parentCommentId = $this->httpGet('commentId');
+
+        $fb = new FormBuilder();
+
+        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
+            ->addTextArea('text', 'Comment:', null, true)
+            ->addSubmit('Post')
+        ;
+
+        $this->ajaxSendResponse(['form' => $fb->render()]);
+    }
+
+    public function actionLikePostComment() {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $toLike = $this->httpGet('toLike');
+        $userId = $app->currentUser->getId();
+
+        $liked = false;
+        
+        if($toLike == 'true') {
+            // like
+            $app->postCommentRepository->likeComment($userId, $commentId);
+            $liked = true;
+        } else {
+            // unlike
+            $app->postCommentRepository->unlikeComment($userId, $commentId);
+        }
+            
+        $likes = $app->postCommentRepository->getLikes($commentId);
+        
+        $link = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+
+        $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
+    }
+
+    public function actionLoadCommentsForPost() {
+        global $app;
+        
+        $postId = $this->httpGet('postId');
+        $limit = $this->httpGet('limit');
+        $offset = $this->httpGet('offset');
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
+        $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
+
+        $code = [];
+
+        if(empty($comments)) {
+            return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
+        }
+
+        foreach($comments as $comment) {
+            $code[] = $this->createPostComment($postId, $comment);
+        }
+
+        if(($offset + $limit) >= $commentCount) {
+            $loadMoreLink = '';
+        } else {
+            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
+        }
+
+        $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
+    }
+
+    private function createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
+        global $app;
+
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $author = $app->userRepository->getUserById($comment->getAuthorId());
+        $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+
+        $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
+        if(!$post->isDeleted()) {
+            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+        } else {
+            $likeLink = '';
+        }
+
+        $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
+        $childCommentsCode = [];
+
+        if(!empty($childComments)) {
+            foreach($childComments as $cc) {
+                $childCommentsCode[] = $this->createPostComment($postId, $cc, false);
+            }
+        }
+
+        if(!$post->isDeleted()) {
+            $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+        } else {
+            $reportForm = '';
+        }
+        $deleteLink = '';
+        
+        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId()) && !$post->isDeleted()) {
+            $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
+        }
+
+        $text = $bwh->checkText($comment->getText());
+
+        $code = '
+            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
+                ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+                <div class="col-md">
+                    <div>
+                        <p class="post-text">' . $text . '</p>
+                        <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
+                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
+                        </p>
+                        ' . ($post->isDeleted() ? '' : '<a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"></div>
+
+                        <div class="col-md" id="form">
+                            <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                        </div>
+                        
+                        <div class="col-md-2"></div>
+                    </div>
+                    ' . implode('', $childCommentsCode) .  '
+                    ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+                </div>
+            </div>
+            <br>
+        ';
+
+        return $code;
     }
 
     public function handleNewComment(FormResponse $fr) {

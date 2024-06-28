@@ -6,25 +6,6 @@ function closeFlashMessage(_id) {
     $("#" + _id).remove();
 }
 
-function likePostComment(_commentId, _userId, _like) {
-    $.post(
-        "app/ajax/Posts.php",
-        {
-            commentId: _commentId,
-            userId: _userId,
-            action: "likePostComment",
-            callingUserId: _userId,
-            like: _like
-        }
-    )
-    .done(function ( data ) {
-        var obj = JSON.parse(data);
-
-        $("#post-comment-" + _commentId + "-link").html(obj.link);
-        $("#post-comment-" + _commentId + "-likes").html(obj.likes);
-    });
-}
-
 function createNewCommentForm(_commentId, _userId, _postId) {
     const divId = "#post-comment-" + _commentId + "-comment-form";
     const linkId = "#post-comment-" + _commentId + "-add-comment-link";
