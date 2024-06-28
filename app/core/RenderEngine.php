@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Exceptions\GeneralException;
 use App\Modules\AModule;
 
 /**
@@ -15,6 +16,10 @@ class RenderEngine {
     private string $presenterTitle;
     private string $actionTitle;
 
+    private array $cachedPages;
+
+    private ?string $renderedContent;
+
     /**
      * Class constructor
      * 
@@ -26,6 +31,8 @@ class RenderEngine {
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
+        $this->cachedPages = [];
+        $this->renderedContent = null;
     }
 
     /**
@@ -37,7 +44,17 @@ class RenderEngine {
     public function render(bool $isAjax) {
         $this->beforeRender();
 
-        return $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+        if($this->renderedContent === null) {
+            $isCacheable = false;
+
+            [$this->renderedContent, $isCacheable] = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+
+            if($isCacheable) {
+                $this->cachePage();
+            }
+        }
+
+        return $this->renderedContent;
     }
     
     /**
@@ -45,6 +62,27 @@ class RenderEngine {
      */
     private function beforeRender() {
         $this->module->loadPresenters();
+        $this->loadCachedPages();
+
+        $key = $this->module->getTitle() . '_' . $this->presenterTitle;
+
+        if(array_key_exists($key, $this->cachedPages)) {
+            $this->renderedContent = $this->cachedPages[$key];
+        }
+    }
+
+    private function loadCachedPages() {
+        $result = CacheManager::loadPagesFromCache();
+        
+        if($result !== false && $result !== null) {
+            $this->cachedPages = $result;
+        } else {
+            $this->cachedPages = [];
+        }
+    }
+
+    private function cachePage() {
+        CacheManager::savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);
     }
 }
 
