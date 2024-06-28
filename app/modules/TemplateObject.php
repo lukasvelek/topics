@@ -2,6 +2,9 @@
 
 namespace App\Modules;
 
+use App\UI\FormBuilder\FormBuilder;
+use App\UI\IRenderable;
+
 class TemplateObject {
     private string $__templateContent;
     private array $__values;
@@ -31,6 +34,13 @@ class TemplateObject {
             if($this->$__value instanceof TemplateObject) {
                 $this->$__value->render();
                 $this->$__value = $this->$__value->getRenderedContent();
+            } else if($this->$__value instanceof FormBuilder) {
+                $action = $this->$__value->getAction();
+                $action['isFormSubmit'] = '1';
+                $this->$__value->setAction($action);
+                $this->$__value = $this->$__value->render();
+            } else if($this->$__value instanceof IRenderable) {
+                $this->$__value = $this->$__value->render();
             }
 
             $this->replace($upperValue, $this->$__value, $this->__templateContent);

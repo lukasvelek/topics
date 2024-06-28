@@ -93,10 +93,12 @@ class UserAuthenticator {
 
             $lastProsecution = $this->userProsecutionRepository->getLastProsecutionForUserId($_SESSION['userId']);
 
-            if($lastProsecution->getType() == UserProsecutionType::PERMA_BAN || 
-                ($lastProsecution->getType() == UserProsecutionType::BAN && strtotime($lastProsecution->getEndDate()) > time())) {
-                    $message = 'You have been banned.';
-                return false;
+            if($lastProsecution !== null) {
+                if($lastProsecution->getType() == UserProsecutionType::PERMA_BAN || 
+                    ($lastProsecution->getType() == UserProsecutionType::BAN && strtotime($lastProsecution->getEndDate()) > time())) {
+                        $message = 'You have been banned.';
+                    return false;
+                }
             }
 
             if($dbLoginHash != $_SESSION['loginHash']) {

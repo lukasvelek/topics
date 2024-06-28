@@ -5,6 +5,7 @@ namespace App\Modules\AnonymModule;
 use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class LoginPresenter extends APresenter {
     public function __construct() {
@@ -19,12 +20,12 @@ class LoginPresenter extends APresenter {
         }
     }
 
-    public function handleLoginForm() {
+    public function handleLoginForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') == 'true') {
             try {
-                $app->userAuth->loginUser($this->httpPost('username'), $this->httpPost('password'));
+                $app->userAuth->loginUser($fr->username, $fr->password);
                 
                 $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
@@ -44,9 +45,7 @@ class LoginPresenter extends APresenter {
             ->addSubmit('Log in')
         ;
 
-        $form = $fb->render();
-
-        $this->template->form = $form;
+        $this->template->form = $fb;
         $this->template->title = 'Login';
     }
 }

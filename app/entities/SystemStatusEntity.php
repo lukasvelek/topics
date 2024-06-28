@@ -38,6 +38,9 @@ class SystemStatusEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['systemId'], $row['name'], $row['status'], $row['description'], $row['dateUpdated']);
     }
 }

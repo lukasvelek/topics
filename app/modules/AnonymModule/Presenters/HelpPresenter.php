@@ -4,10 +4,10 @@ namespace App\Modules\AnonymModule;
 
 use App\Constants\SuggestionCategory;
 use App\Exceptions\AException;
-use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Label;
 use App\UI\FormBuilder\Select;
 
@@ -16,14 +16,14 @@ class HelpPresenter extends APresenter {
         parent::__construct('HelpPresenter', 'Help');
     }
 
-    public function handleForm() {
+    public function handleForm(?FormResponse $fr = null) {
         global $app;
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $title = $this->httpPost('title');
-            $text = $this->httpPost('text');
-            $category = $this->httpPost('category');
-            $user = $this->httpPost('user');
+            $title = $fr->title;
+            $text = $fr->text;
+            $category = $fr->category;
+            $user = $fr->user;
 
             try {
                 $app->suggestionRepository->createNewSuggestion($user, $title, $text, $category);
@@ -73,7 +73,7 @@ class HelpPresenter extends APresenter {
     public function renderForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

@@ -2,38 +2,84 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\UserProsecutionType;
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
 
-class ManageUsersPresenter extends APresenter {
+class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
      
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        if(!$app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], true);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
+    public function actionLoadUsersGrid() {
+        global $app;
 
-        return $sb->render();
+        $page = $this->httpGet('gridPage');
+
+        $elementsOnPage = $app->cfg['GRID_SIZE'];
+
+        $userCount = $app->userRepository->getUsersCount();
+        $lastPage = ceil($userCount / $elementsOnPage) -1;
+        $users = $app->userRepository->getUsersForGrid($elementsOnPage, ($page * $elementsOnPage));
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
+        $gb->addDataSource($users);
+        $gb->addOnColumnRender('isAdmin', function(UserEntity $entity) {
+            return $entity->isAdmin() ? 'Yes' : 'No';
+        });
+        $gb->addAction(function (UserEntity $user) {
+            return '<a class="grid-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">Profile</a>';
+        });
+        $gb->addAction(function (UserEntity $user) use ($app) {
+            if($user->getId() == $app->currentUser->getId()) {
+                return '-';
+            }
+
+            if($user->isAdmin()) {
+                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=unsetAdmin&userId=' . $user->getId() . '">Unset as administrator</a>';
+            } else {
+                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=setAdmin&userId=' . $user->getId() . '">Set as administrator</a>';
+            }
+        });
+
+        $paginator = $gb->createGridControls2('getUsers', $page, $lastPage);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
     }
 
     public function handleList() {
-        global $app;
+        $arb = new AjaxRequestBuilder();
 
-        $gridScript = '<script type="text/javascript" src="js/UserGrid.js"></script><script type="text/javascript">getUsers(0, ' . $app->currentUser->getId() . ')</script>';
+        $arb->setMethod('GET')
+            ->setURL(['page' => 'AdminModule:ManageUsers', 'action' => 'loadUsersGrid'])
+            ->setHeader(['gridPage' => '_page'])
+            ->setFunctionName('getUsers')
+            ->setFunctionArguments(['_page'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+        ;
 
-        $this->saveToPresenterCache('gridScript', $gridScript);
+        $this->addScript($arb->build());
+        $this->addScript('getUsers(0)');
     }
 
     public function renderList() {
@@ -44,17 +90,17 @@ class ManageUsersPresenter extends APresenter {
         $this->template->grid_paginator = '';
 
         $newUserLink = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=newForm">New user</a>';
-        $this->template->links = [''];
+        $this->template->links = [$newUserLink];
     }
 
-    public function handleUnsetAdmin() {
+    public function handleUnsetAdmin(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $password = $this->httpPost('password');
+            $password = $fr->password;
 
             try {
                 $app->userAuth->authUser($password);
@@ -65,6 +111,8 @@ class ManageUsersPresenter extends APresenter {
 
             $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
             $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -84,17 +132,17 @@ class ManageUsersPresenter extends APresenter {
     public function renderUnsetAdmin() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleSetAdmin() {
+    public function handleSetAdmin(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $password = $this->httpPost('password');
+            $password = $fr->password;
 
             try {
                 $app->userAuth->authUser($password);
@@ -105,6 +153,8 @@ class ManageUsersPresenter extends APresenter {
 
             $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
             $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+            CacheManager::invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -124,10 +174,10 @@ class ManageUsersPresenter extends APresenter {
     public function renderSetAdmin() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
     
-    public function handleWarnUser() {
+    public function handleWarnUser(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
@@ -135,7 +185,7 @@ class ManageUsersPresenter extends APresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $reason = $this->httpPost('description');
+            $reason = $fr->description;
 
             $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
 
@@ -156,10 +206,10 @@ class ManageUsersPresenter extends APresenter {
     public function renderWarnUser() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleBanUser() {
+    public function handleBanUser(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
@@ -167,10 +217,10 @@ class ManageUsersPresenter extends APresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $reason = $this->httpPost('description');
-            $type = $this->httpPost('type');
-            $startDate = $this->httpPost('startDate');
-            $endDate = $this->httpPost('endDate');
+            $reason = $fr->description;
+            $type = $fr->type;
+            $startDate = $fr->startDate;
+            $endDate = $fr->endDate;
 
             if($type == UserProsecutionType::PERMA_BAN) {
                 try {
@@ -191,13 +241,15 @@ class ManageUsersPresenter extends APresenter {
             $this->flashMessage('User \'' . $user->getUsername() . '\' has been banned.');
             $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
+            $date = new DateTime();
+
             $fb = new FormBuilder();
 
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'banUser', 'isSubmit' => '1', 'userId' => $userId])
                 ->addTextArea('description', 'Reason:', null, true)
                 ->addSelect('type', 'Type:', [['value' => UserProsecutionType::BAN, 'text' => 'Ban'], ['value' => UserProsecutionType::PERMA_BAN, 'text' => 'Perma ban']], true)
-                ->addDatetime('startDate', 'Date from:', date('Y-m-d H:i:s'), true)
-                ->addDatetime('endDate', 'Date to:', date('Y-m-d H:i:s'), true)
+                ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
+                ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;
@@ -209,7 +261,47 @@ class ManageUsersPresenter extends APresenter {
     public function renderBanUser() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
+    }
+
+    public function handleNewForm(?FormResponse $fr = null) {
+        global $app;
+
+        if($this->httpGet('isSubmit') == '1') {
+            $username = $fr->username;
+            $password = $fr->password;
+            $email = $fr->email;
+            $isAdmin = $fr->evalBool($fr->isAdmin, 'on');
+
+            if($email == '') {
+                $email = null;
+            }
+
+            $password = HashManager::hashPassword($password);
+
+            $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+
+            $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
+            $this->redirect(['action' => 'list']);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'newForm', 'isSubmit' => '1'])
+                ->addTextInput('username', 'Username:', null, true)
+                ->addEmailInput('email', 'Email:', null, false)
+                ->addPassword('password', 'Password:', null, true)
+                ->addCheckbox('isAdmin', 'Administrator?')
+                ->addSubmit('Create')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderNewForm() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form;
     }
 }
 

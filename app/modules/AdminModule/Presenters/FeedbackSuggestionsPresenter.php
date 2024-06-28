@@ -2,44 +2,201 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
-use App\Constants\SystemStatus;
-use App\Modules\APresenter;
+use App\Core\AjaxRequestBuilder;
+use App\Entities\UserSuggestionEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
+use App\UI\HTML\HTML;
 
-class FeedbackSuggestionsPresenter extends APresenter {
+class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('FeedbackSuggestionsPresenter', 'Suggestions');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createFeedbackSidebar();
         });
-    }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
-        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list'], true);
-        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
-
-        return $sb->render();
-    }
-
-    public function handleList() {
         global $app;
 
+        if(!$app->sidebarAuthorizator->canManageSuggestions($app->currentUser->getId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
+        }
+    }
+
+    public function actionSuggestionsListGrid() {
+        global $app;
+
+        $page = $this->httpGet('gridPage');
+        $filterType = $this->httpGet('filterType');
+        $filterKey = $this->httpGet('filterKey');
+
+        $gridSize = $app->cfg['GRID_SIZE'];
+
+        $suggestions = [];
+        $suggestionCount = 0;
+
+        $filterControl = '';
+
+        if($filterType != 'null') {
+            $filterControl = '<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+        }
+
+        switch($filterType) {
+            case 'null':
+                $suggestions = $app->suggestionRepository->getOpenSuggestionsForList($gridSize, ($gridSize * $page));
+                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForList(0, 0));
+                break;
+    
+            case 'category':
+                $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
+                break;
+    
+            case 'status':
+                $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
+                break;
+    
+            case 'user':
+                $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
+                break;
+        }
+
+        $lastPage = ceil($suggestionCount / $gridSize) - 1;
+
+        $gb = new GridBuilder();
+
+        $gb->addDataSource($suggestions);
+        $gb->addColumns(['title' => 'Title', 'text' => 'Text', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
+        $gb->addOnColumnRender('text', function(UserSuggestionEntity $e) {
+            return $e->getShortenedText(100);
+        });
+        $gb->addOnColumnRender('category', function(UserSuggestionEntity $e) {
+            $a = HTML::a();
+
+            $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
+                ->text(SuggestionCategory::toString($e->getCategory()))
+                ->class('post-data-link')
+                ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
+                ->href('#')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('status', function(UserSuggestionEntity $e) {
+            $a = HTML::a();
+
+            $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
+                ->text(SuggestionStatus::toString($e->getStatus()))
+                ->class('post-data-link')
+                ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
+                ->href('#')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('user', function(UserSuggestionEntity $e) use ($app) {
+            $user = $app->userRepository->getUserById($e->getUserId());
+
+            $a = HTML::a();
+
+            $a->onClick('getSuggestionsGrid(0, \'user\', \'' . $e->getUserId() . '\')')
+                ->text($user->getUsername())
+                ->class('post-data-link')
+                ->href('#')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('title', function(UserSuggestionEntity $e) use ($app) {
+            $a = HTML::a();
+
+            $a->text($e->getTitle())
+                ->class('post-data-link')
+                ->href($app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
+            ;
+
+            return $a->render();
+        });
+
+        $paginator = $gb->createGridControls2('getSuggestionsGrid', $page, $lastPage, [$filterType, $filterKey]);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+    }
+    
+    public function handleList() {
         $filterType = $this->httpGet('filterType') ?? 'null';
         $filterKey = $this->httpGet('filterKey') ?? 'null';
 
-        $this->saveToPresenterCache('list', '<script type="text/javascript">loadSuggestions(10, 0, ' . $app->currentUser->getId() . ', \'' . $filterType . '\', \'' . $filterKey . '\')</script><div id="suggestion-list"></div><div id="suggestion-list-link"></div><br>');
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod('GET')
+            ->setURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'suggestionsListGrid'])
+            ->setHeader(['gridPage' => '_page', 'filterType' => '_filterType', 'filterKey' => '_filterKey'])
+            ->setFunctionName('getSuggestionsGrid')
+            ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+            ->updateHTMLElement('filter-control', 'filterControl')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('getSuggestionsGrid(0, \'' . $filterType . '\', \'' . $filterKey . '\')');
     }
 
-    public function renderList() {
-        $list = $this->loadFromPresenterCache('list');
+    public function renderList() {}
 
-        $this->template->suggestions = $list;
+    public function actionLoadComments() {
+        global $app;
+
+        $suggestionId = $this->httpGet('suggestionId');
+        $limit = $this->httpGet('limit');
+        $offset = $this->httpGet('offset');
+
+        $comments = $app->suggestionRepository->getCommentsForSuggestion($suggestionId, $limit, $offset);
+        $commentCount = $app->suggestionRepository->getCommentCountForSuggestion($suggestionId);
+
+        $loadMoreLink = '';
+
+        if(empty($comments)) {
+            return $this->ajaxSendResponse(['comments' => 'No comments', 'loadMoreLink' => $loadMoreLink]);
+        }
+
+        $commentCode = [];
+        foreach($comments as $comment) {
+            if($comment->isAdminOnly() && !$app->currentUser->isAdmin()) continue;
+            
+            $author = $app->userRepository->getUserById($comment->getUserId());
+            $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $comment->getUserId() . '">' . $author->getUsername() . '</a>';
+
+            $hiddenLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=0&suggestionId=' . $suggestionId . '">Hidden</a>';
+            $publicLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=1&suggestionId=' . $suggestionId . '">Public</a>';
+            $hide = $comment->isAdminOnly() ? $hiddenLink : $publicLink;
+
+            $deleteLink = ' <a class="post-data-link" style="color: red" href="?page=AdminModule:FeedbackSuggestions&action=deleteComment&commentId=' . $comment->getId() . '&suggestionId=' . $suggestionId . '">Delete</a>';
+            $delete = ($app->currentUser->isAdmin() && !$comment->isStatusChange()) ? $deleteLink : '';
+
+            $tmp = '
+                <div id="comment-' . $comment->getId() . '">
+                    <p class="post-data">' . $comment->getText() . '</p>
+                    <p class="post-data">Author: ' . $authorLink . ' Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . ' ' . $hide . '' . $delete . '</p>
+                </div>
+            ';
+
+            $commentCode[] = $tmp;
+        }
+
+        if(($offset + $limit) < $commentCount) {
+            $loadMoreLink = '<a class="post-data-link" onclick="loadSuggestionComments(' . $suggestionId . ', ' . $limit . ', ' . ($limit + $offset) . ')" href="#">Load more</a>';
+        }
+
+        $this->ajaxSendResponse(['comments' => implode('<hr>', $commentCode), 'loadMoreLink' => $loadMoreLink]);
     }
 
     public function handleProfile() {
@@ -59,11 +216,19 @@ class FeedbackSuggestionsPresenter extends APresenter {
 
         $this->saveToPresenterCache('data', $dataCode);
 
-        $commentsCode = '
-            <script type="text/javascript">loadFeedbackSuggestionComments(' . $suggestionId . ', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="comments-content"></div><div id="comments-load-more"></div>
-        ';
+        $arb = new AjaxRequestBuilder();
 
-        $this->saveToPresenterCache('comments', $commentsCode);
+        $arb->setURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'loadComments'])
+            ->setMethod('GET')
+            ->setHeader(['suggestionId' => '_suggestionId', 'limit' => '_limit', 'offset' => '_offset'])
+            ->setFunctionName('loadSuggestionComments')
+            ->setFunctionArguments(['_suggestionId', '_limit', '_offset'])
+            ->updateHTMLElement('comments', 'comments', true)
+            ->updateHTMLElement('comments-load-more-link', 'loadMoreLink')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('loadSuggestionComments(' . $suggestionId . ', 10, 0)');
 
         $fb = new FormBuilder();
         $fb ->setAction(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'newComment', 'suggestionId' => $suggestionId])
@@ -99,24 +264,22 @@ class FeedbackSuggestionsPresenter extends APresenter {
     public function renderProfile() {
         $suggestion = $this->loadFromPresenterCache('suggestion');
         $data = $this->loadFromPresenterCache('data');
-        $comments = $this->loadFromPresenterCache('comments');
         $form = $this->loadFromPresenterCache('form');
         $adminPart = $this->loadFromPresenterCache('adminPart');
 
         $this->template->title = $suggestion->getTitle();
         $this->template->description = $suggestion->getText();
         $this->template->data = $data;
-        $this->template->comments = $comments;
-        $this->template->comment_form = $form->render();
+        $this->template->comment_form = $form;
         $this->template->admin_part = $adminPart;
     }
 
-    public function handleNewComment() {
+    public function handleNewComment(?FormResponse $fr = null) {
         global $app;
 
         $userId = $app->currentUser->getId();
         $suggestionId = $this->httpGet('suggestionId');
-        $text = $this->httpPost('text');
+        $text = $fr->text;
         $adminOnly = false;
 
         if($this->httpPost('adminOnly') !== null &&
@@ -131,7 +294,7 @@ class FeedbackSuggestionsPresenter extends APresenter {
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 
-    public function handleEditForm() {
+    public function handleEditForm(?FormResponse $fr = null) {
         global $app;
 
         $suggestionId = $this->httpGet('suggestionId', true);
@@ -142,8 +305,8 @@ class FeedbackSuggestionsPresenter extends APresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $userId = $app->currentUser->getId();
             $user = $app->currentUser;
-            $category = $this->httpPost('category');
-            $status = $this->httpPost('status');
+            $category = $fr->category;
+            $status = $fr->status;
 
             $values = [];
 
@@ -204,7 +367,7 @@ class FeedbackSuggestionsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
         $suggestion = $this->loadFromPresenterCache('suggestion');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
         $this->template->suggestion_title = $suggestion->getTitle();
     }
 

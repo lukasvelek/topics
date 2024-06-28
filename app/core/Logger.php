@@ -2,7 +2,7 @@
 
 namespace App\Logger;
 
-use App\Configuration;
+use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 use QueryBuilder\ILoggerCallable;
 
@@ -17,6 +17,7 @@ class Logger implements ILoggerCallable {
     private int $sqlLogLevel;
     private ?string $specialFilename;
     private array $cfg;
+    private int $stopwatchLogLevel;
 
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
@@ -24,6 +25,7 @@ class Logger implements ILoggerCallable {
         $this->sqlLogLevel = $this->cfg['SQL_LOG_LEVEL'];
         $this->logLevel = $this->cfg['LOG_LEVEL'];
         $this->specialFilename = null;
+        $this->stopwatchLogLevel = $this->cfg['LOG_STOPWATCH'];
     }
 
     public function stopwatch(callable $function, string $method) {
@@ -57,10 +59,16 @@ class Logger implements ILoggerCallable {
     }
 
     public function log(string $method, string $text, string $type = self::LOG_INFO) {
-        $text = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($type) . '] ' . $method . '(): ' . $text;
+        $date = new DateTime();
+        $text = '[' . $date . '] [' . strtoupper($type) . '] ' . $method . '(): ' . $text;
 
         switch($type) {
             case self::LOG_STOPWATCH:
+                if($this->stopwatchLogLevel >= 1) {
+                    $this->writeLog($text);
+                }
+                break;
+
             case self::LOG_INFO:
                 if($this->logLevel >= 3) {
                     $this->writeLog($text);
@@ -93,11 +101,14 @@ class Logger implements ILoggerCallable {
 
     private function writeLog(string $text) {
         $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
+
+        $date = new DateTime();
+        $date->format('Y-m-d');
         
         if($this->specialFilename !== null) {
-            $file = $this->specialFilename . '_' . date('Y-m-d') . '.log';
+            $file = $this->specialFilename . '_' . $date . '.log';
         } else {
-            $file = 'log_' . date('Y-m-d') . '.log';
+            $file = 'log_' . $date . '.log';
         }
 
         if(!FileManager::folderExists($folder)) {

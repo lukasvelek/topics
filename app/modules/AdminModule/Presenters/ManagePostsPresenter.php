@@ -2,31 +2,19 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
-use App\Core\CacheManager;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
-class ManagePostsPresenter extends APresenter {
+class ManagePostsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePostsPresenter', 'Manage posts');
      
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createManageSidebar();
         });
     }
 
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
-        $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
-        $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
-        $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
-
-        return $sb->render();
-    }
-
-    public function handleDeleteComment() {
+    public function handleDeleteComment(?FormResponse $fr = null) {
         global $app;
 
         $commentId = $this->httpGet('commentId', true);
@@ -34,7 +22,7 @@ class ManagePostsPresenter extends APresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->postCommentRepository->updateComment($commentId, ['isDeleted' => '1']);
+            $app->contentManager->deleteComment($commentId);
 
             $this->flashMessage('Comment deleted.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
@@ -57,10 +45,10 @@ class ManagePostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleDeletePost() {
+    public function handleDeletePost(?FormResponse $fr = null) {
         global $app;
 
         $postId = $this->httpGet('postId', true);
@@ -68,15 +56,7 @@ class ManagePostsPresenter extends APresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
-
-            $comments = $app->postCommentRepository->getCommentsForPostId($postId);
-
-            foreach($comments as $comment) {
-                $app->postCommentRepository->updateComment($comment->getId(), ['isDeleted' => '1']);
-            }
-
-            CacheManager::invalidateCache('posts');
+            $app->contentManager->deletePost($postId);
 
             $this->flashMessage('Post deleted with all its comments.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
@@ -99,7 +79,7 @@ class ManagePostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->post_title = '\'' . $post->getTitle() . '\'';
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

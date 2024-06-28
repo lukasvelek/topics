@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\PostCommentEntity;
 use App\Logger\Logger;
 
@@ -37,15 +38,18 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function getLatestCommentsForPostId(int $postId, int $limit = 0, int $offset = 0) {
+    public function getLatestCommentsForPostId(int $postId, int $limit = 0, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
             ->andWhere('parentCommentId IS NULL')
-            ->andWhere('isDeleted = 0')
             ->orderBy('dateCreated', 'DESC');
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
 
         if($limit > 0) {
             $qb->limit($limit);
@@ -83,14 +87,17 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getCommentCountForPostId(int $postId) {
+    public function getCommentCountForPostId(int $postId, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
-            ->andWhere('isDeleted = 0')
             ->execute();
+
+        if($deletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
 
         return $qb->fetch('cnt');
     }
@@ -161,8 +168,6 @@ class PostCommentRepository extends ARepository {
         
         // check
         $result = $this->checkLike($userId, $commentId);
-
-        $this->logger->info('Like check result: ' . ($result ? 'true' : 'false'), __METHOD__);
         
         if($result === false) {
             return false;
@@ -202,9 +207,8 @@ class PostCommentRepository extends ARepository {
             ->where('parentCommentId = ?', [$commentId])
             ->andWhere('postId = ?', [$postId])
             ->andWhere('isDeleted = 0')
-            ->orderBy('dateCreated', 'DESC');
-
-        $qb->execute();
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
 
         $entities = [];
         while($row = $qb->fetchAssoc()) {
@@ -234,6 +238,49 @@ class PostCommentRepository extends ARepository {
             ->execute();
 
         return $qb->fetch();
+    }
+
+    public function deleteComment(int $commentId, bool $hide = true) {
+        if($hide) {
+            $date = new DateTime();
+            return $this->updateComment($commentId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
+        } else {
+            $qb = $this->qb(__METHOD__);
+
+            $qb ->delete()
+                ->from('post_comments')
+                ->where('commentId = ?', [$commentId])
+                ->execute();
+
+            return $qb->fetch();
+        }
+    }
+
+    public function getDeletedComments() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+
+    public function getDeletedCommentCount() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(commentId) AS cnt'])
+            ->from('post_comments')
+            ->where('isDeleted = 1')
+            ->execute();
+
+        return $qb->fetch('cnt');
     }
 }
 

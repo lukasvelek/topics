@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Core\Datetypes\DateTime;
 use App\Exceptions\DatabaseConnectionException;
 use App\Logger\Logger;
 use Exception;
@@ -52,7 +53,9 @@ class DatabaseConnection implements IDbQueriable {
 
         $installer->install();
         
-        FileManager::saveFile($cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . date('Y-m-d H:i:s'));
+        $date = new DateTime();
+        
+        FileManager::saveFile($cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
     }
 }
 

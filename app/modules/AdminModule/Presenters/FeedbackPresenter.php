@@ -4,24 +4,14 @@ namespace App\Modules\AdminModule;
 
 use App\Components\Sidebar\Sidebar;
 use App\Constants\SuggestionStatus;
-use App\Modules\APresenter;
 
-class FeedbackPresenter extends APresenter {
+class FeedbackPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('FeedbackPresenter', 'Feedback');
 
         $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createSidebar();
+            $this->template->sidebar = $this->createFeedbackSidebar();
         });
-    }
-
-    private function createSidebar() {
-        $sb = new Sidebar();
-        $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard'], true);
-        $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list']);
-        $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
-
-        return $sb->render();
     }
 
     public function handleDashboard() {

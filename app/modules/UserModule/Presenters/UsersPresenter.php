@@ -6,6 +6,7 @@ use App\Constants\ReportCategory;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class UsersPresenter extends APresenter {
     public function __construct() {
@@ -40,15 +41,15 @@ class UsersPresenter extends APresenter {
         $this->template->report_link = $reportLink;
     }
 
-    public function handleReportUser() {
+    public function handleReportUser(?FormResponse $fr = null) {
         global $app;
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $authorId = $app->currentUser->getId();
             
             $app->reportRepository->createUserReport($authorId, $userId, $category, $description);
@@ -83,7 +84,7 @@ class UsersPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->username = $user->getUsername();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

@@ -7,6 +7,7 @@ class TextInput extends AInput {
         parent::__construct('text');
 
         $this->name = $name;
+        $this->id = $name;
 
         if($value !== null) {
             $this->value = $value;

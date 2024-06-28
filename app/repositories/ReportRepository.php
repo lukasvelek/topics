@@ -204,6 +204,33 @@ class ReportRepository extends ARepository {
 
         return $reports;
     }
+
+    public function getReportByCategory(int $entityId, string $entityType) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('entityType = ?', [$entityType])
+            ->andWhere('entityId = ?', [$entityId])
+            ->execute();
+
+        return ReportEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getAllReports() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->execute();
+
+        $reports = [];
+        while($row = $qb->fetchAssoc()) {
+            $reports[] = ReportEntity::createEntityFromDbRow($row);
+        }
+    
+        return $reports;
+    }
 }
 
 ?>
