@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Constants\UserProsecutionType;
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
@@ -66,7 +67,18 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function handleList() {
-        $this->ajaxMethod('getUsers', ['_page'], ['page' => 'AdminModule:ManageUsers', 'action' => 'loadUsersGrid'], 'get', ['gridPage' => '$_page'], $this->ajaxUpdateElements(['grid-content' => 'grid', 'grid-paginator' => 'paginator']));
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod('GET')
+            ->setURL(['page' => 'AdminModule:ManageUsers', 'action' => 'loadUsersGrid'])
+            ->setHeader(['gridPage' => '_page'])
+            ->setFunctionName('getUsers')
+            ->setFunctionArguments(['_page'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+        ;
+
+        $this->addScript($arb->build());
         $this->addScript('getUsers(0)');
     }
 

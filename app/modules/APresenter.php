@@ -291,12 +291,12 @@ abstract class APresenter extends AGUICore {
                 $app->logger->stopwatch(function() use ($actionAction) {
                     return $this->$actionAction();
                 }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
-            }
 
-            if($this->ajaxResponse !== null) {
-                return new TemplateObject($this->ajaxResponse);
-            } else {
-                throw new NoAjaxResponseException();
+                if($this->ajaxResponse !== null) {
+                    return new TemplateObject($this->ajaxResponse);
+                } else {
+                    throw new NoAjaxResponseException();
+                }
             }
         }
 
@@ -313,7 +313,7 @@ abstract class APresenter extends AGUICore {
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $handleAction);
         }
 
-        if($handleResult !== null) {
+        if(isset($handleResult) && $handleResult !== null) {
             return new TemplateObject($handleResult);
         }
 
@@ -329,7 +329,11 @@ abstract class APresenter extends AGUICore {
         }
 
         if($ok === false) {
-            throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+            if($isAjax) {
+                throw new ActionDoesNotExistException($actionAction);
+            } else {
+                throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+            }
         }
 
         foreach($this->beforeRenderCallbacks as $callback) {

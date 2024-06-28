@@ -2,8 +2,13 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Core\AjaxRequestBuilder;
+use App\Entities\BannedWordEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 class ManageBannedWordsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -14,12 +19,48 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         });
     }
 
-    public function handleList() {
+    public function actionGridList() {
         global $app;
 
-        $gridScript = '<script type="text/javascript">getBannedWords(0, ' . $app->currentUser->getId() . ')</script>';
+        $page = $this->httpGet('gridPage');
 
-        $this->saveToPresenterCache('grid', $gridScript);
+        $gridSize = $app->cfg['GRID_SIZE'];
+
+        $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
+        $lastPage = ceil($app->contentRegulationRepository->getBannedWordsCount() / $gridSize) - 1;
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
+        $gb->addDataSource($data);
+        $gb->addOnColumnRender('author', function(BannedWordEntity $bwe) use ($app) {
+            $user = $app->userRepository->getUserById($bwe->getAuthorId());
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+        });
+        $gb->addOnColumnRender('date', function(BannedWordEntity $bwe) {
+            return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
+        });
+        $gb->addAction(function(BannedWordEntity $bwe) {
+            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'post-data-link');
+        });
+
+        $paginator = $gb->createGridControls2('getBannedWordsGrid', $page, $lastPage);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+    }
+
+    public function handleList() {
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod('GET')
+            ->setURL(['page' => 'AdminModule:ManageBannedWords', 'action' => 'gridList'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+            ->setHeader(['gridPage' => '_page'])
+            ->setFunctionName('getBannedWordsGrid')
+            ->setFunctionArguments(['_page']);
+
+        $this->addScript($arb->build());
+        $this->addScript('getBannedWordsGrid(0)');
 
         $links = [
             '<a class="post-data-link" href="?page=AdminModule:ManageBannedWords&action=newForm">Add word</a>'
