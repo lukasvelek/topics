@@ -154,6 +154,12 @@ class DatabaseInstaller {
                 'word' => 'VARCHAR(256)',
                 'authorId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_membership' => [
+                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'topicId' => 'INT(32) NOT NULL',
+                'role' => 'INT(4) NOT NULL DEFAULT 1'
             ]
         ];
 
