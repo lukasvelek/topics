@@ -2,9 +2,9 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Core\CacheManager;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -15,7 +15,7 @@ class ManageTopicsPresenter extends AAdminPresenter {
         });
     }
 
-    public function handleDeleteTopic() {
+    public function handleDeleteTopic(?FormResponse $fr = null) {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
@@ -62,7 +62,7 @@ class ManageTopicsPresenter extends AAdminPresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->topic_title = '\'' . $topic->getTitle() . '\'';
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

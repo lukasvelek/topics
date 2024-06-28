@@ -3,10 +3,14 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
+use App\Core\AjaxRequestBuilder;
+use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
+use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class PostsPresenter extends APresenter {
     public function __construct() {
@@ -16,20 +20,71 @@ class PostsPresenter extends APresenter {
     public function handleProfile() {
         global $app;
 
-        $postId = $this->httpGet('postId');
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
 
+        $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
+        if(!$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
+            $this->flashMessage('This post does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $post->getTopicId()]);
+        }
+
         $this->saveToPresenterCache('post', $post);
+        
+        $postTitle = $bwh->checkText($post->getTitle());
+        $this->saveToPresenterCache('postTitle', $postTitle);
 
-        $this->saveToPresenterCache('comments', '<script type="text/javascript">loadCommentsForPost(' . $postId . ', 10, 0, ' . $app->currentUser->getId() . ')</script><div id="comments-list"></div><div id="comments-list-link"></div><br>');
+        $arb = new AjaxRequestBuilder();
 
-        $parentCommentId = $this->httpGet('parentCommentId');
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'loadCommentsForPost'])
+            ->setMethod('GET')
+            ->setHeader(['postId' => '_postId', 'limit' => '_limit', 'offset' => '_offset'])
+            ->setFunctionName('loadCommentsForPost')
+            ->setFunctionArguments(['_postId', '_limit', '_offset'])
+            ->updateHTMLElement('post-comments', 'comments', true)
+            ->updateHTMLElement('post-comments-load-more-link', 'loadMoreLink')
+        ;
 
+        $this->addScript($arb->build());
+        $this->addScript('loadCommentsForPost(' . $postId . ', 10, 0)');
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'likePostComment'])
+            ->setMethod('GET')
+            ->setHeader(['commentId' => '_commentId', 'toLike' => '_toLike'])
+            ->setFunctionName('likePostComment')
+            ->setFunctionArguments(['_commentId', '_toLike'])
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-likes"', 'likes')
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-link"', 'link');
+        ;
+
+        $this->addScript($arb->build());
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Posts', 'action' => 'createNewCommentForm'])
+            ->setMethod('GET')
+            ->setHeader(['commentId' => '_commentId', 'postId' => '_postId'])
+            ->setFunctionName('createNewCommentForm')
+            ->setFunctionArguments(['_commentId', '_postId'])
+            ->updateHTMLElementRaw('"#post-comment-" + _commentId + "-comment-form"', 'form')
+        ;
+
+        $this->addScript($arb->build());
+        
         // new comment form
+        $parentCommentId = $this->httpGet('parentCommentId');
         $fb = new FormBuilder();
 
-        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId])
+        $newCommentFormUrl = ['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId];
+
+        if($parentCommentId !== null) {
+            $newCommentFormUrl['parentCommentId'] = $parentCommentId;
+        }
+
+        $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
             ->addSubmit('Post')
         ;
@@ -37,53 +92,218 @@ class PostsPresenter extends APresenter {
         $this->saveToPresenterCache('form', $fb);
 
         $topic = $app->topicRepository->getTopicById($post->getTopicId());
-        $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
 
+        $topicTitle = $bwh->checkText($topic->getTitle());
+
+        $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topicTitle . '</a>';
         $this->saveToPresenterCache('topic', $topicLink);
+
+        $postDescription = $bwh->checkText($post->getText());
+        $this->saveToPresenterCache('postDescription', $postDescription);
 
         // post data
         $likes = $post->getLikes();
         $likeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=like&postId=' . $postId . '">Like</a>';
         $unlikeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=unlike&postId=' . $postId . '">Unlike</a>';
         $liked = $app->postRepository->checkLike($app->currentUser->getId(), $postId);
+        $finalLikeLink = '';
+
+        if(!$post->isDeleted()) {
+            $finalLikeLink = ' ' . ($liked ? $unlikeLink : $likeLink);
+        }
 
         $author = $app->userRepository->getUserById($post->getAuthorId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
 
-        $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report</a>';
+        $reportLink = '';
+        if(!$post->isDeleted()) {
+            $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
+        }
+
+        $deleteLink = '';
+
+        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId()) && !$post->isDeleted()) {
+            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
+        } else if($post->isDeleted()) {
+            $deleteLink = '<p class="post-data">Post deleted</p>';
+        }
 
         $postData = '
             <div>
-                <p class="post-data">Likes: ' . $likes . ' ' . ($liked ? $unlikeLink : $likeLink) . '</p>
+                <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
                 <p class="post-data">' . $reportLink . '</p>
+                ' . $deleteLink . '
             </div>
         ';
 
         $this->saveToPresenterCache('postData', $postData);
+
+        if($post->isDeleted()) {
+            $this->addExternalScript('js/Reducer.js');
+            $this->addScript('reducePostProfile()');
+        }
     }
 
     public function renderProfile() {
-        $post = $this->loadFromPresenterCache('post');
-        $comments = $this->loadFromPresenterCache('comments');
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topic');
         $postData = $this->loadFromPresenterCache('postData');
+        $postTitle = $this->loadFromPresenterCache('postTitle');
+        $postDescription = $this->loadFromPresenterCache('postDescription');
 
-        $this->template->post_title = $topicLink . ' | ' . $post->getTitle();
-        $this->template->post_text = $post->getText();
-        $this->template->latest_comments = $comments;
-        $this->template->new_comment_form = $form->render();
+        $this->template->post_title = $topicLink . ' | ' . $postTitle;
+        $this->template->post_text = $postDescription;
+        $this->template->new_comment_form = $form;
         $this->template->post_data = $postData;
     }
 
-    public function handleNewComment() {
+    public function actionCreateNewCommentForm() {
+        $postId = $this->httpGet('postId');
+        $parentCommentId = $this->httpGet('commentId');
+
+        $fb = new FormBuilder();
+
+        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
+            ->addTextArea('text', 'Comment:', null, true)
+            ->addSubmit('Post')
+        ;
+
+        $this->ajaxSendResponse(['form' => $fb->render()]);
+    }
+
+    public function actionLikePostComment() {
         global $app;
 
+        $commentId = $this->httpGet('commentId');
+        $toLike = $this->httpGet('toLike');
+        $userId = $app->currentUser->getId();
+
+        $liked = false;
+        
+        if($toLike == 'true') {
+            // like
+            $app->postCommentRepository->likeComment($userId, $commentId);
+            $liked = true;
+        } else {
+            // unlike
+            $app->postCommentRepository->unlikeComment($userId, $commentId);
+        }
+            
+        $likes = $app->postCommentRepository->getLikes($commentId);
+        
+        $link = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+
+        $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
+    }
+
+    public function actionLoadCommentsForPost() {
+        global $app;
+        
+        $postId = $this->httpGet('postId');
+        $limit = $this->httpGet('limit');
+        $offset = $this->httpGet('offset');
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
+        $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
+
+        $code = [];
+
+        if(empty($comments)) {
+            return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
+        }
+
+        foreach($comments as $comment) {
+            $code[] = $this->createPostComment($postId, $comment);
+        }
+
+        if(($offset + $limit) >= $commentCount) {
+            $loadMoreLink = '';
+        } else {
+            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
+        }
+
+        $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
+    }
+
+    private function createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
+        global $app;
+
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $author = $app->userRepository->getUserById($comment->getAuthorId());
+        $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+
+        $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
+        if(!$post->isDeleted()) {
+            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+        } else {
+            $likeLink = '';
+        }
+
+        $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
+        $childCommentsCode = [];
+
+        if(!empty($childComments)) {
+            foreach($childComments as $cc) {
+                $childCommentsCode[] = $this->createPostComment($postId, $cc, false);
+            }
+        }
+
+        if(!$post->isDeleted()) {
+            $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+        } else {
+            $reportForm = '';
+        }
+        $deleteLink = '';
+        
+        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId()) && !$post->isDeleted()) {
+            $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
+        }
+
+        $text = $bwh->checkText($comment->getText());
+
+        $code = '
+            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
+                ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+                <div class="col-md">
+                    <div>
+                        <p class="post-text">' . $text . '</p>
+                        <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
+                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
+                        </p>
+                        ' . ($post->isDeleted() ? '' : '<a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"></div>
+
+                        <div class="col-md" id="form">
+                            <div id="post-comment-' . $comment->getId() . '-comment-form"></div>
+                        </div>
+                        
+                        <div class="col-md-2"></div>
+                    </div>
+                    ' . implode('', $childCommentsCode) .  '
+                    ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
+                </div>
+            </div>
+            <br>
+        ';
+
+        return $code;
+    }
+
+    public function handleNewComment(FormResponse $fr) {
+        global $app;
+
+        $text = $fr->text;
         $postId = $this->httpGet('postId');
         $authorId = $app->currentUser->getId();
-        $text = $this->httpPost('text');
         $parentCommentId = $this->httpGet('parentCommentId');
 
         $matches = [];
@@ -120,14 +340,14 @@ class PostsPresenter extends APresenter {
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
 
-    public function handleReportForm() {
+    public function handleReportForm(?FormResponse $fr = null) {
         global $app;
 
         $postId = $this->httpGet('postId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createPostReport($userId, $postId, $category, $description);
@@ -163,18 +383,18 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->post_title = $post->getTitle();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 
-    public function handleReportComment() {
+    public function handleReportComment(?FormResponse $fr = null) {
         global $app;
 
         $commentId = $this->httpGet('commentId');
         $comment = $app->postCommentRepository->getCommentById($commentId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $category = $this->httpPost('category');
-            $description = $this->httpPost('description');
+            $category = $fr->category;
+            $description = $fr->description;
             $userId = $app->currentUser->getId();
 
             $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
@@ -209,7 +429,64 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->comment_id = $comment->getId();
-        $this->template->form = $form->render();
+        $this->template->form = $form;
+    }
+
+    public function handleDeleteComment(?FormResponse $fr = null) {
+        global $app;
+
+        $commentId = $this->httpGet('commentId');
+        $postId = $this->httpGet('postId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->contentManager->deleteComment($commentId);
+
+            $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'postId' => $postId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deleteComment', 'isSubmit' => '1', 'commentId' => $commentId, 'postId' => $postId])
+                ->addSubmit('Delete comment')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeleteComment() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form;
+    }
+
+    public function handleDeletePost(?FormResponse $fr = null) {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+
+        if($this->httpGet('isSubmit') == '1') {
+            $app->contentManager->deletePost($postId);
+
+            $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
+            $this->redirect(['action' => 'profile', 'postId' => $postId]);
+        } else {
+            $fb = new FormBuilder();
+            
+            $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deletePost', 'isSubmit' => '1', 'postId' => $postId])
+                ->addSubmit('Delete post')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeletePost() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form;
     }
 }
 

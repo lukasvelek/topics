@@ -2,7 +2,6 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\SystemStatus;
 
 class ManagePresenter extends AAdminPresenter {

@@ -2,13 +2,17 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\ReportCategory;
 use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
 use App\Constants\UserProsecutionType;
+use App\Core\AjaxRequestBuilder;
+use App\Entities\ReportEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
+use App\UI\HTML\HTML;
 
 class FeedbackReportsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -26,20 +30,125 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         }
     }
 
-    public function handleList() {
+    public function actionReportGrid() {
         global $app;
 
+        $page = $this->httpGet('gridPage');
+        $filterType = $this->httpGet('filterType');
+        $filterKey = $this->httpGet('filterKey');
+
+        $gridSize = $app->cfg['GRID_SIZE'];
+
+        $reports = [];
+        $reportCount = [];
+
+        $filterText = '';
+
+        switch($filterType) {
+            case 'null':
+                $reports = $app->reportRepository->getOpenReportsForList($gridSize, ($page * $gridSize));
+                $reportCount = count($app->reportRepository->getOpenReportsForList(0, 0));
+                break;
+    
+            case 'user':
+                $reports = $app->reportRepository->getOpenReportsForListFilterUser($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($app->reportRepository->getOpenReportsForListFilterUser($filterKey, 0, 0));
+                $filterText = 'User: ' . $app->userRepository->getUserById($filterKey)->getUsername();
+                break;
+    
+            case 'category':
+                $reports = $app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($app->reportRepository->getOpenReportsForListFilterCategory($filterKey, 0, 0));
+                $filterText = 'Category: ' . ReportCategory::toString($filterKey);
+                break;
+    
+            case 'status':
+                $reports = $app->reportRepository->getReportsForListFilterStatus($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($app->reportRepository->getReportsForListFilterStatus($filterKey, 0, 0));
+                $filterText = 'Status: ' . ReportStatus::toString($filterKey);
+                break;
+        }
+
+        $lastPage = ceil($reportCount / $gridSize) - 1;
+
+        $gb = new GridBuilder();
+
+        $gb->addDataSource($reports);
+        $gb->addColumns(['title' => 'Title', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
+        $gb->addOnColumnRender('title', function(ReportEntity $re) {
+            return ReportEntityType::toString($re->getEntityType()) . ' report';
+        });
+        $gb->addOnColumnRender('category', function(ReportEntity $re) {
+            $a = HTML::a();
+
+            $a->href('#')
+                ->onClick('getReportGrid(0, \'category\', \'' . $re->getCategory() . '\')')
+                ->text(ReportCategory::toString($re->getCategory()))
+                ->class('post-data-link')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('status', function(ReportEntity $re) {
+            $a = HTML::a();
+
+            $a->href('#')
+                ->text(ReportStatus::toString($re->getStatus()))
+                ->onClick('getReportGrid(0, \'status\', \'' . $re->getStatus() . '\')')
+                ->class('post-data-link')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('user', function(ReportEntity $re) use ($app) {
+            $user = $app->userRepository->getUserById($re->getUserId());
+
+            $a = HTML::a();
+
+            $a->href('#')
+                ->text($user->getUsername())
+                ->onClick('getReportGrid(0, \'user\', \'' . $user->getId() . '\')')
+                ->class('post-data-link')
+            ;
+
+            return $a->render();
+        });
+        $gb->addOnColumnRender('title', function(ReportEntity $re) {
+            return '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $re->getId() . '">' . ReportEntityType::toString($re->getEntityType()) . ' report</a>';
+        });
+
+        $paginator = $gb->createGridControls2('getReportGrid', $page, $lastPage, [$filterType, $filterKey]);
+
+        $filterControl = '';
+        if($filterType != 'null') {
+            $filterControl = $filterText . '&nbsp;<a class="post-data-link" onclick="getReportGrid(0, \'null\', \'null\')" href="#">Clear filter</a>';
+        }
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+    }
+
+    public function handleList() {
         $filterType = $this->httpGet('filterType') ?? 'null';
         $filterKey = $this->httpGet('filterKey') ?? 'null';
 
-        $this->saveToPresenterCache('list', '<script type="text/javascript">loadReports(10, 0, ' . $app->currentUser->getId() . ', \'' . $filterType . '\', \'' . $filterKey . '\')</script><div id="report-list"></div><div id="report-list-link"></div><br>');
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'AdminModule:FeedbackReports', 'action' => 'reportGrid'])
+            ->setMethod('GET')
+            ->setHeader(['gridPage' => '_page', 'filterType' => '_filterType', 'filterKey' => '_filterKey'])
+            ->setFunctionName('getReportGrid')
+            ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+            ->updateHTMLElement('grid-filter-control', 'filterControl')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('getReportGrid(0, \'' . $filterType . '\', \'' . $filterKey . '\')');
+
     }
 
-    public function renderList() {
-        $list = $this->loadFromPresenterCache('list');
-
-        $this->template->reports = $list;
-    }
+    public function renderList() {}
 
     public function handleProfile() {
         global $app;
@@ -170,14 +279,14 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $this->template->admin_part = $adminLinks;
     }
 
-    public function handleResolutionForm() {
+    public function handleResolutionForm(?FormResponse $fr = null) {
         global $app;
 
         $reportId = $this->httpGet('reportId', true);
         $report = $app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $comment = $this->httpPost('comment');
+            $comment = $fr->comment;
             $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
             $text = 'User ' . $userLink . ' closed this report with comment: ' . $comment;
 
@@ -217,7 +326,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
     public function renderResolutionForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

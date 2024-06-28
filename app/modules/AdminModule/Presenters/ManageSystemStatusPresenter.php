@@ -2,9 +2,9 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
 use App\Constants\SystemStatus;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 
 class ManageSystemStatusPresenter extends AAdminPresenter {
     public function __construct() {
@@ -61,15 +61,15 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         $this->template->list = $list;
     }
 
-    public function handleForm() {
+    public function handleForm(?FormResponse $fr = null) {
         global $app;
 
         $systemId = $this->httpGet('systemId');
         $system = $app->systemStatusRepository->getSystemStatusById($systemId);
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $status = $this->httpPost('status');
-            $description = $this->httpPost('description');
+            $status = $fr->status;
+            $description = $fr->description;
 
             if($description == '' || empty($description)) {
                 $description = null;
@@ -112,7 +112,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
     public function renderForm() {
         $form = $this->loadFromPresenterCache('form');
 
-        $this->template->form = $form->render();
+        $this->template->form = $form;
     }
 }
 

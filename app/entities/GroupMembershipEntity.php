@@ -32,6 +32,9 @@ class GroupMembershipEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['membershipId'], $row['groupId'], $row['userId'], $row['dateCreated']);
     }
 }

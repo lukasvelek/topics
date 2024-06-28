@@ -3,8 +3,9 @@
 namespace App\Components\Navbar;
 
 use App\Modules\TemplateObject;
+use App\UI\IRenderable;
 
-class Navbar {
+class Navbar implements IRenderable {
     private array $links;
     private TemplateObject $template;
     private bool $hideSearchBar;

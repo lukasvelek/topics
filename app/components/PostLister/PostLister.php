@@ -2,6 +2,8 @@
 
 namespace App\Components\PostLister;
 
+use App\Helpers\BannedWordsHelper;
+use App\Repositories\ContentRegulationRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
@@ -15,11 +17,13 @@ class PostLister {
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
     private PostRepository $postRepository;
+    private ?ContentRegulationRepository $crr;
 
-    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository) {
+    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr) {
         $this->userRepository = $userRepository;
         $this->topicRepository = $topicRepository;
         $this->postRepository = $postRepository;
+        $this->crr = $crr;
 
         $this->posts = [];
         $this->topics = [];
@@ -77,6 +81,11 @@ class PostLister {
         ];
 
         if(!empty($this->posts)) {
+            $bwh = null;
+            if($this->crr !== null) {
+                $bwh = new BannedWordsHelper($this->crr);
+            }
+
             foreach($this->posts as $post) {
                 $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
                 $likeLink = self::createLikeLink($post->getAuthorId(), $post->getId(), $liked);
@@ -87,9 +96,24 @@ class PostLister {
                     foreach($this->topics as $topic) {
                         $topics[$topic->getId()] = $topic;
                     }
+
+                    $title = $post->getTitle();
+                    if($bwh !== null) {
+                        $title = $bwh->checkText($title);
+                    }
+
+                    $text = $post->getShortenedText(100);
+                    if($bwh !== null) {
+                        $text = $bwh->checkText($text);
+                    }
+
+                    $topicTitle = $topics[$post->getTopicId()]->getTitle();
+                    if($bwh !== null) {
+                        $topicTitle = $bwh->checkText($topicTitle);
+                    }
     
-                    $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
-                    $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topics[$post->getTopicId()]->getTitle() . '</a>';
+                    $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
+                    $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topicTitle . '</a>';
     
                     $code = '<div class="row" id="post-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
@@ -97,7 +121,7 @@ class PostLister {
                     $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
                     $code .= '<hr>';
     
-                    $code .= '<p class="post-text">' . $post->getShortenedText(100) . '</p>';
+                    $code .= '<p class="post-text">' . $text . '</p>';
                     $code .= '<hr>';
     
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';

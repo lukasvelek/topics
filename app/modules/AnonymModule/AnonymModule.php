@@ -20,7 +20,7 @@ class AnonymModule extends AModule {
             $navbar->setCustomLinks(['login' => ['page' => 'AnonymModule:Login', 'action' => 'loginForm']]);
         }
 
-        $this->template->sys_navbar = $navbar->render();
+        $this->template->sys_navbar = $navbar;
     }
 }
 

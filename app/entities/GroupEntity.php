@@ -26,6 +26,9 @@ class GroupEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['groupId'], $row['title'], $row['description']);
     }
 }

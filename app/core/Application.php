@@ -5,12 +5,15 @@ namespace App\Core;
 use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
+use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
+use App\Managers\ContentManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
+use App\Repositories\ContentRegulationRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
@@ -21,6 +24,12 @@ use App\Repositories\TopicRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
 
+/**
+ * Application class that contains all objects and useful functions.
+ * It is also the starting point of all the application's behavior.
+ * 
+ * @author Lukas Velek
+ */
 class Application {
     private array $modules;
     public array $cfg;
@@ -29,6 +38,8 @@ class Application {
     private ?string $currentModule;
     private ?string $currentPresenter;
     private ?string $currentAction;
+
+    private bool $isAjaxRequest;
 
     private ModuleManager $moduleManager;
     public Logger $logger;
@@ -45,12 +56,18 @@ class Application {
     public ReportRepository $reportRepository;
     public UserProsecutionRepository $userProsecutionRepository;
     public GroupRepository $groupRepository;
+    public ContentRegulationRepository $contentRegulationRepository;
 
     public UserProsecutionManager $userProsecutionManager;
+    public ContentManager $contentManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
+    public VisibilityAuthorizator $visibilityAuthorizator;
 
+    /**
+     * The Application constructor. It creates objects of all used classes.
+     */
     public function __construct() {
         require_once('config.local.php');
 
@@ -79,21 +96,37 @@ class Application {
         $this->reportRepository = new ReportRepository($this->db, $this->logger);
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
         $this->groupRepository = new GroupRepository($this->db, $this->logger);
+        $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE']);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
+        $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
+
+        $this->isAjaxRequest = false;
 
         $this->loadModules();
     }
 
+    /**
+     * Used for old AJAX functions. It has become deprecated when AJAX functionality was implemented into presenters.
+     * 
+     * @param int $currentUserId Current user's ID
+     * 
+     * @deprecated
+     */
     public function ajaxRun(int $currentUserId) {
         $this->currentUser = $this->userRepository->getUserById($currentUserId);
     }
     
+    /**
+     * The point where all the operations are called from.
+     * It tries to authenticate the current user and then calls a render method.
+     */
     public function run() {
         $this->getCurrentModulePresenterAction();
 
@@ -111,9 +144,18 @@ class Application {
             }
         }
 
+        if(isset($_GET['isAjax']) && $_GET['isAjax'] == '1') {
+            $this->isAjaxRequest = true;
+        }
+
         echo $this->render();
     }
 
+    /**
+     * Redirects current page to other page using header('Location: ') method.
+     * 
+     * @param array $urlParams URL params
+     */
     public function redirect(array $urlParams) {
         $url = '';
 
@@ -128,6 +170,12 @@ class Application {
         exit;
     }
 
+    /**
+     * Creates a single line URL from a URL params array
+     * 
+     * @param array $param URL params
+     * @return string URL
+     */
     public function composeURL(array $params) {
         $url = '?';
 
@@ -142,10 +190,23 @@ class Application {
         return $url;
     }
 
+    /**
+     * Saves a flash message to persistent cache
+     * 
+     * @param string $text Flash message text
+     * @param string $type Flash message type
+     */
     public function flashMessage(string $text, string $type = 'info') {
         CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
     
+    /**
+     * Returns the rendered page content
+     * 
+     * First it creates a module instance, then it creates a RenderEngine instance and call it's render function.
+     * 
+     * @return string Page HTML content
+     */
     private function render() {
         if(!in_array($this->currentModule, $this->modules)) {
             throw new ModuleDoesNotExistException($this->currentModule);
@@ -157,14 +218,20 @@ class Application {
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($moduleObject, $this->currentPresenter, $this->currentAction);
         $this->logger->info('Rendering page content.', __METHOD__);
-        return $re->render();
+        return $re->render($this->isAjaxRequest);
     }
 
+    /**
+     * Loads modules
+     */
     private function loadModules() {
         $this->logger->info('Loading modules.', __METHOD__);
         $this->modules = $this->moduleManager->loadModules();
     }
 
+    /**
+     * Returns the current module, presenter and action from URL
+     */
     private function getCurrentModulePresenterAction() {
         if(isset($_GET['page'])) {
             $page = htmlspecialchars($_GET['page']);
