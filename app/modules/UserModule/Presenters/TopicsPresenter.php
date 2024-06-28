@@ -69,9 +69,9 @@ class TopicsPresenter extends APresenter {
         $this->addScript($arb->build());
 
         // topic data
-        $manager = $app->userRepository->getUserById($topic->getManagerId());
+        //$manager = $app->userRepository->getUserById($topic->getManagerId());
 
-        $managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
+        //$managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
 
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
@@ -79,11 +79,10 @@ class TopicsPresenter extends APresenter {
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
         $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
         $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
-        $isManager = $app->currentUser->getId() == $topic->getManagerId();
         $finalFollowLink = '';
 
         if(!$topic->isDeleted()) {
-            $finalFollowLink = ($followed ? ($isManager ? '' : $unFollowLink) : $followLink);
+            $finalFollowLink = ($followed ? $unFollowLink : $followLink);
         }
 
         $reportLink = '';
@@ -102,7 +101,6 @@ class TopicsPresenter extends APresenter {
 
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
-            <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
@@ -329,7 +327,7 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
         $topic = $app->topicRepository->getTopicById($topicId);
 
-        if($app->topicRepository->followTopic($app->currentUser->getId(), $topicId) !== false) {
+        if($app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId()) !== false) {
             $this->flashMessage('Topic \'' . $topic->getTitle() . '\' followed.', 'success');
         } else {
             $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'', 'error');
@@ -344,7 +342,7 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
         $topic = $app->topicRepository->getTopicById($topicId);
 
-        if($app->topicRepository->unfollowTopic($app->currentUser->getId(), $topicId) !== false) {
+        if($app->topicMembershipManager->unfollowTopic($topicId, $app->currentUser->getId()) !== false) {
             $this->flashMessage('Topic \'' . $topic->getTitle() . '\' unfollowed.', 'success');
         } else {
             $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'', 'error');

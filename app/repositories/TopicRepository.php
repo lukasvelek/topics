@@ -161,7 +161,7 @@ class TopicRepository extends ARepository {
             ->values([$userId, $topicId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function unfollowTopic(int $userId, int $topicId) {

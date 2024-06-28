@@ -11,6 +11,7 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
@@ -20,6 +21,7 @@ use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
@@ -57,9 +59,11 @@ class Application {
     public UserProsecutionRepository $userProsecutionRepository;
     public GroupRepository $groupRepository;
     public ContentRegulationRepository $contentRegulationRepository;
+    public TopicMembershipRepository $topicMembershipRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
+    public TopicMembershipManager $topicMembershipManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -97,11 +101,13 @@ class Application {
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
         $this->groupRepository = new GroupRepository($this->db, $this->logger);
         $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
+        $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE']);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);

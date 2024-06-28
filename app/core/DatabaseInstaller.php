@@ -45,7 +45,6 @@ class DatabaseInstaller {
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'managerId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL'
