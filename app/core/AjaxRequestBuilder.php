@@ -9,6 +9,8 @@ class AjaxRequestBuilder {
     private ?string $functionName;
     private ?string $method;
     private array $functionArgs;
+    private array $beforeAjaxOperations;
+    private array $customArgs;
 
     public function __construct() {
         $this->url = null;
@@ -17,6 +19,20 @@ class AjaxRequestBuilder {
         $this->functionName = null;
         $this->method = null;
         $this->functionArgs = [];
+        $this->beforeAjaxOperations = [];
+        $this->customArgs = [];
+
+        return $this;
+    }
+
+    public function addBeforeAjaxOperation(string $code) {
+        $this->beforeAjaxOperations[] = $code;
+
+        return $this;
+    }
+
+    public function addCustomArg(string $argName) {
+        $this->customArgs[] = $argName;
 
         return $this;
     }
@@ -86,6 +102,12 @@ class AjaxRequestBuilder {
 
         $code[] = 'function ' . $this->functionName . '(' . implode(', ', $this->functionArgs) . ') {';
 
+        if(!empty($this->beforeAjaxOperations)) {
+            foreach($this->beforeAjaxOperations as $bao) {
+                $code[] = $bao;
+            }
+        }
+
         if(strtoupper($this->method) == 'GET') {
             $code[] = '$.get(';
             $code[] = '"' . $this->url . '",';
@@ -119,6 +141,12 @@ class AjaxRequestBuilder {
         foreach($this->functionArgs as $fa) {
             if(str_contains($json, '"' . $fa . '"')) {
                 $json = str_replace('"'. $fa . '"', $fa, $json);
+            }
+        }
+
+        foreach($this->customArgs as $ca) {
+            if(str_contains($json, '"' . $ca . '"')) {
+                $json = str_replace('"' . $ca . '"', $ca, $json);
             }
         }
 

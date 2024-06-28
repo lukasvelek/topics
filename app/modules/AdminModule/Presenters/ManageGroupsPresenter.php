@@ -9,6 +9,7 @@ use App\Entities\GroupMembershipEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\Option;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -167,7 +168,6 @@ class ManageGroupsPresenter extends AAdminPresenter {
             $fb = new FormBuilder();
 
             $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'isSubmit' => '1', 'groupId' => $groupId])
-                ->addJSHandler('js/NewGroupMemberFormHandler.js')
                 ->addTextInput('usernameSearch', 'Username:', null, true)
                 ->addButton('Search', 'searchUsers(' . $app->currentUser->getId() . ', ' . $groupId . ')')
                 ->addSelect('user', 'User:', [], true)
@@ -175,7 +175,47 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $arb = new AjaxRequestBuilder();
+
+            $arb->setURL(['page' => 'AdminModule:ManageGroups', 'action' => 'searchUsersForNewMemberForm'])
+                ->setMethod('GET')
+                ->setHeader(['groupId' => '_groupId', 'q' => '_q'])
+                ->setFunctionName('searchUsers')
+                ->setFunctionArguments(['_groupId'])
+                ->addWhenDoneOperation('if(obj.count == 0) { alert("No users found"); }')
+                ->updateHTMLElement('user', 'users')
+                ->addCustomArg('_q')
+                ->addBeforeAjaxOperation('const _q = $("#usernameSearch").val();');
+            ;
+
+            $this->addScript($arb->build());
         }
+    }
+
+    public function actionSearchUsersForNewMemberForm() {
+        global $app;
+        
+        $username = $this->httpGet('q');
+        $groupId = $this->httpGet('groupId');
+
+        $groupMembers = $app->groupRepository->getGroupMemberUserIds($groupId);
+
+        $qb = $app->userRepository->composeStandardQuery($username, __METHOD__);
+        $qb ->andWhere($qb->getColumnNotInValues('userId', $groupMembers))
+            ->andWhere('isAdmin = 1')
+        ;
+
+        $users = $app->userRepository->getUsersFromQb($qb);
+
+        $options = [];
+        foreach($users as $user) {
+            $option = new Option($user->getId(), $user->getUsername());
+
+            $options[] = $option->render();
+        }
+
+        $this->ajaxSendResponse(['users' => $options, 'count' => count($options)]);
     }
 
     public function renderNewMember() {
