@@ -99,12 +99,19 @@ class TopicsPresenter extends APresenter {
             $deleteLink = '<p class="post-data">Topic deleted</p>';
         }
 
+        $roleManagementLink = '';
+
+        if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId())) {
+            $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
+        }
+
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
             ' . $deleteLink . '
+            ' . $roleManagementLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);

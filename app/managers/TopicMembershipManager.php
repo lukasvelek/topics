@@ -58,6 +58,14 @@ class TopicMembershipManager {
 
         return true;
     }
+
+    public function getFollowRole(int $topicId, int $userId) {
+        if(!$this->checkFollow($topicId, $userId)) {
+            return null;
+        }
+
+        return $this->topicMembershipRepository->getUserRoleInTopic($topicId, $userId);
+    }
 }
 
 ?>

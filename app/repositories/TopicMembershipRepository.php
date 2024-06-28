@@ -59,6 +59,18 @@ class TopicMembershipRepository extends ARepository {
             return false;
         }
     }
+
+    public function getUserRoleInTopic(int $topicId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['role'])
+            ->from('topic_membership')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('userId = ?', [$userId])
+            ->execute();
+
+        return $qb->fetch('role');
+    }
 }
 
 ?>

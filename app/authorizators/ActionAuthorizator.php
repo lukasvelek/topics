@@ -3,14 +3,34 @@
 namespace App\Authorizators;
 
 use App\Constants\AdministratorGroups;
+use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Logger\Logger;
+use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
 use App\Repositories\UserRepository;
 
 class ActionAuthorizator extends AAuthorizator {
-    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository) {
+    private TopicMembershipManager $tpm;
+
+    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm) {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
+
+        $this->tpm = $tpm;
+    }
+
+    public function canManageTopicRoles(int $topicId, int $userId) {
+        $role = $this->tpm->getFollowRole($topicId, $userId);
+
+        if($role === null) {
+            return false;
+        }
+
+        if($role < TopicMemberRole::MANAGER) {
+            return false;
+        }
+
+        return true;
     }
 
     public function canRemoveMemberFromGroup(int $userId) {
