@@ -2,7 +2,6 @@
 
 namespace App\Logger;
 
-use App\Configuration;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 use QueryBuilder\ILoggerCallable;
@@ -18,6 +17,7 @@ class Logger implements ILoggerCallable {
     private int $sqlLogLevel;
     private ?string $specialFilename;
     private array $cfg;
+    private int $stopwatchLogLevel;
 
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
@@ -25,6 +25,7 @@ class Logger implements ILoggerCallable {
         $this->sqlLogLevel = $this->cfg['SQL_LOG_LEVEL'];
         $this->logLevel = $this->cfg['LOG_LEVEL'];
         $this->specialFilename = null;
+        $this->stopwatchLogLevel = $this->cfg['LOG_STOPWATCH'];
     }
 
     public function stopwatch(callable $function, string $method) {
@@ -63,6 +64,11 @@ class Logger implements ILoggerCallable {
 
         switch($type) {
             case self::LOG_STOPWATCH:
+                if($this->stopwatchLogLevel >= 1) {
+                    $this->writeLog($text);
+                }
+                break;
+
             case self::LOG_INFO:
                 if($this->logLevel >= 3) {
                     $this->writeLog($text);
