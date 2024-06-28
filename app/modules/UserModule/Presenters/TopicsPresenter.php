@@ -2,7 +2,9 @@
 
 namespace App\Modules\UserModule;
 
+use App\Components\PostLister\PostLister;
 use App\Constants\ReportCategory;
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
@@ -10,7 +12,6 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\HTML\HTML;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -41,8 +42,31 @@ class TopicsPresenter extends APresenter {
 
         // posts
         $postLimit = 10;
-        $this->ajaxMethod('loadPostsForTopic', ['_limit', '_offset'], ['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'], 'get', ['limit' => '$_limit', 'offset' => '$_offset', 'topicId' => $topicId], $this->ajaxUpdateElements(['latestPosts' => 'posts', 'loadMoreLink' => 'loadMoreLink'], ['latestPosts']));
-        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0)');
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'loadPostsForTopic'])
+            ->setMethod('GET')
+            ->setHeader(['limit' => '_limit', 'offset' => '_offset', 'topicId' => '_topicId'])
+            ->setFunctionName('loadPostsForTopic')
+            ->setFunctionArguments(['_limit', '_offset', '_topicId'])
+            ->updateHTMLElement('latest-posts', 'posts', true)
+            ->updateHTMLElement('load-more-link', 'loadMoreLink')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0, ' . $topicId . ')');
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'likePost'])
+            ->setMethod('GET')
+            ->setHeader(['postId' => '_postId', 'userId' => '_userId', 'toLike' => '_toLike'])
+            ->setFunctionName('likePost')
+            ->setFunctionArguments(['_postId', '_userId', '_toLike'])
+            ->updateHTMLElementRaw('"#post-" + _postId + "-likes"', 'postLikes')
+            ->updateHTMLElementRaw('"#post-" + _postId + "-link"', 'postLink')
+        ;
+
+        $this->addScript($arb->build());
 
         // topic data
         $manager = $app->userRepository->getUserById($topic->getManagerId());
@@ -104,6 +128,27 @@ class TopicsPresenter extends APresenter {
         }
     }
 
+    public function actionLikePost() {
+        global $app;
+
+        $userId = $this->httpGet('userId');
+        $postId = $this->httpGet('postId');
+        $toLike = $this->httpGet('toLike');
+
+        $liked = false;
+
+        if($toLike == 'true') {
+            $app->postRepository->likePost($userId, $postId);
+            $liked = true;
+        } else {
+            $app->postRepository->unlikePost($userId, $postId);
+        }
+
+        $likes = $app->postRepository->getLikes($postId);
+
+        $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($userId, $postId, $liked), 'postLikes' => $likes]);
+    }
+
     public function actionLoadPostsForTopic() {
         global $app;
 
@@ -131,9 +176,9 @@ class TopicsPresenter extends APresenter {
             $title = $bwh->checkText($post->getTitle());
     
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
-    
+
             $liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
-            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $post->getId() .', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
@@ -155,7 +200,7 @@ class TopicsPresenter extends APresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ')">Load more</a>';
+            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', ' . $topicId . ')" href="#">Load more</a>';
         }
 
         $this->ajaxSendResponse(['posts' => implode('', $code), 'loadMoreLink' => $loadMoreLink]);

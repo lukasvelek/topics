@@ -155,7 +155,7 @@ abstract class AModule extends AGUICore {
             $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
         }
 
-        CacheManager::invalidateCache('flashMessages');
+        CacheManager::deleteFlashMessages();
     }
 }
 

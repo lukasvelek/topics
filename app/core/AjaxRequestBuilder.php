@@ -17,6 +17,7 @@ class AjaxRequestBuilder {
         $this->functionName = null;
         $this->method = null;
         $this->functionArgs = [];
+
         return $this;
     }
 
@@ -46,6 +47,12 @@ class AjaxRequestBuilder {
 
     public function updateHTMLElement(string $htmlElementId, string $jsonResultName, bool $append = false) {
         $this->addWhenDoneOperation('$("#' . $htmlElementId . '").' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
+
+        return $this;
+    }
+
+    public function updateHTMLElementRaw(string $htmlElementId, string $jsonResultName, bool $append = false) {
+        $this->addWhenDoneOperation('$(' . $htmlElementId . ').' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
 
         return $this;
     }

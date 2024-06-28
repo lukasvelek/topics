@@ -75,9 +75,26 @@ class CacheManager {
         return $result;
     }
 
+    public static function deleteFlashMessages() {
+        $userId = 0;
+
+        if(isset($_SESSION['userId'])) {
+            $userId = $_SESSION['userId'];
+        }
+
+        self::invalidateCache('flashMessages-' . $userId);
+    }
+
     public static function saveFlashMessageToCache(array $data) {
         $obj = self::getTemporaryObject();
-        $file = $obj->loadCachedFiles('flashMessages');
+        
+        $userId = 0;
+
+        if(isset($_SESSION['userId'])) {
+            $userId = $_SESSION['userId'];
+        }
+
+        $file = $obj->loadCachedFiles('flashMessages-' . $userId);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -87,14 +104,21 @@ class CacheManager {
 
         $file = serialize($file);
 
-        $obj->saveCachedFiles('flashMessages', $file);
+        $result = $obj->saveCachedFiles('flashMessages-' . $userId, $file);
 
-        return true;
+        return $result > 0;
     }
 
     public static function loadFlashMessages() {
         $obj = self::getTemporaryObject();
-        $file = $obj->loadCachedFiles('flashMessages');
+        
+        $userId = 0;
+
+        if(isset($_SESSION['userId'])) {
+            $userId = $_SESSION['userId'];
+        }
+
+        $file = $obj->loadCachedFiles('flashMessages-' . $userId);
         
         if($file !== null && $file !== false) {
             $file = unserialize($file);
