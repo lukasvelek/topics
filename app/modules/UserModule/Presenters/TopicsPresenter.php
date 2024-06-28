@@ -172,7 +172,7 @@ class TopicsPresenter extends APresenter {
         $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
-        $this->template->new_post_form = $fb->render();
+        $this->template->new_post_form = $fb;
     }
 
     public function handleNewPost(?FormResponse $fr = null) {
@@ -275,7 +275,7 @@ class TopicsPresenter extends APresenter {
     }
 
     public function renderForm() {
-        $this->template->form = $this->loadFromPresenterCache('form')->render();
+        $this->template->form = $this->loadFromPresenterCache('form');
     }
 
     public function handleFollow() {

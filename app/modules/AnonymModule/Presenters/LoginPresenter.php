@@ -45,9 +45,7 @@ class LoginPresenter extends APresenter {
             ->addSubmit('Log in')
         ;
 
-        $form = $fb->render();
-
-        $this->template->form = $form;
+        $this->template->form = $fb;
         $this->template->title = 'Login';
     }
 }
