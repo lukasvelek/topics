@@ -71,6 +71,25 @@ class TopicMembershipRepository extends ARepository {
 
         return $qb->fetch('role');
     }
+
+    public function getTopicMembers(int $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_membersip')
+            ->where('topicId = ?', [$topicId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        
+    }
 }
 
 ?>
