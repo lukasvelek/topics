@@ -20,4 +20,6 @@ $cfg['GRID_SIZE'] = 50; // grid row count
 
 $cfg['FULL_DELETE'] = false; // true if content is deleted fully or false if it just has isDeleted = 1
 
+$cfg['PHP_DIR_FULLPATH'] = ''; // path to the php directory
+
 ?>
