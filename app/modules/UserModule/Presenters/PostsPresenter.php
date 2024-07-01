@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
+use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
@@ -122,7 +123,7 @@ class PostsPresenter extends APresenter {
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId()) && !$post->isDeleted()) {
+        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
         } else if($post->isDeleted()) {
             $deleteLink = '<p class="post-data">Post deleted</p>';

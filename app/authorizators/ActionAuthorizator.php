@@ -68,8 +68,16 @@ class ActionAuthorizator extends AAuthorizator {
         return $this->commonContentManagement($userId);
     }
 
-    public function canDeletePost(int $userId) {
-        return $this->commonContentManagement($userId);
+    public function canDeletePost(int $userId, int $topicId) {
+        if(!$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        if($this->tpm->getFollowRole($topicId, $userId) <= TopicMemberRole::MANAGER) {
+            return false;
+        }
+
+        return true;
     }
 
     public function canDeleteTopic(int $userId) {
