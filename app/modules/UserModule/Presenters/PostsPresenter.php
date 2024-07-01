@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
+use App\Core\CacheManager;
 use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
@@ -269,6 +270,31 @@ class PostsPresenter extends APresenter {
 
         $text = $bwh->checkText($comment->getText());
 
+        $matches = [];
+        preg_match_all("/[@]\w*/m", $text, $matches);
+
+        $matches = $matches[0];
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $users = [];
+        foreach($matches as $match) {
+            $username = substr($match, 1);
+            $user = $app->userRepository->getUserByUsername($username);
+            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+            
+            $users[$match] = $link;
+        }
+
+        foreach($users as $k => $v) {
+            $text = str_replace($k, $v, $text);
+        }
+
+        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+        $text = preg_replace($pattern, $replacement, $text);
+
         $code = '
             <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
@@ -306,31 +332,6 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
         $authorId = $app->currentUser->getId();
         $parentCommentId = $this->httpGet('parentCommentId');
-
-        $matches = [];
-        preg_match_all("/[@]\w*/m", $text, $matches);
-
-        $matches = $matches[0];
-
-        $post = $app->postRepository->getPostById($postId);
-
-        $users = [];
-        foreach($matches as $match) {
-            $username = substr($match, 1);
-            $user = $app->userRepository->getUserByUsername($username);
-            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
-            
-            $users[$match] = $link;
-        }
-
-        foreach($users as $k => $v) {
-            $text = str_replace($k, $v, $text);
-        }
-
-        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
-        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
-
-        $text = preg_replace($pattern, $replacement, $text);
 
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
@@ -490,6 +491,34 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form;
+    }
+
+    public function handleLike() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->postRepository->likePost($app->currentUser->getId(), $postId);
+        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
+
+        CacheManager::invalidateCache('posts');
+
+        $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+    }
+
+    public function handleUnlike() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
+        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
+
+        CacheManager::invalidateCache('posts');
+
+        $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
 }
 

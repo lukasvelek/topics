@@ -42,6 +42,9 @@ function mostActiveTopics() {
 
     $data = [];
     foreach($result as $row) {
+        if(count($data) == 10) {
+            break;
+        }
         $data[$row['topicId']] = $row['cnt'];
     }
 
@@ -61,6 +64,9 @@ function mostActivePosts() {
 
     $data = [];
     foreach($result as $row) {
+        if(count($data) == 10) {
+            break;
+        }
         $data[$row['postId']] = $row['cnt'];
     }
 

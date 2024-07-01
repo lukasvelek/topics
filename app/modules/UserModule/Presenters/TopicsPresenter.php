@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
 use App\Constants\ReportCategory;
+use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Exceptions\AException;
@@ -297,6 +298,7 @@ class TopicsPresenter extends APresenter {
                 $app->topicRepository->createNewTopic($title, $description);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
+                $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
 
                 CacheManager::invalidateCache('topics');
             } catch(AException $e) {
