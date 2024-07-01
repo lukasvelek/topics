@@ -282,6 +282,15 @@ class PostCommentRepository extends ARepository {
 
         return $qb->fetch('cnt');
     }
+
+    public function composeQueryForPostComments() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments');
+
+        return $qb;
+    }
 }
 
 ?>

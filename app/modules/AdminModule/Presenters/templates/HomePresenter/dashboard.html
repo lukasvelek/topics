@@ -1,9 +1,9 @@
-<script type="text/javascript" src="js/widgets/AdminFeedbackWidgets.js"></script>
+<script type="text/javascript" src="js/widgets/AdminDashboardWidgets.js"></script>
 <div class="row">
     <div class="col-md">
         <div class="row">
             <div class="col-md" id="page-title">
-                Feedback dashboard
+                Administration dashboard
             </div>
         </div>
 
@@ -15,27 +15,33 @@
             <div class="col-md">
                 <div class="row">
                     <div class="col-md" id="widget1">
-                        Suggestions
-                        $WIDGET1$
+                        <div>Most active topics</div>
+                        <div id="widget1-data">
+                            <div style="width: 75%"><canvas id="mostActiveTopicsGraph"></canvas></div>
+                        </div>
                     </div>
         
                     <div class="col-md-2"></div>
         
                     <div class="col-md" id="widget2">
-                        Reports
-                        $WIDGET2$
+                        <div>Most active posts</div>
+                        <div id="widget2-data">
+                            <div style="width: 75%"><canvas id="mostActivePostsGraph"></canvas></div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md" id="widget3">
-                        Suggestion categories
+                        Most active users
                         $WIDGET3$
                     </div>
 
                     <div class="col-md-2"></div>
 
-                    <div class="col-md" id="widget4"></div>
+                    <div class="col-md" id="widget4">
+                        $WIDGET4$
+                    </div>
                 </div>
             </div>
 

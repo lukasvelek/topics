@@ -36,7 +36,6 @@ class FeedbackPresenter extends AAdminPresenter {
     private function createSuggestionWidget() {
         $code = '
             <div style="width: 75%"><canvas id="suggestionWidgetGraph"></canvas></div>
-            <script type="text/javascript" src="js/widgets/FeedbackWidgets.js"></script>
         ';
 
         return $code;
@@ -55,7 +54,6 @@ class FeedbackPresenter extends AAdminPresenter {
     private function createReportWidget() {
         $code = '
             <div style="width: 75%"><canvas id="reportWidgetGraph"></canvas></div>
-            <script type="text/javascript" src="js/widgets/FeedbackWidgets.js"></script>
         ';
 
         return $code;
@@ -74,7 +72,6 @@ class FeedbackPresenter extends AAdminPresenter {
     private function createSuggestionCategoriesWidget() {
         $code = '
             <div style="width: 75%"><canvas id="suggestionCategoriesWidgetGraph"></canvas></div>
-            <script type="text/javascript" src="js/widgets/FeedbackWidgets.js"></script>
         ';
 
         return $code;

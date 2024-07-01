@@ -215,13 +215,17 @@ class TopicRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getTopicCount() {
+    public function getTopicCount(bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(topicId) AS cnt'])
-            ->from('topics')
-            ->where('isDeleted = 0')
-            ->execute();
+            ->from('topics');
+
+        if($deletedOnly) {
+            $qb->where('isDeleted = 0');
+        }
+
+        $qb->execute();
 
         return $qb->fetch('cnt');
     }
@@ -272,7 +276,7 @@ class TopicRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    private function createTopicsArrayFromQb(QueryBuilder $qb) {
+    public function createTopicsArrayFromQb(QueryBuilder $qb) {
         $topics = [];
 
         while($row = $qb->fetchAssoc()) {
@@ -280,6 +284,15 @@ class TopicRepository extends ARepository {
         }
 
         return $topics;
+    }
+
+    public function composeQueryForTopics() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topics');
+
+        return $qb;
     }
 }
 
