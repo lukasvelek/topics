@@ -294,9 +294,9 @@ class TopicsPresenter extends APresenter {
             $topicId = null;
 
             try {
-                $app->topicRepository->createNewTopic($app->currentUser->getId(), $title, $description);
-                $topicId = $app->topicRepository->getLastTopicIdForManagerId($app->currentUser->getId());
-                $app->topicRepository->followTopic($app->currentUser->getId(), $topicId);
+                $app->topicRepository->createNewTopic($title, $description);
+                $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
+                $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
 
                 CacheManager::invalidateCache('topics');
             } catch(AException $e) {

@@ -104,38 +104,28 @@ class TopicRepository extends ARepository {
         return $topics;
     }
 
-    public function createNewTopic(int $managerId, string $title, string $description) {
+    public function createNewTopic(string $title, string $description) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description', 'managerId'])
-            ->values([$title, $description, $managerId])
+        $qb ->insert('topics', ['title', 'description'])
+            ->values([$title, $description])
             ->execute();
 
         return $qb->fetch();
     }
 
-    public function getLastTopicIdForManagerId(int $managerId) {
+    public function getLastTopicIdForTitle(string $title) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['topicId'])
             ->from('topics')
-            ->where('managerId = ?', [$managerId])
+            ->where('title = ?', [$title])
             ->orderBy('dateCreated', 'DESC')
             ->andWhere('isDeleted = 0')
             ->limit(1)
             ->execute();
 
         return $qb->fetch('topicId');
-    }
-
-    public function tryGetLastTopicIdForManagerId(int $managerId) {
-        $result = $this->getLastTopicIdForManagerId($managerId);
-
-        if($result === null) {
-            throw new CouldNotFetchLastEntityIdException('topic');
-        }
-
-        return $result;
     }
 
     public function checkFollow(int $userId, int $topicId) {
