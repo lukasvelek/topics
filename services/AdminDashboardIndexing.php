@@ -17,6 +17,7 @@ try {
     $data['mostActiveUsers'] = serialize(mostActiveUsers());
 
     updateData($data);
+    deleteOldData();
 } catch(AException|Exception $e) {
     logError($e->getMessage());
 }
@@ -30,6 +31,22 @@ function updateData($data) {
 
     $qb ->insert('admin_dashboard_widgets_graph_data', ['mostActiveTopics', 'mostActivePosts', 'mostActiveUsers'])
         ->values($data)
+        ->execute()
+        ->fetch();
+}
+
+function deleteOldData() {
+    global $app;
+
+    $qb = $app->topicRepository->getQb();
+
+    $age = new DateTime();
+    $age->modify('-' . (30) . 'd');
+    $age = $age->getResult();
+
+    $qb ->delete()
+        ->from('admin_dashboard_widgets_graph_data')
+        ->where('dateCreated <= ?', [$age])
         ->execute()
         ->fetch();
 }

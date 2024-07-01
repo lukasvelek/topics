@@ -9,9 +9,16 @@ class HomePresenter extends AAdminPresenter {
 
     public function handleDashboard() {
         $this->addScript('createDashboard();');
+        $this->addScript('autoUpdateCounter();');
+
+        $this->saveToPresenterCache('refreshLink', '<a class="post-data-link" href="#" onclick="autoUpdate()">Refresh</a>');
     }
 
-    public function renderDashboard() {}
+    public function renderDashboard() {
+        $refreshLink = $this->loadFromPresenterCache('refreshLink');
+
+        $this->template->refresh_link = $refreshLink;
+    }
 
     public function actionGetGraphData() {
         global $app;

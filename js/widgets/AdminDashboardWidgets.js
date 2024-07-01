@@ -1,3 +1,7 @@
+let topicsChart = null;
+let postsChart = null;
+let usersChart = null;
+
 function createDashboard() {
     $.get(
         "?page=AdminModule:Home&action=getGraphData&isAjax=1"
@@ -9,7 +13,7 @@ function createDashboard() {
         if(obj.topics.error) {
             $("#widget1-data").html(obj.topics.error);
         } else {
-            new Chart(ctxTopics, {
+            topicsChart = new Chart(ctxTopics, {
                 type: "bar",
                 data: {
                     labels: obj.topics.labels,
@@ -34,7 +38,7 @@ function createDashboard() {
         if(obj.posts.error) {
             $("#widget2-data").html(obj.posts.error);
         } else {
-            new Chart(ctxPosts, {
+            postsChart = new Chart(ctxPosts, {
                 type: "bar",
                 data: {
                     labels: obj.posts.labels,
@@ -59,7 +63,7 @@ function createDashboard() {
         if(obj.users.error) {
             $("#widget3-data").html(obj.users.error);
         } else {
-            new Chart(ctxUsers, {
+            usersChart = new Chart(ctxUsers, {
                 type: "bar",
                 data: {
                     labels: obj.users.labels,
@@ -79,4 +83,27 @@ function createDashboard() {
             });
         }
     });
+}
+
+async function autoUpdateCounter() {
+    $("#jsTimeToAutoUpdate").html('1 min');
+
+    const timeToWait = 60;
+
+    for(let x = 0; x < timeToWait; x++) {
+        $("#jsTimeToAutoUpdate").html('' + (timeToWait - x) + ' sec');
+        await sleep(1000);
+    }
+
+    await autoUpdate();
+
+    await autoUpdateCounter();
+}
+
+async function autoUpdate() {
+    console.log('Widget refresh.');
+    topicsChart.destroy();
+    postsChart.destroy();
+    usersChart.destroy();
+    createDashboard();
 }
