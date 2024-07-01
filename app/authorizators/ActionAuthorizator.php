@@ -19,6 +19,29 @@ class ActionAuthorizator extends AAuthorizator {
         $this->tpm = $tpm;
     }
 
+    public function canChangeUserTopicRole(int $topicId, int $callingUserId, int $userId) {
+        $callingRole = $this->tpm->getFollowRole($topicId, $callingUserId);
+        $role = $this->tpm->getFollowRole($topicId, $userId);
+
+        if($callingUserId == $userId) {
+            return false;
+        }
+
+        if($callingRole === null || $role === null) {
+            return false;
+        }
+
+        if($role == TopicMemberRole::OWNER && $callingRole != TopicMemberRole::OWNER) {
+            return false;
+        }
+
+        if($callingRole <= $role && ($role != TopicMemberRole::OWNER && $callingRole != TopicMemberRole::OWNER)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function canManageTopicRoles(int $topicId, int $userId) {
         $role = $this->tpm->getFollowRole($topicId, $userId);
 

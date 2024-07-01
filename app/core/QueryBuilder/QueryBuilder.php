@@ -645,7 +645,7 @@ class QueryBuilder
             return $result;
         }
 
-        if($this->queryResult === NULL || $this->queryResult === FALSE || $this->queryResult === TRUE) {
+        if($this->queryResult === NULL || $this->queryResult === FALSE) {
             return $result;
         }
 

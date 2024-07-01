@@ -26,14 +26,17 @@ abstract class ARepository {
     }
 
     public function beginTransaction() {
+        $this->logger->warning('Transaction begun.', __METHOD__);
         return $this->conn->beginTransaction();
     }
 
     public function rollback() {
+        $this->logger->warning('Transaction rolled back.', __METHOD__);
         return $this->conn->rollback();
     }
 
     public function commit() {
+        $this->logger->warning('Transaction commited.', __METHOD__);
         return $this->conn->commit();
     }
 

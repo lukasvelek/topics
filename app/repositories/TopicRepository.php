@@ -147,14 +147,10 @@ class TopicRepository extends ARepository {
             ->andWhere('topicId = ?', [$topicId])
             ->execute();
 
-        return $qb->fetch('followId') !== null;
+        return ($qb->fetch('followId') !== null);
     }
 
     public function followTopic(int $userId, int $topicId) {
-        if($this->checkFollow($userId, $topicId)) {
-            return false;
-        }
-
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_topic_follows', ['userId', 'topicId'])
@@ -165,10 +161,6 @@ class TopicRepository extends ARepository {
     }
 
     public function unfollowTopic(int $userId, int $topicId) {
-        if(!$this->checkFollow($userId, $topicId)) {
-            return false;
-        }
-
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -177,7 +169,7 @@ class TopicRepository extends ARepository {
             ->andWhere('topicId = ?', [$topicId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getNotFollowedTopics(int $userId, array $followedTopics = []) {

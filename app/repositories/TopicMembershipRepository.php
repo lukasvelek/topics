@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\TopicMemberEntity;
 use App\Logger\Logger;
 
 class TopicMembershipRepository extends ARepository {
@@ -53,11 +54,7 @@ class TopicMembershipRepository extends ARepository {
             ->andWhere('userId = ?', [$userId])
             ->execute();
 
-        if($qb->fetch('membershipId') !== null) {
-            return true;
-        } else {
-            return false;
-        }
+        return ($qb->fetch('membershipId') !== null);
     }
 
     public function getUserRoleInTopic(int $topicId, int $userId) {
@@ -72,11 +69,11 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetch('role');
     }
 
-    public function getTopicMembers(int $topicId, int $limit, int $offset) {
+    public function getTopicMembersForGrid(int $topicId, int $limit, int $offset, bool $orderByRoleDesc) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
-            ->from('topic_membersip')
+            ->from('topic_membership')
             ->where('topicId = ?', [$topicId]);
 
         if($limit > 0) {
@@ -85,10 +82,18 @@ class TopicMembershipRepository extends ARepository {
         if($offset > 0) {
             $qb->offset($offset);
         }
+        if($orderByRoleDesc) {
+            $qb->orderBy('role', 'DESC');
+        }
 
         $qb->execute();
 
-        
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = TopicMemberEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
     }
 }
 
