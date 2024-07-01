@@ -45,7 +45,6 @@ class DatabaseInstaller {
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'managerId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL'
@@ -154,6 +153,12 @@ class DatabaseInstaller {
                 'word' => 'VARCHAR(256)',
                 'authorId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_membership' => [
+                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'topicId' => 'INT(32) NOT NULL',
+                'role' => 'INT(4) NOT NULL DEFAULT 1'
             ]
         ];
 

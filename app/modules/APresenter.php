@@ -23,6 +23,7 @@ abstract class APresenter extends AGUICore {
     private array $presenterCache;
     private array $scripts;
     private ?string $ajaxResponse;
+    private bool $isStatic;
 
     protected ?TemplateObject $template;
 
@@ -46,6 +47,7 @@ abstract class APresenter extends AGUICore {
         $this->presenterCache = [];
         $this->scripts = [];
         $this->ajaxResponse = null;
+        $this->isStatic = false;
     }
 
     /**
@@ -229,7 +231,7 @@ abstract class APresenter extends AGUICore {
         
         $this->afterRender();
 
-        return $this->template;
+        return [$this->template, $this->isStatic];
     }
 
     /**
@@ -531,6 +533,24 @@ abstract class APresenter extends AGUICore {
         }
 
         return $code;
+    }
+
+    /**
+     * Sets the current page as static
+     * 
+     * @param bool $static True if the page is static and false if not
+     */
+    public function setStatic(bool $static = true) {
+        $this->isStatic = $static;
+    }
+
+    /**
+     * Returns true if the page is static
+     * 
+     * @return bool True if the page is static or false if not
+     */
+    public function isStatic() {
+        return $this->isStatic;
     }
 }
 

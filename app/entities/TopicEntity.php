@@ -6,16 +6,14 @@ class TopicEntity implements ICreatableFromRow {
     private int $topicId;
     private string $title;
     private string $description;
-    private int $managerId;
     private string $dateCreated;
     private bool $isDeleted;
     private ?string $dateDeleted;
 
-    public function __construct(int $topicId, string $title, string $description, int $managerId, string $dateCreated, bool $isDeleted, ?string $dateDeleted) {
+    public function __construct(int $topicId, string $title, string $description, string $dateCreated, bool $isDeleted, ?string $dateDeleted) {
         $this->topicId = $topicId;
         $this->title = $title;
         $this->description = $description;
-        $this->managerId = $managerId;
         $this->dateCreated = $dateCreated;
         $this->isDeleted = $isDeleted;
         $this->dateDeleted = $dateDeleted;
@@ -31,10 +29,6 @@ class TopicEntity implements ICreatableFromRow {
 
     public function getDescription() {
         return $this->description;
-    }
-
-    public function getManagerId() {
-        return $this->managerId;
     }
 
     public function getDateCreated() {
@@ -53,7 +47,7 @@ class TopicEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['topicId'], $row['title'], $row['description'], $row['managerId'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted']);
+        return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted']);
     }
 }
 

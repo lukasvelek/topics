@@ -25,13 +25,14 @@ class TopicsPresenter extends APresenter {
 
         $topicId = $this->httpGet('topicId');
 
-        if(!$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        if($topic->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
             $this->flashMessage('This topic does not exist.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
         }
 
         // topic info
-        $topic = $app->topicRepository->getTopicById($topicId);
         $this->saveToPresenterCache('topic', $topic);
 
         $topicName = $bwh->checkText($topic->getTitle());
@@ -68,27 +69,21 @@ class TopicsPresenter extends APresenter {
 
         $this->addScript($arb->build());
 
-        // topic data
-        $manager = $app->userRepository->getUserById($topic->getManagerId());
-
-        $managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
-
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
         $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
         $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
-        $isManager = $app->currentUser->getId() == $topic->getManagerId();
         $finalFollowLink = '';
 
         if(!$topic->isDeleted()) {
-            $finalFollowLink = ($followed ? ($isManager ? '' : $unFollowLink) : $followLink);
+            $finalFollowLink = ($followed ? $unFollowLink : $followLink);
         }
 
         $reportLink = '';
 
-        if(!$topic->isDeleted()) {
+        if(!$topic->isDeleted() && $app->actionAuthorizator->canReportTopic($app->currentUser->getId(), $topicId)) {
             $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
         }
 
@@ -100,13 +95,19 @@ class TopicsPresenter extends APresenter {
             $deleteLink = '<p class="post-data">Topic deleted</p>';
         }
 
+        $roleManagementLink = '';
+
+        if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId())) {
+            $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
+        }
+
         $code = '
             <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
-            <p class="post-data">Manager: ' . $managerLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
             ' . $deleteLink . '
+            ' . $roleManagementLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);
@@ -171,7 +172,7 @@ class TopicsPresenter extends APresenter {
 
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
-            $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+            $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
     
             $title = $bwh->checkText($post->getTitle());
     
@@ -329,10 +330,21 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
         $topic = $app->topicRepository->getTopicById($topicId);
 
-        if($app->topicRepository->followTopic($app->currentUser->getId(), $topicId) !== false) {
+        $ok = false;
+
+        $app->topicRepository->beginTransaction();
+
+        try {
+            $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
+            $ok = true;
+        } catch(AException $e) {
+            $app->topicRepository->rollback();
+            $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        if($ok) {
+            $app->topicRepository->commit();
             $this->flashMessage('Topic \'' . $topic->getTitle() . '\' followed.', 'success');
-        } else {
-            $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'', 'error');
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -344,10 +356,21 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
         $topic = $app->topicRepository->getTopicById($topicId);
 
-        if($app->topicRepository->unfollowTopic($app->currentUser->getId(), $topicId) !== false) {
+        $ok = false;
+
+        $app->topicRepository->beginTransaction();
+
+        try {
+            $app->topicMembershipManager->unfollowTopic($topicId, $app->currentUser->getId());
+            $ok = true;
+        } catch(AException $e) {
+            $app->topicRepository->rollback();
+            $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        if($ok) {
+            $app->topicRepository->commit();
             $this->flashMessage('Topic \'' . $topic->getTitle() . '\' unfollowed.', 'success');
-        } else {
-            $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'', 'error');
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);

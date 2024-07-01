@@ -9,12 +9,14 @@ abstract class ACommonTag implements IRenderable {
     private bool $doubleSided;
     private array $customElements;
     private ?string $betweenBracketsContent;
+    private array $styleArray;
 
     protected function __construct(string $tag, bool $doubleSided = true) {
         $this->tag = $tag;
         $this->doubleSided = $doubleSided;
         $this->customElements = [];
         $this->betweenBracketsContent = null;
+        $this->styleArray = [];
     }
 
     public function onClick(string $code) {
@@ -23,14 +25,7 @@ abstract class ACommonTag implements IRenderable {
     }
 
     public function style(array $parts) {
-        $tmp = [];
-        foreach($parts as $k => $v) {
-            $tmp[] = $k . ': ' . $v;
-        }
-        
-        $code = implode('; ', $tmp);
-
-        $this->setCustomElement('style', $code);
+        $this->styleArray = array_merge($this->styleArray, $parts);
         return $this;
     }
 
@@ -53,6 +48,8 @@ abstract class ACommonTag implements IRenderable {
     }
 
     public function render() {
+        $styleAttr = $this->convertStyles();
+
         $code = '<' . $this->tag;
 
         $tmp = [];
@@ -63,6 +60,8 @@ abstract class ACommonTag implements IRenderable {
                 $tmp[] = $k;
             }
         }
+
+        $tmp[] = 'style="' . $styleAttr . '"';
 
         $code .= ' ' . implode(' ', $tmp) . '>';
         if($this->betweenBracketsContent !== null) {
@@ -77,6 +76,16 @@ abstract class ACommonTag implements IRenderable {
 
     public function get() {
         return $this->render();
+    }
+
+    private function convertStyles() {
+        $tmp = [];
+
+        foreach($this->styleArray as $k => $v) {
+            $tmp[] = $k . ': ' . $v;
+        }
+
+        return implode('; ', $tmp);
     }
 }
 

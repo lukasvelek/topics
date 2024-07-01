@@ -141,6 +141,36 @@ class CacheManager {
     private static function getTemporaryObject() {
         return new self();
     }
+
+    public static function savePageToCache(string $moduleName, string $presenterName, string $content) {
+        $obj = self::getTemporaryObject();
+
+        $file = $obj->loadCachedFiles('cachedPages');
+
+        if($file !== null && $file !== false) {
+            $file = unserialize($file);
+        }
+
+        $file[$moduleName . '_' . $presenterName] = $content;
+
+        $file = serialize($file);
+
+        $result = $obj->saveCachedFiles('cachedPages', $file);
+
+        return $result > 0;
+    }
+    
+    public static function loadPagesFromCache() {
+        $obj = self::getTemporaryObject();
+
+        $file = $obj->loadCachedFiles('cachedPages');
+
+        if($file !== null && $file !== false) {
+            $file = unserialize($file);
+        }
+
+        return $file;
+    }
 }
 
 ?>

@@ -3,11 +3,12 @@
 namespace App\Managers;
 
 use App\Core\CacheManager;
+use App\Logger\Logger;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 
-class ContentManager {
+class ContentManager extends AManager {
     private const T_TOPIC = 1;
     private const T_POST = 2;
     private const T_COMMENT = 3;
@@ -18,7 +19,9 @@ class ContentManager {
 
     private bool $fullDelete;
 
-    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $fullDelete) {
+    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $fullDelete, Logger $logger) {
+        parent::__construct($logger);
+        
         $this->topicRepository = $topicRepository;
         $this->postCommentRepository = $postCommentRepository;
         $this->postRepository = $postRepository;
@@ -71,6 +74,7 @@ class ContentManager {
                 
                 case self::T_TOPIC:
                     CacheManager::invalidateCache('topics');
+                    CacheManager::invalidateCache('topicMemberships');
                     break;
             }
         }

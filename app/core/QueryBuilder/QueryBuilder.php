@@ -634,6 +634,25 @@ class QueryBuilder
     }
 
     /**
+     * Fetch an evaluated bool expression from the result
+     *
+     * @return bool True if the operation was successful or false if not
+     */
+    public function fetchBool() {
+        $result = false;
+
+        if($this->currentState != self::STATE_CLEAN) {
+            return $result;
+        }
+
+        if($this->queryResult === NULL || $this->queryResult === FALSE) {
+            return $result;
+        }
+
+        return true;
+    }
+
+    /**
      * Creates SQL query
      * 
      * @param bool $useSafe True if safe method should be used or false if not
