@@ -365,8 +365,8 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $scriptPath Path to the JS script
      */
-    protected function addExternalScript(string $scriptPath) {
-        $this->scripts[] = '<script type="text/javascript" src="' . $scriptPath . '"></script>';
+    protected function addExternalScript(string $scriptPath, bool $hasType = true) {
+        $this->scripts[] = '<script ' . ($hasType ? 'type="text/javascript" ' : '') . 'src="' . $scriptPath . '"></script>';
     }
 
     /**

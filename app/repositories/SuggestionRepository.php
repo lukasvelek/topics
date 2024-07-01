@@ -31,13 +31,32 @@ class SuggestionRepository extends ARepository {
         return $this->getSuggestionCountByStatuses($statuses);
     }
 
-    public function getSuggestionCountByStatuses(array $statuses) {
+    public function getSuggestionCountByStatuses(array $statuses = []) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(suggestionId) AS cnt'])
-            ->from('user_suggestions')
-            ->where($qb->getColumnInValues('status', $statuses))
-            ->execute();
+            ->from('user_suggestions');
+
+        if(!empty($statuses)) {
+            $qb->where($qb->getColumnInValues('status', $statuses));
+        }
+
+        $qb->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getSuggestionCountByCategories(array $categories = []) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(suggestionId) AS cnt'])
+            ->from('user_suggestions');
+
+        if(!empty($categories)) {
+            $qb->where($qb->getColumnInValues('category', $categories));
+        }
+
+        $qb->execute();
 
         return $qb->fetch('cnt');
     }
