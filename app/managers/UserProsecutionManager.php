@@ -8,14 +8,16 @@ use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Logger\Logger;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
 
-class UserProsecutionManager {
+class UserProsecutionManager extends AManager {
     private UserProsecutionRepository $userProsecutionRepository;
     private UserRepository $userRepository;
 
-    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository) {
+    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository, Logger $logger) {
+        parent::__construct($logger);
         $this->userProsecutionRepository = $userProsecutionRepository;
         $this->userRepository = $userRepository;
     }

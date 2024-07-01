@@ -64,16 +64,16 @@ class ActionAuthorizator extends AAuthorizator {
         return $this->commonGroupManagement($userId);
     }
 
-    public function canDeleteComment(int $userId) {
-        return $this->commonContentManagement($userId);
-    }
-
-    public function canDeletePost(int $userId, int $topicId) {
-        if(!$this->commonContentManagement($userId)) {
+    public function canDeleteComment(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
 
-        if($this->tpm->getFollowRole($topicId, $userId) <= TopicMemberRole::MANAGER) {
+        return true;
+    }
+
+    public function canDeletePost(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
 
@@ -106,6 +106,18 @@ class ActionAuthorizator extends AAuthorizator {
         }
 
         return true;
+    }
+
+    public function canReportPost(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canReportTopic(int $userId, int $topicId) {
+        return $this->canReportPost($userId, $topicId);
     }
 }
 

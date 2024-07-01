@@ -69,11 +69,6 @@ class TopicsPresenter extends APresenter {
 
         $this->addScript($arb->build());
 
-        // topic data
-        //$manager = $app->userRepository->getUserById($topic->getManagerId());
-
-        //$managerLink = '<a class="post-data-link" href="' . $app->composeURL(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $manager->getId()]) . '">' . $manager->getUsername() . '</a>';
-
         $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
@@ -88,7 +83,7 @@ class TopicsPresenter extends APresenter {
 
         $reportLink = '';
 
-        if(!$topic->isDeleted()) {
+        if(!$topic->isDeleted() && $app->actionAuthorizator->canReportTopic($app->currentUser->getId(), $topicId)) {
             $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
         }
 
@@ -177,7 +172,7 @@ class TopicsPresenter extends APresenter {
 
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
-            $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+            $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
     
             $title = $bwh->checkText($post->getTitle());
     

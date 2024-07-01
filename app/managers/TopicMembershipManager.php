@@ -3,20 +3,26 @@
 namespace App\Managers;
 
 use App\Constants\TopicMemberRole;
+use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
+use App\Logger\Logger;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicRepository;
+use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
-class TopicMembershipManager {
+class TopicMembershipManager extends AManager {
     private TopicRepository $topicRepository;
     private TopicMembershipRepository $topicMembershipRepository;
 
-    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository) {
+    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger) {
+        parent::__construct($logger);
+
         $this->topicMembershipRepository = $topicMembershipRepository;
         $this->topicRepository = $topicRepository;
     }
 
-    public function followTopic(int $topicId, int $userId) {
+    public function followTopic(int $topicId, int $userId,) {
         if($this->checkFollow($topicId, $userId)) {
             throw new GeneralException('User already follows the topic.');
         }
@@ -80,6 +86,23 @@ class TopicMembershipManager {
         if(!$this->topicMembershipRepository->updateMemberRole($topicId, $userId, $newRole)) {
             throw new GeneralException('Could not change the selected user\'s role.');
         }
+        
+        $oldRole = TopicMemberRole::toString($this->getFollowRole($topicId, $userId));
+        $newRole = TopicMemberRole::toString($newRole);
+
+        $this->logger->warning(sprintf('User #%d changed role of user #%d from %s to %s.', $callingUserId, $userId, $oldRole, $newRole), __METHOD__);
+    }
+
+    public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '') {
+        $role = $this->getFollowRole($topicId, $user->getId());
+
+        $span = HTML::span();
+        $span->setColor(TopicMemberRole::getColorByKey($role))
+            ->setText(TopicMemberRole::toString($role));
+
+        $text = $namePrefix . $user->getUsername() . ' (' . $span->render() . ')';
+
+        return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
     }
 }
 

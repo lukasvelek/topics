@@ -3,7 +3,6 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
-use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
@@ -12,6 +11,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class PostsPresenter extends APresenter {
     public function __construct() {
@@ -26,7 +26,7 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
-        if(!$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
+        if($post->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
             $this->flashMessage('This post does not exist.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $post->getTopicId()]);
         }
@@ -114,10 +114,10 @@ class PostsPresenter extends APresenter {
         }
 
         $author = $app->userRepository->getUserById($post->getAuthorId());
-        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
+        $authorLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
         $reportLink = '';
-        if(!$post->isDeleted()) {
+        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $topic->getId())) {
             $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
         }
 
@@ -238,7 +238,7 @@ class PostsPresenter extends APresenter {
         $post = $app->postRepository->getPostById($postId);
 
         $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
         $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
         if(!$post->isDeleted()) {
@@ -256,14 +256,14 @@ class PostsPresenter extends APresenter {
             }
         }
 
-        if(!$post->isDeleted()) {
+        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $post->getTopicId())) {
             $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
         } else {
             $reportForm = '';
         }
         $deleteLink = '';
         
-        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId()) && !$post->isDeleted()) {
+        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
@@ -312,11 +312,13 @@ class PostsPresenter extends APresenter {
 
         $matches = $matches[0];
 
+        $post = $app->postRepository->getPostById($postId);
+
         $users = [];
         foreach($matches as $match) {
             $username = substr($match, 1);
             $user = $app->userRepository->getUserByUsername($username);
-            $link = '<a class="post-text-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">@' . $username . '</a>';
+            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
             
             $users[$match] = $link;
         }
