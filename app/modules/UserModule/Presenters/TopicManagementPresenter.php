@@ -38,12 +38,20 @@ class TopicManagementPresenter extends APresenter {
         $this->addScript('getUserRolesGrid(' . $topicId . ', 0)');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
     }
 
     public function renderManageRoles() {
         $title = $this->loadFromPresenterCache('title');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->topic_title = $title;
+        $this->template->links = $links;
     }
 
     public function actionUserRolesGrid() {
