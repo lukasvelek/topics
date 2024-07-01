@@ -8,7 +8,7 @@ class HomePresenter extends AAdminPresenter {
     }
 
     public function handleDashboard() {
-        $this->addScript('mostActiveTopicsGraph(); mostActivePostsGraph();');
+        $this->addScript('mostActiveTopicsGraph(); mostActivePostsGraph(); mostActiveUsersGraph();');
     }
 
     public function renderDashboard() {}
@@ -71,8 +71,41 @@ class HomePresenter extends AAdminPresenter {
 
         foreach($data as $postId => $commentCount) {
             $post = $app->postRepository->getPostById($postId);
+            $topic = $app->topicRepository->getTopicById($post->getTopicId());
 
-            $labels[] = $post->getTitle();
+            $labels[] = '[' . $topic->getTitle() . '] ' . $post->getTitle();
+            $resultData[] = $commentCount;
+        }
+
+        $this->ajaxSendResponse(['labels' => $labels, 'data' => $resultData]);
+    }
+
+    public function actionGetMostActiveUsersGraphData() {
+        global $app;
+
+        $qb = $app->userRepository->getQb();
+        $qb ->select(['*'])
+            ->from('admin_dashboard_widgets_graph_data')
+            ->limit(1)
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $data = [];
+        while($row = $qb->fetchAssoc()) {
+            $data = unserialize($row['mostActiveUsers']);
+        }
+
+        if(empty($data)) {
+            $this->ajaxSendResponse(['error' => 'No data']);
+        }
+
+        $labels = [];
+        $resultData = [];
+
+        foreach($data as $userId => $commentCount) {
+            $user = $app->userRepository->getUserById($userId);
+
+            $labels[] = $user->getUsername();
             $resultData[] = $commentCount;
         }
 

@@ -26,4 +26,10 @@ function logInfo(string $text) {
     $app->logger->serviceInfo($text, SERVICE_TITLE);
 }
 
+function logError(string $text) {
+    global $app;
+
+    $app->logger->serviceError($text, SERVICE_TITLE);
+}
+
 ?>

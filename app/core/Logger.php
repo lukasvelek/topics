@@ -46,43 +46,17 @@ class Logger implements ILoggerCallable {
         $this->logService($serviceName, $text, self::LOG_INFO);
     }
 
+    public function serviceError(string $text, string $serviceName) {
+        $this->logService($serviceName, $text, self::LOG_ERROR);
+    }
+
     public function logService(string $serviceName, string $text, string $type = self::LOG_INFO) {
         $this->specialFilename = 'service_log';
 
         $date = new DateTime();
         $text = '[' . $date . '] [' . strtoupper($type) . '] ' . $serviceName . ': ' . $text;
 
-        switch($type) {
-            case self::LOG_STOPWATCH:
-                if($this->stopwatchLogLevel >= 1) {
-                    $this->writeLog($text);
-                }
-                break;
-
-            case self::LOG_INFO:
-                if($this->logLevel >= 3) {
-                    $this->writeLog($text);
-                }
-                break;
-
-            case self::LOG_WARNING:
-                if($this->logLevel >= 2) {
-                    $this->writeLog($text);
-                }
-                break;
-            
-            case self::LOG_ERROR:
-                if($this->logLevel >= 1) {
-                    $this->writeLog($text);
-                }
-                break;
-
-            case self::LOG_SQL:
-                if($this->sqlLogLevel >= 1) {
-                    $this->writeLog($text);
-                }
-                break;
-        }
+        $this->writeLog($text);
 
         $this->specialFilename = null;
     }

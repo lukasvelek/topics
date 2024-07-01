@@ -1,6 +1,7 @@
 <?php
 
 use App\Core\Datetypes\DateTime;
+use App\Exceptions\AException;
 
 const SERVICE_TITLE = 'AdminDashboardIndexing';
 
@@ -8,13 +9,17 @@ require_once('CommonService.php');
 
 startService();
 
-$data = [];
+try {
+    $data = [];
 
-$data['mostActiveTopics'] = serialize(mostActiveTopics());
-$data['mostActivePosts'] = serialize(mostActivePosts());
-$data['mostActiveUsers'] = serialize([]);
+    $data['mostActiveTopics'] = serialize(mostActiveTopics());
+    $data['mostActivePosts'] = serialize(mostActivePosts());
+    $data['mostActiveUsers'] = serialize(mostActiveUsers());
 
-updateData($data);
+    updateData($data);
+} catch(AException|Exception $e) {
+    logError($e->getMessage());
+}
 
 stopService();
 
@@ -74,7 +79,25 @@ function mostActivePosts() {
 }
 
 function mostActiveUsers() {
+    global $app;
 
+    $age = new DateTime();
+    $age->modify('-1d');
+    $age = $age->getResult();
+
+    $sql = "SELECT authorId, COUNT(commentId) AS cnt FROM post_comments WHERE dateCreated >= '$age' GROUP BY authorId ORDER BY cnt DESC";
+
+    $result = $app->postRepository->sql($sql);
+
+    $data = [];
+    foreach($result as $row){
+        if(count($data) == 10) {
+            break;
+        }
+        $data[$row['authorId']] = $row['cnt'];
+    }
+
+    return $data;
 }
 
 ?>
