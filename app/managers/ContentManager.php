@@ -74,6 +74,7 @@ class ContentManager extends AManager {
                 
                 case self::T_TOPIC:
                     CacheManager::invalidateCache('topics');
+                    CacheManager::invalidateCache('topicMemberships');
                     break;
             }
         }

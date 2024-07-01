@@ -3,6 +3,7 @@
 namespace App\Managers;
 
 use App\Constants\TopicMemberRole;
+use App\Core\CacheManager;
 use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
@@ -12,6 +13,8 @@ use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class TopicMembershipManager extends AManager {
+    private const CACHE_NAMESPACE = 'topicMemberships';
+
     private TopicRepository $topicRepository;
     private TopicMembershipRepository $topicMembershipRepository;
 
@@ -67,7 +70,9 @@ class TopicMembershipManager extends AManager {
             return null;
         }
 
-        return $this->topicMembershipRepository->getUserRoleInTopic($topicId, $userId);
+        $data = $this->loadMembershipDataFromCache($topicId, $userId);
+
+        return $data->getRole();
     }
 
     public function getTopicMembers(int $topicId, int $limit, int $offset, bool $orderByRoleDesc = true) {
@@ -91,6 +96,8 @@ class TopicMembershipManager extends AManager {
         $newRole = TopicMemberRole::toString($newRole);
 
         $this->logger->warning(sprintf('User #%d changed role of user #%d from %s to %s.', $callingUserId, $userId, $oldRole, $newRole), __METHOD__);
+
+        $this->invalidateMembershipCache();
     }
 
     public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '') {
@@ -103,6 +110,18 @@ class TopicMembershipManager extends AManager {
         $text = $namePrefix . $user->getUsername() . ' (' . $span->render() . ')';
 
         return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+    }
+
+    private function loadMembershipDataFromCache(int $topicId, int $userId) {
+        $key = $topicId . '_' . $userId;
+
+        return CacheManager::loadCache($key, function () use ($userId, $topicId) {
+            return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
+        }, self::CACHE_NAMESPACE);
+    }
+
+    private function invalidateMembershipCache() {
+        CacheManager::invalidateCache(self::CACHE_NAMESPACE);
     }
 }
 
