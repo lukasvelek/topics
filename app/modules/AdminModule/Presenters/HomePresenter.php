@@ -8,12 +8,12 @@ class HomePresenter extends AAdminPresenter {
     }
 
     public function handleDashboard() {
-        $this->addScript('mostActiveTopicsGraph(); mostActivePostsGraph(); mostActiveUsersGraph();');
+        $this->addScript('createDashboard();');
     }
 
     public function renderDashboard() {}
 
-    public function actionGetMostActiveTopicsGraphData() {
+    public function actionGetGraphData() {
         global $app;
         
         $qb = $app->topicRepository->getQb();
@@ -23,93 +23,73 @@ class HomePresenter extends AAdminPresenter {
             ->orderBy('dateCreated', 'DESC')
             ->execute();
 
-        $data = [];
+        $json = [];
+
+        $topics = [];
+        $posts = [];
+        $users = [];
         while($row = $qb->fetchAssoc()) {
-            $data = unserialize($row['mostActiveTopics']);
+            $topics = unserialize($row['mostActiveTopics']);
+            $posts = unserialize($row['mostActivePosts']);
+            $users = unserialize($row['mostActiveUsers']);
         }
 
-        if(empty($data)) {
-            $this->ajaxSendResponse(['error' => 'No data']);
-            return;
+        // topics
+        if(empty($topics)) {
+            $json['topics']['error'] = 'No data';
+        } else {
+            $labels = [];
+            $resultData = [];
+
+            foreach($topics as $topicId => $postCount) {
+                $topic = $app->topicRepository->getTopicById($topicId);
+    
+                $labels[] = $topic->getTitle();
+                $resultData[] = $postCount;
+            }
+
+            $json['topics']['labels'] = $labels;
+            $json['topics']['data'] = $resultData;
         }
 
-        $labels = [];
-        $resultData = [];
+        // posts
+        if(empty($posts)) {
+            $json['posts']['error'] = 'No data';
+        } else {
+            $labels = [];
+            $resultData = [];
 
-        foreach($data as $topicId => $postCount) {
-            $topic = $app->topicRepository->getTopicById($topicId);
+            foreach($posts as $postId => $commentCount) {
+                $post = $app->postRepository->getPostById($postId);
+                $topic = $app->topicRepository->getTopicById($post->getTopicId());
 
-            $labels[] = $topic->getTitle();
-            $resultData[] = $postCount;
+                $labels[] = '[' . $topic->getTitle() . '] ' . $post->getTitle();
+                $resultData[] = $commentCount;
+            }
+
+            $json['posts']['labels'] = $labels;
+            $json['posts']['data'] = $resultData;
         }
 
-        $this->ajaxSendResponse(['labels' => $labels, 'data' => $resultData]);
-    }
+        // users
+        if(empty($users)) {
+            $json['users']['error'] = 'No data';
+        } else {
+            $labels = [];
+            $resultData = [];
 
-    public function actionGetMostActivePostsGraphData() {
-        global $app;
-        
-        $qb = $app->topicRepository->getQb();
-        $qb ->select(['*'])
-            ->from('admin_dashboard_widgets_graph_data')
-            ->limit(1)
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            foreach($users as $userId => $commentCount) {
+                $user = $app->userRepository->getUserById($userId);
 
-        $data = [];
-        while($row = $qb->fetchAssoc()) {
-            $data = unserialize($row['mostActivePosts']);
+                $labels[] = $user->getUsername();
+                $resultData[] = $commentCount;
+            }
+
+            $json['users']['labels'] = $labels;
+            $json['users']['data'] = $resultData;
         }
 
-        if(empty($data)) {
-            $this->ajaxSendResponse(['error' => 'No data']);
-            return;
-        }
-
-        $labels = [];
-        $resultData = [];
-
-        foreach($data as $postId => $commentCount) {
-            $post = $app->postRepository->getPostById($postId);
-            $topic = $app->topicRepository->getTopicById($post->getTopicId());
-
-            $labels[] = '[' . $topic->getTitle() . '] ' . $post->getTitle();
-            $resultData[] = $commentCount;
-        }
-
-        $this->ajaxSendResponse(['labels' => $labels, 'data' => $resultData]);
-    }
-
-    public function actionGetMostActiveUsersGraphData() {
-        global $app;
-
-        $qb = $app->userRepository->getQb();
-        $qb ->select(['*'])
-            ->from('admin_dashboard_widgets_graph_data')
-            ->limit(1)
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
-
-        $data = [];
-        while($row = $qb->fetchAssoc()) {
-            $data = unserialize($row['mostActiveUsers']);
-        }
-
-        if(empty($data)) {
-            $this->ajaxSendResponse(['error' => 'No data']);
-        }
-
-        $labels = [];
-        $resultData = [];
-
-        foreach($data as $userId => $commentCount) {
-            $user = $app->userRepository->getUserById($userId);
-
-            $labels[] = $user->getUsername();
-            $resultData[] = $commentCount;
-        }
-
-        $this->ajaxSendResponse(['labels' => $labels, 'data' => $resultData]);
+        $this->ajaxSendResponse($json);
     }
 }
 
