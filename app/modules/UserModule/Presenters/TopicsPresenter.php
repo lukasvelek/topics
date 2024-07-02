@@ -7,6 +7,7 @@ use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -185,7 +186,11 @@ class TopicsPresenter extends APresenter {
                 break;
             }
         
-            $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId());
+            $after4hrs = new DateTime();
+            $after4hrs->modify('-4h');
+            $after4hrs = $after4hrs->getResult();
+
+            $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $after4hrs);
 
             if($myPollChoice !== null) {
                 $poll->setUserChoice($myPollChoice);
@@ -629,7 +634,11 @@ class TopicsPresenter extends APresenter {
         $pollId = $this->httpGet('pollId');
         $choice = $this->httpPost('choice');
 
-        if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId()) !== null) {
+        $after4hrs = new DateTime();
+        $after4hrs->modify('-4h');
+        $after4hrs = $after4hrs->getResult();
+
+        if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId(), $after4hrs) !== null) {
             $this->flashMessage('You have already voted.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }

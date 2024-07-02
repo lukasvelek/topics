@@ -62,14 +62,19 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getPollChoice(int $pollId, int $userId) {
+    public function getPollChoice(int $pollId, int $userId, ?string $dateLimit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['choice'])
             ->from('topic_polls_responses')
             ->where('pollId = ?', [$pollId])
-            ->andWhere('userId = ?', [$userId])
-            ->execute();
+            ->andWhere('userId = ?', [$userId]);
+
+        if($dateLimit !== null) {
+            $qb->andWhere('dateCreated > ?', [$dateLimit]);
+        }
+
+        $qb->execute();
 
         return $qb->fetch('choice');
     }
