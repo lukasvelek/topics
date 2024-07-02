@@ -326,7 +326,7 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
-    private function createPostsArrayFromQb(QueryBuilder $qb) {
+    public function createPostsArrayFromQb(QueryBuilder $qb) {
         $posts = [];
 
         while($row = $qb->fetchAssoc()) {
@@ -334,6 +334,15 @@ class PostRepository extends ARepository {
         }
 
         return $posts;
+    }
+
+    public function composeQueryForPosts() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts');
+
+        return $qb;
     }
 }
 

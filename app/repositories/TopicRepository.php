@@ -104,38 +104,28 @@ class TopicRepository extends ARepository {
         return $topics;
     }
 
-    public function createNewTopic(int $managerId, string $title, string $description) {
+    public function createNewTopic(string $title, string $description) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description', 'managerId'])
-            ->values([$title, $description, $managerId])
+        $qb ->insert('topics', ['title', 'description'])
+            ->values([$title, $description])
             ->execute();
 
         return $qb->fetch();
     }
 
-    public function getLastTopicIdForManagerId(int $managerId) {
+    public function getLastTopicIdForTitle(string $title) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['topicId'])
             ->from('topics')
-            ->where('managerId = ?', [$managerId])
+            ->where('title = ?', [$title])
             ->orderBy('dateCreated', 'DESC')
             ->andWhere('isDeleted = 0')
             ->limit(1)
             ->execute();
 
         return $qb->fetch('topicId');
-    }
-
-    public function tryGetLastTopicIdForManagerId(int $managerId) {
-        $result = $this->getLastTopicIdForManagerId($managerId);
-
-        if($result === null) {
-            throw new CouldNotFetchLastEntityIdException('topic');
-        }
-
-        return $result;
     }
 
     public function checkFollow(int $userId, int $topicId) {
@@ -215,13 +205,17 @@ class TopicRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getTopicCount() {
+    public function getTopicCount(bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(topicId) AS cnt'])
-            ->from('topics')
-            ->where('isDeleted = 0')
-            ->execute();
+            ->from('topics');
+
+        if($deletedOnly) {
+            $qb->where('isDeleted = 0');
+        }
+
+        $qb->execute();
 
         return $qb->fetch('cnt');
     }
@@ -272,7 +266,7 @@ class TopicRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    private function createTopicsArrayFromQb(QueryBuilder $qb) {
+    public function createTopicsArrayFromQb(QueryBuilder $qb) {
         $topics = [];
 
         while($row = $qb->fetchAssoc()) {
@@ -280,6 +274,15 @@ class TopicRepository extends ARepository {
         }
 
         return $topics;
+    }
+
+    public function composeQueryForTopics() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topics');
+
+        return $qb;
     }
 }
 

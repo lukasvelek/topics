@@ -69,6 +69,15 @@ abstract class ARepository {
 
         return $result;
     }
+
+    public function sql(string $sql) {
+        $this->logger->sql($sql, __METHOD__);
+        return $this->conn->query($sql);
+    }
+
+    public function getQb() {
+        return $this->qb(__METHOD__);
+    }
 }
 
 ?>

@@ -20,6 +20,7 @@ use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
+use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicRepository;
@@ -60,10 +61,12 @@ class Application {
     public GroupRepository $groupRepository;
     public ContentRegulationRepository $contentRegulationRepository;
     public TopicMembershipRepository $topicMembershipRepository;
+    public SystemServicesRepository $systemServicesRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
     public TopicMembershipManager $topicMembershipManager;
+    public ServiceManager $serviceManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -102,12 +105,14 @@ class Application {
         $this->groupRepository = new GroupRepository($this->db, $this->logger);
         $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
         $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
+        $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger);
+        $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);

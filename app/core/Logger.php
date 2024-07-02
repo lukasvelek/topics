@@ -42,6 +42,25 @@ class Logger implements ILoggerCallable {
         return $result;
     }
 
+    public function serviceInfo(string $text, string $serviceName) {
+        $this->logService($serviceName, $text, self::LOG_INFO);
+    }
+
+    public function serviceError(string $text, string $serviceName) {
+        $this->logService($serviceName, $text, self::LOG_ERROR);
+    }
+
+    public function logService(string $serviceName, string $text, string $type = self::LOG_INFO) {
+        $this->specialFilename = 'service_log';
+
+        $date = new DateTime();
+        $text = '[' . $date . '] [' . strtoupper($type) . '] ' . $serviceName . ': ' . $text;
+
+        $this->writeLog($text);
+
+        $this->specialFilename = null;
+    }
+
     public function info(string $text, string $method) {
         $this->log($method, $text);
     }

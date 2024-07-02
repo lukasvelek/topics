@@ -36,6 +36,7 @@ abstract class AAdminPresenter extends APresenter {
         $groups = $this->checkPage('AdminModule:ManageGroups');
         $deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
+        $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
@@ -49,6 +50,7 @@ abstract class AAdminPresenter extends APresenter {
         }
         if($app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
             $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list'], $systemStatus);
+            $sb->addLink('System services', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'list'], $systemServices);
         }
         if($app->sidebarAuthorizator->canManageDeletedContent($app->currentUser->getId())) {
             $sb->addLink('Deleted content', ['page' => 'AdminModule:ManageDeletedContent', 'action' => 'list'], $deletedContent);

@@ -24,6 +24,7 @@ class DatabaseInstaller {
         $this->createSystems();
         $this->createGroups();
         $this->addAdminToGroups();
+        $this->addSystemServices();
 
         $this->logger->info('Database installation finished.', __METHOD__);
     }
@@ -159,6 +160,21 @@ class DatabaseInstaller {
                 'userId' => 'INT(32) NOT NULL',
                 'topicId' => 'INT(32) NOT NULL',
                 'role' => 'INT(4) NOT NULL DEFAULT 1'
+            ],
+            'system_services' => [
+                'serviceId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'scriptPath' => 'VARCHAR(256) NOT NULL',
+                'dateStarted' => 'DATETIME NULL',
+                'dateEnded' => 'DATETIME NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1'
+            ],
+            'admin_dashboard_widgets_graph_data' => [
+                'dataId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'mostActiveTopics' => 'TEXT NOT NULL',
+                'mostActivePosts' => 'TEXT NOT NULL',
+                'mostActiveUsers' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
@@ -300,6 +316,24 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Added admin to administrator groups.', __METHOD__);
+    }
+
+    private function addSystemServices() {
+        $this->logger->info('Adding system services.', __METHOD__);
+
+        $services = [
+            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php'
+        ];
+
+        foreach($services as $title => $path) {
+            $sql = "INSERT INTO system_services (`title`, `scriptPath`)
+                    SELECT '$title', '$path'
+                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE title = '$title' AND scriptPath = '$path')";
+
+            $this->db->query($sql);
+        }
+
+        $this->logger->info('Added system services.', __METHOD__);
     }
 }
 

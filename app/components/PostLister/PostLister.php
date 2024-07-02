@@ -76,7 +76,6 @@ class PostLister {
 
     private function build() {
         $codeArr = [
-            '<script type="text/javascript" src="js/PostListerControl.js"></script>',
             '<div id="post-lister">'
         ];
 
@@ -88,7 +87,7 @@ class PostLister {
 
             foreach($this->posts as $post) {
                 $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
-                $likeLink = self::createLikeLink($post->getAuthorId(), $post->getId(), $liked);
+                $likeLink = self::createLikeLink($post->getId(), $liked);
                 
                 if(!empty($this->topics)) {
                     $topics = [];
@@ -146,11 +145,11 @@ class PostLister {
         return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
     }
 
-    public static function createLikeLink(int $userId, int $postId, bool $liked) {
+    public static function createLikeLink(int $postId, bool $liked) {
         if($liked === true) {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', ' . $userId . ', false)">Unlike</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', false)">Unlike</a>';
         } else {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', ' . $userId . ', true)">Like</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', true)">Like</a>';
         }
     }
 }
