@@ -192,6 +192,28 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addRadios(string $name, ?string $label = null, array $choices, mixed $value = null, bool $required = true) {
+        $rig = new RadioInputGroup();
+
+        foreach($choices as $choiceKey => $choiceText) {
+            $ri = new RadioInput($name, $choiceKey, $choiceText);
+
+            if($choiceKey == $value) {
+                $ri->setChecked();
+            }
+
+            $rig->addRadio($ri);
+        }
+
+        if($label !== null) {
+            $rig = new ElementDuo($rig, new Label($label, $name, $required), $name);
+        }
+
+        $this->addElement($name, $rig);
+
+        return $this;
+    }
+
     public function addJSHandler(string $handlerLink) {
         $this->elements['js_handler'] = '<script type="text/javascript" src="' . $handlerLink . '"></script>';
 

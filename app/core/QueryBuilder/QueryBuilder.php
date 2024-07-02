@@ -397,6 +397,12 @@ class QueryBuilder
         return $this;
     }
 
+    public function join(string $tableName, string $onLeft, string $onRight) {
+        $this->queryData['join'] = ' JOIN `' . $tableName . '` ON `' . $onLeft . '` = `' . $onRight . '`';
+
+        return $this;
+    }
+
     /**
      * Appends ORDER BY
      * 
@@ -828,6 +834,10 @@ class QueryBuilder
         }
 
         $sql .= 'FROM `' . $this->queryData['table'] . '`';
+
+        if(isset($this->queryData['join'])) {
+            $sql .= $this->queryData['join'];
+        }
 
         if(isset($this->queryData['where'])) {
             if(str_contains($this->queryData['where'], 'WHERE')) {
