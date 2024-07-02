@@ -10,25 +10,12 @@ Topics is currently being developed and thus has no user registration page. It i
     - Comments
     - Topic, Post, Comments, Users reporting
     - User banning
+    - Polls
+    - System services
+    - Dashboard widgets, charts
 
 ## Current version
     - v1.0 (6/18/2024)
 
 ## Future plans
-    - Administration groups
-        - Suggestion administrator
-            - Suggestion management
-        - Report & user prosecution administrator
-            - Report management
-            - User prosecution management
-        - System administrator
-            - System status management
-        - Superadministrator (super role with all permissions granted)
-    - Topic roles
-        - Member
-        - VIP
-        - Community helper
-        - Owner
-    - Right management
     - Design update
-    - Dashboard widgets

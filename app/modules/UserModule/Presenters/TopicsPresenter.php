@@ -238,7 +238,6 @@ class TopicsPresenter extends APresenter {
                 '</div></div><br>'
             ];
     
-            //$code[] = implode('', $tmp);
             $postCode[] = implode('', $tmp);
         }
 
