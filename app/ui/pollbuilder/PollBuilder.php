@@ -11,12 +11,16 @@ class PollBuilder implements IRenderable {
     private string $title;
     private string $description;
     private array $handlerUrl;
+    private ?int $pollId;
+    private ?int $userChoice;
 
     public function __construct() {
         $this->choices = [];
         $this->title = 'My poll';
         $this->description = 'Description of my poll';
         $this->handlerUrl = [];
+        $this->pollId = null;
+        $this->userChoice = null;
     }
 
     public function setTitle(string $title) {
@@ -41,6 +45,22 @@ class PollBuilder implements IRenderable {
 
     public function setHandlerUrl(array $handlerUrl) {
         $this->handlerUrl = $handlerUrl;
+
+        return $this;
+    }
+
+    public function setPollId(int $id) {
+        $this->pollId = $id;
+
+        return $this;
+    }
+
+    public function getId() {
+        return $this->pollId;
+    }
+    
+    public function setUserChoice(int $choice) {
+        $this->userChoice = $choice;
 
         return $this;
     }
@@ -70,10 +90,24 @@ class PollBuilder implements IRenderable {
 
         $fb ->setAction($this->handlerUrl)
             ->setMethod('POST')
-            ->addRadios('choice', 'Choose:', $this->choices, null, true)
+            ->addRadios('choice', 'Choose:', $this->choices, $this->userChoice, true)
+            ->addSubmit('Submit', ($this->userChoice !== null))
         ;
 
         return $fb->render();
+    }
+
+    public static function createFromDbRow(mixed $row) {
+        $pb = new self();
+
+        $pb->setTitle($row['title']);
+        $pb->setDescription($row['description']);
+        $pb->setChoices(unserialize($row['choices']));
+        $url = ['page' => 'UserModule:Topics', 'action' => 'pollSubmit', 'topicId' => $row['topicId'], 'pollId' => $row['pollId']];
+        $pb->setHandlerUrl($url);
+        $pb->setPollId($row['pollId']);
+
+        return $pb;
     }
 }
 

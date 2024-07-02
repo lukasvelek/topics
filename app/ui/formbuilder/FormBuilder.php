@@ -111,8 +111,8 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
-    public function addSubmit(string $text = 'Submit') {
-        $sb = new SubmitButton($text);
+    public function addSubmit(string $text = 'Submit', bool $disabled = false) {
+        $sb = new SubmitButton($text, $disabled);
 
         $this->addElement('btn_submit', $sb);
 

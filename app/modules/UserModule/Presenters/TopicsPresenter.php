@@ -7,12 +7,14 @@ use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class TopicsPresenter extends APresenter {
     public function __construct() {
@@ -128,6 +130,12 @@ class TopicsPresenter extends APresenter {
             $this->addExternalScript('js/Reducer.js');
             $this->addScript('reduceTopicProfile()');
         }
+
+        $links = [];
+
+        $links[] = LinkBuilder::createSimpleLink('Create a poll', ['page' => 'UserModule:Topics', 'action' => 'newPollForm', 'topicId' => $topicId], 'post-data-link');
+
+        $this->saveToPresenterCache('links', $links);
     }
 
     public function actionLikePost() {
@@ -163,6 +171,23 @@ class TopicsPresenter extends APresenter {
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
+        $polls = $app->topicPollRepository->getActivePollsForTopic($topicId);
+
+        $pollCode = [];
+        $i = 0;
+        foreach($polls as $poll) {
+            if($i == $limit) {
+                break;
+            }
+        
+            $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId());
+
+            $poll->setUserChoice($myPollChoice);
+
+            $pollCode[] = $poll->render();
+            $i++;
+        }
+
         if(empty($posts)) {
             return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
         }
@@ -171,6 +196,7 @@ class TopicsPresenter extends APresenter {
 
         $bwh = new BannedWordsHelper($app->contentRegulationRepository);
 
+        $postCode = [];
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
             $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
@@ -196,7 +222,16 @@ class TopicsPresenter extends APresenter {
                 '</div></div><br>'
             ];
     
-            $code[] = implode('', $tmp);
+            //$code[] = implode('', $tmp);
+            $postCode[] = implode('', $tmp);
+        }
+
+        foreach($postCode as $pc) {
+            $code[] = $pc;
+        }
+
+        foreach($pollCode as $pc) {
+            $code[] = $pc;
         }
 
         if(($offset + $limit) >= $postCount) {
@@ -214,12 +249,14 @@ class TopicsPresenter extends APresenter {
         $fb = $this->loadFromPresenterCache('newPostForm');
         $topicName = $this->loadFromPresenterCache('topicName');
         $topicDescription = $this->loadFromPresenterCache('topicDescription');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->topic_title = $topicName;
         $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
         $this->template->new_post_form = $fb;
+        $this->template->links = $links;
     }
 
     public function handleNewPost(?FormResponse $fr = null) {
@@ -526,6 +563,72 @@ class TopicsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form;
+    }
+
+    public function handleNewPollForm() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+
+        if($this->httpGet('isFormSubmit') == 1) {
+            $title = $this->httpPost('title');
+            $description = $this->httpPost('description');
+            $choices = $this->httpPost('choices');
+            $dateValid = $this->httpPost('dateValid');
+
+            $tmp = [];
+            foreach(explode(',', $choices) as $choice) {
+                $tmp[] = $choice;
+            }
+            $choices = serialize($tmp);
+
+            if($dateValid == '') {
+                $dateValid = null;
+            }
+
+            $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid);
+
+            $this->flashMessage('Poll created.', 'success');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setMethod()
+                ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPollForm', 'topicId' => $topicId])
+                ->addTextInput('title', 'Poll title:', null, true)
+                ->addTextArea('description', 'Poll description:', null, true)
+                ->addTextArea('choices', 'Poll choices code:', null, true)
+                ->addLabel('Choice code looks like this: "Pizza,Spaghetti,Pasta" first is the value and the second is the text displayed.')
+                ->addDatetime('dateValid', 'Date the poll is available for voting:')
+                ->addSubmit('Create')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderNewPollForm() {
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->form = $form;
+    }
+
+    public function handlePollSubmit() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $pollId = $this->httpGet('pollId');
+        $choice = $this->httpPost('choice');
+
+        if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId()) !== null) {
+            $this->flashMessage('You have already voted.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
+
+        $app->topicPollRepository->submitPoll($pollId, $app->currentUser->getId(), $choice);
+
+        $this->flashMessage('Poll submitted.', 'success');
+        $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 }
 
