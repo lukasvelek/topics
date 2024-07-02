@@ -16,70 +16,39 @@ class FeedbackPresenter extends AAdminPresenter {
     }
 
     public function handleDashboard() {
-        $this->saveToPresenterCache('widget1', $this->createSuggestionWidget());
-        $this->saveToPresenterCache('widget2', $this->createReportWidget());
-        $this->saveToPresenterCache('widget3', $this->createSuggestionCategoriesWidget());
-
-        $this->addScript('suggestionWidget(); reportWidget(); suggestionCategoriesWidget();');
+        $this->addScript('createWidgets();');
     }
 
-    public function renderDashboard() {
-        $widget1 = $this->loadFromPresenterCache('widget1');
-        $widget2 = $this->loadFromPresenterCache('widget2');
-        $widget3 = $this->loadFromPresenterCache('widget3');
+    public function renderDashboard() {}
 
-        $this->template->widget1 = $widget1;
-        $this->template->widget2 = $widget2;
-        $this->template->widget3 = $widget3;
-    }
-
-    private function createSuggestionWidget() {
-        $code = '
-            <div style="width: 75%"><canvas id="suggestionWidgetGraph"></canvas></div>
-        ';
-
-        return $code;
-    }
-
-    public function actionGetSuggestionGraphWidgetData() {
+    public function actionGetGraphData() {
         global $app;
 
+        $resultData = [];
+
+        // suggestions
         $all = $app->suggestionRepository->getSuggestionCountByStatuses();
         $open = $app->suggestionRepository->getOpenSuggestionCount();
         $closed = $app->suggestionRepository->getSuggestionCountByStatuses([SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED]);
+        
+        $resultData['suggestions'] = [
+            'all' => $all,
+            'open' => $open,
+            'closed' => $closed
+        ];
 
-        $this->ajaxSendResponse(['all' => $all, 'open' => $open, 'closed' => $closed]);
-    }
-
-    private function createReportWidget() {
-        $code = '
-            <div style="width: 75%"><canvas id="reportWidgetGraph"></canvas></div>
-        ';
-
-        return $code;
-    }
-
-    public function actionGetReportGraphWidgetData() {
-        global $app;
-
+        // reports
         $all = $app->reportRepository->getReportCountByStatuses();
         $open = $app->reportRepository->getReportCountByStatuses([ReportStatus::OPEN]);
         $closed = $app->reportRepository->getReportCountByStatuses([ReportStatus::RESOLVED]);
 
-        $this->ajaxSendResponse(['all' => $all, 'open' => $open, 'closed' => $closed]);
-    }
+        $resultData['reports'] = [
+            'all' => $all,
+            'open' => $open,
+            'closed' => $closed
+        ];
 
-    private function createSuggestionCategoriesWidget() {
-        $code = '
-            <div style="width: 75%"><canvas id="suggestionCategoriesWidgetGraph"></canvas></div>
-        ';
-
-        return $code;
-    }
-
-    public function actionGetSuggestionCategoriesGraphData() {
-        global $app;
-
+        // suggestion categories
         $categories = SuggestionCategory::getAll();
 
         $labels = [];
@@ -90,8 +59,14 @@ class FeedbackPresenter extends AAdminPresenter {
             $data[] = $app->suggestionRepository->getSuggestionCountByCategories([$k]);
             $colors[] = SuggestionCategory::getColorByKey($k);
         }
-        
-        $this->ajaxSendResponse(['labels' => $labels, 'data' => $data, 'colors' => $colors]);
+
+        $resultData['suggestionCategories'] = [
+            'labels' => $labels,
+            'data' => $data,
+            'colors' => $colors
+        ];
+
+        $this->ajaxSendResponse($resultData);
     }
 }
 

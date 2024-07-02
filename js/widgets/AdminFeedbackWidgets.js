@@ -1,20 +1,18 @@
-function suggestionWidget() {
-    var jsonObj = null;
-
+function createWidgets() {
     $.get(
-        "?page=AdminModule:Feedback&action=getSuggestionGraphWidgetData&isAjax=1"
-    ).done(function (data) {
-        jsonObj = JSON.parse(data);
+        "?page=AdminModule:Feedback&action=getGraphData&isAjax=1"
+    ).done(function ( data ) {
+        const obj = JSON.parse(data);
 
-        const ctx = $("#suggestionWidgetGraph");
+        const ctxSuggestions = $("#suggestionWidgetGraph");
 
-        new Chart(ctx, {
+        new Chart(ctxSuggestions, {
             type: "bar",
             data: {
                 labels: ["All", "Open", "Closed"],
                 datasets: [{
                     label: "# of suggestions",
-                    data: [jsonObj.all, jsonObj.open, jsonObj.closed],
+                    data: [obj.suggestions.all, obj.suggestions.open, obj.suggestions.closed],
                     borderWidth: 1
                 }]
             },
@@ -26,26 +24,16 @@ function suggestionWidget() {
                 }
             }
         });
-    });
-}
 
-function reportWidget() {
-    var jsonObj = null;
+        const ctxReports = $("#reportWidgetGraph");
 
-    $.get(
-        "?page=AdminModule:Feedback&action=getReportGraphWidgetData&isAjax=1"
-    ).done(function (data) {
-        jsonObj = JSON.parse(data);
-
-        const ctx = $("#reportWidgetGraph");
-
-        new Chart(ctx, {
+        new Chart(ctxReports, {
             type: "bar",
             data: {
                 labels: ["All", "Open", "Closed"],
                 datasets: [{
                     label: "# of reports",
-                    data: [jsonObj.all, jsonObj.open, jsonObj.closed],
+                    data: [obj.reports.all, obj.reports.open, obj.reports.closed],
                     borderWidth: 1
                 }]
             },
@@ -57,27 +45,17 @@ function reportWidget() {
                 }
             }
         });
-    });
-}
 
-function suggestionCategoriesWidget() {
-    var jsonObj = null;
+        const ctxSuggestionCategories = $("#suggestionCategoriesWidgetGraph");
 
-    $.get(
-        "?page=AdminModule:Feedback&action=getSuggestionCategoriesGraphData&isAjax=1"
-    ).done(function (data) {
-        jsonObj = JSON.parse(data);
-
-        const ctx = $("#suggestionCategoriesWidgetGraph");
-
-        new Chart(ctx, {
+        new Chart(ctxSuggestionCategories, {
             type: "doughnut",
             data: {
-                labels: jsonObj.labels,
+                labels: obj.suggestionCategories.labels,
                 datasets: [{
                     label: "Categories",
-                    data: jsonObj.data,
-                    backgroundColor: jsonObj.colors,
+                    data: obj.suggestionCategories.data,
+                    backgroundColor: obj.suggestionCategories.colors,
                     hoverOffset: 4
                 }]
             }
