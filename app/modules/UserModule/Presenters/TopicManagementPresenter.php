@@ -221,7 +221,7 @@ class TopicManagementPresenter extends APresenter {
         $lastPage = ceil($pollCount / $gridSize) - 1;
 
         $gb = new GridBuilder();
-        $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until']);
+        $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
         $gb->addDataSource($polls);
         $gb->addOnColumnRender('author', function(TopicPollEntity $tpe) use ($app) {
             $user = $app->userRepository->getUserById($tpe->getAuthorId());
@@ -251,6 +251,11 @@ class TopicManagementPresenter extends APresenter {
             }
 
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateValid());
+        });
+        $gb->addOnColumnRender('votes', function(TopicPollEntity $tpe) use ($app) {
+            $votes = $app->topicPollRepository->getPollResponses($tpe->getId());
+
+            return count($votes);
         });
         $gb->addAction(function(TopicPollEntity $tpe) {
             return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'post-data-link');
