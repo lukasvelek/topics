@@ -242,12 +242,22 @@ class TopicsPresenter extends APresenter {
             $postCode[] = implode('', $tmp);
         }
 
-        foreach($postCode as $pc) {
-            $code[] = $pc;
-        }
+        $pollsFirst = true;
 
-        foreach($pollCode as $pc) {
-            $code[] = $pc;
+        if($pollsFirst) {
+            foreach($pollCode as $pc) {
+                $code[] = $pc;
+            }
+            foreach($postCode as $pc) {
+                $code[] = $pc;
+            }
+        } else {
+            foreach($postCode as $pc) {
+                $code[] = $pc;
+            }
+            foreach($pollCode as $pc) {
+                $code[] = $pc;
+            }
         }
 
         if(($offset + $limit) >= $postCount) {
