@@ -111,8 +111,8 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
-    public function addSubmit(string $text = 'Submit') {
-        $sb = new SubmitButton($text);
+    public function addSubmit(string $text = 'Submit', bool $disabled = false) {
+        $sb = new SubmitButton($text, $disabled);
 
         $this->addElement('btn_submit', $sb);
 
@@ -188,6 +188,28 @@ class FormBuilder implements IRenderable {
         }
 
         $this->addElement($name, $di);
+
+        return $this;
+    }
+
+    public function addRadios(string $name, ?string $label = null, array $choices, mixed $value = null, bool $required = true) {
+        $rig = new RadioInputGroup();
+
+        foreach($choices as $choiceKey => $choiceText) {
+            $ri = new RadioInput($name, $choiceKey, $choiceText);
+
+            if($choiceKey == $value) {
+                $ri->setChecked();
+            }
+
+            $rig->addRadio($ri);
+        }
+
+        if($label !== null) {
+            $rig = new ElementDuo($rig, new Label($label, $name, $required), $name);
+        }
+
+        $this->addElement($name, $rig);
 
         return $this;
     }

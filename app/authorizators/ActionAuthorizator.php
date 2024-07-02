@@ -119,6 +119,22 @@ class ActionAuthorizator extends AAuthorizator {
     public function canReportTopic(int $userId, int $topicId) {
         return $this->canReportPost($userId, $topicId);
     }
+
+    public function canCreateTopicPoll(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canViewTopicPolls(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

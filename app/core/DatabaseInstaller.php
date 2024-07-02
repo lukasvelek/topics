@@ -175,6 +175,24 @@ class DatabaseInstaller {
                 'mostActivePosts' => 'TEXT NOT NULL',
                 'mostActiveUsers' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_polls' => [
+                'pollId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'topicId' => 'INT(32) NOT NULL',
+                'authorId' => 'INT(32) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'choices' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateValid' => 'DATETIME NULL',
+                'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
+            ],
+            'topic_polls_responses' => [
+                'responseId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'pollId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'choice' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

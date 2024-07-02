@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\UI\LinkBuilder;
+
 class UserEntity implements ICreatableFromRow {
     private int $id;
     private string $username;
@@ -73,6 +75,10 @@ class UserEntity implements ICreatableFromRow {
 
     public static function createEntityFromDbRow(mixed $row) {
         return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin']);
+    }
+
+    public static function createUserProfileLink(UserEntity $user) {
+        return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
     }
 }
 

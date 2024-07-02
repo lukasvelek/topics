@@ -23,6 +23,7 @@ use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicMembershipRepository;
+use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
@@ -62,6 +63,7 @@ class Application {
     public ContentRegulationRepository $contentRegulationRepository;
     public TopicMembershipRepository $topicMembershipRepository;
     public SystemServicesRepository $systemServicesRepository;
+    public TopicPollRepository $topicPollRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -106,6 +108,7 @@ class Application {
         $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
         $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
         $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
+        $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
