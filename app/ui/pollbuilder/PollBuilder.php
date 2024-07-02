@@ -13,6 +13,8 @@ class PollBuilder implements IRenderable {
     private array $handlerUrl;
     private ?int $pollId;
     private ?int $userChoice;
+    private int $managerId;
+    private ?int $currentUserId;
 
     public function __construct() {
         $this->choices = [];
@@ -21,6 +23,8 @@ class PollBuilder implements IRenderable {
         $this->handlerUrl = [];
         $this->pollId = null;
         $this->userChoice = null;
+        $this->managerId = 1;
+        $this->currentUserId = null;
     }
 
     public function setTitle(string $title) {
@@ -65,8 +69,30 @@ class PollBuilder implements IRenderable {
         return $this;
     }
 
+    public function setCurrentUserId(int $userId) {
+        $this->currentUserId = $userId;
+    }
+
+    public function setManagerId(int $managerId) {
+        $this->managerId = $managerId;
+    }
+
     public function render() {
         $form = $this->build();
+
+        $management = '';
+
+        if($this->currentUserId !== null && $this->currentUserId == $this->managerId) {
+            $analyticsLink = LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
+
+            $management = '
+                <div class="row">
+                    <div class="col-md" id="left">
+                        ' . $analyticsLink . '
+                    </div>
+                </div>
+            ';
+        }
 
         $code = '
             <div class="row">
@@ -75,6 +101,7 @@ class PollBuilder implements IRenderable {
                     <p class="post-data">' . $this->description . '</p>
                 </div>
             </div>
+            ' . $management . '
             <div class="row">
                 <div class="col-md" id="form">
                     ' . $form . '
@@ -106,6 +133,7 @@ class PollBuilder implements IRenderable {
         $url = ['page' => 'UserModule:Topics', 'action' => 'pollSubmit', 'topicId' => $row['topicId'], 'pollId' => $row['pollId']];
         $pb->setHandlerUrl($url);
         $pb->setPollId($row['pollId']);
+        $pb->setManagerId($row['authorId']);
 
         return $pb;
     }

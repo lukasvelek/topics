@@ -69,6 +69,33 @@ class TopicPollRepository extends ARepository {
 
         return $qb->fetch('choice');
     }
+
+    public function getPollRowById(int $pollId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('pollId = ?', [$pollId])
+            ->execute();
+
+        return $qb->fetchAll();
+    }
+
+    public function getPollResponses(int $pollId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['choice'])
+            ->from('topic_polls_responses')
+            ->where('pollId = ?', [$pollId])
+            ->execute();
+
+        $choices = [];
+        while($row = $qb->fetchAssoc()) {
+            $choices[] = $row['choice'];
+        }
+
+        return $choices;
+    }
 }
 
 ?>
