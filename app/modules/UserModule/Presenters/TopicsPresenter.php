@@ -185,12 +185,14 @@ class TopicsPresenter extends APresenter {
             if($i == $limit) {
                 break;
             }
-        
-            $after4hrs = new DateTime();
-            $after4hrs->modify('-4h');
-            $after4hrs = $after4hrs->getResult();
 
-            $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $after4hrs);
+            $pollEntity = $app->topicPollRepository->getPollById($poll->getId());
+        
+            $elapsedTime = new DateTime();
+            $elapsedTime->modify($pollEntity->getTimeElapsedForNextVote());
+            $elapsedTime = $elapsedTime->getResult();
+
+            $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $elapsedTime);
 
             if($myPollChoice !== null) {
                 $poll->setUserChoice($myPollChoice);
@@ -589,6 +591,7 @@ class TopicsPresenter extends APresenter {
             $description = $this->httpPost('description');
             $choices = $this->httpPost('choices');
             $dateValid = $this->httpPost('dateValid');
+            $timeElapsed = $this->httpPost('timeElapsed');
 
             $tmp = [];
             foreach(explode(',', $choices) as $choice) {
@@ -600,7 +603,9 @@ class TopicsPresenter extends APresenter {
                 $dateValid = null;
             }
 
-            $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid);
+            $timeElapsed = '-' . $timeElapsed;
+
+            $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
 
             $this->flashMessage('Poll created.', 'success');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -612,7 +617,9 @@ class TopicsPresenter extends APresenter {
                 ->addTextInput('title', 'Poll title:', null, true)
                 ->addTextArea('description', 'Poll description:', null, true)
                 ->addTextArea('choices', 'Poll choices code:', null, true)
-                ->addLabel('Choice code looks like this: "Pizza,Spaghetti,Pasta" first is the value and the second is the text displayed.')
+                ->addLabel('Choice code looks like this: "Pizza,Spaghetti,Pasta" first is the value and the second is the text displayed.', 'clbl1')
+                ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
+                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours', 'clbl2')
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create')
             ;
@@ -634,11 +641,12 @@ class TopicsPresenter extends APresenter {
         $pollId = $this->httpGet('pollId');
         $choice = $this->httpPost('choice');
 
-        $after4hrs = new DateTime();
-        $after4hrs->modify('-4h');
-        $after4hrs = $after4hrs->getResult();
+        $poll = $app->topicPollRepository->getPollById($pollId);
+        $elapsedTime = new DateTime();
+        $elapsedTime->modify($poll->getTimeElapsedForNextVote());
+        $elapsedTime = $elapsedTime->getResult();
 
-        if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId(), $after4hrs) !== null) {
+        if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId(), $elapsedTime) !== null) {
             $this->flashMessage('You have already voted.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }

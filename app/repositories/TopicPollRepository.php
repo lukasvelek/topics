@@ -13,9 +13,9 @@ class TopicPollRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createPoll(string $title, string $description, int $authorId, int $topicId, string $choices, ?string $dateValid) {
-        $keys = ['title', 'description', 'authorId', 'topicId', 'choices'];
-        $values = [$title, $description, $authorId, $topicId, $choices];
+    public function createPoll(string $title, string $description, int $authorId, int $topicId, string $choices, ?string $dateValid, string $timeElapsed) {
+        $keys = ['title', 'description', 'authorId', 'topicId', 'choices', 'timeElapsedForNextVote'];
+        $values = [$title, $description, $authorId, $topicId, $choices, $timeElapsed];
 
         if($dateValid !== null) {
             $keys[] = 'dateValid';
@@ -151,6 +151,17 @@ class TopicPollRepository extends ARepository {
         }
 
         return $polls;
+    }
+
+    public function getPollById(int $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('pollId = ?', [$id])
+            ->execute();
+
+        return TopicPollEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

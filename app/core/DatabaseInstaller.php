@@ -184,7 +184,8 @@ class DatabaseInstaller {
                 'description' => 'TEXT NOT NULL',
                 'choices' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'dateValid' => 'DATETIME NULL'
+                'dateValid' => 'DATETIME NULL',
+                'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
             ],
             'topic_polls_responses' => [
                 'responseId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',

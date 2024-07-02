@@ -11,8 +11,9 @@ class TopicPollEntity implements ICreatableFromRow {
     private array $choices;
     private string $dateCreated;
     private ?string $dateValid;
+    private string $timeElapsedForNextVote;
 
-    public function __construct(int $id, string $title, string $description, int $authorId, int $topicId, array $choices, string $dateCreated, ?string $dateValid) {
+    public function __construct(int $id, string $title, string $description, int $authorId, int $topicId, array $choices, string $dateCreated, ?string $dateValid, string $timeElapsedForNextVote) {
         $this->id = $id;
         $this->title = $title;
         $this->description = $description;
@@ -21,6 +22,7 @@ class TopicPollEntity implements ICreatableFromRow {
         $this->choices = $choices;
         $this->dateCreated = $dateCreated;
         $this->dateValid = $dateValid;
+        $this->timeElapsedForNextVote = $timeElapsedForNextVote;
     }
 
     public function getId() {
@@ -55,10 +57,14 @@ class TopicPollEntity implements ICreatableFromRow {
         return $this->dateValid;
     }
 
+    public function getTimeElapsedForNextVote() {
+        return $this->timeElapsedForNextVote;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         $choices = unserialize($row['choices']);
         
-        return new self($row['pollId'], $row['title'], $row['description'], $row['authorId'], $row['topicId'], $choices, $row['dateCreated'], $row['dateValid']);
+        return new self($row['pollId'], $row['title'], $row['description'], $row['authorId'], $row['topicId'], $choices, $row['dateCreated'], $row['dateValid'], $row['timeElapsedForNextVote']);
     }
 }
 

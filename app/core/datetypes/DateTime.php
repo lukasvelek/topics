@@ -92,6 +92,7 @@ class DateTime {
             case 's':
                 break;
                 
+            case 'm':
             case 'i':
                 $m = 60;
                 break;
