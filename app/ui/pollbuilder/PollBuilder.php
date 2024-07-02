@@ -15,6 +15,7 @@ class PollBuilder implements IRenderable {
     private ?int $userChoice;
     private int $managerId;
     private ?int $currentUserId;
+    private ?int $topicId;
 
     public function __construct() {
         $this->choices = [];
@@ -25,6 +26,7 @@ class PollBuilder implements IRenderable {
         $this->userChoice = null;
         $this->managerId = 1;
         $this->currentUserId = null;
+        $this->topicId = null;
     }
 
     public function setTitle(string $title) {
@@ -77,6 +79,10 @@ class PollBuilder implements IRenderable {
         $this->managerId = $managerId;
     }
 
+    public function setTopicId(int $topicId) {
+        $this->topicId = $topicId;
+    }
+
     public function render() {
         $form = $this->build();
 
@@ -84,11 +90,12 @@ class PollBuilder implements IRenderable {
 
         if($this->currentUserId !== null && $this->currentUserId == $this->managerId) {
             $analyticsLink = LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
+            $closeVotingLink = LinkBuilder::createSimpleLink('Close voting', ['page' => 'UserModule:Topics', 'action' => 'pollCloseVoting', 'pollId' => $this->pollId, 'topicId' => $this->topicId], 'post-data-link');
 
             $management = '
                 <div class="row">
                     <div class="col-md" id="left">
-                        ' . $analyticsLink . '
+                        ' . $analyticsLink . '&nbsp;&nbsp;' . $closeVotingLink . '
                     </div>
                 </div>
             ';
@@ -134,6 +141,7 @@ class PollBuilder implements IRenderable {
         $pb->setHandlerUrl($url);
         $pb->setPollId($row['pollId']);
         $pb->setManagerId($row['authorId']);
+        $pb->setTopicId($row['topicId']);
 
         return $pb;
     }

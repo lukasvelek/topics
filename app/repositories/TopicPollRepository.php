@@ -31,13 +31,16 @@ class TopicPollRepository extends ARepository {
     }
 
     public function getActivePollsForTopic(int $topicId) {
+        $now = new DateTime();
+        $now = $now->getResult();
+
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('topic_polls')
             ->where('topicId = ?', [$topicId])
             ->andWhere('(dateValid IS NULL')
-            ->orWhere('dateValid < current_timestamp())')
+            ->orWhere('dateValid >= ?)', [$now])
             ->execute();
 
         $polls = [];
@@ -95,6 +98,17 @@ class TopicPollRepository extends ARepository {
         }
 
         return $choices;
+    }
+
+    public function closePoll(int $pollId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('topic_polls')
+            ->set(['dateValid' => 'current_timestamp()'])
+            ->where('pollId = ?', [$pollId])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 

@@ -761,6 +761,12 @@ class QueryBuilder
                 } else {
                     $sql .= $key . ' = ' . $value . ', ';
                 }
+            } else if($value == 'current_timestamp()') {
+                if(($i + 1) == count($this->queryData['values'])) {
+                    $sql .= $key . ' = ' . $value;
+                } else {
+                    $sql .= $key . ' = ' . $value . ', ';
+                }
             } else {
                 if(($i + 1) == count($this->queryData['values'])) {
                     $sql .= $key . ' = \'' . $value . '\'';

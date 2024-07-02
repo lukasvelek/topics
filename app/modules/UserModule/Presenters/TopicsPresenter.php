@@ -7,7 +7,6 @@ use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
-use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -757,6 +756,18 @@ class TopicsPresenter extends APresenter {
         }
 
         $this->ajaxSendResponse(['labels' => $labels, 'data' => $data, 'colors' => $colors]);
+    }
+
+    public function handlePollCloseVoting() {
+        global $app;
+
+        $pollId = $this->httpGet('pollId', true);
+        $topicId = $this->httpGet('topicId', true);
+
+        $app->topicPollRepository->closePoll($pollId);
+
+        $this->flashMessage('Poll closed. You can find it in your profile in the "My polls" section.', 'success');
+        $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 }
 
