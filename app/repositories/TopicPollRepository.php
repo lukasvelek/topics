@@ -112,15 +112,11 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function openPoll(int $pollId) {
+    public function openPoll(int $pollId, ?string $dateValid) {
         $qb = $this->qb(__METHOD__);
 
-        $tomorrow = new DateTime();
-        $tomorrow->modify('+1d');
-        $tomorrow = $tomorrow->getResult();
-
         $qb ->update('topic_polls')
-            ->set(['dateValid' => $tomorrow])
+            ->set(['dateValid' => $dateValid])
             ->where('pollId = ?', [$pollId])
             ->execute();
 

@@ -259,7 +259,7 @@ class TopicManagementPresenter extends APresenter {
             if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
                 return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
             } else {
-                return LinkBuilder::createSimpleLink('Reactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
             }
         });
 
@@ -286,7 +286,11 @@ class TopicManagementPresenter extends APresenter {
         $pollId = $this->httpGet('pollId');
         $topicId = $this->httpGet('topicId');
 
-        $app->topicPollRepository->openPoll($pollId);
+        $tomorrow = new DateTime();
+        $tomorrow->modify('+1d');
+        $tomorrow = $tomorrow->getResult();
+
+        $app->topicPollRepository->openPoll($pollId, $tomorrow);
 
         $this->flashMessage('Poll reactivated.', 'success');
         $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId]);
