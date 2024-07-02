@@ -4,8 +4,12 @@ namespace App\Modules\UserModule;
 
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
+use App\Core\Datetypes\DateTime;
 use App\Entities\TopicMemberEntity;
+use App\Entities\TopicPollEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\GridBuilder\GridBuilder;
@@ -29,7 +33,7 @@ class TopicManagementPresenter extends APresenter {
             ->setMethod('GET')
             ->setHeader(['topicId' => '_topicId', 'gridPage' => '_page'])
             ->setFunctionName('getUserRolesGrid')
-            ->setFunctionArguments(['_topicId', '_page'])
+            ->setFunctionArguments(['_page', '_topicId'])
             ->updateHTMLElement('grid-content', 'grid')
             ->updateHTMLElement('grid-paginator', 'paginator')
         ;
@@ -173,6 +177,119 @@ class TopicManagementPresenter extends APresenter {
         
         $this->template->form = $form;
         $this->template->topic_title = $topic->getTitle();
+    }
+
+    public function handleListPolls() {
+        $topicId = $this->httpGet('topicId');
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setURL(['page' => 'UserModule:TopicManagement', 'action' => 'getPollGrid'])
+            ->setMethod()
+            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
+            ->setFunctionName('getPollGrid')
+            ->setFunctionArguments(['_page', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-paginator', 'paginator')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('getPollGrid(0, ' . $topicId . ');');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderListPolls() {
+        $links = $this->loadFromPresenterCache('links');
+
+        $this->template->links = $links;
+    }
+
+    public function actionGetPollGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $page = $this->httpGet('gridPage');
+
+        $gridSize = $app->cfg['GRID_SIZE'];
+
+        $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
+        $pollCount = count($app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
+        $lastPage = ceil($pollCount / $gridSize) - 1;
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until']);
+        $gb->addDataSource($polls);
+        $gb->addOnColumnRender('author', function(TopicPollEntity $tpe) use ($app) {
+            $user = $app->userRepository->getUserById($tpe->getAuthorId());
+
+            return UserEntity::createUserProfileLink($user);
+        });
+        $gb->addOnColumnRender('dateCreated', function(TopicPollEntity $tpe) {
+            return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateCreated());
+        });
+        $gb->addOnColumnRender('status', function(TopicPollEntity $tpe) {
+            $code = function (string $text, bool $response) {
+                return '<span style="color: ' . ($response ? 'green' : 'red') . '">' . $text . '</span>';
+            };
+
+            if($tpe->getDateValid() === null) {
+                return $code('Active', true);
+            }
+            if(strtotime($tpe->getDateValid()) > time()) {
+                return $code('Active', true);
+            }
+
+            return $code('Inactive', false);
+        });
+        $gb->addOnColumnRender('dateValid', function(TopicPollEntity $tpe) {
+            if($tpe->getDateValid() === null) {
+                return '-';
+            }
+
+            return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateValid());
+        });
+        $gb->addAction(function(TopicPollEntity $tpe) {
+            return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'post-data-link');
+        });
+        $gb->addAction(function(TopicPollEntity $tpe) {
+            if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
+                return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+            } else {
+                return LinkBuilder::createSimpleLink('Reactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+            }
+        });
+
+        $paginator = $gb->createGridControls2('getPollGrid', $page, $lastPage, [$topicId]);
+
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+    }
+
+    public function handleDeactivatePoll() {
+        global $app;
+
+        $pollId = $this->httpGet('pollId');
+        $topicId = $this->httpGet('topicId');
+
+        $app->topicPollRepository->closePoll($pollId);
+
+        $this->flashMessage('Poll deactivated.', 'success');
+        $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId]);
+    }
+
+    public function handleReactivatePoll() {
+        global $app;
+
+        $pollId = $this->httpGet('pollId');
+        $topicId = $this->httpGet('topicId');
+
+        $app->topicPollRepository->openPoll($pollId);
+
+        $this->flashMessage('Poll reactivated.', 'success');
+        $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId]);
     }
 }
 

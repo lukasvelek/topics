@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\UI\PollBuilder\PollBuilder;
 
@@ -30,7 +31,7 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getActivePollsForTopic(int $topicId) {
+    public function getActivePollBuilderEntitiesForTopic(int $topicId) {
         $now = new DateTime();
         $now = $now->getResult();
 
@@ -109,6 +110,46 @@ class TopicPollRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function openPoll(int $pollId) {
+        $qb = $this->qb(__METHOD__);
+
+        $tomorrow = new DateTime();
+        $tomorrow->modify('+1d');
+        $tomorrow = $tomorrow->getResult();
+
+        $qb ->update('topic_polls')
+            ->set(['dateValid' => $tomorrow])
+            ->where('pollId = ?', [$pollId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getPollsForTopicForGrid(int $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->orderBy('pollId', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $polls = [];
+        while($row = $qb->fetchAssoc()) {
+            $polls[] = TopicPollEntity::createEntityFromDbRow($row);
+        }
+
+        return $polls;
     }
 }
 

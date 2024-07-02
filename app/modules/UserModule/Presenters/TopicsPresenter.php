@@ -136,7 +136,11 @@ class TopicsPresenter extends APresenter {
             $links[] = LinkBuilder::createSimpleLink('Create a poll', ['page' => 'UserModule:Topics', 'action' => 'newPollForm', 'topicId' => $topicId], 'post-data-link');
         }
 
-        $this->saveToPresenterCache('links', $links);
+        if($app->actionAuthorizator->canViewTopicPolls($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('Poll list', ['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId], 'post-data-link');
+        }
+
+        $this->saveToPresenterCache('links', implode('&nbsp;', $links));
     }
 
     public function actionLikePost() {
@@ -172,7 +176,7 @@ class TopicsPresenter extends APresenter {
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
-        $polls = $app->topicPollRepository->getActivePollsForTopic($topicId);
+        $polls = $app->topicPollRepository->getActivePollBuilderEntitiesForTopic($topicId);
 
         $pollCode = [];
         $i = 0;
@@ -654,8 +658,14 @@ class TopicsPresenter extends APresenter {
 
         $this->saveToPresenterCache('w1desc', 'Total responses: ' . $cnt);
 
+        $backUrl = ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId];
+
+        if($this->httpGet('backPage') !== null && $this->httpGet('backAction') !== null) {
+            $backUrl = ['page' => $this->httpGet('backPage'), 'action' => $this->httpGet('backAction'), 'topicId' => $topicId];
+        }
+
         $links = [
-            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+            LinkBuilder::createSimpleLink('&larr; Back', $backUrl, 'post-data-link')
         ];
 
         $this->saveToPresenterCache('links', $links);
