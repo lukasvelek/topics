@@ -766,7 +766,7 @@ class QueryBuilder
             }
         }
 
-        $sql .= implode(', ', $valArray);
+        $sql .= implode(', ', $valArray) . ' ';
 
         if(str_contains($this->queryData['where'], 'WHERE')) {
             // explicit
@@ -793,7 +793,7 @@ class QueryBuilder
             $valArray[] = "'" . $value . "'";
         }
 
-        $sql .= implode(', ', $valArray) . ')';
+        $sql .= implode(', ', $valArray) . ') ';
 
         $this->sql = $sql;
     }
@@ -815,7 +815,7 @@ class QueryBuilder
 
         $sql .= implode(', ', $keyArray);
 
-        $sql .= 'FROM `' . $this->queryData['table'] . '`';
+        $sql .= ' FROM `' . $this->queryData['table'] . '`';
 
         if(isset($this->queryData['join'])) {
             $sql .= $this->queryData['join'];
