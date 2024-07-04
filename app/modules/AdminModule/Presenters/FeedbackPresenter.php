@@ -27,9 +27,18 @@ class FeedbackPresenter extends AAdminPresenter {
         $resultData = [];
 
         // suggestions
-        $all = $app->suggestionRepository->getSuggestionCountByStatuses();
-        $open = $app->suggestionRepository->getOpenSuggestionCount();
-        $closed = $app->suggestionRepository->getSuggestionCountByStatuses([SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED]);
+        $suggestions = $app->suggestionRepository->getAllSuggestions();
+
+        $all = count($suggestions);
+        $open = $closed = 0;
+        foreach($suggestions as $suggestion) {
+            if(in_array($suggestion->getStatus(), [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED])) {
+                $open++;
+            }
+            if(in_array($suggestion->getStatus(), [SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED])) {
+                $closed++;
+            }
+        }
         
         $resultData['suggestions'] = [
             'all' => $all,
@@ -38,9 +47,17 @@ class FeedbackPresenter extends AAdminPresenter {
         ];
 
         // reports
-        $all = $app->reportRepository->getReportCountByStatuses();
-        $open = $app->reportRepository->getReportCountByStatuses([ReportStatus::OPEN]);
-        $closed = $app->reportRepository->getReportCountByStatuses([ReportStatus::RESOLVED]);
+        $reports = $app->reportRepository->getAllReports();
+
+        $all = count($reports);
+        $open = $closed = 0;
+        foreach($reports as $report) {
+            if($report->getStatus() == ReportStatus::OPEN) {
+                $open++;
+            } else if($report->getStatus() == ReportStatus::RESOLVED) {
+                $closed++;
+            }
+        }
 
         $resultData['reports'] = [
             'all' => $all,
@@ -51,12 +68,25 @@ class FeedbackPresenter extends AAdminPresenter {
         // suggestion categories
         $categories = SuggestionCategory::getAll();
 
+        $count = [];
+        foreach($categories as $category => $v) {
+            $count[$category] = 0;
+        }
+
+        foreach($suggestions as $suggestion) {
+            if(is_numeric($count[$suggestion->getCategory()])) {
+                $count[$suggestion->getCategory()] += 1;
+            } else {
+                $count[$suggestion->getCategory()] = 1;
+            }
+        }
+
         $labels = [];
         $data = [];
         $colors = [];
         foreach($categories as $k => $v) {
             $labels[] = $v;
-            $data[] = $app->suggestionRepository->getSuggestionCountByCategories([$k]);
+            $data[] = $count[$k];
             $colors[] = SuggestionCategory::getColorByKey($k);
         }
 
