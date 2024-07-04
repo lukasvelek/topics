@@ -56,6 +56,7 @@ class Logger implements ILoggerCallable {
     }
 
     public function logService(string $serviceName, string $text, string $type = self::LOG_INFO) {
+        $oldSpecialFilename = $this->specialFilename;
         $this->specialFilename = 'service_log';
 
         $date = new DateTime();
@@ -63,7 +64,7 @@ class Logger implements ILoggerCallable {
 
         $this->writeLog($text);
 
-        $this->specialFilename = null;
+        $this->specialFilename = $oldSpecialFilename;
     }
 
     public function info(string $text, string $method) {
@@ -92,16 +93,17 @@ class Logger implements ILoggerCallable {
         $date = new DateTime();
         $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' ms] ' . $method . '(): ' . $text;
 
-        if($this->sqlLogLevel >= 1) {
-            $this->writeLog($newText);
-        }
-
         if($this->separateSQLLogging && $this->sqlLogLevel >= 1) {
             $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $text;
 
+            $oldSpecialFilename = $this->specialFilename;
             $this->specialFilename = 'sql_log';
             $this->writeLog($newText);
-            $this->specialFilename = null;
+            $this->specialFilename = $oldSpecialFilename;
+        } else {
+            if($this->sqlLogLevel >= 1) {
+                $this->writeLog($newText);
+            }
         }
     }
 
@@ -142,7 +144,7 @@ class Logger implements ILoggerCallable {
         }
     }
 
-    public function setFilename(string $filename) {
+    public function setFilename(?string $filename) {
         $this->specialFilename = $filename;
     }
 

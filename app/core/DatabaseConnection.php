@@ -16,10 +16,6 @@ class DatabaseConnection implements IDbQueriable {
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
         $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
-
-        if(!FileManager::fileExists($this->cfg['APP_REAL_DIR'] . "app\\core\\install")) {
-            $this->installDb($this->cfg);
-        }
     }
 
     public function query(string $sql, array $params = []) {
@@ -48,14 +44,14 @@ class DatabaseConnection implements IDbQueriable {
         }
     }
 
-    private function installDb(array $cfg) {
-        $installer = new DatabaseInstaller($this, new Logger($cfg));
+    public function installDb() {
+        $installer = new DatabaseInstaller($this, new Logger($this->cfg));
 
         $installer->install();
         
         $date = new DateTime();
         
-        FileManager::saveFile($cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
+        FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
     }
 }
 

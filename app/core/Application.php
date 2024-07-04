@@ -124,6 +124,10 @@ class Application {
         $this->isAjaxRequest = false;
 
         $this->loadModules();
+        
+        if(!FileManager::fileExists(__DIR__ . '\\install')) {
+            $this->db->installDb();
+        }
     }
 
     /**

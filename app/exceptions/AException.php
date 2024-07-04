@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use App\Configuration;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 use App\Core\HashManager;
@@ -21,6 +20,10 @@ abstract class AException extends Exception {
 
     private function createExceptionFile(string $name, string $message) {
         global $app;
+
+        if($app === null) {
+            return;
+        }
 
         $templateContent = FileManager::loadFile(__DIR__ . '\\templates\\common.html');
         $to = new TemplateObject($templateContent);
