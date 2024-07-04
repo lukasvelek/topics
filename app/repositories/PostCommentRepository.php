@@ -293,6 +293,40 @@ class PostCommentRepository extends ARepository {
 
         return $qb;
     }
+
+    public function getLikedCommentsForUser(int $userId, array $commentIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['commentId'])
+            ->from('post_comment_likes')
+            ->where('userId = ?', [$userId])
+            ->andWhere($qb->getColumnInValues('commentId', $commentIds))
+            ->execute();
+
+        $result = [];
+        while($row = $qb->fetchAssoc()) {
+            $result[] = $row['commentId'];
+        }
+
+        return $result;
+    }
+
+    public function getCommentsThatHaveAParent(int $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('postId = ?', [$postId])
+            ->andWhere('parentCommentId IS NOT NULL')
+            ->execute();
+
+        $comments = [];
+        while($row = $qb->fetchAssoc()) {
+            $comments[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $comments;
+    }
 }
 
 ?>

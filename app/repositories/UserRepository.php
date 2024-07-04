@@ -72,12 +72,17 @@ class UserRepository extends ARepository {
     public function getUserByUsername(string $username) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['*'])
+        $qb ->select(['userId'])
             ->from('users')
-            ->where('username = ?', [$username])
-            ->execute();
+            ->where('username = ?', [$username]);
 
-        return UserEntity::createEntityFromDbRow($qb->fetch());
+        $userId = CacheManager::loadCache($username, function() use ($qb) {
+            $qb->execute();
+
+            return $qb->fetch('userId');
+        }, 'usersUsernameToIdMapping');
+
+        return $this->getUserById($userId);
     }
 
     public function getUsersCount() {

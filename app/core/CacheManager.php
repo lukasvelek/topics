@@ -2,9 +2,7 @@
 
 namespace App\Core;
 
-use App\Configuration;
 use App\Core\Datetypes\DateTime;
-use Exception;
 
 class CacheManager {
     private function __construct() {}

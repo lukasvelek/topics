@@ -264,7 +264,13 @@ class Application {
             throw new URLParamIsNotDefinedException('action');
         }
 
-        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
+        $isAjax = '0';
+
+        if(isset($_GET['isAjax'])) {
+            $isAjax = htmlspecialchars($_GET['isAjax']);
+        }
+
+        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ', isAjax => ' . $isAjax . ']', __METHOD__);
     }
 }
 

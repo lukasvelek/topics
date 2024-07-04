@@ -71,7 +71,7 @@ abstract class ARepository {
     }
 
     public function sql(string $sql) {
-        $this->logger->sql($sql, __METHOD__);
+        $this->logger->sql($sql, __METHOD__, null);
         return $this->conn->query($sql);
     }
 
