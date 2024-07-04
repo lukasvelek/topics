@@ -117,13 +117,16 @@ class TopicMembershipManager extends AManager {
     private function loadMembershipDataFromCache(int $topicId, int $userId) {
         $key = $topicId . '_' . $userId;
 
-        return CacheManager::loadCache($key, function () use ($userId, $topicId) {
+        $cm = new CacheManager($this->logger);
+
+        return $cm->loadCache($key, function () use ($userId, $topicId) {
             return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
         }, self::CACHE_NAMESPACE);
     }
 
     private function invalidateMembershipCache() {
-        CacheManager::invalidateCache(self::CACHE_NAMESPACE);
+        $cm = new CacheManager($this->logger);
+        $cm->invalidateCache(self::CACHE_NAMESPACE);
     }
 
     public function getUserMembershipsInTopics(int $userId) {
