@@ -145,7 +145,6 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $this->addScript($arb->build());
         $this->addScript('getReportGrid(0, \'' . $filterType . '\', \'' . $filterKey . '\')');
-
     }
 
     public function renderList() {}

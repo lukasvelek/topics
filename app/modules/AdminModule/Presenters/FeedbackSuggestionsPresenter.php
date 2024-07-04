@@ -40,11 +40,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $suggestions = [];
         $suggestionCount = 0;
 
-        $filterControl = '';
-
-        if($filterType != 'null') {
-            $filterControl = '<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
-        }
+        $filterText = '';
 
         switch($filterType) {
             case 'null':
@@ -55,16 +51,19 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             case 'category':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
+                $filterText = 'Category: <span style="color: ' . SuggestionCategory::getColorByKey($filterKey) . '">' . SuggestionCategory::toString($filterKey) . '</span>';
                 break;
     
             case 'status':
                 $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
+                $filterText = 'Status: <span style="color: ' . SuggestionStatus::getColorByStatus($filterKey) . '">' . SuggestionStatus::toString($filterKey) . '</span>';
                 break;
     
             case 'user':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
+                $filterText = 'User: ' . $app->userRepository->getUserById($filterKey);
                 break;
         }
 
@@ -126,6 +125,11 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         });
 
         $paginator = $gb->createGridControls2('getSuggestionsGrid', $page, $lastPage, [$filterType, $filterKey]);
+
+        $filterControl = '';
+        if($filterType != 'null') {
+            $filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+        }
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
     }
