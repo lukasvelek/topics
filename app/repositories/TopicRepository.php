@@ -85,18 +85,6 @@ class TopicRepository extends ARepository {
         return $qb->fetch('topicId');
     }
 
-    public function checkFollow(int $userId, int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->select(['followId'])
-            ->from('user_topic_follows')
-            ->where('userId = ?', [$userId])
-            ->andWhere('topicId = ?', [$topicId])
-            ->execute();
-
-        return ($qb->fetch('followId') !== null);
-    }
-
     public function updateTopic(int $topicId, array $data) {
         $qb = $this->qb(__METHOD__);
 

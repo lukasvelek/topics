@@ -62,6 +62,9 @@ class TopicPollEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         $choices = unserialize($row['choices']);
         
         return new self($row['pollId'], $row['title'], $row['description'], $row['authorId'], $row['topicId'], $choices, $row['dateCreated'], $row['dateValid'], $row['timeElapsedForNextVote']);

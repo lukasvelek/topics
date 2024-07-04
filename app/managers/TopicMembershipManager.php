@@ -33,12 +33,20 @@ class TopicMembershipManager extends AManager {
         if(!$this->topicMembershipRepository->addMemberToTopic($topicId, $userId, TopicMemberRole::MEMBER)) {
             throw new GeneralException('Could not add member to the topic.');
         }
+
+        $this->invalidateMembershipCache();
     }
 
     public function unfollowTopic(int $topicId, int $userId) {
+        if(!$this->checkFollow($topicId, $userId)) {
+            throw new GeneralException('User does not follow the topic.');
+        }
+
         if(!$this->topicMembershipRepository->removeMemberFromTopic($topicId, $userId)) {
             throw new GeneralException('Could not remove member from the topic.');
         }
+
+        $this->invalidateMembershipCache();
     }
 
     public function checkFollow(int $topicId, int $userId) {
@@ -58,7 +66,11 @@ class TopicMembershipManager extends AManager {
 
         $data = $this->loadMembershipDataFromCache($topicId, $userId);
 
-        return $data->getRole();
+        if($data !== null) {
+            return $data->getRole();
+        } else {
+            return null;
+        }
     }
 
     public function getTopicMembers(int $topicId, int $limit, int $offset, bool $orderByRoleDesc = true) {
@@ -88,6 +100,10 @@ class TopicMembershipManager extends AManager {
 
     public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '') {
         $role = $this->getFollowRole($topicId, $user->getId());
+
+        if($role === null) {
+            return $user->getUsername() . ' (Ex-user)';
+        }
 
         $span = HTML::span();
         $span->setColor(TopicMemberRole::getColorByKey($role))

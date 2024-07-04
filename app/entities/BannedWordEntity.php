@@ -32,6 +32,10 @@ class BannedWordEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
+        
         return new self($row['wordId'], $row['authorId'], $row['word'], $row['dateCreated']);
     }
 }

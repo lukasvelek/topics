@@ -78,11 +78,12 @@ class TopicsPresenter extends APresenter {
 
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
         $unFollowLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=unfollow&topicId=' . $topicId . '">Unfollow</a>';
-        $followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
+        //$followed = $app->topicRepository->checkFollow($app->currentUser->getId(), $topicId);
+        $isMember = $app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId());
         $finalFollowLink = '';
 
         if(!$topic->isDeleted()) {
-            $finalFollowLink = ($followed ? $unFollowLink : $followLink);
+            $finalFollowLink = ($isMember ? $unFollowLink : $followLink);
         }
 
         $reportLink = '';
@@ -213,6 +214,13 @@ class TopicsPresenter extends APresenter {
 
         $bwh = new BannedWordsHelper($app->contentRegulationRepository);
 
+        $postIds = [];
+        foreach($posts as $post) {
+            $postIds[] = $post->getId();
+        }
+
+        $likedArray = $app->postRepository->bulkCheckLikes($app->currentUser->getId(), $postIds);
+
         $postCode = [];
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
@@ -222,7 +230,8 @@ class TopicsPresenter extends APresenter {
     
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
-            $liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
+            //$liked = $app->postRepository->checkLike($app->currentUser->getId(), $post->getId());
+            $liked = in_array($post->getId(), $likedArray);
             $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));

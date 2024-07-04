@@ -32,6 +32,10 @@ class TopicMemberEntity implements ICreatableFromRow {
     }
     
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
+        
         return new self($row['membershipId'], $row['userId'], $row['topicId'], $row['role']);
     }
 }
