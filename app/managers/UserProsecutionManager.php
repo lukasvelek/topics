@@ -36,7 +36,6 @@ class UserProsecutionManager extends AManager {
         $date = new DateTime();
         $date->modify('-1d');
 
-        //$newEndDate = date('Y-m-d H:i:s', (time() - $this->calculateDaysToSeconds(1)));
         $newEndDate = $date->getResult();
 
         $forUser = $this->userRepository->getUserById($forUserId);
