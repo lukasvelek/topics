@@ -93,11 +93,13 @@ class PostCommentRepository extends ARepository {
         $qb ->select(['COUNT(commentId) AS cnt'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
-            ->execute();
+            ->andWhere('parentCommentId IS NULL');
 
         if($deletedOnly) {
             $qb->andWhere('isDeleted = 0');
         }
+
+        $qb->execute();
 
         return $qb->fetch('cnt');
     }
