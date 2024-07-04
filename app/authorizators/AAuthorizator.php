@@ -36,7 +36,7 @@ abstract class AAuthorizator {
         $cm = new CacheManager($this->logger);
         return $cm->loadCache('group_' . $groupId . '_' . $userId, function() use ($userId, $groupId) {
             return $this->groupRepository->isUserMemberOfGroup($userId, $groupId);
-        }, 'groupMemberships');
+        }, 'groupMemberships', __METHOD__);
     }
 
     protected function isUserAdmin(int $userId) {

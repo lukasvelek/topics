@@ -121,7 +121,7 @@ class TopicMembershipManager extends AManager {
 
         return $cm->loadCache($key, function () use ($userId, $topicId) {
             return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
-        }, self::CACHE_NAMESPACE);
+        }, self::CACHE_NAMESPACE, __METHOD__);
     }
 
     private function invalidateMembershipCache() {

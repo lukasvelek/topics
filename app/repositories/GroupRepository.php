@@ -104,7 +104,7 @@ class GroupRepository extends ARepository {
             $row = $qb->execute()->fetch();
 
             return GroupEntity::createEntityFromDbRow($row);
-        }, 'groups');
+        }, 'groups', __METHOD__);
 
         return $entity;
     }

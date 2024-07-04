@@ -258,7 +258,7 @@ class PostRepository extends ARepository {
             $entity = PostEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'posts');
+        }, 'posts', __METHOD__);
 
         return $entity;
     }

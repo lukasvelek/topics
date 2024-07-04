@@ -26,7 +26,7 @@ class UserRepository extends ARepository {
             $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'users');
+        }, 'users', __METHOD__);
 
         return $entity;
     }
@@ -80,7 +80,7 @@ class UserRepository extends ARepository {
             $qb->execute();
 
             return $qb->fetch('userId');
-        }, 'usersUsernameToIdMapping');
+        }, 'usersUsernameToIdMapping', __METHOD__);
 
         return $this->getUserById($userId);
     }

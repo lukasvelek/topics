@@ -14,6 +14,7 @@ class Logger implements ILoggerCallable {
     public const LOG_SQL = 'sql';
     public const LOG_STOPWATCH = 'stopwatch';
     public const LOG_EXCEPTION = 'exception';
+    public const LOG_CACHE = 'cache';
 
     private int $logLevel;
     private int $sqlLogLevel;
@@ -105,6 +106,12 @@ class Logger implements ILoggerCallable {
                 }
                 break;
 
+            case self::LOG_CACHE:
+                if($this->logLevel >= 4) {
+                    $this->writeLog($text);
+                }
+                break;
+
             case self::LOG_INFO:
                 if($this->logLevel >= 3) {
                     $this->writeLog($text);
@@ -152,6 +159,12 @@ class Logger implements ILoggerCallable {
         }
 
         FileManager::saveFile($folder, $file, $text . "\r\n");
+    }
+
+    public function logCache(string $method, bool $hit) {
+        $text = 'Cache ' . ($hit ? 'hit' : 'miss') . '.';
+
+        $this->log($method, $text, self::LOG_CACHE);
     }
 }
 

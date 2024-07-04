@@ -47,11 +47,12 @@ class CacheManager {
         return $filename;
     }
 
-    public function loadCache(mixed $key, callable $callback, string $namespace = 'default') {
-        //$obj = self::getTemporaryObject();
+    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null) {
         $file = $this->loadCachedFiles($namespace);
         $save = false;
         $result = null;
+
+        $cacheHit = true;
 
         if($file === null) {
             $result = $callback();
@@ -71,9 +72,12 @@ class CacheManager {
 
         if($save === true) {
             $file = serialize($file);
+            $cacheHit = false;
             
             $this->saveCachedFiles($namespace, $file);
         }
+
+        $this->logger->logCache($method ?? __METHOD__, $cacheHit);
 
         return $result;
     }
@@ -89,8 +93,6 @@ class CacheManager {
     }
 
     public function saveFlashMessageToCache(array $data) {
-        //$obj = self::getTemporaryObject();
-        
         $userId = 0;
 
         if(isset($_SESSION['userId'])) {
@@ -113,8 +115,6 @@ class CacheManager {
     }
 
     public function loadFlashMessages() {
-        //$obj = self::getTemporaryObject();
-        
         $userId = 0;
 
         if(isset($_SESSION['userId'])) {
@@ -142,8 +142,6 @@ class CacheManager {
     }
 
     public function savePageToCache(string $moduleName, string $presenterName, string $content) {
-        //$obj = self::getTemporaryObject();
-
         $file = $this->loadCachedFiles('cachedPages');
 
         if($file !== null && $file !== false) {
@@ -160,8 +158,6 @@ class CacheManager {
     }
     
     public function loadPagesFromCache() {
-        //$obj = self::getTemporaryObject();
-
         $file = $this->loadCachedFiles('cachedPages');
 
         if($file !== null && $file !== false) {

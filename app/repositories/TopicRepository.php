@@ -28,7 +28,7 @@ class TopicRepository extends ARepository {
             $entity = TopicEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'topics');
+        }, 'topics', __METHOD__);
 
         return $entity;
     }
