@@ -2,6 +2,8 @@
 
 namespace App\Components\PostLister;
 
+use App\Entities\UserEntity;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\PostRepository;
@@ -11,8 +13,8 @@ use App\Repositories\UserRepository;
 class PostLister {
     private array $posts;
     private array $topics;
-
     private bool $topicLinkHidden;
+    private ?UserEntity $currentUser;
     
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
@@ -29,6 +31,12 @@ class PostLister {
         $this->topics = [];
 
         $this->topicLinkHidden = false;
+
+        $this->currentUser = null;
+    }
+
+    public function setCurrentUser(UserEntity $user) {
+        $this->currentUser = $user;
     }
 
     public function setPosts(array $posts) {
@@ -75,6 +83,10 @@ class PostLister {
     }
 
     private function build() {
+        if($this->currentUser === null) {
+            throw new GeneralException('Current user must be set!');
+        }
+
         $codeArr = [
             '<div id="post-lister">'
         ];
@@ -85,8 +97,15 @@ class PostLister {
                 $bwh = new BannedWordsHelper($this->crr);
             }
 
+            $postIds = [];
             foreach($this->posts as $post) {
-                $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
+                $postIds[] = $post->getId();
+            }
+
+            $likedArray = $this->postRepository->bulkCheckLikes($this->currentUser->getId(), $postIds);
+
+            foreach($this->posts as $post) {
+                $liked = in_array($post->getId(), $likedArray);
                 $likeLink = self::createLikeLink($post->getId(), $liked);
                 
                 if(!empty($this->topics)) {

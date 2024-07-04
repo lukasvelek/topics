@@ -33,22 +33,6 @@ class TopicRepository extends ARepository {
         return $entity;
     }
 
-    public function getFollowedTopicIdsForUser(int $userId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->select(['topicId'])
-            ->from('user_topic_follows')
-            ->where('userId = ?', [$userId])
-            ->execute();
-
-        $topics = [];
-        while($row = $qb->fetchAssoc()) {
-            $topics[] = $row['topicId'];
-        }
-
-        return $topics;
-    }
-
     public function bulkGetTopicsByIds(array $ids) {
         $entities = [];
 
@@ -57,33 +41,6 @@ class TopicRepository extends ARepository {
         }
 
         return $entities;
-    }
-
-    public function getFollowersForTopicId(int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->select(['userId'])
-            ->from('user_topic_follows')
-            ->where('topicId = ?', [$topicId])
-            ->execute();
-
-        $followers = [];
-        while($row = $qb->fetchAssoc()) {
-            $followers[] = $row['userId'];
-        }
-
-        return $followers;
-    }
-
-    public function getFollowerCountForTopicId(int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->select(['COUNT(topicId) AS cnt'])
-            ->from('user_topic_follows')
-            ->where('topicId = ?', [$topicId])
-            ->execute();
-
-        return $qb->fetch('cnt') ?? 0;
     }
 
     public function searchTopics(string $query) {
@@ -140,65 +97,11 @@ class TopicRepository extends ARepository {
         return ($qb->fetch('followId') !== null);
     }
 
-    public function followTopic(int $userId, int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->insert('user_topic_follows', ['userId', 'topicId'])
-            ->values([$userId, $topicId])
-            ->execute();
-
-        return $qb->fetchBool();
-    }
-
-    public function unfollowTopic(int $userId, int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->delete()
-            ->from('user_topic_follows')
-            ->where('userId = ?', [$userId])
-            ->andWhere('topicId = ?', [$topicId])
-            ->execute();
-
-        return $qb->fetchBool();
-    }
-
-    public function getNotFollowedTopics(int $userId, array $followedTopics = []) {
-        $qb = $this->qb(__METHOD__);
-        
-        if(empty($followedTopics)) {
-            $followedTopics = $this->getFollowedTopicIdsForUser($userId);
-        }
-
-        $qb ->select(['*'])
-            ->from('topics')
-            ->where($qb->getColumnNotInValues('topicId', $followedTopics))
-            ->andWhere('isDeleted = 0')
-            ->execute();
-
-        $topics = [];
-        while($row = $qb->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
-        }
-
-        return $topics;
-    }
-
     public function updateTopic(int $topicId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topics')
             ->set($data)
-            ->where('topicId = ?', [$topicId])
-            ->execute();
-
-        return $qb->fetch();
-    }
-
-    public function removeAllTopicFollows(int $topicId) {
-        $qb = $this->qb(__METHOD__);
-
-        $qb ->delete()
-            ->from('user_topic_follows')
             ->where('topicId = ?', [$topicId])
             ->execute();
 
@@ -283,6 +186,17 @@ class TopicRepository extends ARepository {
             ->from('topics');
 
         return $qb;
+    }
+
+    public function getTopicsExceptFor(array $topicIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where($qb->getColumnNotInValues('topicId', $topicIds))
+            ->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
     }
 }
 

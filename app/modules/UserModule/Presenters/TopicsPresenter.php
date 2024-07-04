@@ -72,7 +72,8 @@ class TopicsPresenter extends APresenter {
 
         $this->addScript($arb->build());
 
-        $topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
+        //$topicFollowers = $app->topicRepository->getFollowersForTopicId($topicId);
+        $topicMembers = $app->topicMembershipManager->getTopicMemberCount($topicId);
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
         $followLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=follow&topicId=' . $topicId . '">Follow</a>';
@@ -105,7 +106,7 @@ class TopicsPresenter extends APresenter {
         }
 
         $code = '
-            <p class="post-data">Followers: ' . count($topicFollowers) . ' ' . $finalFollowLink . '</p>
+            <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
             <p class="post-data">' . $reportLink . '</p>
@@ -443,12 +444,13 @@ class TopicsPresenter extends APresenter {
     public function handleFollowed() {
         global $app;
 
-        $followedTopics = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
+        //$followedTopics = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
+        $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
 
         $code = [];
 
-        if(!empty($followedTopics)) {
-            foreach($followedTopics as $topicId) {
+        if(!empty($topicIdsUserIsMemberOf)) {
+            foreach($topicIdsUserIsMemberOf as $topicId) {
                 $topic = $app->topicRepository->getTopicById($topicId);
     
                 $code[] = '
@@ -481,7 +483,7 @@ class TopicsPresenter extends APresenter {
     public function handleDiscover() {
         global $app;
 
-        $notFollowedTopics = $app->topicRepository->getNotFollowedTopics($app->currentUser->getId());
+        $notFollowedTopics = $app->topicMembershipManager->getTopicsUserIsNotMemberOf($app->currentUser->getId());
 
         $code = [];
 

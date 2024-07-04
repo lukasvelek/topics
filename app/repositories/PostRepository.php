@@ -174,6 +174,23 @@ class PostRepository extends ARepository {
         return false;
     }
 
+    public function bulkCheckLikes(int $userId, array $postIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['postId'])
+            ->from('post_likes')
+            ->where($qb->getColumnInValues('postId', $postIds))
+            ->andWhere('userId = ?', [$userId])
+            ->execute();
+
+        $results = [];
+        while($row = $qb->fetchAssoc()) {
+            $results[] = $row['postId'];
+        }
+
+        return $results;
+    }
+
     public function getLikes(int $postId) {
         $qb = $this->qb(__METHOD__);
 

@@ -12,7 +12,6 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\LinkBuilder;
 
 class PostsPresenter extends APresenter {
     public function __construct() {

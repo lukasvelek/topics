@@ -50,11 +50,6 @@ class DatabaseInstaller {
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL'
             ],
-            'user_topic_follows' => [
-                'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'topicId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL'
-            ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
                 'topicId' => 'INT(32) NOT NULL',

@@ -16,16 +16,20 @@ class HomePresenter extends APresenter {
     public function handleDashboard() {
         global $app;
 
-        $followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
-        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);
+        /*$followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
+        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);*/
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($followedTopicIds, 10);
+        $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
+        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
+
+        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 10);
 
         $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);
         $postLister->shufflePosts();
+        $postLister->setCurrentUser($app->currentUser);
         
         $this->saveToPresenterCache('postLister', $postLister);
         

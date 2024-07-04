@@ -30,35 +30,21 @@ class TopicMembershipManager extends AManager {
             throw new GeneralException('User already follows the topic.');
         }
 
-        if(!$this->topicRepository->followTopic($userId, $topicId)) {
-            throw new GeneralException('Could not follow the topic.');
-        }
-
         if(!$this->topicMembershipRepository->addMemberToTopic($topicId, $userId, TopicMemberRole::MEMBER)) {
             throw new GeneralException('Could not add member to the topic.');
         }
     }
 
     public function unfollowTopic(int $topicId, int $userId) {
-        if(!$this->checkFollow($topicId, $userId)) {
-            throw new GeneralException('User does not follow the topic.');
-        }
-
-        if(!$this->topicRepository->unfollowTopic($userId, $topicId)) {
-            throw new GeneralException('Could not unfollow the topic');
-        }
-
         if(!$this->topicMembershipRepository->removeMemberFromTopic($topicId, $userId)) {
             throw new GeneralException('Could not remove member from the topic.');
         }
     }
 
     public function checkFollow(int $topicId, int $userId) {
-        if(!$this->topicRepository->checkFollow($userId, $topicId)) {
-            return false;
-        }
+        $membership = $this->loadMembershipDataFromCache($topicId, $userId);
 
-        if(!$this->topicMembershipRepository->checkIsMember($topicId, $userId)) {
+        if($membership === null) {
             return false;
         }
 
@@ -122,6 +108,21 @@ class TopicMembershipManager extends AManager {
 
     private function invalidateMembershipCache() {
         CacheManager::invalidateCache(self::CACHE_NAMESPACE);
+    }
+
+    public function getUserMembershipsInTopics(int $userId) {
+        return $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
+    }
+
+    public function getTopicMemberCount(int $topicId) {
+        return $this->topicMembershipRepository->getTopicMemberCount($topicId);
+    }
+
+    public function getTopicsUserIsNotMemberOf(int $userId) {
+        $memberships = $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
+        $otherTopics = $this->topicRepository->getTopicsExceptFor($memberships);
+
+        return $otherTopics;
     }
 }
 
