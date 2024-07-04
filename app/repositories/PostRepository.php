@@ -252,7 +252,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('postId = ?', [$postId]);
 
-        $entity = CacheManager::loadCache($postId, function() use ($qb) {
+        $entity = $this->cache->loadCache($postId, function() use ($qb) {
             $row = $qb->execute()->fetch();
 
             $entity = PostEntity::createEntityFromDbRow($row);

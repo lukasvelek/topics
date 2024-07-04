@@ -22,7 +22,7 @@ class TopicRepository extends ARepository {
             ->from('topics')
             ->where('topicId = ?', [$id]);
 
-        $entity = CacheManager::loadCache($id, function () use ($qb) {
+        $entity = $this->cache->loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
 
             $entity = TopicEntity::createEntityFromDbRow($row);

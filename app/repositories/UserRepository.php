@@ -20,7 +20,7 @@ class UserRepository extends ARepository {
             ->from('users')
             ->where('userId = ?', [$id]);
 
-        $entity = CacheManager::loadCache($id, function () use ($qb) {
+        $entity = $this->cache->loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
 
             $entity = UserEntity::createEntityFromDbRow($row);
@@ -76,7 +76,7 @@ class UserRepository extends ARepository {
             ->from('users')
             ->where('username = ?', [$username]);
 
-        $userId = CacheManager::loadCache($username, function() use ($qb) {
+        $userId = $this->cache->loadCache($username, function() use ($qb) {
             $qb->execute();
 
             return $qb->fetch('userId');

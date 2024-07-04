@@ -100,7 +100,7 @@ class GroupRepository extends ARepository {
             ->from('groups')
             ->where('groupId = ?', [$groupId]);
 
-        $entity = CacheManager::loadCache($groupId, function() use ($qb) {
+        $entity = $this->cache->loadCache($groupId, function() use ($qb) {
             $row = $qb->execute()->fetch();
 
             return GroupEntity::createEntityFromDbRow($row);

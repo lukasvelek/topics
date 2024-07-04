@@ -4,6 +4,7 @@ namespace App\Modules;
 
 use App\Core\CacheManager;
 use App\Exceptions\TemplateDoesNotExistException;
+use App\Logger\Logger;
 
 /**
  * The common module abstract class that every module must extend. It contains functions used for rendering the page content.
@@ -19,6 +20,7 @@ abstract class AModule extends AGUICore {
     protected ?TemplateObject $template;
     private ?APresenter $presenter;
     private array $cachedPages;
+    private ?Logger $logger;
 
     /**
      * The class constructor
@@ -32,6 +34,11 @@ abstract class AModule extends AGUICore {
         $this->template = null;
         $this->presenter = null;
         $this->cachedPages = [];
+        $this->logger = null;
+    }
+
+    public function setLogger(Logger $logger) {
+        $this->logger = $logger;
     }
 
     /**
@@ -151,7 +158,9 @@ abstract class AModule extends AGUICore {
             return;
         }
 
-        $flashMessages = CacheManager::loadFlashMessages();
+        $cm = new CacheManager($this->logger);
+
+        $flashMessages = $cm->loadFlashMessages();
 
         if($flashMessages === null) {
             return;
@@ -161,7 +170,7 @@ abstract class AModule extends AGUICore {
             $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
         }
 
-        CacheManager::deleteFlashMessages();
+        $cm->deleteFlashMessages();
     }
 
     /**
