@@ -148,6 +148,7 @@ abstract class AModule extends AGUICore {
         $this->presenter->setTemplate($isAjax ? null : $this->getTemplate());
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
+        $this->presenter->setLogger($this->logger);
 
         /**
          * FLASH MESSAGES

@@ -852,7 +852,7 @@ class QueryBuilder
     /**
      * Logs an SQL string
      */
-    private function log(?int $msTaken = null) {
+    private function log(?float $msTaken = null) {
         if($this->logger !== NULL) {
             $this->logger->sql($this->sql, $this->callingMethod, $msTaken);
         }
@@ -863,15 +863,15 @@ class QueryBuilder
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
-            $tsStart = time();
+            $tsStart = /*time();*/ microtime();
             $result = $this->conn->query($sql, $params);
-            $tsEnd = time();
+            $tsEnd = /*time();*/ microtime();
             return $result;
         };
 
         $result = $q($sql, $params);
 
-        $diff = $tsEnd - $tsStart;
+        $diff = (float)$tsEnd - (float)$tsStart;
 
         $this->log($diff);
 

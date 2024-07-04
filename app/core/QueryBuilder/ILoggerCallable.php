@@ -10,7 +10,7 @@ use Exception;
  * @author Lukas Velek
  */
 interface ILoggerCallable {
-    function sql(string $sql, string $method, ?int $msTaken);
+    function sql(string $sql, string $method, ?float $msTaken);
     function exception(Exception $e, string $method);
 }
 

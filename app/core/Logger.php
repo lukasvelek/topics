@@ -21,6 +21,7 @@ class Logger implements ILoggerCallable {
     private ?string $specialFilename;
     private array $cfg;
     private int $stopwatchLogLevel;
+    private bool $separateSQLLogging;
 
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
@@ -29,6 +30,7 @@ class Logger implements ILoggerCallable {
         $this->logLevel = $this->cfg['LOG_LEVEL'];
         $this->specialFilename = null;
         $this->stopwatchLogLevel = $this->cfg['LOG_STOPWATCH'];
+        $this->separateSQLLogging = $this->cfg['SQL_SEPARATE_LOGGING'];
     }
 
     public function stopwatch(callable $function, string $method) {
@@ -82,16 +84,24 @@ class Logger implements ILoggerCallable {
         $this->log($method, $text, self::LOG_EXCEPTION);
     }
 
-    public function sql(string $text, string $method, ?int $msTaken) {
-        $this->logSQL($method, $text, ($msTaken ?? 0));
+    public function sql(string $text, string $method, ?float $msTaken) {
+        $this->logSQL($method, $text, ($msTaken ?? 0.0));
     }
 
-    public function logSQL(string $method, string $text, int $msTaken) {
+    public function logSQL(string $method, string $text, float $msTaken) {
         $date = new DateTime();
-        $text = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $method . '(): ' . $text;
+        $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' ms] ' . $method . '(): ' . $text;
 
-        if($this->stopwatchLogLevel >= 1) {
-            $this->writeLog($text);
+        if($this->sqlLogLevel >= 1) {
+            $this->writeLog($newText);
+        }
+
+        if($this->separateSQLLogging && $this->sqlLogLevel >= 1) {
+            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $text;
+
+            $this->specialFilename = 'sql_log';
+            $this->writeLog($newText);
+            $this->specialFilename = null;
         }
     }
 
@@ -126,12 +136,6 @@ class Logger implements ILoggerCallable {
             
             case self::LOG_ERROR:
                 if($this->logLevel >= 1) {
-                    $this->writeLog($text);
-                }
-                break;
-
-            case self::LOG_SQL:
-                if($this->sqlLogLevel >= 1) {
                     $this->writeLog($text);
                 }
                 break;
