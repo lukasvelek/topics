@@ -4,6 +4,7 @@ namespace QueryBuilder;
 
 use App\Exceptions\AException;
 use App\Exceptions\DatabaseConnectionException;
+use Exception;
 
 /**
  * QueryBuilder allows users to create an SQL query.
@@ -540,8 +541,7 @@ class QueryBuilder
         $useSafe = false;
 
         if($this->hasCustomSQL) {
-            $this->queryResult = $this->conn->query($this->sql);
-            $this->log();
+            $this->queryResult = $this->query($this->sql);
             $this->currentState = self::STATE_CLEAN;
 
             return $this;
@@ -565,17 +565,15 @@ class QueryBuilder
 
         try {
             if($useSafe && in_array($this->queryType, ['insert'])) {
-                $this->queryResult = $this->conn->query($this->sql, $this->queryData['values']);
+                $this->queryResult = $this->query($this->sql, $this->queryData['values']);
             } else {
-                $this->queryResult = $this->conn->query($this->sql);
+                $this->queryResult = $this->query($this->sql);
             }
         } catch(\mysqli_sql_exception $e) {
-            $this->log();
+            $this->logException($e);
             
             throw new DatabaseConnectionException($e->getMessage());
         }
-
-        $this->log();
 
         $this->currentState = self::STATE_CLEAN;
 
@@ -872,9 +870,35 @@ class QueryBuilder
     /**
      * Logs an SQL string
      */
-    private function log() {
+    private function log(?int $msTaken = null) {
         if($this->logger !== NULL) {
-            $this->logger->sql($this->sql, $this->callingMethod);
+            $this->logger->sql($this->sql, $this->callingMethod, $msTaken);
+        }
+    }
+
+    private function query(string $sql, array $params = []) {
+        $tsStart = null;
+        $tsEnd = null;
+
+        $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
+            $tsStart = time();
+            $result = $this->conn->query($sql, $params);
+            $tsEnd = time();
+            return $result;
+        };
+
+        $result = $q($sql, $params);
+
+        $diff = $tsEnd - $tsStart;
+
+        $this->log($diff);
+
+        return $result;
+    }
+
+    private function logException(Exception $e) {
+        if($this->logger !== null) {
+            $this->logger->exception($e, $this->callingMethod);
         }
     }
 }

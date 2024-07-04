@@ -4,6 +4,7 @@ namespace App\Logger;
 
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
+use Exception;
 use QueryBuilder\ILoggerCallable;
 
 class Logger implements ILoggerCallable {
@@ -12,6 +13,7 @@ class Logger implements ILoggerCallable {
     public const LOG_ERROR = 'error';
     public const LOG_SQL = 'sql';
     public const LOG_STOPWATCH = 'stopwatch';
+    public const LOG_EXCEPTION = 'exception';
 
     private int $logLevel;
     private int $sqlLogLevel;
@@ -73,8 +75,23 @@ class Logger implements ILoggerCallable {
         $this->log($method, $text, self::LOG_ERROR);
     }
 
-    public function sql(string $text, string $method) {
-        $this->log($method, $text, self::LOG_SQL);
+    public function exception(Exception $e, string $method) {
+        $text = 'Exception: ' . $e->getMessage() . '. Call stack: ' . $e->getTraceAsString();
+
+        $this->log($method, $text, self::LOG_EXCEPTION);
+    }
+
+    public function sql(string $text, string $method, ?int $msTaken) {
+        $this->logSQL($method, $text, ($msTaken ?? 0));
+    }
+
+    public function logSQL(string $method, string $text, int $msTaken) {
+        $date = new DateTime();
+        $text = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $method . '(): ' . $text;
+
+        if($this->stopwatchLogLevel >= 1) {
+            $this->writeLog($text);
+        }
     }
 
     public function log(string $method, string $text, string $type = self::LOG_INFO) {
