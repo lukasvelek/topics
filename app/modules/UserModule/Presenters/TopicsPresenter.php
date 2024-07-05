@@ -3,13 +3,13 @@
 namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
+use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
-use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -127,12 +127,21 @@ class TopicsPresenter extends APresenter {
 
         $this->saveToPresenterCache('topicData', $code);
 
+        $postTags = [];
+        foreach(PostTags::getAll() as $key => $text) {
+            $postTags[] = [
+                'value' => $key,
+                'text' => $text
+            ];
+        }
+
         // new post form
         $fb = new FormBuilder();
 
         $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
             ->addTextInput('title', 'Title:', null, true)
             ->addTextArea('text', 'Text:', null, true)
+            ->addSelect('tag', 'Tag:', $postTags, true)
             ->addSubmit('Post')
         ;
 
@@ -308,11 +317,12 @@ class TopicsPresenter extends APresenter {
 
         $title = $fr->title;
         $text = $fr->text;
+        $tag = $fr->tag;
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->postRepository->createNewPost($topicId, $userId, $title, $text);
+            $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
         } catch (AException $e) {
             $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);

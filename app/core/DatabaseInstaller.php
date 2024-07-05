@@ -61,7 +61,7 @@ class DatabaseInstaller {
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
-                'tags' => 'TEXT NOT NULL'
+                'tag' => 'VARCHAR(256) NOT NULL'
             ],
             'post_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
