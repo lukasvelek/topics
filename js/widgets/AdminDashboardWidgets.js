@@ -2,17 +2,26 @@ let topicsChart = null;
 let postsChart = null;
 let usersChart = null;
 
-function createDashboard() {
+async function createDashboard() {
+    $("#widget1-data").html('<img src="resources/loading.gif" width="64">')
+    $("#widget2-data").html('<img src="resources/loading.gif" width="64">')
+    $("#widget3-data").html('<img src="resources/loading.gif" width="64">')
+
+    await sleep(1000);
+
     $.get(
         "?page=AdminModule:Home&action=getGraphData&isAjax=1"
     ).done(function(data) {
         const obj = JSON.parse(data);
 
-        const ctxTopics = $("#mostActiveTopicsGraph");
-
+        
         if(obj.topics.error) {
             $("#widget1-data").html(obj.topics.error);
         } else {
+            $("#widget1-data").html('<canvas id="mostActiveTopicsGraph"></canvas>');
+
+            const ctxTopics = $("#mostActiveTopicsGraph");
+
             topicsChart = new Chart(ctxTopics, {
                 type: "bar",
                 data: {
@@ -33,11 +42,14 @@ function createDashboard() {
             });
         }
 
-        const ctxPosts = $("#mostActivePostsGraph");
-
+        
         if(obj.posts.error) {
             $("#widget2-data").html(obj.posts.error);
         } else {
+            $("#widget2-data").html('<canvas id="mostActivePostsGraph"></canvas>');
+
+            const ctxPosts = $("#mostActivePostsGraph");
+
             postsChart = new Chart(ctxPosts, {
                 type: "bar",
                 data: {
@@ -58,11 +70,14 @@ function createDashboard() {
             });
         }
 
-        const ctxUsers = $("#mostActiveUsersGraph");
-
+        
         if(obj.users.error) {
             $("#widget3-data").html(obj.users.error);
         } else {
+            $("#widget3-data").html('<canvas id="mostActiveUsersGraph"></canvas>');
+            
+            const ctxUsers = $("#mostActiveUsersGraph");
+
             usersChart = new Chart(ctxUsers, {
                 type: "bar",
                 data: {
@@ -105,5 +120,5 @@ async function autoUpdate() {
     topicsChart.destroy();
     postsChart.destroy();
     usersChart.destroy();
-    createDashboard();
+    await createDashboard();
 }

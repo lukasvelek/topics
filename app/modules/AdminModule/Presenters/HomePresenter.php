@@ -43,7 +43,7 @@ class HomePresenter extends AAdminPresenter {
 
         // topics
         if(empty($topics)) {
-            $json['topics']['error'] = 'No data';
+            $json['topics']['error'] = 'No data currently available';
         } else {
             $labels = [];
             $resultData = [];
@@ -61,7 +61,7 @@ class HomePresenter extends AAdminPresenter {
 
         // posts
         if(empty($posts)) {
-            $json['posts']['error'] = 'No data';
+            $json['posts']['error'] = 'No data currently available';
         } else {
             $labels = [];
             $resultData = [];
@@ -80,7 +80,7 @@ class HomePresenter extends AAdminPresenter {
 
         // users
         if(empty($users)) {
-            $json['users']['error'] = 'No data';
+            $json['users']['error'] = 'No data currently available';
         } else {
             $labels = [];
             $resultData = [];

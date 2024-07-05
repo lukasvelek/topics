@@ -24,6 +24,8 @@ class FeedbackPresenter extends AAdminPresenter {
     public function actionGetGraphData() {
         global $app;
 
+        $noDataAvailableMessage = 'No data currently available';
+
         $resultData = [];
 
         // suggestions
@@ -39,12 +41,18 @@ class FeedbackPresenter extends AAdminPresenter {
                 $closed++;
             }
         }
-        
-        $resultData['suggestions'] = [
-            'all' => $all,
-            'open' => $open,
-            'closed' => $closed
-        ];
+
+        if($all == 0 && $open == 0 && $closed == 0) {
+            $resultData['suggestions'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $resultData['suggestions'] = [
+                'all' => $all,
+                'open' => $open,
+                'closed' => $closed
+            ];
+        }
 
         // reports
         $reports = $app->reportRepository->getAllReports();
@@ -59,11 +67,17 @@ class FeedbackPresenter extends AAdminPresenter {
             }
         }
 
-        $resultData['reports'] = [
-            'all' => $all,
-            'open' => $open,
-            'closed' => $closed
-        ];
+        if($all == 0 && $open == 0 && $closed == 0) {
+            $resultData['reports'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $resultData['reports'] = [
+                'all' => $all,
+                'open' => $open,
+                'closed' => $closed
+            ];
+        }
 
         // suggestion categories
         $categories = SuggestionCategory::getAll();
@@ -81,20 +95,33 @@ class FeedbackPresenter extends AAdminPresenter {
             }
         }
 
-        $labels = [];
-        $data = [];
-        $colors = [];
-        foreach($categories as $k => $v) {
-            $labels[] = $v;
-            $data[] = $count[$k];
-            $colors[] = SuggestionCategory::getColorByKey($k);
+        $noData = true;
+        foreach($categories as $category) {
+            if(isset($count[$category]) && $count[$category] > 0) {
+                $noData = false;
+            }
         }
 
-        $resultData['suggestionCategories'] = [
-            'labels' => $labels,
-            'data' => $data,
-            'colors' => $colors
-        ];
+        if($noData) {
+            $resultData['suggestionCategories'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $labels = [];
+            $data = [];
+            $colors = [];
+            foreach($categories as $k => $v) {
+                $labels[] = $v;
+                $data[] = $count[$k];
+                $colors[] = SuggestionCategory::getColorByKey($k);
+            }
+
+            $resultData['suggestionCategories'] = [
+                'labels' => $labels,
+                'data' => $data,
+                'colors' => $colors
+            ];
+        }
 
         $this->ajaxSendResponse($resultData);
     }
