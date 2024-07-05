@@ -18,7 +18,7 @@ async function createDashboard() {
         if(obj.topics.error) {
             $("#widget1-data").html(obj.topics.error);
         } else {
-            $("#widget1-data").html('<canvas id="mostActiveTopicsGraph"></canvas>');
+            $("#widget1-data").html('<div style="width: 95%"><canvas id="mostActiveTopicsGraph"></canvas></div>');
 
             const ctxTopics = $("#mostActiveTopicsGraph");
 
@@ -46,7 +46,7 @@ async function createDashboard() {
         if(obj.posts.error) {
             $("#widget2-data").html(obj.posts.error);
         } else {
-            $("#widget2-data").html('<canvas id="mostActivePostsGraph"></canvas>');
+            $("#widget2-data").html('<div style="width: 95%"><canvas id="mostActivePostsGraph"></canvas></div>');
 
             const ctxPosts = $("#mostActivePostsGraph");
 
@@ -74,7 +74,7 @@ async function createDashboard() {
         if(obj.users.error) {
             $("#widget3-data").html(obj.users.error);
         } else {
-            $("#widget3-data").html('<canvas id="mostActiveUsersGraph"></canvas>');
+            $("#widget3-data").html('<div style="width: 95%"><canvas id="mostActiveUsersGraph"></canvas></div>');
             
             const ctxUsers = $("#mostActiveUsersGraph");
 
