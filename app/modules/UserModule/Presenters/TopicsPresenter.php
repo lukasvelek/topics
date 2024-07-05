@@ -104,10 +104,22 @@ class TopicsPresenter extends APresenter {
             $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
         }
 
+        $tagArray = $topic->getTags();
+
+        $tags = [];
+        foreach($tagArray as $tag) {
+            $tag = ucfirst($tag);
+
+            $tags[] = $tag;
+        }
+
+        $tagCode = implode(', ', $tags);
+
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
+            <p class="post-data">Tags: ' . $tagCode . '</p>
             <p class="post-data">' . $reportLink . '</p>
             ' . $deleteLink . '
             ' . $roleManagementLink . '
@@ -360,16 +372,27 @@ class TopicsPresenter extends APresenter {
 
             $title = $fr->title;
             $description = $fr->description;
+            $tags = $fr->tags;
 
             $topicId = null;
 
+            $tagArray = [];
+            foreach(explode(',', $tags) as $tag) {
+                $tag = trim($tag);
+
+                $tagArray[] = $tag;
+            }
+
+            $tags = serialize($tagArray);
+
             try {
-                $app->topicRepository->createNewTopic($title, $description);
+                $app->topicRepository->createNewTopic($title, $description, $tags);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
 
-                CacheManager::invalidateCache('topics');
+                $cm = new CacheManager($this->logger);
+                $cm->invalidateCache('topics');
             } catch(AException $e) {
                 $this->flashMessage('Could not create a new topic. Reason: ' . $e->getMessage(), 'error');
                 $app->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
@@ -385,6 +408,8 @@ class TopicsPresenter extends APresenter {
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'form', 'isSubmit' => '1'])
                 ->addTextInput('title', 'Title:', $title, true)
                 ->addTextArea('description', 'Description:', null, true)
+                ->addTextInput('tags', 'Tags:', null, true)
+                ->addLabel('Individual tags must be separated by commas - e.g.: technology, art, scifi ...', 'lbl_tags_1')
                 ->addSubmit('Create topic');
 
             $this->saveToPresenterCache('form', $fb);
