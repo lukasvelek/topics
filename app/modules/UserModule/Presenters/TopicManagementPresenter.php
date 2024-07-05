@@ -169,14 +169,22 @@ class TopicManagementPresenter extends APresenter {
 
             $this->saveToPresenterCache('form', $fb);
         }
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
     }
 
     public function renderChangeRoleForm() {
         $form = $this->loadFromPresenterCache('form');
         $topic = $this->loadFromPresenterCache('topic');
+        $links = $this->loadFromPresenterCache('links');
         
         $this->template->form = $form;
         $this->template->topic_title = $topic->getTitle();
+        $this->template->links = $links;
     }
 
     public function handleListPolls() {

@@ -1,4 +1,5 @@
-function likePost(_postId, _userId, _like) {
+function likePost(_postId, _like) {
+    console.log('yes');
     $.post(
         "app/ajax/Posts.php",
         {

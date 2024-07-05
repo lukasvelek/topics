@@ -70,9 +70,9 @@ class TopicsPresenter extends APresenter {
         $arb = new AjaxRequestBuilder();
         $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'likePost'])
             ->setMethod('GET')
-            ->setHeader(['postId' => '_postId', 'userId' => '_userId', 'toLike' => '_toLike'])
+            ->setHeader(['postId' => '_postId', 'toLike' => '_toLike'])
             ->setFunctionName('likePost')
-            ->setFunctionArguments(['_postId', '_userId', '_toLike'])
+            ->setFunctionArguments(['_postId', '_toLike'])
             ->updateHTMLElementRaw('"#post-" + _postId + "-likes"', 'postLikes')
             ->updateHTMLElementRaw('"#post-" + _postId + "-link"', 'postLink')
         ;
@@ -174,7 +174,7 @@ class TopicsPresenter extends APresenter {
     public function actionLikePost() {
         global $app;
 
-        $userId = $this->httpGet('userId');
+        $userId = $app->currentUser->getId();
         $postId = $this->httpGet('postId');
         $toLike = $this->httpGet('toLike');
 
@@ -187,9 +187,13 @@ class TopicsPresenter extends APresenter {
             $app->postRepository->unlikePost($userId, $postId);
         }
 
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
+
         $likes = $app->postRepository->getLikes($postId);
 
-        $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($userId, $postId, $liked), 'postLikes' => $likes]);
+        $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($postId, $liked), 'postLikes' => $likes]);
     }
 
     public function actionLoadPostsForTopic() {
