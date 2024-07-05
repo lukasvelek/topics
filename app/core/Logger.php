@@ -33,6 +33,10 @@ class Logger implements ILoggerCallable {
         $this->separateSQLLogging = $this->cfg['SQL_SEPARATE_LOGGING'];
     }
 
+    public function getCfg() {
+        return $this->cfg;
+    }
+
     public function stopwatch(callable $function, string $method) {
         $time = time();
 

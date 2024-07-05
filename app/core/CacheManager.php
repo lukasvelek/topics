@@ -12,7 +12,11 @@ class CacheManager {
         $this->logger = $logger;
     }
 
-    public function loadCachedFiles(string $namespace) {
+    public function loadCachedFiles(string $namespace, bool $flashMessage = false) {
+        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+            return null;
+        }
+
         $filename = $this->generateFilename($namespace);
         
         $path = $this->createPath($namespace) . $filename;
@@ -24,7 +28,11 @@ class CacheManager {
         }
     }
 
-    public function saveCachedFiles(string $namespace, array|string $content) {
+    public function saveCachedFiles(string $namespace, array|string $content, bool $flashMessage = false) {
+        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+            return null;
+        }
+
         $filename = $this->generateFilename($namespace);
 
         $path = $this->createPath($namespace);
@@ -89,7 +97,7 @@ class CacheManager {
             $userId = $_SESSION['userId'];
         }
 
-        $this->invalidateCache('flashMessages-' . $userId);
+        $this->invalidateCache('flashMessages-' . $userId, true);
     }
 
     public function saveFlashMessageToCache(array $data) {
@@ -99,7 +107,7 @@ class CacheManager {
             $userId = $_SESSION['userId'];
         }
 
-        $file = $this->loadCachedFiles('flashMessages-' . $userId);
+        $file = $this->loadCachedFiles('flashMessages-' . $userId, true);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -109,7 +117,7 @@ class CacheManager {
 
         $file = serialize($file);
 
-        $result = $this->saveCachedFiles('flashMessages-' . $userId, $file);
+        $result = $this->saveCachedFiles('flashMessages-' . $userId, $file, true);
 
         return $result > 0;
     }
@@ -121,7 +129,7 @@ class CacheManager {
             $userId = $_SESSION['userId'];
         }
 
-        $file = $this->loadCachedFiles('flashMessages-' . $userId);
+        $file = $this->loadCachedFiles('flashMessages-' . $userId, true);
         
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -130,12 +138,21 @@ class CacheManager {
         return $file;
     }
 
-    public function invalidateCache(string $namespace) {
+    public function invalidateCache(string $namespace, bool $flashMessage = false) {
         global $app;
+
+        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+            return;
+        }
+
         FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
 
     public function invalidateCacheBulk(array $namespaces) {
+        if(!$this->logger->getCfg()['ENABLE_CACHING']) {
+            return null;
+        }
+
         foreach($namespaces as $namespace) {
             self::invalidateCache($namespace);
         }
