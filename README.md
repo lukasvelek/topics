@@ -15,7 +15,7 @@ Topics is currently being developed and thus has no user registration page. It i
     - Dashboard widgets, charts
 
 ## Current version
-    - v1.0 (6/18/2024)
+    - v1.1 (7/5/2024)
 
 ## Future plans
     - Design update
