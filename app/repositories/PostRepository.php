@@ -361,6 +361,36 @@ class PostRepository extends ARepository {
 
         return $qb;
     }
+
+    public function getPostsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getLikeCount(int $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(likeId) AS cnt'])
+            ->from('post_likes')
+            ->where('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
 }
 
 ?>

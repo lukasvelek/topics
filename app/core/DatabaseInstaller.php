@@ -411,7 +411,8 @@ class DatabaseInstaller {
         $this->logger->info('Adding system services.', __METHOD__);
 
         $services = [
-            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php'
+            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
+            'PostLikeEqualizer' => 'PostLikeEqualizer.php'
         ];
 
         foreach($services as $title => $path) {

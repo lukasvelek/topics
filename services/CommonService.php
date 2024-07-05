@@ -1,10 +1,13 @@
 <?php
 
 use App\Core\Application;
+use App\Exceptions\GeneralException;
 
 require_once('app/app_loader.php');
 
 $app = new Application();
+
+_check();
 
 function startService() {
     global $app;
@@ -30,6 +33,16 @@ function logError(string $text) {
     global $app;
 
     $app->logger->serviceError($text, SERVICE_TITLE);
+}
+
+function _check() {
+    global $app;
+
+    if(!defined('SERVICE_TITLE')) {
+        $app->logger->serviceError('No SERVICE_TITLE has been defined.', 'CommonService');
+
+        throw new GeneralException('No SERVICE_TITLE has been defined.');
+    }
 }
 
 ?>
