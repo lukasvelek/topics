@@ -163,6 +163,12 @@ class TopicsPresenter extends APresenter {
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;', $links));
+
+        if(!empty($links)) {
+            $this->saveToPresenterCache('links_hr', '<hr>');
+        } else {
+            $this->saveToPresenterCache('links_hr', '');
+        }
     }
 
     public function actionLikePost() {
@@ -328,6 +334,7 @@ class TopicsPresenter extends APresenter {
         $topicName = $this->loadFromPresenterCache('topicName');
         $topicDescription = $this->loadFromPresenterCache('topicDescription');
         $links = $this->loadFromPresenterCache('links');
+        $linksHr = $this->loadFromPresenterCache('links_hr');
 
         $this->template->topic_title = $topicName;
         $this->template->topic_description = $topicDescription;
@@ -335,6 +342,7 @@ class TopicsPresenter extends APresenter {
         $this->template->topic_data = $topicData;
         $this->template->new_post_form = $fb;
         $this->template->links = $links;
+        $this->template->links_hr = $linksHr;
     }
 
     public function handleNewPost(?FormResponse $fr = null) {
