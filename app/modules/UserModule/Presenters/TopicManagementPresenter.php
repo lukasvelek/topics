@@ -31,7 +31,7 @@ class TopicManagementPresenter extends APresenter {
 
         $arb->setURL(['page' => 'UserModule:TopicManagement', 'action' => 'userRolesGrid'])
             ->setMethod('GET')
-            ->setHeader(['topicId' => '_topicId', 'gridPage' => '_page'])
+            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
             ->setFunctionName('getUserRolesGrid')
             ->setFunctionArguments(['_page', '_topicId'])
             ->updateHTMLElement('grid-content', 'grid')
@@ -39,7 +39,7 @@ class TopicManagementPresenter extends APresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUserRolesGrid(' . $topicId . ', 0)');
+        $this->addScript('getUserRolesGrid(0, ' . $topicId . ')');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
 
