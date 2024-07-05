@@ -9,7 +9,9 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
+use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -29,6 +31,11 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
 
         $topic = $app->topicRepository->getTopicById($topicId);
+
+        if($topic === null) {
+            $this->flashMessage('Topic #' . $topicId . ' does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         if($topic->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
             $this->flashMessage('This topic does not exist.', 'error');
@@ -104,16 +111,9 @@ class TopicsPresenter extends APresenter {
             $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
         }
 
-        $tagArray = $topic->getTags();
+        $tags = $topic->getTags();
 
-        $tags = [];
-        foreach($tagArray as $tag) {
-            $tag = ucfirst($tag);
-
-            $tags[] = $tag;
-        }
-
-        $tagCode = implode(', ', $tags);
+        $tagCode = implode('', $tags);
 
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
@@ -379,6 +379,10 @@ class TopicsPresenter extends APresenter {
             $tagArray = [];
             foreach(explode(',', $tags) as $tag) {
                 $tag = trim($tag);
+                $tag = ucfirst($tag);
+
+                [$fg, $bg] = ColorHelper::createColorCombination();
+                $tag = '<span style="color: ' . $fg . '; background-color: ' . $bg . '; border: 1px solid ' . $fg . '; border-radius: 10px; padding: 5px; margin-right: 5px">' . $tag . '</span>';
 
                 $tagArray[] = $tag;
             }
