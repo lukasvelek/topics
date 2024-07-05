@@ -12,6 +12,8 @@ $cfg['CACHE_DIR'] = '';
 
 $cfg['ENABLE_CACHING'] = true; // true if caching is enabled or false if not
 
+$cfg['IS_DEV'] = false; // true if this version is development or false if not
+
 $cfg['APP_REAL_DIR'] = '';
 
 $cfg['DB_SERVER'] = ''; // database server address

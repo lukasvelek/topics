@@ -25,6 +25,7 @@ abstract class APresenter extends AGUICore {
     private array $scripts;
     private ?string $ajaxResponse;
     private bool $isStatic;
+    private ?string $defaultAction;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
@@ -51,8 +52,23 @@ abstract class APresenter extends AGUICore {
         $this->ajaxResponse = null;
         $this->isStatic = false;
         $this->logger = null;
+        $this->defaultAction = null;
     }
 
+    /**
+     * Sets the default action name
+     * 
+     * @param string $actionName Default action name
+     */
+    public function setDefaultAction(string $actionName) {
+        $this->defaultAction = $actionName;
+    }
+
+    /**
+     * Sets the logger instance to be used for CacheManager
+     * 
+     * @param Logger $logger Logger instance
+     */
     public function setLogger(Logger $logger) {
         $this->logger = $logger;
     }
@@ -340,9 +356,21 @@ abstract class APresenter extends AGUICore {
 
         if($ok === false) {
             if($isAjax) {
-                throw new ActionDoesNotExistException($actionAction);
+                if($app->cfg['IS_DEV']) {
+                    throw new ActionDoesNotExistException($actionAction);
+                } else {
+                    $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
             } else {
-                throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+                if($this->defaultAction !== null) {
+                    $this->redirect(['page' => $moduleName . ':' . $this->title, 'action' => $this->defaultAction]);
+                }
+
+                if($app->cfg['IS_DEV']) {
+                    throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+                } else {
+                    $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
             }
         }
 

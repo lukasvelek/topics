@@ -253,21 +253,17 @@ class Application {
      * Returns the current module, presenter and action from URL
      */
     private function getCurrentModulePresenterAction() {
-        if(isset($_GET['page'])) {
-            $page = htmlspecialchars($_GET['page']);
+        $page = htmlspecialchars($_GET['page']);
 
-            $pageParts = explode(':', $page);
+        $pageParts = explode(':', $page);
 
-            $this->currentModule = $pageParts[0];
-            $this->currentPresenter = $pageParts[1] . 'Presenter';
-        } else {
-            throw new URLParamIsNotDefinedException('page');
-        }
+        $this->currentModule = $pageParts[0];
+        $this->currentPresenter = $pageParts[1] . 'Presenter';
 
         if(isset($_GET['action'])) {
             $this->currentAction = htmlspecialchars($_GET['action']);
         } else {
-            throw new URLParamIsNotDefinedException('action');
+            $this->currentAction = 'default';
         }
 
         $isAjax = '0';

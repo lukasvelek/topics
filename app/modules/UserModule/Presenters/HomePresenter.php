@@ -11,13 +11,12 @@ use App\Modules\APresenter;
 class HomePresenter extends APresenter {
     public function __construct() {
         parent::__construct('HomePresenter', 'Home');
+
+        $this->setDefaultAction('dashboard');
     }
 
     public function handleDashboard() {
         global $app;
-
-        /*$followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
-        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);*/
 
         $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
         $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);

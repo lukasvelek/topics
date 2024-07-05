@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Modules\AnonymModule;
+namespace App\Modules\ErrorModule;
 
 use App\Components\Navbar\Navbar;
 use App\Modules\AModule;
 
-class AnonymModule extends AModule {
+class ErrorModule extends AModule {
     public function __construct() {
-        parent::__construct('AnonymModule');
+        parent::__construct('ErrorModule');
     }
 
     public function renderModule() {

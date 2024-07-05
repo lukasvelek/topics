@@ -4,7 +4,6 @@ namespace App\Modules\UserModule;
 
 use App\Components\Navbar\Navbar;
 use App\Modules\AModule;
-use App\Modules\TemplateObject;
 
 class UserModule extends AModule {
     public function __construct() {
