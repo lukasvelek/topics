@@ -535,7 +535,7 @@ class TopicsPresenter extends APresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">No data found.</p>
+                        <p class="post-text">You are not following any topics.</p>
                     </div>
                 </div>
             ';
@@ -573,7 +573,7 @@ class TopicsPresenter extends APresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">No data found.</p>
+                        <p class="post-text">You are following all topics that are available on this platform. O.o</p>
                     </div>
                 </div>
             ';
