@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
@@ -129,11 +130,14 @@ class PostsPresenter extends APresenter {
             $deleteLink = '<p class="post-data">Post deleted</p>';
         }
 
+        [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
+
         $postData = '
             <div>
                 <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
+                <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
                 <p class="post-data">' . $reportLink . '</p>
                 ' . $deleteLink . '
             </div>

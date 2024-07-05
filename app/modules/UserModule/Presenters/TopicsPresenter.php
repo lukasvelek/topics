@@ -254,19 +254,44 @@ class TopicsPresenter extends APresenter {
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
-            $tmp = [
-                '<div class="row" id="post-' . $post->getId() . '">',
-                '<div class="col-md">',
-                '<p class="post-title">' . $postLink . '</p>',
-                '<hr>',
-                '<p class="post-text">' . $shortenedText . '</p>',
-                '<hr>',
-                '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
-                ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
-                '</div></div><br>'
-            ];
+            [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
+
+            $tmp = '
+                <div class="row" id="post-' . $post->getId() . '">
+                    <div class="col-md">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <p class="post-data">' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor) . '</p>
+                            </div>
+
+                            <div class="col-md" id="center">
+                                <p class="post-title">' . $postLink . '</p>
+                            </div>
+
+                            <div class="col-md-2"></div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md">
+                                <p class="post-text">' . $shortenedText . '</p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md">
+                                <p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>
+                                 | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ';
     
-            $postCode[] = implode('', $tmp);
+            $postCode[] = $tmp;
         }
 
         $pollsFirst = true;
