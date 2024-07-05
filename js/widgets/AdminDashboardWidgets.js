@@ -7,7 +7,7 @@ async function createDashboard() {
     $("#widget2-data").html('<div id=\"center\"><img src="resources/loading.gif" width="128"></div>');
     $("#widget3-data").html('<div id=\"center\"><img src="resources/loading.gif" width="128"></div>');
 
-    await sleep(1000);
+    await sleep(100);
 
     $.get(
         "?page=AdminModule:Home&action=getGraphData&isAjax=1"
