@@ -210,6 +210,14 @@ class TopicsPresenter extends APresenter {
 
         $polls = $app->topicPollRepository->getActivePollBuilderEntitiesForTopic($topicId);
 
+        $userRole = $app->topicMembershipManager->getFollowRole($topicId, $app->currentUser->getId());
+
+        $canSeeAnalyticsAllTheTime = false;
+
+        if($userRole >= TopicMemberRole::MANAGER) {
+            $canSeeAnalyticsAllTheTime = true;
+        }
+
         $pollCode = [];
         $i = 0;
         foreach($polls as $poll) {
@@ -231,6 +239,7 @@ class TopicsPresenter extends APresenter {
             
             $poll->setCurrentUserId($app->currentUser->getId());
             $poll->setTimeNeededToElapse($pollEntity->getTimeElapsedForNextVote());
+            $poll->setUserCanSeeAnalyticsAllTheTime($canSeeAnalyticsAllTheTime);
 
             $pollCode[] = $poll->render();
             $i++;
