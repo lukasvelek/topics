@@ -3,9 +3,9 @@ let postsChart = null;
 let usersChart = null;
 
 async function createDashboard() {
-    $("#widget1-data").html('<img src="resources/loading.gif" width="64">')
-    $("#widget2-data").html('<img src="resources/loading.gif" width="64">')
-    $("#widget3-data").html('<img src="resources/loading.gif" width="64">')
+    $("#widget1-data").html('<div id=\"center\"><img src="resources/loading.gif" width="64"></div>');
+    $("#widget2-data").html('<div id=\"center\"><img src="resources/loading.gif" width="64"></div>');
+    $("#widget3-data").html('<div id=\"center\"><img src="resources/loading.gif" width="64"></div>');
 
     await sleep(1000);
 

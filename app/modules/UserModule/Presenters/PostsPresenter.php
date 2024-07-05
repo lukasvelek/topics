@@ -517,7 +517,9 @@ class PostsPresenter extends APresenter {
         $app->postRepository->likePost($app->currentUser->getId(), $postId);
         $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
-        CacheManager::invalidateCache('posts');
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
 
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
@@ -531,7 +533,9 @@ class PostsPresenter extends APresenter {
         $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
         $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
 
-        CacheManager::invalidateCache('posts');
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
 
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }

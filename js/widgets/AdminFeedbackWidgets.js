@@ -1,7 +1,7 @@
 async function createWidgets() {
-    $("#widget1").html("Suggestions<div style=\"width: 75%\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
-    $("#widget2").html("Reports<div style=\"width: 75%\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
-    $("#widget3").html("Suggestion categories<div style=\"width: 75%\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
+    $("#widget1").html("Suggestions<div style=\"width: 75%\" id=\"center\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
+    $("#widget2").html("Reports<div style=\"width: 75%\" id=\"center\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
+    $("#widget3").html("Suggestion categories<div style=\"width: 75%\" id=\"center\"><img src=\"resources/loading.gif\" width=\"64\"></div>");
 
     await sleep(100);
 
