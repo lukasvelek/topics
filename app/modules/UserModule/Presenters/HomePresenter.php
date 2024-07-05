@@ -79,7 +79,9 @@ class HomePresenter extends APresenter {
             $app->postRepository->unlikePost($userId, $postId);
         }
 
-        CacheManager::invalidateCache('posts');
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
 
         $post = $app->postRepository->getPostById($postId);
 
