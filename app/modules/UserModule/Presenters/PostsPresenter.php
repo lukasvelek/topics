@@ -12,7 +12,6 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\LinkBuilder;
 
 class PostsPresenter extends APresenter {
     public function __construct() {
@@ -212,14 +211,27 @@ class PostsPresenter extends APresenter {
         $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
         $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
 
+        $allComments = $app->postCommentRepository->getCommentsForPostId($postId);
+
+        $commentIds = [];
+        foreach($allComments as $comment) {
+            $commentIds[] = $comment->getId();
+        }
+
+        $likedComments = $app->postCommentRepository->getLikedCommentsForUser($app->currentUser->getId(), $commentIds);
+
+        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId);
+
         $code = [];
 
         if(empty($comments)) {
             return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
         }
 
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
         foreach($comments as $comment) {
-            $code[] = $this->createPostComment($postId, $comment);
+            $code[] = $this->createPostComment($postId, $comment, $likedComments, $bwh, $childrenComments);
         }
 
         if(($offset + $limit) >= $commentCount) {
@@ -231,29 +243,28 @@ class PostsPresenter extends APresenter {
         $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
-    private function createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
+    private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
         global $app;
-
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
 
         $post = $app->postRepository->getPostById($postId);
 
         $author = $app->userRepository->getUserById($comment->getAuthorId());
         $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
-        $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
+        $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
         } else {
             $likeLink = '';
         }
 
-        $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
         $childCommentsCode = [];
 
         if(!empty($childComments)) {
             foreach($childComments as $cc) {
-                $childCommentsCode[] = $this->createPostComment($postId, $cc, false);
+                if($cc->getParentCommentId() == $comment->getId()) {
+                    $childCommentsCode[] = $this->createPostComment($postId, $cc, $likedComments, $bwh, $childComments, false);
+                }
             }
         }
 

@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Exceptions\GeneralException;
+use App\Logger\Logger;
 use App\Modules\AModule;
 
 /**
@@ -12,6 +13,7 @@ use App\Modules\AModule;
  */
 class RenderEngine {
     private AModule $module;
+    private Logger $logger;
 
     private string $presenterTitle;
     private string $actionTitle;
@@ -27,7 +29,8 @@ class RenderEngine {
      * @param string $presenter Presenter name
      * @param string $action Action name
      */
-    public function __construct(AModule $module, string $presenter, string $action) {
+    public function __construct(Logger $logger, AModule $module, string $presenter, string $action) {
+        $this->logger = $logger;
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
@@ -72,7 +75,8 @@ class RenderEngine {
     }
 
     private function loadCachedPages() {
-        $result = CacheManager::loadPagesFromCache();
+        $cm = new CacheManager($this->logger);
+        $result = $cm->loadPagesFromCache();
         
         if($result !== false && $result !== null) {
             $this->cachedPages = $result;
@@ -82,7 +86,8 @@ class RenderEngine {
     }
 
     private function cachePage() {
-        CacheManager::savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);
+        $cm = new CacheManager($this->logger);
+        $cm->savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);
     }
 }
 

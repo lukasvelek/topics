@@ -13,13 +13,13 @@ class DatabaseInstaller {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         $this->db = $db;
         $this->logger = $logger;
-        $this->logger->setFilename('install_log');
     }
 
     public function install() {
         $this->logger->info('Database installation started.', __METHOD__);
 
         $this->createTables();
+        $this->createIndexes();
         $this->createUsers();
         $this->createSystems();
         $this->createGroups();
@@ -49,11 +49,6 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL'
-            ],
-            'user_topic_follows' => [
-                'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'topicId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -216,6 +211,80 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Created ' . $i . ' tables.', __METHOD__);
+    }
+
+    private function createIndexes() {
+        $this->logger->info('Creating indexes.', __METHOD__);
+
+        $indexes = [
+            'topic_polls_responses' => [
+                'pollId'
+            ],
+            'topic_polls_responses' => [
+                'pollId',
+                'userId',
+                'dateCreated'
+            ],
+            'topic_polls' => [
+                'topicId'
+            ],
+            'topic_polls' => [
+                'topicId',
+                'dateValid'
+            ],
+            'posts' => [
+                'topicId',
+                'isDeleted'
+            ],
+            'post_comment_likes' => [
+                'userId',
+                'commentId'
+            ],
+            'user_prosecutions' => [
+                'userId'
+            ],
+            'post_likes' => [
+                'postId'
+            ],
+            'post_comments' => [
+                'postId',
+                'isDeleted'
+            ],
+            'post_comments' => [
+                'postId',
+                'parentCommentId',
+                'isDeleted'
+            ]
+        ];
+
+        $indexCount = [];
+        foreach($indexes as $tableName => $columns) {
+            $i = 1;
+
+            if(isset($indexCount[$tableName])) {
+                $i = $indexCount[$tableName] + 1;
+            }
+
+            $name = $tableName . '_i' . $i;
+
+            $sql = "DROP INDEX IF EXISTS $name ON $tableName";
+
+            $this->logger->sql($sql, __METHOD__, null);
+
+            $this->db->query($sql);
+
+            $cols = implode(', ', $columns);
+
+            $sql = "CREATE INDEX $name ON $tableName ($cols)";
+
+            $this->logger->sql($sql, __METHOD__, null);
+
+            $this->db->query($sql);
+
+            $indexCount[$tableName] = $i;
+        }
+
+        $this->logger->info('Created indexes.', __METHOD__);
     }
 
     private function createUsers() {

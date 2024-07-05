@@ -107,6 +107,33 @@ class TopicMembershipRepository extends ARepository {
 
         return TopicMemberEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getUserMembershipsInTopics(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['topicId'])
+            ->from('topic_membership')
+            ->where('userId = ?', [$userId])
+            ->execute();
+
+        $topicIds = [];
+        while($row = $qb->fetchAssoc()) {
+            $topicIds[] = $row['topicId'];
+        }
+
+        return $topicIds;
+    }
+
+    public function getTopicMemberCount(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(userId) AS cnt'])
+            ->from('topic_membership')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
 }
 
 ?>

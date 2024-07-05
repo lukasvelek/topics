@@ -8,6 +8,7 @@ use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
+use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
 
 /**
@@ -26,6 +27,7 @@ abstract class APresenter extends AGUICore {
     private bool $isStatic;
 
     protected ?TemplateObject $template;
+    protected ?Logger $logger;
 
     private array $beforeRenderCallbacks;
     private array $afterRenderCallbacks;
@@ -48,6 +50,11 @@ abstract class APresenter extends AGUICore {
         $this->scripts = [];
         $this->ajaxResponse = null;
         $this->isStatic = false;
+        $this->logger = null;
+    }
+
+    public function setLogger(Logger $logger) {
+        $this->logger = $logger;
     }
 
     /**
@@ -92,7 +99,8 @@ abstract class APresenter extends AGUICore {
      * @param string $type Flash message type
      */
     protected function flashMessage(string $text, string $type = 'info') {
-        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        $cm = new CacheManager($this->logger);
+        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
 
     /**

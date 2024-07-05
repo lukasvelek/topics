@@ -404,6 +404,12 @@ class QueryBuilder
         return $this;
     }
 
+    public function groupBy(string $key) {
+        $this->queryData['group'] = ' GROUP BY ' . $key;
+
+        return $this;
+    }
+
     /**
      * Appends ORDER BY
      * 
@@ -751,30 +757,16 @@ class QueryBuilder
     private function createUpdateSQLQuery() {
         $sql = 'UPDATE ' . $this->queryData['table'] . ' SET ';
 
-        $i = 0;
+        $valArray = [];
         foreach($this->queryData['values'] as $key => $value) {
-            if($value == 'NULL') {
-                if(($i + 1) == count($this->queryData['values'])) {
-                    $sql .= $key . ' = ' . $value;
-                } else {
-                    $sql .= $key . ' = ' . $value . ', ';
-                }
-            } else if($value == 'current_timestamp()') {
-                if(($i + 1) == count($this->queryData['values'])) {
-                    $sql .= $key . ' = ' . $value;
-                } else {
-                    $sql .= $key . ' = ' . $value . ', ';
-                }
+            if($value == 'NULL' || $value == 'current_timestamp()') {
+                $valArray[] = $key . ' = ' . $value;
             } else {
-                if(($i + 1) == count($this->queryData['values'])) {
-                    $sql .= $key . ' = \'' . $value . '\'';
-                } else {
-                    $sql .= $key . ' = \'' . $value . '\', ';
-                }
+                $valArray[] = $key . ' = \'' . $value . '\'';
             }
-
-            $i++;
         }
+
+        $sql .= implode(', ', $valArray) . ' ';
 
         if(str_contains($this->queryData['where'], 'WHERE')) {
             // explicit
@@ -789,27 +781,19 @@ class QueryBuilder
     private function createInsertSQLQuery() {
         $sql = 'INSERT INTO ' . $this->queryData['table'] . ' (';
 
-        $i = 0;
+        $keyArray = [];
         foreach($this->queryData['keys'] as $key) {
-            if(($i + 1) == count($this->queryData['keys'])) {
-                $sql .= '`' . $key . '`) VALUES (';
-            } else {
-                $sql .= '`' . $key . '`, ';
-            }
-
-            $i++;
+            $keyArray[] = '`' . $key . '`';
         }
 
-        $i = 0;
+        $sql .= implode(', ', $keyArray) . ') VALUES (';
+
+        $valArray = [];
         foreach($this->queryData['values'] as $value) {
-            if(($i + 1) == count($this->queryData['values'])) {
-                $sql .= "'" . $value . "')";
-            } else {
-                $sql .= "'" . $value . "', ";
-            }
-
-            $i++;
+            $valArray[] = "'" . $value . "'";
         }
+
+        $sql .= implode(', ', $valArray) . ') ';
 
         $this->sql = $sql;
     }
@@ -820,24 +804,18 @@ class QueryBuilder
     private function createSelectSQLQuery() {
         $sql = 'SELECT ';
 
-        $i = 0;
+        $keyArray = [];
         foreach($this->queryData['keys'] as $key) {
-            if(($i + 1) == count($this->queryData['keys'])) {
-                if($key == '*') {
-                    $sql .= $key . ' ';
-                } else if(str_starts_with($key, 'COUNT')) {
-                    $sql .= $key . ' ';
-                } else {
-                    $sql .= '`' . $key . '` ';
-                }
+            if($key == '*' || str_starts_with($key, 'COUNT')) {
+                $keyArray[] = $key;
             } else {
-                $sql .= '`' . $key . '`, ';
+                $keyArray[] = '`' . $key . '`';
             }
-
-            $i++;
         }
 
-        $sql .= 'FROM `' . $this->queryData['table'] . '`';
+        $sql .= implode(', ', $keyArray);
+
+        $sql .= ' FROM `' . $this->queryData['table'] . '`';
 
         if(isset($this->queryData['join'])) {
             $sql .= $this->queryData['join'];
@@ -852,8 +830,12 @@ class QueryBuilder
             }
         }
 
+        if(isset($this->queryData['group'])) {
+            $sql .= $this->queryData['group'];
+        }
+
         if(isset($this->queryData['order'])) {
-            $sql .= ' ' . $this->queryData['order'];
+            $sql .= $this->queryData['order'];
         }
 
         if(isset($this->queryData['limit'])) {
@@ -870,7 +852,7 @@ class QueryBuilder
     /**
      * Logs an SQL string
      */
-    private function log(?int $msTaken = null) {
+    private function log(?float $msTaken = null) {
         if($this->logger !== NULL) {
             $this->logger->sql($this->sql, $this->callingMethod, $msTaken);
         }
@@ -881,15 +863,15 @@ class QueryBuilder
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
-            $tsStart = time();
+            $tsStart = /*time();*/ microtime();
             $result = $this->conn->query($sql, $params);
-            $tsEnd = time();
+            $tsEnd = /*time();*/ microtime();
             return $result;
         };
 
         $result = $q($sql, $params);
 
-        $diff = $tsEnd - $tsStart;
+        $diff = (float)$tsEnd - (float)$tsStart;
 
         $this->log($diff);
 

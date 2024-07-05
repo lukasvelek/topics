@@ -30,13 +30,11 @@ class TopicMembershipManager extends AManager {
             throw new GeneralException('User already follows the topic.');
         }
 
-        if(!$this->topicRepository->followTopic($userId, $topicId)) {
-            throw new GeneralException('Could not follow the topic.');
-        }
-
         if(!$this->topicMembershipRepository->addMemberToTopic($topicId, $userId, TopicMemberRole::MEMBER)) {
             throw new GeneralException('Could not add member to the topic.');
         }
+
+        $this->invalidateMembershipCache();
     }
 
     public function unfollowTopic(int $topicId, int $userId) {
@@ -44,21 +42,17 @@ class TopicMembershipManager extends AManager {
             throw new GeneralException('User does not follow the topic.');
         }
 
-        if(!$this->topicRepository->unfollowTopic($userId, $topicId)) {
-            throw new GeneralException('Could not unfollow the topic');
-        }
-
         if(!$this->topicMembershipRepository->removeMemberFromTopic($topicId, $userId)) {
             throw new GeneralException('Could not remove member from the topic.');
         }
+
+        $this->invalidateMembershipCache();
     }
 
     public function checkFollow(int $topicId, int $userId) {
-        if(!$this->topicRepository->checkFollow($userId, $topicId)) {
-            return false;
-        }
+        $membership = $this->loadMembershipDataFromCache($topicId, $userId);
 
-        if(!$this->topicMembershipRepository->checkIsMember($topicId, $userId)) {
+        if($membership === null) {
             return false;
         }
 
@@ -72,7 +66,11 @@ class TopicMembershipManager extends AManager {
 
         $data = $this->loadMembershipDataFromCache($topicId, $userId);
 
-        return $data->getRole();
+        if($data !== null) {
+            return $data->getRole();
+        } else {
+            return null;
+        }
     }
 
     public function getTopicMembers(int $topicId, int $limit, int $offset, bool $orderByRoleDesc = true) {
@@ -103,6 +101,10 @@ class TopicMembershipManager extends AManager {
     public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '') {
         $role = $this->getFollowRole($topicId, $user->getId());
 
+        if($role === null) {
+            return $user->getUsername() . ' (Ex-user)';
+        }
+
         $span = HTML::span();
         $span->setColor(TopicMemberRole::getColorByKey($role))
             ->setText(TopicMemberRole::toString($role));
@@ -115,13 +117,31 @@ class TopicMembershipManager extends AManager {
     private function loadMembershipDataFromCache(int $topicId, int $userId) {
         $key = $topicId . '_' . $userId;
 
-        return CacheManager::loadCache($key, function () use ($userId, $topicId) {
+        $cm = new CacheManager($this->logger);
+
+        return $cm->loadCache($key, function () use ($userId, $topicId) {
             return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
-        }, self::CACHE_NAMESPACE);
+        }, self::CACHE_NAMESPACE, __METHOD__);
     }
 
     private function invalidateMembershipCache() {
-        CacheManager::invalidateCache(self::CACHE_NAMESPACE);
+        $cm = new CacheManager($this->logger);
+        $cm->invalidateCache(self::CACHE_NAMESPACE);
+    }
+
+    public function getUserMembershipsInTopics(int $userId) {
+        return $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
+    }
+
+    public function getTopicMemberCount(int $topicId) {
+        return $this->topicMembershipRepository->getTopicMemberCount($topicId);
+    }
+
+    public function getTopicsUserIsNotMemberOf(int $userId) {
+        $memberships = $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
+        $otherTopics = $this->topicRepository->getTopicsExceptFor($memberships);
+
+        return $otherTopics;
     }
 }
 

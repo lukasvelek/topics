@@ -106,6 +106,23 @@ class TopicPollRepository extends ARepository {
         return $choices;
     }
 
+    public function getPollResponsesGrouped(int $pollId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(responseId) AS cnt', 'choice'])
+            ->from('topic_polls_responses')
+            ->where('pollId = ?', [$pollId])
+            ->groupBy('choice')
+            ->execute();
+
+        $result = [];
+        while($row = $qb->fetchAssoc()) {
+            $result[$row['choice']] = $row['cnt'];
+        }
+
+        return $result;
+    }
+
     public function closePoll(int $pollId) {
         $qb = $this->qb(__METHOD__);
 

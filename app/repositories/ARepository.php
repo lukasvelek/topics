@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
@@ -11,10 +12,12 @@ use QueryBuilder\QueryBuilder;
 abstract class ARepository {
     private DatabaseConnection $conn;
     protected Logger $logger;
+    protected CacheManager $cache;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
+        $this->cache = new CacheManager($logger);
     }
 
     protected function qb(string $method = __METHOD__) {
@@ -71,7 +74,7 @@ abstract class ARepository {
     }
 
     public function sql(string $sql) {
-        $this->logger->sql($sql, __METHOD__);
+        $this->logger->sql($sql, __METHOD__, null);
         return $this->conn->query($sql);
     }
 

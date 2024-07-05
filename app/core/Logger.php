@@ -14,12 +14,14 @@ class Logger implements ILoggerCallable {
     public const LOG_SQL = 'sql';
     public const LOG_STOPWATCH = 'stopwatch';
     public const LOG_EXCEPTION = 'exception';
+    public const LOG_CACHE = 'cache';
 
     private int $logLevel;
     private int $sqlLogLevel;
     private ?string $specialFilename;
     private array $cfg;
     private int $stopwatchLogLevel;
+    private bool $separateSQLLogging;
 
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
@@ -28,6 +30,7 @@ class Logger implements ILoggerCallable {
         $this->logLevel = $this->cfg['LOG_LEVEL'];
         $this->specialFilename = null;
         $this->stopwatchLogLevel = $this->cfg['LOG_STOPWATCH'];
+        $this->separateSQLLogging = $this->cfg['SQL_SEPARATE_LOGGING'];
     }
 
     public function stopwatch(callable $function, string $method) {
@@ -53,6 +56,7 @@ class Logger implements ILoggerCallable {
     }
 
     public function logService(string $serviceName, string $text, string $type = self::LOG_INFO) {
+        $oldSpecialFilename = $this->specialFilename;
         $this->specialFilename = 'service_log';
 
         $date = new DateTime();
@@ -60,7 +64,7 @@ class Logger implements ILoggerCallable {
 
         $this->writeLog($text);
 
-        $this->specialFilename = null;
+        $this->specialFilename = $oldSpecialFilename;
     }
 
     public function info(string $text, string $method) {
@@ -81,16 +85,25 @@ class Logger implements ILoggerCallable {
         $this->log($method, $text, self::LOG_EXCEPTION);
     }
 
-    public function sql(string $text, string $method, ?int $msTaken) {
-        $this->logSQL($method, $text, ($msTaken ?? 0));
+    public function sql(string $text, string $method, ?float $msTaken) {
+        $this->logSQL($method, $text, ($msTaken ?? 0.0));
     }
 
-    public function logSQL(string $method, string $text, int $msTaken) {
+    public function logSQL(string $method, string $text, float $msTaken) {
         $date = new DateTime();
-        $text = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $method . '(): ' . $text;
+        $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' ms] ' . $method . '(): ' . $text;
 
-        if($this->stopwatchLogLevel >= 1) {
-            $this->writeLog($text);
+        if($this->separateSQLLogging && $this->sqlLogLevel >= 1) {
+            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $text;
+
+            $oldSpecialFilename = $this->specialFilename;
+            $this->specialFilename = 'sql_log';
+            $this->writeLog($newText);
+            $this->specialFilename = $oldSpecialFilename;
+        } else {
+            if($this->sqlLogLevel >= 1) {
+                $this->writeLog($newText);
+            }
         }
     }
 
@@ -101,6 +114,12 @@ class Logger implements ILoggerCallable {
         switch($type) {
             case self::LOG_STOPWATCH:
                 if($this->stopwatchLogLevel >= 1) {
+                    $this->writeLog($text);
+                }
+                break;
+
+            case self::LOG_CACHE:
+                if($this->logLevel >= 4) {
                     $this->writeLog($text);
                 }
                 break;
@@ -122,16 +141,10 @@ class Logger implements ILoggerCallable {
                     $this->writeLog($text);
                 }
                 break;
-
-            case self::LOG_SQL:
-                if($this->sqlLogLevel >= 1) {
-                    $this->writeLog($text);
-                }
-                break;
         }
     }
 
-    public function setFilename(string $filename) {
+    public function setFilename(?string $filename) {
         $this->specialFilename = $filename;
     }
 
@@ -152,6 +165,12 @@ class Logger implements ILoggerCallable {
         }
 
         FileManager::saveFile($folder, $file, $text . "\r\n");
+    }
+
+    public function logCache(string $method, bool $hit) {
+        $text = 'Cache ' . ($hit ? 'hit' : 'miss') . '.';
+
+        $this->log($method, $text, self::LOG_CACHE);
     }
 }
 

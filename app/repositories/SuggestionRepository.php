@@ -280,6 +280,21 @@ class SuggestionRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function getAllSuggestions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->execute();
+
+        $suggestions = [];
+        while($row = $qb->fetchAssoc()) {
+            $suggestions[] = UserSuggestionEntity::createEntityFromDbRow($row);
+        }
+
+        return $suggestions;
+    }
 }
 
 ?>

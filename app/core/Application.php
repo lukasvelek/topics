@@ -124,6 +124,10 @@ class Application {
         $this->isAjaxRequest = false;
 
         $this->loadModules();
+        
+        if(!FileManager::fileExists(__DIR__ . '\\install')) {
+            $this->db->installDb();
+        }
     }
 
     /**
@@ -211,7 +215,8 @@ class Application {
      * @param string $type Flash message type
      */
     public function flashMessage(string $text, string $type = 'info') {
-        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        $cm = new CacheManager($this->logger);
+        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
     
     /**
@@ -228,9 +233,10 @@ class Application {
 
         $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
+        $moduleObject->setLogger($this->logger);
 
         $this->logger->info('Initializing render engine.', __METHOD__);
-        $re = new RenderEngine($moduleObject, $this->currentPresenter, $this->currentAction);
+        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction);
         $this->logger->info('Rendering page content.', __METHOD__);
         return $re->render($this->isAjaxRequest);
     }
@@ -264,7 +270,13 @@ class Application {
             throw new URLParamIsNotDefinedException('action');
         }
 
-        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
+        $isAjax = '0';
+
+        if(isset($_GET['isAjax'])) {
+            $isAjax = htmlspecialchars($_GET['isAjax']);
+        }
+
+        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ', isAjax => ' . $isAjax . ']', __METHOD__);
     }
 }
 

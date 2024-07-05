@@ -6,15 +6,22 @@ use App\Repositories\ContentRegulationRepository;
 
 class BannedWordsHelper {
     private ContentRegulationRepository $crr;
+    private array $bannedWordsList;
+    private bool $isListFilled;
 
     public function __construct(ContentRegulationRepository $crr) {
         $this->crr = $crr;
+        $this->bannedWordsList = [];
+        $this->isListFilled = false;
     }
 
     public function checkText(string $text) {
-        $words = $this->getBannedWordList();
+        if(!$this->isListFilled) {
+            $this->bannedWordsList = $this->getBannedWordList();
+            $this->isListFilled = true;
+        }
 
-        $escapedWords = array_map('preg_quote', $words);
+        $escapedWords = array_map('preg_quote', $this->bannedWordsList);
 
         $pattern = '/\b(' . implode('|', $escapedWords) . ')\b/i';
 

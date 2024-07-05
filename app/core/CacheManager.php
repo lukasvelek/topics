@@ -2,12 +2,15 @@
 
 namespace App\Core;
 
-use App\Configuration;
 use App\Core\Datetypes\DateTime;
-use Exception;
+use App\Logger\Logger;
 
 class CacheManager {
-    private function __construct() {}
+    private ?Logger $logger;
+
+    public function __construct(?Logger $logger) {
+        $this->logger = $logger;
+    }
 
     public function loadCachedFiles(string $namespace) {
         $filename = $this->generateFilename($namespace);
@@ -44,11 +47,12 @@ class CacheManager {
         return $filename;
     }
 
-    public static function loadCache(mixed $key, callable $callback, string $namespace = 'default') {
-        $obj = self::getTemporaryObject();
-        $file = $obj->loadCachedFiles($namespace);
+    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null) {
+        $file = $this->loadCachedFiles($namespace);
         $save = false;
         $result = null;
+
+        $cacheHit = true;
 
         if($file === null) {
             $result = $callback();
@@ -68,33 +72,34 @@ class CacheManager {
 
         if($save === true) {
             $file = serialize($file);
+            $cacheHit = false;
             
-            $obj->saveCachedFiles($namespace, $file);
+            $this->saveCachedFiles($namespace, $file);
         }
+
+        $this->logger->logCache($method ?? __METHOD__, $cacheHit);
 
         return $result;
     }
 
-    public static function deleteFlashMessages() {
+    public function deleteFlashMessages() {
         $userId = 0;
 
         if(isset($_SESSION['userId'])) {
             $userId = $_SESSION['userId'];
         }
 
-        self::invalidateCache('flashMessages-' . $userId);
+        $this->invalidateCache('flashMessages-' . $userId);
     }
 
-    public static function saveFlashMessageToCache(array $data) {
-        $obj = self::getTemporaryObject();
-        
+    public function saveFlashMessageToCache(array $data) {
         $userId = 0;
 
         if(isset($_SESSION['userId'])) {
             $userId = $_SESSION['userId'];
         }
 
-        $file = $obj->loadCachedFiles('flashMessages-' . $userId);
+        $file = $this->loadCachedFiles('flashMessages-' . $userId);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -104,21 +109,19 @@ class CacheManager {
 
         $file = serialize($file);
 
-        $result = $obj->saveCachedFiles('flashMessages-' . $userId, $file);
+        $result = $this->saveCachedFiles('flashMessages-' . $userId, $file);
 
         return $result > 0;
     }
 
-    public static function loadFlashMessages() {
-        $obj = self::getTemporaryObject();
-        
+    public function loadFlashMessages() {
         $userId = 0;
 
         if(isset($_SESSION['userId'])) {
             $userId = $_SESSION['userId'];
         }
 
-        $file = $obj->loadCachedFiles('flashMessages-' . $userId);
+        $file = $this->loadCachedFiles('flashMessages-' . $userId);
         
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -127,25 +130,19 @@ class CacheManager {
         return $file;
     }
 
-    public static function invalidateCache(string $namespace) {
+    public function invalidateCache(string $namespace) {
         global $app;
         FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
 
-    public static function invalidateCacheBulk(array $namespaces) {
+    public function invalidateCacheBulk(array $namespaces) {
         foreach($namespaces as $namespace) {
             self::invalidateCache($namespace);
         }
     }
 
-    private static function getTemporaryObject() {
-        return new self();
-    }
-
-    public static function savePageToCache(string $moduleName, string $presenterName, string $content) {
-        $obj = self::getTemporaryObject();
-
-        $file = $obj->loadCachedFiles('cachedPages');
+    public function savePageToCache(string $moduleName, string $presenterName, string $content) {
+        $file = $this->loadCachedFiles('cachedPages');
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -155,15 +152,13 @@ class CacheManager {
 
         $file = serialize($file);
 
-        $result = $obj->saveCachedFiles('cachedPages', $file);
+        $result = $this->saveCachedFiles('cachedPages', $file);
 
         return $result > 0;
     }
     
-    public static function loadPagesFromCache() {
-        $obj = self::getTemporaryObject();
-
-        $file = $obj->loadCachedFiles('cachedPages');
+    public function loadPagesFromCache() {
+        $file = $this->loadCachedFiles('cachedPages');
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);

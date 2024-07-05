@@ -44,6 +44,9 @@ class SystemServiceEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['serviceId'], $row['title'], $row['scriptPath'], $row['dateStarted'], $row['dateEnded'], $row['status']);
     }
 }
