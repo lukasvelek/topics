@@ -2,6 +2,8 @@
 
 namespace App\UI\PollBuilder;
 
+use App\Core\Datetypes\DateTime;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
@@ -16,6 +18,7 @@ class PollBuilder implements IRenderable {
     private int $managerId;
     private ?int $currentUserId;
     private ?int $topicId;
+    private ?string $timeNeededToElapse;
 
     public function __construct() {
         $this->choices = [];
@@ -27,6 +30,11 @@ class PollBuilder implements IRenderable {
         $this->managerId = 1;
         $this->currentUserId = null;
         $this->topicId = null;
+        $this->timeNeededToElapse = null;
+    }
+
+    public function setTimeNeededToElapse(string $timeNeededToElapse) {
+        $this->timeNeededToElapse = $timeNeededToElapse;
     }
 
     public function setTitle(string $title) {
@@ -125,8 +133,24 @@ class PollBuilder implements IRenderable {
         $fb ->setAction($this->handlerUrl)
             ->setMethod('POST')
             ->addRadios('choice', 'Choose:', $this->choices, $this->userChoice, true)
-            ->addSubmit('Submit', ($this->userChoice !== null))
         ;
+
+        if($this->userChoice !== null) {
+            if($this->timeNeededToElapse !== null) {
+                $timeNeededToElapse = $this->timeNeededToElapse;
+                $timeNeededToElapse[0] = '+';
+
+                $dt = new DateTime();
+                $dt->modify($timeNeededToElapse);
+                $dt = DateTimeFormatHelper::formatDateToUserFriendly($dt->getResult());
+
+                $fb->addLabel('You have to wait until ' . $dt . ' before another vote.', 'lbl_message1');
+            } else {
+                $fb->addLabel('You have to wait before another vote.');
+            }
+        }
+
+        $fb->addSubmit('Submit', ($this->userChoice !== null));
 
         return $fb->render();
     }

@@ -226,6 +226,7 @@ class TopicsPresenter extends APresenter {
             }
             
             $poll->setCurrentUserId($app->currentUser->getId());
+            $poll->setTimeNeededToElapse($pollEntity->getTimeElapsedForNextVote());
 
             $pollCode[] = $poll->render();
             $i++;
