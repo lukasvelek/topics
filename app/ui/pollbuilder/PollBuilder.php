@@ -103,7 +103,7 @@ class PollBuilder implements IRenderable {
         $management = '';
 
         if(($this->currentUserId !== null && $this->currentUserId == $this->managerId) || $this->canUserSeeAnalyticsAllTheTime) {
-            $analyticsLink = LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
+            $analyticsLink = LinkBuilder::createSimpleLink('Results', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
             $closeVotingLink = LinkBuilder::createSimpleLink('Close voting', ['page' => 'UserModule:Topics', 'action' => 'pollCloseVoting', 'pollId' => $this->pollId, 'topicId' => $this->topicId], 'post-data-link');
 
             $management = '
