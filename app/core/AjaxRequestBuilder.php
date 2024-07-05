@@ -11,6 +11,8 @@ class AjaxRequestBuilder {
     private array $functionArgs;
     private array $beforeAjaxOperations;
     private array $customArgs;
+    private array $elements;
+    private bool $useLoadingAnimation;
 
     public function __construct() {
         $this->url = null;
@@ -21,6 +23,14 @@ class AjaxRequestBuilder {
         $this->functionArgs = [];
         $this->beforeAjaxOperations = [];
         $this->customArgs = [];
+        $this->elements = [];
+        $this->useLoadingAnimation = true;
+
+        return $this;
+    }
+    
+    public function disableLoadingAnimation() {
+        $this->useLoadingAnimation = false;
 
         return $this;
     }
@@ -62,12 +72,18 @@ class AjaxRequestBuilder {
     }
 
     public function updateHTMLElement(string $htmlElementId, string $jsonResultName, bool $append = false) {
+        if(!$append) {
+            $this->elements[] = $htmlElementId;
+        }
         $this->addWhenDoneOperation('$("#' . $htmlElementId . '").' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
 
         return $this;
     }
 
     public function updateHTMLElementRaw(string $htmlElementId, string $jsonResultName, bool $append = false) {
+        if(!$append) {
+            $this->elements[] = $htmlElementId;
+        }
         $this->addWhenDoneOperation('$(' . $htmlElementId . ').' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
 
         return $this;
@@ -95,12 +111,16 @@ class AjaxRequestBuilder {
         if(!$this->checkParameters()) {
             return null;
         }
+        
+        if($this->useLoadingAnimation) {
+            $this->createLoadingAnimation();
+        }
 
         $headParams = $this->processHeadParams();
 
         $code = [];
 
-        $code[] = 'function ' . $this->functionName . '(' . implode(', ', $this->functionArgs) . ') {';
+        $code[] = 'async function ' . $this->functionName . '(' . implode(', ', $this->functionArgs) . ') {';
 
         if(!empty($this->beforeAjaxOperations)) {
             foreach($this->beforeAjaxOperations as $bao) {
@@ -165,6 +185,20 @@ class AjaxRequestBuilder {
         }
 
         return true;
+    }
+
+    private function createLoadingAnimation() {
+        foreach($this->elements as $element) {
+            if($element == 'grid-content') {
+                $code = '
+                    $("#' . $element . '").html(\'<div id="center"><img src="resources/loading.gif" width="64"><br>Loading...</div>\');
+                ';
+
+                $this->addBeforeAjaxOperation($code);
+            }
+        }
+
+        $this->addBeforeAjaxOperation('await sleep(100);');
     }
 }
 

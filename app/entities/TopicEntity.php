@@ -6,19 +6,19 @@ class TopicEntity implements ICreatableFromRow {
     private int $topicId;
     private string $title;
     private string $description;
-    private int $managerId;
     private string $dateCreated;
     private bool $isDeleted;
     private ?string $dateDeleted;
+    private array $tags;
 
-    public function __construct(int $topicId, string $title, string $description, int $managerId, string $dateCreated, bool $isDeleted, ?string $dateDeleted) {
+    public function __construct(int $topicId, string $title, string $description, string $dateCreated, bool $isDeleted, ?string $dateDeleted, array $tags) {
         $this->topicId = $topicId;
         $this->title = $title;
         $this->description = $description;
-        $this->managerId = $managerId;
         $this->dateCreated = $dateCreated;
         $this->isDeleted = $isDeleted;
         $this->dateDeleted = $dateDeleted;
+        $this->tags = $tags;
     }
 
     public function getId() {
@@ -33,10 +33,6 @@ class TopicEntity implements ICreatableFromRow {
         return $this->description;
     }
 
-    public function getManagerId() {
-        return $this->managerId;
-    }
-
     public function getDateCreated() {
         return $this->dateCreated;
     }
@@ -49,11 +45,16 @@ class TopicEntity implements ICreatableFromRow {
         return $this->dateDeleted;
     }
 
+    public function getTags() {
+        return $this->tags;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['topicId'], $row['title'], $row['description'], $row['managerId'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted']);
+        $tags = unserialize($row['tags']);
+        return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted'], $tags);
     }
 }
 

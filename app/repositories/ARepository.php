@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
@@ -11,10 +12,12 @@ use QueryBuilder\QueryBuilder;
 abstract class ARepository {
     private DatabaseConnection $conn;
     protected Logger $logger;
+    protected CacheManager $cache;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
+        $this->cache = new CacheManager($logger);
     }
 
     protected function qb(string $method = __METHOD__) {
@@ -26,14 +29,17 @@ abstract class ARepository {
     }
 
     public function beginTransaction() {
+        $this->logger->warning('Transaction begun.', __METHOD__);
         return $this->conn->beginTransaction();
     }
 
     public function rollback() {
+        $this->logger->warning('Transaction rolled back.', __METHOD__);
         return $this->conn->rollback();
     }
 
     public function commit() {
+        $this->logger->warning('Transaction commited.', __METHOD__);
         return $this->conn->commit();
     }
 
@@ -65,6 +71,15 @@ abstract class ARepository {
         }
 
         return $result;
+    }
+
+    public function sql(string $sql) {
+        $this->logger->sql($sql, __METHOD__, null);
+        return $this->conn->query($sql);
+    }
+
+    public function getQb() {
+        return $this->qb(__METHOD__);
     }
 }
 

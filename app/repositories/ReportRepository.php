@@ -231,6 +231,21 @@ class ReportRepository extends ARepository {
     
         return $reports;
     }
+    
+    public function getReportCountByStatuses(array $statuses = []) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(reportId) AS cnt'])
+            ->from('reports');
+
+        if(!empty($statuses)) {
+            $qb->where($qb->getColumnInValues('status', $statuses));
+        }
+
+        $qb->execute();
+
+        return $qb->fetch('cnt');
+    }
 }
 
 ?>

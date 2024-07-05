@@ -2,6 +2,8 @@
 
 namespace App\Components\PostLister;
 
+use App\Entities\UserEntity;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\PostRepository;
@@ -11,8 +13,8 @@ use App\Repositories\UserRepository;
 class PostLister {
     private array $posts;
     private array $topics;
-
     private bool $topicLinkHidden;
+    private ?UserEntity $currentUser;
     
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
@@ -29,6 +31,12 @@ class PostLister {
         $this->topics = [];
 
         $this->topicLinkHidden = false;
+
+        $this->currentUser = null;
+    }
+
+    public function setCurrentUser(UserEntity $user) {
+        $this->currentUser = $user;
     }
 
     public function setPosts(array $posts) {
@@ -75,8 +83,11 @@ class PostLister {
     }
 
     private function build() {
+        if($this->currentUser === null) {
+            throw new GeneralException('Current user must be set!');
+        }
+
         $codeArr = [
-            '<script type="text/javascript" src="js/PostListerControl.js"></script>',
             '<div id="post-lister">'
         ];
 
@@ -86,9 +97,16 @@ class PostLister {
                 $bwh = new BannedWordsHelper($this->crr);
             }
 
+            $postIds = [];
             foreach($this->posts as $post) {
-                $liked = $this->postRepository->checkLike($post->getAuthorId(), $post->getId());
-                $likeLink = self::createLikeLink($post->getAuthorId(), $post->getId(), $liked);
+                $postIds[] = $post->getId();
+            }
+
+            $likedArray = $this->postRepository->bulkCheckLikes($this->currentUser->getId(), $postIds);
+
+            foreach($this->posts as $post) {
+                $liked = in_array($post->getId(), $likedArray);
+                $likeLink = self::createLikeLink($post->getId(), $liked);
                 
                 if(!empty($this->topics)) {
                     $topics = [];
@@ -146,11 +164,11 @@ class PostLister {
         return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
     }
 
-    public static function createLikeLink(int $userId, int $postId, bool $liked) {
+    public static function createLikeLink(int $postId, bool $liked) {
         if($liked === true) {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', ' . $userId . ', false)">Unlike</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', false)">Unlike</a>';
         } else {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', ' . $userId . ', true)">Like</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', true)">Like</a>';
         }
     }
 }

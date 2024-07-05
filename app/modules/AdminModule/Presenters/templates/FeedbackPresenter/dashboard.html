@@ -1,3 +1,4 @@
+<script type="text/javascript" src="js/widgets/AdminFeedbackWidgets.js"></script>
 <div class="row">
     <div class="col-md">
         <div class="row">
@@ -11,14 +12,31 @@
                 $SIDEBAR$
             </div>
 
-            <div class="col-md" id="widget1">
-                $WIDGET1$
-            </div>
+            <div class="col-md">
+                <div class="row">
+                    <div class="col-md" id="widget1">
+                        Suggestions
+                        <div style="width: 75%"><canvas id="suggestionWidgetGraph"></canvas></div>
+                    </div>
+        
+                    <div class="col-md-2"></div>
+        
+                    <div class="col-md" id="widget2">
+                        Reports
+                        <div style="width: 75%"><canvas id="reportWidgetGraph"></canvas></div>
+                    </div>
+                </div>
 
-            <div class="col-md-2"></div>
+                <div class="row">
+                    <div class="col-md" id="widget3">
+                        Suggestion categories
+                        <div style="width: 75%"><canvas id="suggestionCategoriesWidgetGraph"></canvas></div>
+                    </div>
 
-            <div class="col-md" id="widget2">
-                $WIDGET2$
+                    <div class="col-md-2"></div>
+
+                    <div class="col-md" id="widget4"></div>
+                </div>
             </div>
 
             <div class="col-md-1"></div>

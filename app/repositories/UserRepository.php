@@ -20,13 +20,13 @@ class UserRepository extends ARepository {
             ->from('users')
             ->where('userId = ?', [$id]);
 
-        $entity = CacheManager::loadCache($id, function () use ($qb) {
+        $entity = $this->cache->loadCache($id, function () use ($qb) {
             $row = $qb->execute()->fetch();
 
             $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'users');
+        }, 'users', __METHOD__);
 
         return $entity;
     }
@@ -72,12 +72,17 @@ class UserRepository extends ARepository {
     public function getUserByUsername(string $username) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['*'])
+        $qb ->select(['userId'])
             ->from('users')
-            ->where('username = ?', [$username])
-            ->execute();
+            ->where('username = ?', [$username]);
 
-        return UserEntity::createEntityFromDbRow($qb->fetch());
+        $userId = $this->cache->loadCache($username, function() use ($qb) {
+            $qb->execute();
+
+            return $qb->fetch('userId');
+        }, 'usersUsernameToIdMapping', __METHOD__);
+
+        return $this->getUserById($userId);
     }
 
     public function getUsersCount() {

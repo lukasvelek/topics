@@ -13,17 +13,18 @@ class DatabaseInstaller {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         $this->db = $db;
         $this->logger = $logger;
-        $this->logger->setFilename('install_log');
     }
 
     public function install() {
         $this->logger->info('Database installation started.', __METHOD__);
 
         $this->createTables();
+        $this->createIndexes();
         $this->createUsers();
         $this->createSystems();
         $this->createGroups();
         $this->addAdminToGroups();
+        $this->addSystemServices();
 
         $this->logger->info('Database installation finished.', __METHOD__);
     }
@@ -45,15 +46,10 @@ class DatabaseInstaller {
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'managerId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
-                'dateDeleted' => 'DATETIME NULL'
-            ],
-            'user_topic_follows' => [
-                'followId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'topicId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL'
+                'dateDeleted' => 'DATETIME NULL',
+                'tags' => 'TEXT NOT NULL'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -64,7 +60,8 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
-                'dateDeleted' => 'DATETIME NULL'
+                'dateDeleted' => 'DATETIME NULL',
+                'tag' => 'VARCHAR(256) NOT NULL'
             ],
             'post_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -154,6 +151,45 @@ class DatabaseInstaller {
                 'word' => 'VARCHAR(256)',
                 'authorId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_membership' => [
+                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'INT(32) NOT NULL',
+                'topicId' => 'INT(32) NOT NULL',
+                'role' => 'INT(4) NOT NULL DEFAULT 1'
+            ],
+            'system_services' => [
+                'serviceId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'scriptPath' => 'VARCHAR(256) NOT NULL',
+                'dateStarted' => 'DATETIME NULL',
+                'dateEnded' => 'DATETIME NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1'
+            ],
+            'admin_dashboard_widgets_graph_data' => [
+                'dataId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'mostActiveTopics' => 'TEXT NOT NULL',
+                'mostActivePosts' => 'TEXT NOT NULL',
+                'mostActiveUsers' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_polls' => [
+                'pollId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'topicId' => 'INT(32) NOT NULL',
+                'authorId' => 'INT(32) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'choices' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateValid' => 'DATETIME NULL',
+                'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
+            ],
+            'topic_polls_responses' => [
+                'responseId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'pollId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'choice' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
@@ -177,6 +213,80 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Created ' . $i . ' tables.', __METHOD__);
+    }
+
+    private function createIndexes() {
+        $this->logger->info('Creating indexes.', __METHOD__);
+
+        $indexes = [
+            'topic_polls_responses' => [
+                'pollId'
+            ],
+            'topic_polls_responses' => [
+                'pollId',
+                'userId',
+                'dateCreated'
+            ],
+            'topic_polls' => [
+                'topicId'
+            ],
+            'topic_polls' => [
+                'topicId',
+                'dateValid'
+            ],
+            'posts' => [
+                'topicId',
+                'isDeleted'
+            ],
+            'post_comment_likes' => [
+                'userId',
+                'commentId'
+            ],
+            'user_prosecutions' => [
+                'userId'
+            ],
+            'post_likes' => [
+                'postId'
+            ],
+            'post_comments' => [
+                'postId',
+                'isDeleted'
+            ],
+            'post_comments' => [
+                'postId',
+                'parentCommentId',
+                'isDeleted'
+            ]
+        ];
+
+        $indexCount = [];
+        foreach($indexes as $tableName => $columns) {
+            $i = 1;
+
+            if(isset($indexCount[$tableName])) {
+                $i = $indexCount[$tableName] + 1;
+            }
+
+            $name = $tableName . '_i' . $i;
+
+            $sql = "DROP INDEX IF EXISTS $name ON $tableName";
+
+            $this->logger->sql($sql, __METHOD__, null);
+
+            $this->db->query($sql);
+
+            $cols = implode(', ', $columns);
+
+            $sql = "CREATE INDEX $name ON $tableName ($cols)";
+
+            $this->logger->sql($sql, __METHOD__, null);
+
+            $this->db->query($sql);
+
+            $indexCount[$tableName] = $i;
+        }
+
+        $this->logger->info('Created indexes.', __METHOD__);
     }
 
     private function createUsers() {
@@ -295,6 +405,24 @@ class DatabaseInstaller {
         }
 
         $this->logger->info('Added admin to administrator groups.', __METHOD__);
+    }
+
+    private function addSystemServices() {
+        $this->logger->info('Adding system services.', __METHOD__);
+
+        $services = [
+            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php'
+        ];
+
+        foreach($services as $title => $path) {
+            $sql = "INSERT INTO system_services (`title`, `scriptPath`)
+                    SELECT '$title', '$path'
+                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE title = '$title' AND scriptPath = '$path')";
+
+            $this->db->query($sql);
+        }
+
+        $this->logger->info('Added system services.', __METHOD__);
     }
 }
 

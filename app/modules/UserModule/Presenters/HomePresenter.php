@@ -4,6 +4,8 @@ namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
+use App\Core\AjaxRequestBuilder;
+use App\Core\CacheManager;
 use App\Modules\APresenter;
 
 class HomePresenter extends APresenter {
@@ -14,16 +16,20 @@ class HomePresenter extends APresenter {
     public function handleDashboard() {
         global $app;
 
-        $followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
-        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);
+        /*$followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
+        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);*/
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($followedTopicIds, 10);
+        $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
+        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
+
+        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 10);
 
         $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);
         $postLister->shufflePosts();
+        $postLister->setCurrentUser($app->currentUser);
         
         $this->saveToPresenterCache('postLister', $postLister);
         
@@ -38,6 +44,17 @@ class HomePresenter extends APresenter {
         }
 
         $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessages);
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setURL(['page' => 'UserModule:Home', 'action' => 'likePost'])
+            ->setMethod('GET')
+            ->setHeader(['postId' => '_postId', 'toLike' => '_like'])
+            ->setFunctionName('likePost')
+            ->setFunctionArguments(['_postId', '_like'])
+            ->updateHTMLElementRaw('"#post-" + _postId + "-likes"', 'likes')
+            ->updateHTMLElementRaw('"#post-" + _postId + "-link"', 'link');
+
+        $this->addScript($arb->build());
     }
 
     public function renderDashboard() {
@@ -47,6 +64,28 @@ class HomePresenter extends APresenter {
         $this->template->title = 'Dashboard';
         $this->template->latest_posts = $postLister->render();
         $this->template->permanent_flash_messages = $permaFlashMessages;
+    }
+
+    public function actionLikePost() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+        $userId = $app->currentUser->getId();
+        $toLike = $this->httpGet('toLike');
+
+        $link = PostLister::createLikeLink($postId, ($toLike == 'true'));
+        if($toLike == 'true') {
+            $app->postRepository->likePost($userId, $postId);
+        } else {
+            $app->postRepository->unlikePost($userId, $postId);
+        }
+
+        CacheManager::invalidateCache('posts');
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $this->ajaxSendResponse(['likes' => $post->getLikes(), 'link' => $link]);
+
     }
 }
 

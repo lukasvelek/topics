@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Exceptions\GeneralException;
+use App\Logger\Logger;
 use App\Modules\AModule;
 
 /**
@@ -11,9 +13,14 @@ use App\Modules\AModule;
  */
 class RenderEngine {
     private AModule $module;
+    private Logger $logger;
 
     private string $presenterTitle;
     private string $actionTitle;
+
+    private array $cachedPages;
+
+    private ?string $renderedContent;
 
     /**
      * Class constructor
@@ -22,10 +29,13 @@ class RenderEngine {
      * @param string $presenter Presenter name
      * @param string $action Action name
      */
-    public function __construct(AModule $module, string $presenter, string $action) {
+    public function __construct(Logger $logger, AModule $module, string $presenter, string $action) {
+        $this->logger = $logger;
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
+        $this->cachedPages = [];
+        $this->renderedContent = null;
     }
 
     /**
@@ -37,7 +47,17 @@ class RenderEngine {
     public function render(bool $isAjax) {
         $this->beforeRender();
 
-        return $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+        if($this->renderedContent === null) {
+            $isCacheable = false;
+
+            [$this->renderedContent, $isCacheable] = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+
+            if($isCacheable) {
+                $this->cachePage();
+            }
+        }
+
+        return $this->renderedContent;
     }
     
     /**
@@ -45,6 +65,29 @@ class RenderEngine {
      */
     private function beforeRender() {
         $this->module->loadPresenters();
+        $this->loadCachedPages();
+
+        $key = $this->module->getTitle() . '_' . $this->presenterTitle;
+
+        if(array_key_exists($key, $this->cachedPages)) {
+            $this->renderedContent = $this->cachedPages[$key];
+        }
+    }
+
+    private function loadCachedPages() {
+        $cm = new CacheManager($this->logger);
+        $result = $cm->loadPagesFromCache();
+        
+        if($result !== false && $result !== null) {
+            $this->cachedPages = $result;
+        } else {
+            $this->cachedPages = [];
+        }
+    }
+
+    private function cachePage() {
+        $cm = new CacheManager($this->logger);
+        $cm->savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);
     }
 }
 

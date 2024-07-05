@@ -2,8 +2,10 @@
 
 namespace App\Modules\UserModule;
 
+use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
+use App\Core\CacheManager;
 use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
@@ -25,7 +27,7 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
-        if(!$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
+        if($post->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
             $this->flashMessage('This post does not exist.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $post->getTopicId()]);
         }
@@ -113,26 +115,29 @@ class PostsPresenter extends APresenter {
         }
 
         $author = $app->userRepository->getUserById($post->getAuthorId());
-        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $post->getAuthorId() . '">' . $author->getUsername() . '</a>';
+        $authorLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
         $reportLink = '';
-        if(!$post->isDeleted()) {
+        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $topic->getId())) {
             $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
         }
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId()) && !$post->isDeleted()) {
+        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
         } else if($post->isDeleted()) {
             $deleteLink = '<p class="post-data">Post deleted</p>';
         }
+
+        [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 
         $postData = '
             <div>
                 <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
                 <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
                 <p class="post-data">Author: ' . $authorLink . '</p>
+                <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
                 <p class="post-data">' . $reportLink . '</p>
                 ' . $deleteLink . '
             </div>
@@ -210,14 +215,27 @@ class PostsPresenter extends APresenter {
         $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
         $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
 
+        $allComments = $app->postCommentRepository->getCommentsForPostId($postId);
+
+        $commentIds = [];
+        foreach($allComments as $comment) {
+            $commentIds[] = $comment->getId();
+        }
+
+        $likedComments = $app->postCommentRepository->getLikedCommentsForUser($app->currentUser->getId(), $commentIds);
+
+        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId);
+
         $code = [];
 
         if(empty($comments)) {
             return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
         }
 
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+
         foreach($comments as $comment) {
-            $code[] = $this->createPostComment($postId, $comment);
+            $code[] = $this->createPostComment($postId, $comment, $likedComments, $bwh, $childrenComments);
         }
 
         if(($offset + $limit) >= $commentCount) {
@@ -229,44 +247,68 @@ class PostsPresenter extends APresenter {
         $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
-    private function createPostComment(int $postId, PostCommentEntity $comment, bool $parent = true) {
+    private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
         global $app;
-
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
 
         $post = $app->postRepository->getPostById($postId);
 
         $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $author->getId() . '">' . $author->getUsername() . '</a>';
+        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
-        $liked = $app->postCommentRepository->checkLike($app->currentUser->getId(), $comment->getId());
+        $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
         } else {
             $likeLink = '';
         }
 
-        $childComments = $app->postCommentRepository->getLatestCommentsForCommentId($postId, $comment->getId());
         $childCommentsCode = [];
 
         if(!empty($childComments)) {
             foreach($childComments as $cc) {
-                $childCommentsCode[] = $this->createPostComment($postId, $cc, false);
+                if($cc->getParentCommentId() == $comment->getId()) {
+                    $childCommentsCode[] = $this->createPostComment($postId, $cc, $likedComments, $bwh, $childComments, false);
+                }
             }
         }
 
-        if(!$post->isDeleted()) {
+        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $post->getTopicId())) {
             $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
         } else {
             $reportForm = '';
         }
         $deleteLink = '';
         
-        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId()) && !$post->isDeleted()) {
+        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
         $text = $bwh->checkText($comment->getText());
+
+        $matches = [];
+        preg_match_all("/[@]\w*/m", $text, $matches);
+
+        $matches = $matches[0];
+
+        $post = $app->postRepository->getPostById($postId);
+
+        $users = [];
+        foreach($matches as $match) {
+            $username = substr($match, 1);
+            $user = $app->userRepository->getUserByUsername($username);
+            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+            
+            $users[$match] = $link;
+        }
+
+        foreach($users as $k => $v) {
+            $text = str_replace($k, $v, $text);
+        }
+
+        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+        $text = preg_replace($pattern, $replacement, $text);
 
         $code = '
             <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
@@ -305,29 +347,6 @@ class PostsPresenter extends APresenter {
         $postId = $this->httpGet('postId');
         $authorId = $app->currentUser->getId();
         $parentCommentId = $this->httpGet('parentCommentId');
-
-        $matches = [];
-        preg_match_all("/[@]\w*/m", $text, $matches);
-
-        $matches = $matches[0];
-
-        $users = [];
-        foreach($matches as $match) {
-            $username = substr($match, 1);
-            $user = $app->userRepository->getUserByUsername($username);
-            $link = '<a class="post-text-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">@' . $username . '</a>';
-            
-            $users[$match] = $link;
-        }
-
-        foreach($users as $k => $v) {
-            $text = str_replace($k, $v, $text);
-        }
-
-        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
-        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
-
-        $text = preg_replace($pattern, $replacement, $text);
 
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
@@ -487,6 +506,38 @@ class PostsPresenter extends APresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form;
+    }
+
+    public function handleLike() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->postRepository->likePost($app->currentUser->getId(), $postId);
+        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
+
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
+
+        $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+    }
+
+    public function handleUnlike() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
+        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
+
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
+
+        $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
 }
 

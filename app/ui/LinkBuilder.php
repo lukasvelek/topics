@@ -70,6 +70,15 @@ class LinkBuilder implements IRenderable {
 
         return $lb->render();
     }
+
+    public static function convertUrlArrayToString(array $url) {
+        $tmp = [];
+        foreach($url as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        return '?' . implode('&', $tmp);
+    }
 }
 
 ?>

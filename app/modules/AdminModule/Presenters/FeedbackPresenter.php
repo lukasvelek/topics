@@ -2,7 +2,8 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Sidebar\Sidebar;
+use App\Constants\ReportStatus;
+use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
 
 class FeedbackPresenter extends AAdminPresenter {
@@ -15,25 +16,114 @@ class FeedbackPresenter extends AAdminPresenter {
     }
 
     public function handleDashboard() {
-        global $app;
-
-        $openSuggestionCount = $app->suggestionRepository->getOpenSuggestionCount();
-        $newSuggestionCount = $app->suggestionRepository->getSuggestionCountByStatuses([SuggestionStatus::OPEN]);
-
-        $widget1Code = '
-            <div>
-                <p class="post-data">Open suggestions: ' . $openSuggestionCount . '</p>
-                <p class="post-data">New suggestions: ' . $newSuggestionCount . '</p>
-            </div>
-        ';
-
-        $this->saveToPresenterCache('widget1', $widget1Code);
+        $this->addScript('createWidgets();');
     }
 
-    public function renderDashboard() {
-        $widget1 = $this->loadFromPresenterCache('widget1');
+    public function renderDashboard() {}
 
-        $this->template->widget1 = $widget1;
+    public function actionGetGraphData() {
+        global $app;
+
+        $noDataAvailableMessage = 'No data currently available';
+
+        $resultData = [];
+
+        // suggestions
+        $suggestions = $app->suggestionRepository->getAllSuggestions();
+
+        $all = count($suggestions);
+        $open = $closed = 0;
+        foreach($suggestions as $suggestion) {
+            if(in_array($suggestion->getStatus(), [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED])) {
+                $open++;
+            }
+            if(in_array($suggestion->getStatus(), [SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED])) {
+                $closed++;
+            }
+        }
+
+        if($all == 0 && $open == 0 && $closed == 0) {
+            $resultData['suggestions'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $resultData['suggestions'] = [
+                'all' => $all,
+                'open' => $open,
+                'closed' => $closed
+            ];
+        }
+
+        // reports
+        $reports = $app->reportRepository->getAllReports();
+
+        $all = count($reports);
+        $open = $closed = 0;
+        foreach($reports as $report) {
+            if($report->getStatus() == ReportStatus::OPEN) {
+                $open++;
+            } else if($report->getStatus() == ReportStatus::RESOLVED) {
+                $closed++;
+            }
+        }
+
+        if($all == 0 && $open == 0 && $closed == 0) {
+            $resultData['reports'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $resultData['reports'] = [
+                'all' => $all,
+                'open' => $open,
+                'closed' => $closed
+            ];
+        }
+
+        // suggestion categories
+        $categories = SuggestionCategory::getAll();
+
+        $count = [];
+        foreach($categories as $category => $v) {
+            $count[$category] = 0;
+        }
+
+        foreach($suggestions as $suggestion) {
+            if(is_numeric($count[$suggestion->getCategory()])) {
+                $count[$suggestion->getCategory()] += 1;
+            } else {
+                $count[$suggestion->getCategory()] = 1;
+            }
+        }
+
+        $noData = true;
+        foreach($categories as $category) {
+            if(isset($count[$category]) && $count[$category] > 0) {
+                $noData = false;
+            }
+        }
+
+        if($noData) {
+            $resultData['suggestionCategories'] = [
+                'error' => $noDataAvailableMessage
+            ];
+        } else {
+            $labels = [];
+            $data = [];
+            $colors = [];
+            foreach($categories as $k => $v) {
+                $labels[] = $v;
+                $data[] = $count[$k];
+                $colors[] = SuggestionCategory::getColorByKey($k);
+            }
+
+            $resultData['suggestionCategories'] = [
+                'labels' => $labels,
+                'data' => $data,
+                'colors' => $colors
+            ];
+        }
+
+        $this->ajaxSendResponse($resultData);
     }
 }
 

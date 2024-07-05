@@ -11,6 +11,7 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
@@ -19,7 +20,10 @@ use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
+use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicMembershipRepository;
+use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
@@ -57,9 +61,14 @@ class Application {
     public UserProsecutionRepository $userProsecutionRepository;
     public GroupRepository $groupRepository;
     public ContentRegulationRepository $contentRegulationRepository;
+    public TopicMembershipRepository $topicMembershipRepository;
+    public SystemServicesRepository $systemServicesRepository;
+    public TopicPollRepository $topicPollRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
+    public TopicMembershipManager $topicMembershipManager;
+    public ServiceManager $serviceManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -97,19 +106,28 @@ class Application {
         $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
         $this->groupRepository = new GroupRepository($this->db, $this->logger);
         $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
+        $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
+        $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
+        $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
-        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository);
-        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE']);
+        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger);
+        $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
 
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
-        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
 
         $this->isAjaxRequest = false;
 
         $this->loadModules();
+        
+        if(!FileManager::fileExists(__DIR__ . '\\install')) {
+            $this->db->installDb();
+        }
     }
 
     /**
@@ -197,7 +215,8 @@ class Application {
      * @param string $type Flash message type
      */
     public function flashMessage(string $text, string $type = 'info') {
-        CacheManager::saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        $cm = new CacheManager($this->logger);
+        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
     }
     
     /**
@@ -214,9 +233,10 @@ class Application {
 
         $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
+        $moduleObject->setLogger($this->logger);
 
         $this->logger->info('Initializing render engine.', __METHOD__);
-        $re = new RenderEngine($moduleObject, $this->currentPresenter, $this->currentAction);
+        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction);
         $this->logger->info('Rendering page content.', __METHOD__);
         return $re->render($this->isAjaxRequest);
     }
@@ -250,7 +270,13 @@ class Application {
             throw new URLParamIsNotDefinedException('action');
         }
 
-        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ']', __METHOD__);
+        $isAjax = '0';
+
+        if(isset($_GET['isAjax'])) {
+            $isAjax = htmlspecialchars($_GET['isAjax']);
+        }
+
+        $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ', isAjax => ' . $isAjax . ']', __METHOD__);
     }
 }
 

@@ -76,7 +76,7 @@ class DateTime {
             throw new GeneralException('Incorrect datetime modification value passed.');
         }
 
-        $type = $code[strlen($code)];
+        $type = $code[strlen($code) - 1];
 
         if(is_numeric($type)) {
             throw new GeneralException('Incorrect datetime modification value passed.');
@@ -92,6 +92,7 @@ class DateTime {
             case 's':
                 break;
                 
+            case 'm':
             case 'i':
                 $m = 60;
                 break;
