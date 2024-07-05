@@ -48,7 +48,8 @@ class DatabaseInstaller {
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
-                'dateDeleted' => 'DATETIME NULL'
+                'dateDeleted' => 'DATETIME NULL',
+                'tags' => 'TEXT NOT NULL'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -59,7 +60,8 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
-                'dateDeleted' => 'DATETIME NULL'
+                'dateDeleted' => 'DATETIME NULL',
+                'tags' => 'TEXT NOT NULL'
             ],
             'post_likes' => [
                 'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
