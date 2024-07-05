@@ -61,11 +61,11 @@ class TopicRepository extends ARepository {
         return $topics;
     }
 
-    public function createNewTopic(string $title, string $description) {
+    public function createNewTopic(string $title, string $description, string $tags) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description'])
-            ->values([$title, $description])
+        $qb ->insert('topics', ['title', 'description', 'tags'])
+            ->values([$title, $description, $tags])
             ->execute();
 
         return $qb->fetch();

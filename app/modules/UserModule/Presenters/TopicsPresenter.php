@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Components\PostLister\PostLister;
+use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
@@ -10,6 +11,7 @@ use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
+use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
@@ -29,6 +31,11 @@ class TopicsPresenter extends APresenter {
         $topicId = $this->httpGet('topicId');
 
         $topic = $app->topicRepository->getTopicById($topicId);
+
+        if($topic === null) {
+            $this->flashMessage('Topic #' . $topicId . ' does not exist.', 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         if($topic->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedTopic($app->currentUser->getId())) {
             $this->flashMessage('This topic does not exist.', 'error');
@@ -104,10 +111,15 @@ class TopicsPresenter extends APresenter {
             $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
         }
 
+        $tags = $topic->getTags();
+
+        $tagCode = implode('', $tags);
+
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
             <p class="post-data">Posts: ' . $postCount . '</p>
+            <p class="post-data">Tags: ' . $tagCode . '</p>
             <p class="post-data">' . $reportLink . '</p>
             ' . $deleteLink . '
             ' . $roleManagementLink . '
@@ -115,12 +127,21 @@ class TopicsPresenter extends APresenter {
 
         $this->saveToPresenterCache('topicData', $code);
 
+        $postTags = [];
+        foreach(PostTags::getAll() as $key => $text) {
+            $postTags[] = [
+                'value' => $key,
+                'text' => $text
+            ];
+        }
+
         // new post form
         $fb = new FormBuilder();
 
         $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
             ->addTextInput('title', 'Title:', null, true)
             ->addTextArea('text', 'Text:', null, true)
+            ->addSelect('tag', 'Tag:', $postTags, true)
             ->addSubmit('Post')
         ;
 
@@ -233,19 +254,44 @@ class TopicsPresenter extends APresenter {
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
-            $tmp = [
-                '<div class="row" id="post-' . $post->getId() . '">',
-                '<div class="col-md">',
-                '<p class="post-title">' . $postLink . '</p>',
-                '<hr>',
-                '<p class="post-text">' . $shortenedText . '</p>',
-                '<hr>',
-                '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>',
-                ' | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>',
-                '</div></div><br>'
-            ];
+            [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
+
+            $tmp = '
+                <div class="row" id="post-' . $post->getId() . '">
+                    <div class="col-md">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <p class="post-data">' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor) . '</p>
+                            </div>
+
+                            <div class="col-md" id="center">
+                                <p class="post-title">' . $postLink . '</p>
+                            </div>
+
+                            <div class="col-md-2"></div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md">
+                                <p class="post-text">' . $shortenedText . '</p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md">
+                                <p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>
+                                 | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ';
     
-            $postCode[] = implode('', $tmp);
+            $postCode[] = $tmp;
         }
 
         $pollsFirst = true;
@@ -296,11 +342,12 @@ class TopicsPresenter extends APresenter {
 
         $title = $fr->title;
         $text = $fr->text;
+        $tag = $fr->tag;
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->postRepository->createNewPost($topicId, $userId, $title, $text);
+            $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
         } catch (AException $e) {
             $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -360,16 +407,31 @@ class TopicsPresenter extends APresenter {
 
             $title = $fr->title;
             $description = $fr->description;
+            $tags = $fr->tags;
 
             $topicId = null;
 
+            $tagArray = [];
+            foreach(explode(',', $tags) as $tag) {
+                $tag = trim($tag);
+                $tag = ucfirst($tag);
+
+                [$fg, $bg] = ColorHelper::createColorCombination();
+                $tag = '<span style="color: ' . $fg . '; background-color: ' . $bg . '; border: 1px solid ' . $fg . '; border-radius: 10px; padding: 5px; margin-right: 5px">' . $tag . '</span>';
+
+                $tagArray[] = $tag;
+            }
+
+            $tags = serialize($tagArray);
+
             try {
-                $app->topicRepository->createNewTopic($title, $description);
+                $app->topicRepository->createNewTopic($title, $description, $tags);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
 
-                CacheManager::invalidateCache('topics');
+                $cm = new CacheManager($this->logger);
+                $cm->invalidateCache('topics');
             } catch(AException $e) {
                 $this->flashMessage('Could not create a new topic. Reason: ' . $e->getMessage(), 'error');
                 $app->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
@@ -385,6 +447,8 @@ class TopicsPresenter extends APresenter {
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'form', 'isSubmit' => '1'])
                 ->addTextInput('title', 'Title:', $title, true)
                 ->addTextArea('description', 'Description:', null, true)
+                ->addTextInput('tags', 'Tags:', null, true)
+                ->addLabel('Individual tags must be separated by commas - e.g.: technology, art, scifi ...', 'lbl_tags_1')
                 ->addSubmit('Create topic');
 
             $this->saveToPresenterCache('form', $fb);
@@ -471,7 +535,7 @@ class TopicsPresenter extends APresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">No data found.</p>
+                        <p class="post-text">You are not following any topics.</p>
                     </div>
                 </div>
             ';
@@ -509,7 +573,7 @@ class TopicsPresenter extends APresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">No data found.</p>
+                        <p class="post-text">You are following all topics that are available on this platform. O.o</p>
                     </div>
                 </div>
             ';
