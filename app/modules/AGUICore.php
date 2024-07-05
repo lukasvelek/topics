@@ -2,6 +2,8 @@
 
 namespace App\Modules;
 
+use App\Components\Navbar\Navbar;
+
 abstract class AGUICore {
     protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false) {
         $fmc = $flashMessageCount . '-' . ($custom ? '-custom' : '');

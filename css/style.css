@@ -23,6 +23,22 @@ body {
     text-align: center;
 }
 
+#page-text {
+    font-size: 20px;
+}
+
+.page-text-link {
+    font-size: 20px;
+
+    text-decoration: underline;
+
+    color: black;
+}
+
+.page-text-link:hover {
+    color: black;
+}
+
 #flash-messages {
     position: absolute;
     z-index: 9999;

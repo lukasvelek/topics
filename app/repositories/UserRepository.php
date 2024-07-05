@@ -181,7 +181,7 @@ class UserRepository extends ARepository {
             ->values($values)
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     private function createUsersArrayFromQb(QueryBuilder $qb) {
