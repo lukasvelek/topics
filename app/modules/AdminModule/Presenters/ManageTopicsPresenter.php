@@ -25,8 +25,6 @@ class ManageTopicsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $app->topicRepository->updateTopic($topicId, ['isDeleted' => '1']);
 
-            $app->topicRepository->removeAllTopicFollows($topicId);
-
             $postIds = $app->postRepository->getPostIdsForTopicId($topicId);
 
             foreach($postIds as $postId) {
@@ -39,7 +37,8 @@ class ManageTopicsPresenter extends AAdminPresenter {
                 $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
             }
 
-            CacheManager::invalidateCacheBulk(['topics', 'posts']);
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCacheBulk(['topics', 'posts']);
 
             $this->flashMessage('Delete topic and all its posts with comments.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);

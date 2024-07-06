@@ -81,6 +81,10 @@ abstract class ARepository {
     public function getQb() {
         return $this->qb(__METHOD__);
     }
+
+    public function getLogger() {
+        return $this->logger;
+    }
 }
 
 ?>

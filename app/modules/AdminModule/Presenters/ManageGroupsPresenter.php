@@ -160,7 +160,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
             $app->groupRepository->addGroupMember($groupId, $user);
 
-            CacheManager::invalidateCache('groupMemberships');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('groupMemberships');
 
             $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
             $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
@@ -236,7 +237,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $app->groupRepository->removeGroupMember($groupId, $userId);
 
-            CacheManager::invalidateCache('groupMemberships');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('groupMemberships');
 
             $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
             $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);

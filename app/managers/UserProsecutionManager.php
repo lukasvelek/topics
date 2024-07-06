@@ -138,7 +138,8 @@ class UserProsecutionManager extends AManager {
         $this->commit();
 
         if($invalidateCache) {
-            CacheManager::invalidateCache('users');
+            $cm = new CacheManager($this->userProsecutionRepository->getLogger());
+            $cm->invalidateCache('users');
         }
     }
 
