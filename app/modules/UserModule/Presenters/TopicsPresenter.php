@@ -395,8 +395,10 @@ class TopicsPresenter extends APresenter {
         $query = $this->httpGet('q');
 
         $qb = $app->topicRepository->composeQueryForTopicsSearch($query);
+        $qb->execute();
         
-
+        $topics = $app->topicRepository->createTopicsArrayFromQb($qb);
+        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
 
         $topicCode = '';
         if(!empty($topics)) {

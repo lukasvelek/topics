@@ -85,6 +85,22 @@ class TopicManager extends AManager {
 
         return $returnableTopics;
     }
+
+    public function checkTopicsVisibility(array $topics, int $userId) {
+        $okTopics = [];
+
+        foreach($topics as $topic) {
+            try {
+                $this->checkPrivacy($topic, $userId);
+
+                $okTopics[] = $topic;
+            } catch(AException $e) {
+                continue;
+            }
+        }
+
+        return $okTopics;
+    }
 }
 
 ?>
