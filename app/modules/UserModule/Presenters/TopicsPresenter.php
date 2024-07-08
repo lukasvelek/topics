@@ -113,7 +113,7 @@ class TopicsPresenter extends APresenter {
 
         $tags = $topic->getTags();
 
-        $tagCode = implode('', $tags);
+        $tagCode = '<div>' . implode('', $tags) . '</div>';
 
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
