@@ -245,7 +245,7 @@ class TopicsPresenter extends APresenter {
             $i++;
         }
 
-        if(empty($posts)) {
+        if(empty($posts) && empty($pollCode)) {
             return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
         }
 
@@ -727,13 +727,21 @@ class TopicsPresenter extends APresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $topic = $app->topicRepository->getTopicById($topicId);
+
+            $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+
+            $this->saveToPresenterCache('topicLink', $topicLink);
         }
     }
 
     public function renderNewPollForm() {
         $form = $this->loadFromPresenterCache('form');
+        $topicLink = $this->loadFromPresenterCache('topicLink');
 
         $this->template->form = $form;
+        $this->template->topic_link = $topicLink;
     }
 
     public function handlePollSubmit() {
