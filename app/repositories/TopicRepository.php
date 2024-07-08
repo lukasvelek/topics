@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
+use App\Entities\TopicMemberEntity;
 use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
@@ -43,22 +44,16 @@ class TopicRepository extends ARepository {
         return $entities;
     }
 
-    public function searchTopics(string $query) {
+    public function composeQueryForTopicsSearch(string $query) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('topics')
             ->where('(title LIKE ?', ['%' . $query . '%'])
             ->orWhere('description LIKE ?)', ['%' . $query . '%'])
-            ->andWhere('(isDeleted = 0)')
-            ->execute();
+            ->andWhere('(isDeleted = 0)');
 
-        $topics = [];
-        while($row = $qb->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
-        }
-
-        return $topics;
+        return $qb;
     }
 
     public function createNewTopic(string $title, string $description, string $tags) {
@@ -96,13 +91,13 @@ class TopicRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getTopicCount(bool $deletedOnly = true) {
+    public function getTopicCount(bool $notDeletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(topicId) AS cnt'])
             ->from('topics');
 
-        if($deletedOnly) {
+        if($notDeletedOnly) {
             $qb->where('isDeleted = 0');
         }
 
@@ -182,6 +177,19 @@ class TopicRepository extends ARepository {
         $qb ->select(['*'])
             ->from('topics')
             ->where($qb->getColumnNotInValues('topicId', $topicIds))
+            ->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function getPrivateTopics(bool $notDeletedOnly = true) {
+        $qb = $this->composeQueryForTopics();
+
+        if($notDeletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
+
+        $qb->andWhere('isPrivate = 1')
             ->execute();
 
         return $this->createTopicsArrayFromQb($qb);

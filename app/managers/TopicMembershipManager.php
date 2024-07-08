@@ -137,11 +137,10 @@ class TopicMembershipManager extends AManager {
         return $this->topicMembershipRepository->getTopicMemberCount($topicId);
     }
 
-    public function getTopicsUserIsNotMemberOf(int $userId) {
+    public function getTopicIdsUserIsNotMemberOf(int $userId) {
         $memberships = $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
-        $otherTopics = $this->topicRepository->getTopicsExceptFor($memberships);
 
-        return $otherTopics;
+        return $memberships;
     }
 }
 

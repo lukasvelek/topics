@@ -25,7 +25,13 @@ class TopicManagementPresenter extends APresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $topic = $app->topicRepository->getTopicById($topicId);
+
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         $arb = new AjaxRequestBuilder();
 
@@ -136,7 +142,12 @@ class TopicManagementPresenter extends APresenter {
 
             $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
         } else {
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage($e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+            }
 
             $this->saveToPresenterCache('topic', $topic);
 

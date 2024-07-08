@@ -2,6 +2,8 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Exceptions\AException;
+
 class HomePresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('HomePresenter', 'Home');
@@ -49,7 +51,11 @@ class HomePresenter extends AAdminPresenter {
             $resultData = [];
 
             foreach($topics as $topicId => $postCount) {
-                $topic = $app->topicRepository->getTopicById($topicId);
+                try {
+                    $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+                } catch(AException $e) {
+                    continue;
+                }
     
                 $labels[] = $topic->getTitle();
                 $resultData[] = $postCount;
@@ -68,7 +74,11 @@ class HomePresenter extends AAdminPresenter {
 
             foreach($posts as $postId => $commentCount) {
                 $post = $app->postRepository->getPostById($postId);
-                $topic = $app->topicRepository->getTopicById($post->getTopicId());
+                try {
+                    $topic = $app->topicManager->getTopicById($post->getTopicId(), $app->currentUser->getId());
+                } catch(AException $e) {
+                    continue;
+                }
 
                 $labels[] = '[' . $topic->getTitle() . '] ' . $post->getTitle();
                 $resultData[] = $commentCount;

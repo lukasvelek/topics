@@ -10,10 +10,10 @@ use Exception;
 use Throwable;
 
 abstract class AException extends Exception {
-    protected function __construct(string $name, string $message, ?Throwable $previous = null) {
+    protected function __construct(string $name, string $message, ?Throwable $previous = null, bool $createFile = true) {
         parent::__construct($message, 9999, $previous);
 
-        if(FileManager::folderExists('logs\\')) {
+        if($createFile && FileManager::folderExists('logs\\')) {
             $this->createExceptionFile($name, $message);
         }
     }
@@ -37,12 +37,17 @@ abstract class AException extends Exception {
             $line = $t['line'];
             $function = $t['function'];
             $args = $t['args'];
-            $argString = '[]';
+            $argString = '';
 
             if(!is_array($args) || (count($args) > 1 && is_object($args[0]))) {
                 $argString = '[\'' . var_export($args, true) . '\']';
             } else {
                 if(count($args) > 1) {
+                    $tmp = [];
+                    foreach($args as $arg) {
+                        $tmp[] = var_export($arg, true);
+                    }
+                    $args = $tmp;
                     $argString = '[\'' . implode('\', \'', $args) . '\']';
                 }
             }

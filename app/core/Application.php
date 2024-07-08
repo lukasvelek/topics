@@ -11,6 +11,7 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
@@ -69,6 +70,7 @@ class Application {
     public ContentManager $contentManager;
     public TopicMembershipManager $topicMembershipManager;
     public ServiceManager $serviceManager;
+    public TopicManager $topicManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -116,10 +118,12 @@ class Application {
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
-
+        
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
+        
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator);
 
         $this->isAjaxRequest = false;
 

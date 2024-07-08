@@ -30,7 +30,12 @@ class TopicsPresenter extends APresenter {
 
         $topicId = $this->httpGet('topicId');
 
-        $topic = $app->topicRepository->getTopicById($topicId);
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         if($topic === null) {
             $this->flashMessage('Topic #' . $topicId . ' does not exist.', 'error');
@@ -203,7 +208,12 @@ class TopicsPresenter extends APresenter {
         $limit = $this->httpGet('limit');
         $offset = $this->httpGet('offset');
 
-        $topic = $app->topicRepository->getTopicById($topicId);
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
@@ -384,7 +394,9 @@ class TopicsPresenter extends APresenter {
 
         $query = $this->httpGet('q');
 
-        $topics = $app->topicRepository->searchTopics($query);
+        $qb = $app->topicRepository->composeQueryForTopicsSearch($query);
+        
+
 
         $topicCode = '';
         if(!empty($topics)) {
@@ -430,6 +442,7 @@ class TopicsPresenter extends APresenter {
             $title = $fr->title;
             $description = $fr->description;
             $tags = $fr->tags;
+            $isPrivate = isset($fr->private);
 
             $topicId = null;
 
@@ -471,6 +484,7 @@ class TopicsPresenter extends APresenter {
                 ->addTextArea('description', 'Description:', null, true)
                 ->addTextInput('tags', 'Tags:', null, true)
                 ->addLabel('Individual tags must be separated by commas - e.g.: technology, art, scifi ...', 'lbl_tags_1')
+                ->addCheckbox('private', 'Is private?')
                 ->addSubmit('Create topic');
 
             $this->saveToPresenterCache('form', $fb);
@@ -485,7 +499,12 @@ class TopicsPresenter extends APresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $topic = $app->topicRepository->getTopicById($topicId);
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         $ok = false;
 
@@ -511,7 +530,12 @@ class TopicsPresenter extends APresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $topic = $app->topicRepository->getTopicById($topicId);
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
 
         $ok = false;
 
@@ -542,7 +566,11 @@ class TopicsPresenter extends APresenter {
 
         if(!empty($topicIdsUserIsMemberOf)) {
             foreach($topicIdsUserIsMemberOf as $topicId) {
-                $topic = $app->topicRepository->getTopicById($topicId);
+                try {
+                    $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+                } catch(AException $e) {
+                    continue;
+                }
     
                 $code[] = '
                     <div class="row">
@@ -574,7 +602,8 @@ class TopicsPresenter extends APresenter {
     public function handleDiscover() {
         global $app;
 
-        $notFollowedTopics = $app->topicMembershipManager->getTopicsUserIsNotMemberOf($app->currentUser->getId());
+        $notFollowedTopicIds = $app->topicMembershipManager->getTopicIdsUserIsNotMemberOf($app->currentUser->getId());
+        $notFollowedTopics = $app->topicManager->getTopicsNotInIdArray($notFollowedTopicIds, $app->currentUser->getId());
 
         $code = [];
 
@@ -624,7 +653,12 @@ class TopicsPresenter extends APresenter {
             $this->flashMessage('Topic reported.', 'success');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage($e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+            }
             $this->saveToPresenterCache('topic', $topic);
 
             $categories = ReportCategory::getArray();
@@ -728,7 +762,12 @@ class TopicsPresenter extends APresenter {
 
             $this->saveToPresenterCache('form', $fb);
 
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage($e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+            }
 
             $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
 

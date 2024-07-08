@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\CacheManager;
+use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 
@@ -19,8 +20,14 @@ class ManageTopicsPresenter extends AAdminPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
-        $topic = $app->topicRepository->getTopicById($topicId);
         $reportId = $this->httpGet('reportId');
+        
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $app->topicRepository->updateTopic($topicId, ['isDeleted' => '1']);
