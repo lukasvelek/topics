@@ -220,6 +220,14 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addHidden(string $name, mixed $value) {
+        $hi = new HiddenInput($name, $value);
+
+        $this->addElement($name, $hi);
+
+        return $this;
+    }
+
     public function render() {
         $tmp = [];
         foreach($this->handlerUrl as $k => $v) {
@@ -233,6 +241,8 @@ class FormBuilder implements IRenderable {
         $i = 0;
         foreach($this->elements as $element) {
             if($element instanceof Section) {
+                $code .= $element->render();
+            } else if($element instanceof HiddenInput) {
                 $code .= $element->render();
             } else if($element instanceof IRenderable) {
                 if(($i + 1) == count($this->elements)) {

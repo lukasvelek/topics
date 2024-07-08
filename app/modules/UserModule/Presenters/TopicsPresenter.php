@@ -120,6 +120,11 @@ class TopicsPresenter extends APresenter {
 
         $tagCode = '<div>' . implode('', $tags) . '</div>';
 
+        $inviteManagementLink = '';
+        if($topic->isPrivate() && $app->actionAuthorizator->canManageTopicInvites($app->currentUser->getId(), $topicId)) {
+            $inviteManagementLink = '<p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p>';
+        }
+
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
@@ -128,6 +133,7 @@ class TopicsPresenter extends APresenter {
             <p class="post-data">' . $reportLink . '</p>
             ' . $deleteLink . '
             ' . $roleManagementLink . '
+            ' . $inviteManagementLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);
