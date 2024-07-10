@@ -153,12 +153,7 @@ class TopicPollRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('pollId', 'DESC');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

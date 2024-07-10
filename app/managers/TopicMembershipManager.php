@@ -4,9 +4,11 @@ namespace App\Managers;
 
 use App\Constants\TopicMemberRole;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
+use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicRepository;
 use App\UI\HTML\HTML;
@@ -17,12 +19,14 @@ class TopicMembershipManager extends AManager {
 
     private TopicRepository $topicRepository;
     private TopicMembershipRepository $topicMembershipRepository;
+    private TopicInviteRepository $topicInviteRepository;
 
-    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger) {
+    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger, TopicInviteRepository $topicInviteRepository) {
         parent::__construct($logger);
 
         $this->topicMembershipRepository = $topicMembershipRepository;
         $this->topicRepository = $topicRepository;
+        $this->topicInviteRepository = $topicInviteRepository;
     }
 
     public function followTopic(int $topicId, int $userId,) {
@@ -137,11 +141,53 @@ class TopicMembershipManager extends AManager {
         return $this->topicMembershipRepository->getTopicMemberCount($topicId);
     }
 
-    public function getTopicsUserIsNotMemberOf(int $userId) {
+    public function getTopicIdsUserIsNotMemberOf(int $userId) {
         $memberships = $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
-        $otherTopics = $this->topicRepository->getTopicsExceptFor($memberships);
 
-        return $otherTopics;
+        return $memberships;
+    }
+
+    public function inviteUser(int $topicId, int $userId) {
+        if($this->checkUserInviteExists($topicId, $userId) !== null) {
+            throw new GeneralException('This user has already been invited.');
+        }
+
+        $now = new DateTime();
+        $now->modify('+7d');
+        $dateValid = $now->getResult();
+
+        if(!$this->topicInviteRepository->createInvite($topicId, $userId, $dateValid)) {
+            throw new GeneralException('Database error.');
+        }
+    }
+
+    public function checkUserInviteExists(int $topicId, int $userId) {
+        $invite = $this->topicInviteRepository->getInviteForTopicAndUser($topicId, $userId);
+
+        return $invite;
+    }
+
+    public function getInvitesForTopic(int $topicId) {
+        return $this->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0);
+    }
+
+    public function removeInvite(int $topicId, int $userId) {
+        if($this->checkUserInviteExists($topicId, $userId) === null) {
+            throw new GeneralException('This user has not been invited yet.');
+        }
+
+        if(!$this->topicInviteRepository->deleteInvite($topicId, $userId)) {
+            throw new GeneralException('Database error.');
+        }
+    }
+
+    public function acceptInvite(int $topicId, int $userId) {
+        $this->removeInvite($topicId, $userId);
+        $this->followTopic($topicId, $userId);
+    }
+
+    public function rejectInvite(int $topicId, int $userId) {
+        $this->removeInvite($topicId, $userId);
     }
 }
 

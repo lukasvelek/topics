@@ -2,9 +2,7 @@
 
 namespace App\Modules\UserModule;
 
-use App\Modules\APresenter;
-
-class LogoutPresenter extends APresenter {
+class LogoutPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('LogoutPresenter', 'Logout');
     }

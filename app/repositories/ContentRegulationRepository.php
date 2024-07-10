@@ -17,12 +17,7 @@ class ContentRegulationRepository extends ARepository {
         $qb ->select(['*'])
             ->from('banned_words');
         
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

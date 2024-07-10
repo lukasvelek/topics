@@ -5,12 +5,13 @@ namespace App\UI\FormBuilder;
 use App\Core\HashManager;
 use App\UI\IRenderable;
 
-class FormBuilder implements IRenderable {
+class FormBuilder implements IFormRenderable {
     private array $handlerUrl;
     private string $method;
     private array $elements;
     private bool $isInSection;
     private ?Section $currentSection;
+    private string $name;
 
     public function __construct() {
         $this->handlerUrl = [];
@@ -18,6 +19,30 @@ class FormBuilder implements IRenderable {
         $this->elements = [];
         $this->isInSection = false;
         $this->currentSection = null;
+        $this->name = 'form_' . HashManager::createHash(8, false);
+    }
+
+    public function getName() {
+        return $this->name;
+    }
+
+    public function updateElement(string $name, callable $updateOperation) {
+        foreach($this->elements as $k => $element) {
+            if($element instanceof ElementDuo) {
+                $label = $element->getLabel();
+                $el = $element->getElement();
+
+                if($label instanceof IFormRenderable && $label->getName() == $name) {
+                    $label = $updateOperation($label);
+                    $element->setLabel($label);
+                    break;
+                } else if($el instanceof IFormRenderable && $el->getName() == $name) {
+                    $el = $updateOperation($el);
+                    $element->setElement($el);
+                    break;
+                }
+            }
+        }
     }
 
     public function startSection(string $name, bool $isHiddenInDefault = false) {
@@ -193,7 +218,7 @@ class FormBuilder implements IRenderable {
     }
 
     public function addRadios(string $name, ?string $label = null, array $choices, mixed $value = null, bool $required = true) {
-        $rig = new RadioInputGroup();
+        $rig = new RadioInputGroup($name);
 
         foreach($choices as $choiceKey => $choiceText) {
             $ri = new RadioInput($name, $choiceKey, $choiceText);
@@ -220,6 +245,14 @@ class FormBuilder implements IRenderable {
         return $this;
     }
 
+    public function addHidden(string $name, mixed $value) {
+        $hi = new HiddenInput($name, $value);
+
+        $this->addElement($name, $hi);
+
+        return $this;
+    }
+
     public function render() {
         $tmp = [];
         foreach($this->handlerUrl as $k => $v) {
@@ -228,11 +261,13 @@ class FormBuilder implements IRenderable {
 
         $url = '?' . implode('&', $tmp);
 
-        $code = '<form action="' . $url . '" method="' . $this->method . '">';
+        $code = '<form action="' . $url . '" method="' . $this->method . '" data-formname="' . $this->name . '">';
 
         $i = 0;
         foreach($this->elements as $element) {
             if($element instanceof Section) {
+                $code .= $element->render();
+            } else if($element instanceof HiddenInput) {
                 $code .= $element->render();
             } else if($element instanceof IRenderable) {
                 if(($i + 1) == count($this->elements)) {

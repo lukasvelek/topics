@@ -47,12 +47,7 @@ class ReportRepository extends ARepository {
             ->from('reports')
             ->where('status = ?', [ReportStatus::OPEN]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -72,12 +67,7 @@ class ReportRepository extends ARepository {
             ->where('status = ?', [ReportStatus::OPEN])
             ->andWhere('userId = ?', [$userId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -97,12 +87,7 @@ class ReportRepository extends ARepository {
             ->where('status = ?', [ReportStatus::OPEN])
             ->andWhere('category = ?', [$category]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -121,12 +106,7 @@ class ReportRepository extends ARepository {
             ->from('reports')
             ->where('status = ?', [$status]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

@@ -34,6 +34,10 @@ class VisibilityAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canViewPrivateTopic(int $userId) {
+        return $this->commonContentManagement($userId);
+    }
 }
 
 ?>

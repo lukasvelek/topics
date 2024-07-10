@@ -2,9 +2,7 @@
 
 namespace App\UI\FormBuilder;
 
-use App\UI\IRenderable;
-
-class Label implements IRenderable {
+class Label implements IFormRenderable {
     private string $text;
     private ?string $for;
 
@@ -27,6 +25,10 @@ class Label implements IRenderable {
         $code .= '>' . $this->text . '</label>';
 
         return $code;
+    }
+
+    public function getName() {
+        return 'label_' . $this->for;
     }
 }
 

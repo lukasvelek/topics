@@ -10,11 +10,10 @@ use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 
-class PostsPresenter extends APresenter {
+class PostsPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('PostsPresenter', 'Posts');
     }
@@ -93,7 +92,12 @@ class PostsPresenter extends APresenter {
 
         $this->saveToPresenterCache('form', $fb);
 
-        $topic = $app->topicRepository->getTopicById($post->getTopicId());
+        try {
+            $topic = $app->topicManager->getTopicById($post->getTopicId(), $app->currentUser->getId());
+        } catch (AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         $topicTitle = $bwh->checkText($topic->getTitle());
 

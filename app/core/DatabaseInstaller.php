@@ -49,7 +49,8 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
-                'tags' => 'TEXT NOT NULL'
+                'tags' => 'TEXT NOT NULL',
+                'isPrivate' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -179,7 +180,7 @@ class DatabaseInstaller {
                 'authorId' => 'INT(32) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'choices' => 'VARCHAR(256) NOT NULL',
+                'choices' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NULL',
                 'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
@@ -190,6 +191,12 @@ class DatabaseInstaller {
                 'userId' => 'INT(32) NOT NULL',
                 'choice' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_invites' => [
+                'topicId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateValid' => 'DATETIME NOT NULL'
             ]
         ];
 

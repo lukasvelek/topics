@@ -6,6 +6,12 @@ use App\Components\Sidebar\Sidebar;
 use App\Modules\APresenter;
 
 abstract class AAdminPresenter extends APresenter {
+    protected function __construct(string $name, string $title) {
+        parent::__construct($name, $title);
+
+        $this->moduleName = 'AdminModule';
+    }
+
     protected function createFeedbackSidebar() {
         global $app;
 

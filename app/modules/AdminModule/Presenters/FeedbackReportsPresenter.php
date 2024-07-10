@@ -8,6 +8,7 @@ use App\Constants\ReportStatus;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\ReportEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -176,7 +177,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 break;
 
             case ReportEntityType::TOPIC:
-                $topic = $app->topicRepository->getTopicById($report->getEntityId());
+                try {
+                    $topic = $app->topicManager->getTopicById($report->getEntityId(), $app->currentUser->getId());
+                } catch(AException $e) {
+                    $this->flashMessage($e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
                 break;
 
@@ -250,7 +256,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
 
                 case ReportEntityType::TOPIC:
-                    $topic = $app->topicRepository->getTopicById($report->getEntityId());
+                    try {
+                        $topic = $app->topicManager->getTopicById($report->getEntityId(), $app->currentUser->getId());
+                    } catch(AException $e) {
+                        $this->flashMessage($e->getMessage(), 'error');
+                        $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                    }
 
                     if($topic->isDeleted() !== true) {
                         $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageTopics&action=deleteTopic&topicId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete topic</a>';

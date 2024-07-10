@@ -18,7 +18,7 @@ use App\UI\FormBuilder\FormResponse;
  */
 abstract class APresenter extends AGUICore {
     private array $params;
-    private string $name;
+    public string $name;
     private string $title;
     private ?string $action;
     private array $presenterCache;
@@ -26,6 +26,7 @@ abstract class APresenter extends AGUICore {
     private ?string $ajaxResponse;
     private bool $isStatic;
     private ?string $defaultAction;
+    public ?string $moduleName;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
@@ -53,6 +54,37 @@ abstract class APresenter extends AGUICore {
         $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
+        $this->moduleName = null;
+    }
+
+    /**
+     * Returns a URL with parameters saved in the presenter class
+     * 
+     * @param string $action Action name
+     * @return array URL
+     */
+    public function createURL(string $action, array $params = []) {
+        $module = $this->moduleName;
+        $presenter = $this->getCleanName();
+
+        $url = ['page' => $module . ':' . $presenter, 'action' => $action];
+
+        return array_merge($url, $params);
+    }
+
+    /**
+     * Returns cleaned version of the presenter's name
+     * 
+     * Clean means that it does not contain the word "Presenter" at the end
+     * 
+     * @return string Clean name or name itself
+     */
+    public function getCleanName() {
+        if(str_contains($this->name, 'Presenter')) {
+            return substr($this->name, 0, -9);
+        } else {
+            return $this->name;
+        }
     }
 
     /**

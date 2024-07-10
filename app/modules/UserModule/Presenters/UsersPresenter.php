@@ -4,11 +4,10 @@ namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 
-class UsersPresenter extends APresenter {
+class UsersPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('UsersPresenter', 'Users');
     }

@@ -2,9 +2,7 @@
 
 namespace App\UI\FormBuilder;
 
-use App\UI\IRenderable;
-
-abstract class AElement implements IRenderable {
+abstract class AElement implements IFormRenderable {
     private array $__elements;
     private string $__name;
     
@@ -48,6 +46,10 @@ abstract class AElement implements IRenderable {
         }
 
         return $code;
+    }
+
+    public function getName() {
+        return $this->name;
     }
 }
 
