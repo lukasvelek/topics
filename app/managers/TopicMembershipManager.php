@@ -5,7 +5,9 @@ namespace App\Managers;
 use App\Constants\TopicMemberRole;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
 use App\Repositories\TopicInviteRepository;
@@ -20,13 +22,15 @@ class TopicMembershipManager extends AManager {
     private TopicRepository $topicRepository;
     private TopicMembershipRepository $topicMembershipRepository;
     private TopicInviteRepository $topicInviteRepository;
+    private NotificationManager $notificationManager;
 
-    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger, TopicInviteRepository $topicInviteRepository) {
+    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger, TopicInviteRepository $topicInviteRepository, NotificationManager $notificationManager) {
         parent::__construct($logger);
 
         $this->topicMembershipRepository = $topicMembershipRepository;
         $this->topicRepository = $topicRepository;
         $this->topicInviteRepository = $topicInviteRepository;
+        $this->notificationManager = $notificationManager;
     }
 
     public function followTopic(int $topicId, int $userId,) {
@@ -156,9 +160,24 @@ class TopicMembershipManager extends AManager {
         $now->modify('+7d');
         $dateValid = $now->getResult();
 
+        $this->topicRepository->beginTransaction();
+
         if(!$this->topicInviteRepository->createInvite($topicId, $userId, $dateValid)) {
+            $this->topicRepository->rollback();
             throw new GeneralException('Database error.');
         }
+
+        $topic = $this->topicRepository->getTopicById($topicId);
+        $link = TopicEntity::createTopicProfileLink($topic);
+
+        try {
+            $this->notificationManager->createNewTopicInviteNotification($userId, $link);
+        } catch(AException $e) {
+            $this->topicRepository->rollback();
+            throw new GeneralException('Could not create a notification.');
+        }
+        
+        $this->topicRepository->commit();
     }
 
     public function checkUserInviteExists(int $topicId, int $userId) {

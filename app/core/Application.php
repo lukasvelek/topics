@@ -11,12 +11,14 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\GroupRepository;
+use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
@@ -67,12 +69,14 @@ class Application {
     public SystemServicesRepository $systemServicesRepository;
     public TopicPollRepository $topicPollRepository;
     public TopicInviteRepository $topicInviteRepository;
+    public NotificationRepository $notificationRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
     public TopicMembershipManager $topicMembershipManager;
     public ServiceManager $serviceManager;
     public TopicManager $topicManager;
+    public NotificationManager $notificationManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -114,12 +118,14 @@ class Application {
         $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
         $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
         $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
+        $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
-        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository);
+        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);

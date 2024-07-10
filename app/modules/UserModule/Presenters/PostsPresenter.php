@@ -7,11 +7,14 @@ use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\PostCommentEntity;
+use App\Entities\PostEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class PostsPresenter extends AUserPresenter {
     public function __construct() {
@@ -352,14 +355,27 @@ class PostsPresenter extends AUserPresenter {
         $authorId = $app->currentUser->getId();
         $parentCommentId = $this->httpGet('parentCommentId');
 
+        $post = $app->postRepository->getPostById($postId);
+        $postLink = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+
+        $authorLink = UserEntity::createUserProfileLink($app->currentUser);
+
+        $app->postCommentRepository->beginTransaction();
+        
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
+
+            $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+
+            $app->postCommentRepository->commit();
+
+            $this->flashMessage('Comment posted.', 'success');
         } catch (AException $e) {
+            $app->postCommentRepository->rollback();
+
             $this->flashMessage('Comment could not be created. Error: ' . $e->getMessage(), 'error');
-            $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
         }
         
-        $this->flashMessage('Comment posted.', 'success');
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
 
@@ -518,12 +534,24 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId', true);
         $post = $app->postRepository->getPostById($postId);
 
-        $app->postRepository->likePost($app->currentUser->getId(), $postId);
-        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
+        $app->postRepository->beginTransaction();
 
-        $cm = new CacheManager($app->logger);
+        $postLink = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
-        $cm->invalidateCache('posts');
+        try {
+            $app->postRepository->likePost($app->currentUser->getId(), $postId);
+            $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
+
+            $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser));
+
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+
+            $app->postRepository->commit();
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+            $this->flashMessage('Could not like post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
+        }
 
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }
