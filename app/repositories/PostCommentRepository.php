@@ -20,13 +20,7 @@ class PostCommentRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->andWhere('isDeleted = 0');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -51,13 +45,7 @@ class PostCommentRepository extends ARepository {
             $qb->andWhere('isDeleted = 0');
         }
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

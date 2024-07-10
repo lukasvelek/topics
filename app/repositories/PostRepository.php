@@ -14,7 +14,7 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $count = 5, int $offset = 0, bool $deletedOnly = true) {
+    public function getLatestPostsForTopicId(int $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -25,12 +25,7 @@ class PostRepository extends ARepository {
         if($deletedOnly) {
             $qb->andWhere('isDeleted = 0');
         }   
-        if($count > 0) {
-            $qb->limit($count);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -369,12 +364,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('isDeleted = 0');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

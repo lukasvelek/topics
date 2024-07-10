@@ -6,9 +6,8 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
-use App\Modules\APresenter;
 
-class HomePresenter extends APresenter {
+class HomePresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('HomePresenter', 'Home');
 

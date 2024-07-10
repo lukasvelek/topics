@@ -26,12 +26,7 @@ class TopicInviteRepository extends ARepository {
             $qb->andWhere('dateValid > ?', [$now]);
         }
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -79,6 +74,56 @@ class TopicInviteRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function getInvitesForUserForGrid(int $userId, int $limit, int $offset, bool $validOnly = true) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_invites')
+            ->where('userId = ?', [$userId]);
+
+        if($validOnly) {
+            $now = new DateTime();
+            $now = $now->getResult();
+
+            $qb->andWhere('dateValid > ?', [$now]);
+        }
+        
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        $invites = [];
+        while($row = $qb->fetchAssoc()) {
+            $invites[] = TopicInviteEntity::createEntityFromDbRow($row);
+        }
+
+        return $invites;
+    }
+
+    public function getAllTopicsInUserInvites(int $userId, bool $validOnly = true) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['topicId'])
+            ->from('topic_invites')
+            ->where('userId = ?', [$userId]);
+
+        if($validOnly) {
+            $now = new DateTime();
+            $now = $now->getResult();
+
+            $qb->andWhere('dateValid > ?', [$now]);
+        }
+
+        $qb->execute();
+
+        $topics = [];
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = $row['topicId'];
+        }
+
+        return $topics;
     }
 }
 

@@ -76,12 +76,7 @@ class TopicMembershipRepository extends ARepository {
             ->from('topic_membership')
             ->where('topicId = ?', [$topicId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
         if($orderByRoleDesc) {
             $qb->orderBy('role', 'DESC');
         }

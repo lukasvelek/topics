@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Modules\APresenter;
+
 class AjaxRequestBuilder {
     private ?string $url;
     private array $headerParams;
@@ -43,6 +45,15 @@ class AjaxRequestBuilder {
 
     public function addCustomArg(string $argName) {
         $this->customArgs[] = $argName;
+
+        return $this;
+    }
+
+    public function setAction(APresenter $presenter, string $actionName) {
+        $module = $presenter->moduleName;
+        $presenter = $presenter->getCleanName();
+
+        $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $actionName]);
 
         return $this;
     }

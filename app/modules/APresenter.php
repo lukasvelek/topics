@@ -18,7 +18,7 @@ use App\UI\FormBuilder\FormResponse;
  */
 abstract class APresenter extends AGUICore {
     private array $params;
-    private string $name;
+    public string $name;
     private string $title;
     private ?string $action;
     private array $presenterCache;
@@ -26,6 +26,7 @@ abstract class APresenter extends AGUICore {
     private ?string $ajaxResponse;
     private bool $isStatic;
     private ?string $defaultAction;
+    public ?string $moduleName;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
@@ -53,6 +54,20 @@ abstract class APresenter extends AGUICore {
         $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
+        $this->moduleName = null;
+    }
+
+    /**
+     * Returns cleaned version of the presenter's name
+     * 
+     * Clean means that it does not contain the word "Presenter" at the end
+     */
+    public function getCleanName() {
+        if(str_contains($this->name, 'Presenter')) {
+            return substr($this->name, 0, -9);
+        } else {
+            return $this->name;
+        }
     }
 
     /**

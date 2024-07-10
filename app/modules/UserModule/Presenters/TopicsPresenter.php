@@ -13,12 +13,11 @@ use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
 
-class TopicsPresenter extends APresenter {
+class TopicsPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
     }

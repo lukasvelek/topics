@@ -34,11 +34,15 @@ class TopicRepository extends ARepository {
         return $entity;
     }
 
-    public function bulkGetTopicsByIds(array $ids) {
+    public function bulkGetTopicsByIds(array $ids, bool $idAsKey = false) {
         $entities = [];
 
         foreach($ids as $id) {
-            $entities[] = $this->getTopicById($id);
+            if($idAsKey) {
+                $entities[$id] = $this->getTopicById($id);
+            } else {
+                $entities[] = $this->getTopicById($id);
+            }
         }
 
         return $entities;
@@ -129,12 +133,7 @@ class TopicRepository extends ARepository {
             ->from('topics')
             ->where('isDeleted = 1');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

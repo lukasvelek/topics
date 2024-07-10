@@ -10,11 +10,10 @@ use App\Entities\PostCommentEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 
-class PostsPresenter extends APresenter {
+class PostsPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('PostsPresenter', 'Posts');
     }

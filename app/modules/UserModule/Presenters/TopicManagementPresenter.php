@@ -11,13 +11,12 @@ use App\Entities\TopicPollEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
-class TopicManagementPresenter extends APresenter {
+class TopicManagementPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
     }

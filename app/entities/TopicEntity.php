@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\UI\LinkBuilder;
+
 class TopicEntity implements ICreatableFromRow {
     private int $topicId;
     private string $title;
@@ -61,6 +63,10 @@ class TopicEntity implements ICreatableFromRow {
         }
         $tags = unserialize($row['tags']);
         return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted'], $tags, $row['isPrivate']);
+    }
+
+    public static function createTopicProfileLink(TopicEntity $topic) {
+        return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
     }
 }
 
