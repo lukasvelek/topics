@@ -100,6 +100,24 @@ class AjaxRequestBuilder {
         return $this;
     }
 
+    public function hideHTMLElementRaw(string $htmlElementId) {
+        $this->addWhenDoneOperation('$(' . $htmlElementId . ').hide();');
+
+        return $this;
+    }
+
+    public function hideHTMLElement(string $htmlElementId) {
+        $this->hideHTMLElementRaw('"#' . $htmlElementId . '"');
+
+        return $this;
+    }
+
+    public function addCustomWhenDoneCode(string $code) {
+        $this->addWhenDoneOperation($code);
+
+        return $this;
+    }
+
     public function setFunctionName(string $name) {
         $this->functionName = $name;
 

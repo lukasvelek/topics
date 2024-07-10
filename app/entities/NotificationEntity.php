@@ -4,15 +4,15 @@ namespace App\Entities;
 
 class NotificationEntity implements ICreatableFromRow {
     private string $id;
-    private int $authorId;
+    private int $userId;
     private string $title;
     private string $message;
     private string $dateCreated;
     private ?string $dateSeen;
 
-    public function __construct(string $id, int $authorId, string $title, string $message, string $dateCreated, ?string $dateSeen) {
+    public function __construct(string $id, int $userId, string $title, string $message, string $dateCreated, ?string $dateSeen) {
         $this->id = $id;
-        $this->authorId = $authorId;
+        $this->userId = $userId;
         $this->title = $title;
         $this->message = $message;
         $this->dateCreated = $dateCreated;
@@ -23,8 +23,8 @@ class NotificationEntity implements ICreatableFromRow {
         return $this->id;
     }
 
-    public function getAuthorId() {
-        return $this->authorId;
+    public function getUserId() {
+        return $this->userId;
     }
 
     public function getTitle() {
@@ -47,7 +47,7 @@ class NotificationEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['notificationId'], $row['authorId'], $row['title'], $row['message'], $row['dateCreated'], $row['dateSeen']);
+        return new self($row['notificationId'], $row['userId'], $row['title'], $row['message'], $row['dateCreated'], $row['dateSeen']);
     }
 }
 

@@ -10,6 +10,7 @@ class NavbarLinks {
     public const USER_LOGOUT = ['page' => 'UserModule:Logout', 'action' => 'logout'];
     public const ADMINISTRATION = ['page' => 'AdminModule:Home', 'action' => 'dashboard'];
     public const USER_INVITES = ['page' => 'UserModule:TopicInvites', 'action' => 'list'];
+    public const USER_NOTIFICATIONS = ['page' => 'UserModule:Notifications', 'action' => 'list'];
 
     public static function toArray() {
         return [
