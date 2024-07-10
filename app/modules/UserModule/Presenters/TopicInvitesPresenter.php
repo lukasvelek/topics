@@ -3,9 +3,13 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\TopicInviteEntity;
+use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 class TopicInvitesPresenter extends AUserPresenter {
     public function __construct() {
@@ -60,10 +64,91 @@ class TopicInvitesPresenter extends AUserPresenter {
                 return '-';
             }
         });
+        $gb->addOnColumnRender('dateValid', function(TopicInviteEntity $tie) {
+            return DateTimeFormatHelper::formatDateToUserFriendly($tie->getDateValid());
+        });
+        $gb->addAction(function(TopicInviteEntity $tie) {
+            $now = new DateTime();
+            $now = $now->getResult();
+
+            if(strtotime($tie->getDateValid()) > strtotime($now)) {
+                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+            } else {
+                return '-';
+            }
+        });
+        $gb->addAction(function(TopicInviteEntity $tie) {
+            $now = new DateTime();
+            $now = $now->getResult();
+
+            if(strtotime($tie->getDateValid()) > strtotime($now)) {
+                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+            } else {
+                return '-';
+            }
+        });
+        $gb->addAction(function(TopicInviteEntity $tie) {
+            $now = new DateTime();
+            $now = $now->getResult();
+
+            if(strtotime($tie->getDateValid()) <= strtotime($now)) {
+                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+            } else {
+                return '-';
+            }
+        });
 
         $paginator = $gb->createGridControls2('getInvitesGrid', $page, $lastPage);
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+    }
+
+    public function handleAcceptInvite() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        try {
+            $app->topicMembershipManager->acceptInvite($topicId, $app->currentUser->getId());
+
+            $this->flashMessage('Invite accepted.', 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not accept invite. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('list'));
+    }
+
+    public function handleRejectInvite() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        try {
+            $app->topicMembershipManager->rejectInvite($topicId, $app->currentUser->getId());
+
+            $this->flashMessage('Invite rejected.', 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not reject invite. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('list'));
+    }
+
+    public function handleDeleteInvite() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        try {
+            $app->topicMembershipManager->removeInvite($topicId, $app->currentUser->getId());
+
+            $this->flashMessage('Invite deleted.', 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not delete invite. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createUrl('list'));
     }
 }
 

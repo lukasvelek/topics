@@ -58,9 +58,26 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
+     * Returns a URL with parameters saved in the presenter class
+     * 
+     * @param string $action Action name
+     * @return array URL
+     */
+    public function createURL(string $action, array $params = []) {
+        $module = $this->moduleName;
+        $presenter = $this->getCleanName();
+
+        $url = ['page' => $module . ':' . $presenter, 'action' => $action];
+
+        return array_merge($url, $params);
+    }
+
+    /**
      * Returns cleaned version of the presenter's name
      * 
      * Clean means that it does not contain the word "Presenter" at the end
+     * 
+     * @return string Clean name or name itself
      */
     public function getCleanName() {
         if(str_contains($this->name, 'Presenter')) {
