@@ -2,9 +2,7 @@
 
 namespace App\UI\FormBuilder;
 
-use App\UI\IRenderable;
-
-class Section implements IRenderable {
+class Section implements IFormRenderable {
     private array $elements;
     private bool $hidden;
     public string $name;
@@ -21,7 +19,7 @@ class Section implements IRenderable {
         $this->hidden = $hidden;
     }
 
-    public function addElement(string $name, IRenderable $object) {
+    public function addElement(string $name, IFormRenderable $object) {
         $this->elements[$name] = $object;
     }
 
@@ -41,6 +39,10 @@ class Section implements IRenderable {
         $code .= '</div>';
 
         return $code;
+    }
+
+    public function getName() {
+        return $this->name;
     }
 }
 

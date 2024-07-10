@@ -180,7 +180,7 @@ class DatabaseInstaller {
                 'authorId' => 'INT(32) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'choices' => 'VARCHAR(256) NOT NULL',
+                'choices' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NULL',
                 'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'

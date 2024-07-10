@@ -13,8 +13,10 @@ use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\IFormRenderable;
 use App\UI\LinkBuilder;
 
 class TopicsPresenter extends AUserPresenter {
@@ -117,7 +119,22 @@ class TopicsPresenter extends AUserPresenter {
 
         $tags = $topic->getTags();
 
-        $tagCode = '<div>' . implode('', $tags) . '</div>';
+        $tagCode = '<div style="line-height: 2.5em">';
+
+        $i = 0;
+        foreach($tags as $tag) {
+            if($i == 3) {
+                $i = 0;
+
+                $tagCode .= '<br>';
+            }
+
+            $tagCode .= $tag;
+
+            $i++;
+        }
+
+        $tagCode .= '</div>';
 
         $inviteManagementLink = '';
         if($topic->isPrivate() && $app->actionAuthorizator->canManageTopicInvites($app->currentUser->getId(), $topicId)) {
@@ -759,13 +776,18 @@ class TopicsPresenter extends AUserPresenter {
                 ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPollForm', 'topicId' => $topicId])
                 ->addTextInput('title', 'Poll title:', null, true)
                 ->addTextArea('description', 'Poll description:', null, true)
-                ->addTextArea('choices', 'Poll choices code:', null, true)
-                ->addLabel('Choice code looks like this: "Pizza,Spaghetti,Pasta" first is the value and the second is the text displayed.', 'clbl1')
+                ->addTextArea('choices', 'Poll choices:', null, true)
+                ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
                 ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
                 ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours', 'clbl2')
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create')
             ;
+
+            $fb->updateElement('choices', function(AElement $element) {
+                $element->maxlength = '32768';
+                return $element;
+            });
 
             $this->saveToPresenterCache('form', $fb);
 
