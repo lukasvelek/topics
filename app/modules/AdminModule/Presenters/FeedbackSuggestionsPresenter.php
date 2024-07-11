@@ -123,8 +123,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $filterControl = '';
         if($filterType != 'null') {
-            //$filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
-
             /** FILTER CATEGORIES */
             $filterCategories = [
                 'all' => 'All',

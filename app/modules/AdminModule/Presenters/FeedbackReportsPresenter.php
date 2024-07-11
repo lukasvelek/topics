@@ -118,8 +118,6 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $filterControl = '';
         if($filterType != 'null') {
-            //$filterControl = $filterText . '&nbsp;<a class="post-data-link" onclick="getReportGrid(0, \'null\', \'null\')" href="#">Clear filter</a>';
-
             /** FILTER CATEGORIES */
             $filterCategories = [
                 'all' => 'All',
