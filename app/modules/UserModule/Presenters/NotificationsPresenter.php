@@ -71,7 +71,7 @@ class NotificationsPresenter extends AUserPresenter {
         }
 
         if(empty($notifications)) {
-            $listCode = 'No notifications found';
+            $listCode = '<div style="text-align: center">No notifications found</div>';
         }
 
         $this->ajaxSendResponse(['notifications' => $listCode]);
