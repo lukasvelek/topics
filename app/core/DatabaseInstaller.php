@@ -428,7 +428,8 @@ class DatabaseInstaller {
 
         $services = [
             'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
-            'PostLikeEqualizer' => 'PostLikeEqualizer.php'
+            'PostLikeEqualizer' => 'PostLikeEqualizer.php',
+            'OldNotificationRemoving' => 'OldNotificationRemoving.php'
         ];
 
         foreach($services as $title => $path) {

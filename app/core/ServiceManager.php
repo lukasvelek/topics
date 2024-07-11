@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Constants\SystemServiceStatus;
+use App\Exceptions\ServiceException;
 use App\Repositories\SystemServicesRepository;
 
 class ServiceManager {
@@ -31,15 +32,23 @@ class ServiceManager {
     }
 
     public function startService(string $serviceTitle) {
-        $this->ssr->updateService($this->getServiceId($serviceTitle), ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => null, 'status' => SystemServiceStatus::RUNNING]);
+        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => null, 'status' => SystemServiceStatus::RUNNING])) {
+            throw new ServiceException('Could not update service status.');
+        }
     }
 
     public function stopService(string $serviceTitle) {
-        $this->ssr->updateService($this->getServiceId($serviceTitle), ['dateEnded' => date('Y-m-d H:i:s'), 'status' => SystemServiceStatus::NOT_RUNNING]);
+        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateEnded' => date('Y-m-d H:i:s'), 'status' => SystemServiceStatus::NOT_RUNNING])) {
+            throw new ServiceException('Could not update service status.');
+        }
     }
 
     private function getServiceId(string $serviceTitle) {
         $service = $this->ssr->getServiceByTitle($serviceTitle);
+
+        if($service === null) {
+            throw new ServiceException('Could not retrieve service information from the database.');
+        }
 
         return $service->getId();
     }

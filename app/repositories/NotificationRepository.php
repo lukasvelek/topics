@@ -53,6 +53,57 @@ class NotificationRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getSeenNotificationsOlderThanX(string $date) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['notificationId'])
+            ->from('notifications')
+            ->where('dateSeen < ?', [$date])
+            ->execute();
+        
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['notificationId'];
+        }
+
+        return $ids;
+    }
+
+    public function bulkRemoveNotifications(array $notificationIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('notifications')
+            ->where($qb->getColumnInValues('notificationId', $notificationIds))
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getSeenNotificationsOlderThanXSteps(string $date, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['notificationId'])
+            ->from('notifications')
+            ->where('dateSeen < ?', [$date]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['notificationId'];
+        }
+
+        return $ids;
+    }
 }
 
 ?>

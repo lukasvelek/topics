@@ -137,6 +137,18 @@ class NotificationManager extends AManager {
     public function setNotificationAsSeen(string $notificationId) {
         return $this->nr->updateNotification($notificationId, ['dateSeen' => DateTime::now()]);
     }
+
+    public function getOldSeenNotifications(string $date) {
+        return $this->nr->getSeenNotificationsOlderThanX($date);
+    }
+
+    public function bulkRemoveNotifications(array $notificationIds) {
+        return $this->nr->bulkRemoveNotifications($notificationIds);
+    }
+
+    public function getOldSeenNotificationsStep(string $date, int $limit, int $offset) {
+        return $this->nr->getSeenNotificationsOlderThanXSteps($date, $limit, $offset);
+    }
 }
 
 ?>

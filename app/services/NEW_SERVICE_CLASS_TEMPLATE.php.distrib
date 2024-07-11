@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Services;
+
+use App\Core\ServiceManager;
+use App\Exceptions\AException;
+use App\Logger\Logger;
+use Exception;
+
+class SERVICE_NAME extends AService {
+    public function __construct(Logger $logger, ServiceManager $serviceManager) {
+        parent::__construct('SERVICE_NAME_WITHOUT_SERVICE_SUFFIX', $logger, $serviceManager);
+    }
+
+    public function run() {
+        try {
+            $this->serviceStart();
+
+            $this->innerRun();
+
+            $this->serviceStop();
+        } catch(AException|Exception $e) {
+            $this->logError($e->getMessage());
+        }
+    }
+
+    private function innerRun() {
+        // Service executes all commands here   
+    }
+}
+
+?>
