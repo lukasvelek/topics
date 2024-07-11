@@ -197,6 +197,15 @@ class DatabaseInstaller {
                 'userId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NOT NULL'
+            ],
+            'notifications' => [
+                'notificationId' => 'VARCHAR(256)',
+                'userId' => 'INT(32) NOT NULL',
+                'type' => 'INT(4) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateSeen' => 'DATETIME NULL'
             ]
         ];
 
@@ -419,7 +428,8 @@ class DatabaseInstaller {
 
         $services = [
             'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
-            'PostLikeEqualizer' => 'PostLikeEqualizer.php'
+            'PostLikeEqualizer' => 'PostLikeEqualizer.php',
+            'OldNotificationRemoving' => 'OldNotificationRemoving.php'
         ];
 
         foreach($services as $title => $path) {

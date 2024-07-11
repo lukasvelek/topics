@@ -9,6 +9,16 @@ abstract class AUserPresenter extends APresenter {
         parent::__construct($name, $title);
 
         $this->moduleName = 'UserModule';
+
+        $this->checkNotification();
+    }
+
+    private function checkNotification() {
+        global $app;
+
+        if($this->httpGet('notificationId') !== null && $this->httpGet('removeNotification') == '1') {
+            $app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
+        }
     }
 }
 

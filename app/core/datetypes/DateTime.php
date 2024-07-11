@@ -116,6 +116,12 @@ class DateTime {
     public function __toString() {
         return $this->getResult();
     }
+
+    public static function now() {
+        $now = new self();
+
+        return $now->getResult();
+    }
 }
 
 ?>

@@ -65,7 +65,7 @@ function requireFiles(array $files) {
 
 $files = [];
 
-getFilesInFolderRecursively(__DIR__, $files, ['ajax\\'], ['app_loader.php'], ['html']);
+getFilesInFolderRecursively(__DIR__, $files, ['ajax\\'], ['app_loader.php'], ['html', 'distrib']);
 sortFilesByPriority($files);
 requireFiles($files);
 

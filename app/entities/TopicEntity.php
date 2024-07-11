@@ -65,8 +65,12 @@ class TopicEntity implements ICreatableFromRow {
         return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted'], $tags, $row['isPrivate']);
     }
 
-    public static function createTopicProfileLink(TopicEntity $topic) {
-        return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+    public static function createTopicProfileLink(TopicEntity $topic, bool $object = false) {
+        if($object) {
+            return LinkBuilder::createSimpleLinkObject($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+        } else {
+            return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+        }
     }
 }
 

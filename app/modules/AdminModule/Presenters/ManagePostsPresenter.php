@@ -2,15 +2,25 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Constants\ReportCategory;
+use App\Entities\UserEntity;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
+use Exception;
 
 class ManagePostsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePostsPresenter', 'Manage posts');
+
+        $isFeedback = $this->httpGet('isFeedback');
      
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
+        $this->addBeforeRenderCallback(function() use ($isFeedback) {
+            if($isFeedback) {
+                $this->template->sidebar = $this->createFeedbackSidebar();
+            } else {
+                $this->template->sidebar = $this->createManageSidebar();
+            }
         });
     }
 
@@ -20,11 +30,31 @@ class ManagePostsPresenter extends AAdminPresenter {
         $commentId = $this->httpGet('commentId', true);
         $comment = $app->postCommentRepository->getCommentById($commentId);
         $reportId = $this->httpGet('reportId');
-
+        
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->contentManager->deleteComment($commentId);
+            $post = $app->postRepository->getPostById($comment->getPostId());
+            $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            
+            $report = $app->reportRepository->getReportById($reportId);
+            $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $this->flashMessage('Comment deleted.', 'success');
+            $app->postRepository->beginTransaction();
+            
+            try {
+                $app->contentManager->deleteComment($commentId);
+
+                $app->notificationManager->createNewCommentDeleteDueToReportNotification($comment->getAuthorId(), $postLink, $userLink, $reason);
+
+                $app->postRepository->commit();
+
+                $this->flashMessage('Comment #' . $commentId . ' deleted.', 'success');
+            } catch(Exception $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Comment #' . $commentId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $this->saveToPresenterCache('comment', $comment);
@@ -56,9 +86,28 @@ class ManagePostsPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->contentManager->deletePost($postId);
+            $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            
+            $report = $app->reportRepository->getReportById($reportId);
+            $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $this->flashMessage('Post deleted with all its comments.', 'success');
+            $app->postRepository->beginTransaction();
+
+            try {
+                $app->contentManager->deletePost($postId);
+
+                $app->notificationManager->createNewPostDeleteDueToReportNotification($post->getAuthorId(), $postLink, $userLink, $reason);
+
+                $app->postRepository->commit();
+
+                $this->flashMessage('Post #' . $postId . ' deleted with all its comments.', 'success');
+            } catch(Exception $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Post #' . $postId . ' could not be deleted.', 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $this->saveToPresenterCache('post', $post);

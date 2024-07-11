@@ -49,6 +49,10 @@ class ReportEntity implements ICreatableFromRow {
         return $this->description;
     }
 
+    public function getShortenedDescription(int $length) {
+        return substr($this->description, 0, $length);
+    }
+
     public function getStatus() {
         return $this->status;
     }
