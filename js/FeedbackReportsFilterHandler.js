@@ -34,3 +34,12 @@ async function handleGridFilterChange() {
 
     await getReportGrid(0, type, key);
 }
+
+async function handleGridFilterClear() {
+    $("#filter-subcategory").html('');
+    $("#filter-subcategory").hide();
+    $("#filter-submit").hide();
+    $("#filter-clear").hide();
+
+    await getReportGrid(0, 'null', 'null');
+}

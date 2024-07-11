@@ -40,8 +40,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $suggestions = [];
         $suggestionCount = 0;
 
-        $filterText = '';
-
         switch($filterType) {
             case 'null':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForList($gridSize, ($gridSize * $page));
@@ -51,19 +49,16 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             case 'category':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
-                $filterText = 'Category: <span style="color: ' . SuggestionCategory::getColorByKey($filterKey) . '">' . SuggestionCategory::toString($filterKey) . '</span>';
                 break;
     
             case 'status':
                 $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
-                $filterText = 'Status: <span style="color: ' . SuggestionStatus::getColorByStatus($filterKey) . '">' . SuggestionStatus::toString($filterKey) . '</span>';
                 break;
     
             case 'user':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
-                $filterText = 'User: ' . $app->userRepository->getUserById($filterKey);
                 break;
         }
 
@@ -128,7 +123,89 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $filterControl = '';
         if($filterType != 'null') {
-            $filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+            //$filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                if($k == $filterType) {
+                    $filterCategoriesSelect .= '<option value="' . $k . '" selected>' . $v . '</option>';
+                } else {
+                    $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
+                }
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory">';
+
+            $options = [];
+            switch($filterType) {
+                case 'category':
+                    foreach(SuggestionCategory::getAll() as $k => $v) {
+                        if($filterKey == $k) {
+                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                        }
+                    }
+                    break;
+
+                case 'status':
+                    foreach(SuggestionStatus::getAll() as $k => $v) {
+                        if($filterKey == $k) {
+                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                        }
+                    }
+                    break;
+
+                case 'user':
+                    $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
+                    $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+
+                    foreach($users as $user) {
+                        if($user->getId() == $filterKey) {
+                            $options[] = '<option value="' . $user->getId() . '" selected>'. $user->getUsername() . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                        }
+                    }
+
+                    break;
+            }
+
+            $filterSubcategoriesSelect .= implode('', $options);
+
+            $filterSubcategoriesSelect .= '</select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            /** FILTER CLEAR */
+            $filterClear = '<button type="button" id="filter-clear" onclick="handleGridFilterClear()" style="border: 1px solid black">Clear filter</button>';
+            /** END OF FILTER CLEAR */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                    ' . $filterClear . '
+                </div>
+            ';
+
+            $filterControl = $filterForm;
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [
@@ -149,7 +226,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             /** END OF FILTER SUBCATEGORIES */
 
             /** FILTER SUBMIT */
-            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()">Apply filter</button>';
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
             /** END OF FILTER SUBMIT */
 
             $filterForm = '
@@ -160,7 +237,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();</script>';
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);

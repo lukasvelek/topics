@@ -44,8 +44,6 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $reports = [];
         $reportCount = 0;
 
-        $filterText = '';
-
         switch($filterType) {
             case 'null':
                 $reports = $app->reportRepository->getOpenReportsForList($gridSize, ($page * $gridSize));
@@ -55,19 +53,16 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             case 'user':
                 $reports = $app->reportRepository->getOpenReportsForListFilterUser($filterKey, $gridSize, ($page * $gridSize));
                 $reportCount = count($app->reportRepository->getOpenReportsForListFilterUser($filterKey, 0, 0));
-                $filterText = 'User: ' . $app->userRepository->getUserById($filterKey)->getUsername();
                 break;
     
             case 'category':
                 $reports = $app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $gridSize, ($page * $gridSize));
                 $reportCount = count($app->reportRepository->getOpenReportsForListFilterCategory($filterKey, 0, 0));
-                $filterText = 'Category: ' . ReportCategory::toString($filterKey);
                 break;
     
             case 'status':
                 $reports = $app->reportRepository->getReportsForListFilterStatus($filterKey, $gridSize, ($page * $gridSize));
                 $reportCount = count($app->reportRepository->getReportsForListFilterStatus($filterKey, 0, 0));
-                $filterText = 'Status: ' . ReportStatus::toString($filterKey);
                 break;
         }
 
@@ -123,7 +118,90 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $filterControl = '';
         if($filterType != 'null') {
-            $filterControl = $filterText . '&nbsp;<a class="post-data-link" onclick="getReportGrid(0, \'null\', \'null\')" href="#">Clear filter</a>';
+            //$filterControl = $filterText . '&nbsp;<a class="post-data-link" onclick="getReportGrid(0, \'null\', \'null\')" href="#">Clear filter</a>';
+
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                if($k == $filterType) {
+                    $filterCategoriesSelect .= '<option value="' . $k . '" selected>' . $v . '</option>';
+                } else {
+                    $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
+                }
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory">';
+
+            $options = [];
+            switch($filterType) {
+                case 'category':
+                    foreach(ReportCategory::getArray() as $k => $v) {
+                        if($filterKey == $k) {
+                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                        }
+                    }
+                    break;
+    
+                case 'status':
+                    if($filterKey == ReportStatus::OPEN) {
+                        $options[] = '<option value="' . ReportStatus::OPEN . '" selected>' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
+                        $options[] = '<option value="' . ReportStatus::RESOLVED . '">' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
+                    } else {
+                        $options[] = '<option value="' . ReportStatus::OPEN . '">' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
+                        $options[] = '<option value="' . ReportStatus::RESOLVED . '" selected>' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
+                    }
+
+                    break;
+    
+                case 'user':
+                    $usersInReports = $app->reportRepository->getUsersInReports();
+                    $users = $app->userRepository->getUsersByIdBulk($usersInReports);
+    
+                    foreach($users as $user) {
+                        if($user->getId() == $filterKey) {
+                            $options[] = '<option value="' . $user->getId() . '" selected>'. $user->getUsername() . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                        }
+                    }
+    
+                    break;
+            }
+
+            $filterSubcategoriesSelect .= implode('', $options);
+
+            $filterSubcategoriesSelect .= '</select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            /** FILTER CLEAR */
+            $filterClear = '<button type="button" id="filter-clear" onclick="handleGridFilterClear()" style="border: 1px solid black">Clear filter</button>';
+            /** END OF FILTER CLEAR */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                    ' . $filterClear . '
+                </div>
+            ';
+
+            $filterControl = $filterForm;
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [
@@ -155,7 +233,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();</script>';
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
