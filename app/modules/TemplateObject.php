@@ -6,6 +6,8 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\IRenderable;
 
 class TemplateObject {
+    private const SHORTEN_CODE = true;
+
     private string $__templateContent;
     private array $__values;
 
@@ -44,6 +46,15 @@ class TemplateObject {
             }
 
             $this->replace($upperValue, $this->$__value, $this->__templateContent);
+        }
+
+        if(self::SHORTEN_CODE) {
+            $lines = [];
+            foreach(explode("\r\n", $this->__templateContent) as $line) {
+                $lines[] = trim($line);
+            }
+        
+            $this->__templateContent = implode('', $lines);
         }
 
         return $this;
