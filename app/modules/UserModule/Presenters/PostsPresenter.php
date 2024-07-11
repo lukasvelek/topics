@@ -192,15 +192,34 @@ class PostsPresenter extends AUserPresenter {
         $toLike = $this->httpGet('toLike');
         $userId = $app->currentUser->getId();
 
+        $comment = $app->postCommentRepository->getCommentById($commentId);
+
+        $post = $app->postRepository->getPostById($comment->getPostId());
+        $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $post->getId()]), 'post-data-link');
+
+        $authorLink = LinkBuilder::createSimpleLinkObject($app->currentUser->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $app->currentUser->getId()], 'post-data-link');
+
         $liked = false;
         
-        if($toLike == 'true') {
-            // like
-            $app->postCommentRepository->likeComment($userId, $commentId);
-            $liked = true;
-        } else {
-            // unlike
-            $app->postCommentRepository->unlikeComment($userId, $commentId);
+        $app->postCommentRepository->beginTransaction();
+
+        try {
+            if($toLike == 'true') {
+                $app->postCommentRepository->likeComment($userId, $commentId);
+                $liked = true;
+
+                $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+            } else {
+                $app->postCommentRepository->unlikeComment($userId, $commentId);
+            }
+
+            $app->postCommentRepository->commit();
+        } catch(AException $e) {
+            $app->postCommentRepository->rollback();
+            
+            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '.', 'error');
+            
+            $liked = false;
         }
             
         $likes = $app->postCommentRepository->getLikes($commentId);
@@ -356,9 +375,9 @@ class PostsPresenter extends AUserPresenter {
         $parentCommentId = $this->httpGet('parentCommentId');
 
         $post = $app->postRepository->getPostById($postId);
-        $postLink = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+        $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
-        $authorLink = UserEntity::createUserProfileLink($app->currentUser);
+        $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
         $app->postCommentRepository->beginTransaction();
         
@@ -534,15 +553,15 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId', true);
         $post = $app->postRepository->getPostById($postId);
 
+        $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+        
         $app->postRepository->beginTransaction();
-
-        $postLink = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
         try {
             $app->postRepository->likePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
-            $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser));
+            $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
 
             $cm = new CacheManager($app->logger);
             $cm->invalidateCache('posts');

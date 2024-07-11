@@ -5,13 +5,17 @@ namespace App\UI;
 class LinkBuilder implements IRenderable {
     private array $elements;
     private string $text;
+    private array $urlParts;
 
     public function __construct() {
         $this->elements = [];
         $this->text = '';
+        $this->urlParts = [];
     }
 
     public function render() {
+        $this->processUrl();
+
         $code = '<a ' . $this->processElements() . '>' . $this->text . '</a>';
 
         return $code;
@@ -24,12 +28,7 @@ class LinkBuilder implements IRenderable {
     }
 
     public function setUrl(array $url) {
-        $tmp = [];
-        foreach($url as $k => $v) {
-            $tmp[] = $k . '=' . $v;
-        }
-
-        $this->elements['href'] = '?' . implode('&', $tmp);
+        $this->urlParts = array_merge($this->urlParts, $url);
 
         return $this;
     }
@@ -42,6 +41,16 @@ class LinkBuilder implements IRenderable {
 
     public function setStyle(string $style) {
         $this->elements['style'] = $style;
+    }
+
+    private function processUrl() {
+        $tmp = [];
+
+        foreach($this->urlParts as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        $this->elements['href'] = '?' . implode('&', $tmp);
     }
 
     private function processElements() {
@@ -62,13 +71,19 @@ class LinkBuilder implements IRenderable {
     }
 
     public static function createSimpleLink(string $text, array $url, string $class) {
+        $obj = self::createSimpleLinkObject($text, $url, $class);
+
+        return $obj->render();
+    }
+
+    public static function createSimpleLinkObject(string $text, array $url, string $class) {
         $lb = new self();
 
         $lb ->setText($text)
             ->setUrl($url)
             ->setClass($class);
 
-        return $lb->render();
+        return $lb;
     }
 
     public static function convertUrlArrayToString(array $url) {
