@@ -42,7 +42,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $gridSize = $app->cfg['GRID_SIZE'];
 
         $reports = [];
-        $reportCount = [];
+        $reportCount = 0;
 
         $filterText = '';
 
@@ -124,9 +124,75 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $filterControl = '';
         if($filterType != 'null') {
             $filterControl = $filterText . '&nbsp;<a class="post-data-link" onclick="getReportGrid(0, \'null\', \'null\')" href="#">Clear filter</a>';
+        } else {
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                $tmp = '<option value="' . $k . '">' . $v . '</option>';
+
+                $filterCategoriesSelect .= $tmp;
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory"></select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                </div>
+            ';
+
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();</script>';
         }
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+    }
+
+    public function actionGetFilterCategorySuboptions() {
+        global $app;
+
+        $category = $this->httpGet('category');
+
+        $options = [];
+        switch($category) {
+            case 'category':
+                foreach(ReportCategory::getArray() as $k => $v) {
+                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                }
+                break;
+
+            case 'status':
+                $options[] = '<option value="' . ReportStatus::OPEN . '">' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
+                $options[] = '<option value="' . ReportStatus::RESOLVED . '">' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
+                break;
+
+            case 'user':
+                $usersInReports = $app->reportRepository->getUsersInReports();
+                $users = $app->userRepository->getUsersByIdBulk($usersInReports);
+
+                foreach($users as $user) {
+                    $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                }
+
+                break;
+        }
+
+        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
     }
 
     public function handleList() {

@@ -226,6 +226,24 @@ class ReportRepository extends ARepository {
 
         return $qb->fetch('cnt');
     }
+
+    public function getUsersInReports() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('reports')
+            ->where('status = 1')
+            ->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['userId'], $users)) {
+                $users[] = $row['userId'];
+            }
+        }
+
+        return $users;
+    }
 }
 
 ?>
