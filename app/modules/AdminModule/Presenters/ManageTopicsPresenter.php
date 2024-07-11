@@ -2,17 +2,27 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Constants\ReportCategory;
 use App\Core\CacheManager;
+use App\Entities\TopicEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use Exception;
 
 class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageTopicsPresenter', 'Manage topics');
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
+        $isFeedback = $this->httpGet('isFeedback');
+     
+        $this->addBeforeRenderCallback(function() use ($isFeedback) {
+            if($isFeedback) {
+                $this->template->sidebar = $this->createFeedbackSidebar();
+            } else {
+                $this->template->sidebar = $this->createManageSidebar();
+            }
         });
     }
 
@@ -20,34 +30,32 @@ class ManageTopicsPresenter extends AAdminPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
+        $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
         $reportId = $this->httpGet('reportId');
-        
-        try {
-            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
-        } catch(AException $e) {
-            $this->flashMessage($e->getMessage(), 'error');
-            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
-        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $app->topicRepository->updateTopic($topicId, ['isDeleted' => '1']);
+            $topicLink = TopicEntity::createTopicProfileLink($topic, true);
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            
+            $report = $app->reportRepository->getReportById($reportId);
+            $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $postIds = $app->postRepository->getPostIdsForTopicId($topicId);
+            $app->topicRepository->beginTransaction();
 
-            foreach($postIds as $postId) {
-                $comments = $app->postCommentRepository->getCommentsForPostId($postId);
+            try {
+                $app->contentManager->deleteTopic($topicId);
 
-                foreach($comments as $comment) {
-                    $app->postCommentRepository->updateComment($comment->getId(), ['isDeleted' => '1']);
-                }
+                $app->notificationManager->createNewTopicDeleteDueToReportNotification($topic->getAuthorId(), $topicLink, $userLink, $reason);
 
-                $app->postRepository->updatePost($postId, ['isDeleted' => '1']);
+                $app->topicRepository->commit();
+
+                $this->flashMessage('Topic #' . $topicId . ' deleted with all its posts and comments.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+
+                $this->flashMessage('Topic #' . $topicId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCacheBulk(['topics', 'posts']);
-
-            $this->flashMessage('Delete topic and all its posts with comments.', 'success');
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $this->saveToPresenterCache('topic', $topic);

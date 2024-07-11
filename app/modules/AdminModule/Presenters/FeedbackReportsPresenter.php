@@ -14,6 +14,7 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
 class FeedbackReportsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -215,14 +216,14 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $adminLinks = [];
 
         if($report->getStatus() == ReportStatus::OPEN) {
-            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=resolutionForm&reportId=' . $report->getId() . '">Create a resolution</a>';
+            $adminLinks[] = LinkBuilder::createSimpleLink('Create a resolution', $this->createURL('resolutionForm', ['reportId' => $report->getId()]), 'post-data-link');
 
             switch($report->getEntityType()) {
                 case ReportEntityType::COMMENT:
                     $comment = $app->postCommentRepository->getCommentById($report->getEntityId());
 
                     if($comment->isDeleted() !== true) {
-                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deleteComment&commentId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete comment</a>';
+                        $adminLinks[] = LinkBuilder::createSimpleLink('Delete comment', ['page' => 'AdminModule:ManagePosts', 'action' => 'deleteComment', 'commentId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                     }
 
                     break;
@@ -235,13 +236,13 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
                         if( $userProsecution->getType() == UserProsecutionType::WARNING ||
                             ((strtotime($userProsecution->getEndDate()) < time() && ($userProsecution->getType() == UserProsecutionType::BAN)))) {
-                            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Ban user</a>';
+                            $adminLinks[] = LinkBuilder::createSimpleLink('Ban user', ['page' => 'AdminModule:ManageUsers', 'action' => 'banUser', 'userId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                         } else if($userProsecution->getType() != UserProsecutionType::BAN) {
-                            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Warn user</a>';
+                            $adminLinks[] = LinkBuilder::createSimpleLink('Warn user', ['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'userId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                         }
                     } else {
-                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=banUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Ban user</a>';
-                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=warnUser&userId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Warn user</a>';
+                        $adminLinks[] = LinkBuilder::createSimpleLink('Ban user', ['page' => 'AdminModule:ManageUsers', 'action' => 'banUser', 'userId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
+                        $adminLinks[] = LinkBuilder::createSimpleLink('Warn user', ['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'userId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                     }
 
                     break;
@@ -250,7 +251,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     $post = $app->postRepository->getPostById($report->getEntityId());
 
                     if($post->isDeleted() !== true) {
-                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManagePosts&action=deletePost&postId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete post</a>';
+                        $adminLinks[] = LinkBuilder::createSimpleLink('Delete post', ['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                     }
 
                     break;
@@ -264,13 +265,13 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     }
 
                     if($topic->isDeleted() !== true) {
-                        $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:ManageTopics&action=deleteTopic&topicId=' . $report->getEntityId() . '&reportId=' . $report->getId() . '">Delete topic</a>';
+                        $adminLinks[] = LinkBuilder::createSimpleLink('Delete topic', ['page' => 'AdminModule:ManageTopic', 'action' => 'deleteTopic', 'topicId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
                     }
 
                     break;
             }
         } else {
-            //$adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=reopen&reportId=' . $report->getId() . '">Reopen</a>';
+            $adminLinks[] = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=reopen&reportId=' . $report->getId() . '">Reopen</a>';
         }
 
         $this->saveToPresenterCache('adminLinks', implode('&nbsp;', $adminLinks));

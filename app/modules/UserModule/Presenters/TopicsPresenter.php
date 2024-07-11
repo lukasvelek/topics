@@ -9,6 +9,8 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
@@ -18,6 +20,7 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\IFormRenderable;
 use App\UI\LinkBuilder;
+use Exception;
 
 class TopicsPresenter extends AUserPresenter {
     public function __construct() {
@@ -719,9 +722,26 @@ class TopicsPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $app->contentManager->deleteTopic($topicId);
+            $topic = $app->topicRepository->getTopicById($topicId);
+            $topicLink = TopicEntity::createTopicProfileLink($topic, true);
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
+            $app->topicRepository->beginTransaction();
+
+            try {
+                $app->contentManager->deleteTopic($topicId);
+
+                $app->notificationManager->createNewTopicDeletedNotification($topic->getAuthorId(), $topicLink, $userLink);
+
+                $app->topicRepository->commit();
+
+                $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+
+                $this->flashMessage('Topic #' . $topicId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
         } else {
             $fb = new FormBuilder();

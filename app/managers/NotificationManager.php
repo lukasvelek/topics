@@ -21,6 +21,114 @@ class NotificationManager extends AManager {
         $this->nr = $nr;
     }
 
+    public function createNewCommentDeleteDueToReportNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
+        $type = Notifications::COMMENT_DELETE_DUE_TO_REPORT;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewPostDeleteDueToReportNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
+        $type = Notifications::POST_DELETE_DUE_TO_REPORT;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewTopicDeleteDueToReportNotification(int $userId, LinkBuilder $topicLink, LinkBuilder $userLink, string $reason) {
+        $type = Notifications::TOPIC_DELETE_DUE_TO_REPORT;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$topicLink, $userLink] = $this->processURL($id, [$topicLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$TOPIC_LINK$' => $topicLink, '$USER_LINK$' => $userLink, '$DELETE_REASON$' => $reason];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewCommentDeletedNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
+        $type = Notifications::COMMENT_DELETE;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewPostDeletedNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
+        $type = Notifications::POST_DELETE;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$POST_LINK$' => $postLink, '$USER_LINK$' => $userLink];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewTopicDeletedNotification(int $userId, LinkBuilder $topicLink, LinkBuilder $userLink) {
+        $type = Notifications::TOPIC_DELETE;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$topicLink, $userLink] = $this->processURL($id, [$topicLink, $userLink]);
+
+        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink, '$USER_LINK$' => $userLink]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$TOPIC_LINK$' => $topicLink, '$USER_LINK$' => $userLink];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
     public function createNewCommentLikeNotification(int $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
         $type = Notifications::NEW_COMMENT_LIKE;
         $title = Notifications::getTitleByKey($type);

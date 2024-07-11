@@ -15,6 +15,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
+use Exception;
 
 class PostsPresenter extends AUserPresenter {
     public function __construct() {
@@ -495,11 +496,29 @@ class PostsPresenter extends AUserPresenter {
 
         $commentId = $this->httpGet('commentId');
         $postId = $this->httpGet('postId');
-
+        
         if($this->httpGet('isSubmit') == '1') {
-            $app->contentManager->deleteComment($commentId);
+            $post = $app->postRepository->getPostById($postId);
+            $comment = $app->postCommentRepository->getCommentById($commentId);
+            $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
+            $app->postRepository->beginTransaction();
+
+            try {
+                $app->contentManager->deleteComment($commentId);
+
+                $app->notificationManager->createNewCommentDeletedNotification($comment->getAuthorId(), $postLink, $userLink);
+
+                $app->postRepository->commit();
+
+                $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
+            } catch(Exception $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Comment #' . $commentId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+            }
+            
             $this->redirect(['action' => 'profile', 'postId' => $postId]);
         } else {
             $fb = new FormBuilder();
@@ -525,9 +544,26 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $app->contentManager->deletePost($postId);
+            $post = $app->postRepository->getPostById($postId);
+            $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
+            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
+            $app->postRepository->beginTransaction();
+
+            try {
+                $app->contentManager->deletePost($postId);
+
+                $app->notificationManager->createNewPostDeletedNotification($post->getAuthorId(), $postLink, $userLink);
+
+                $app->postRepository->commit();
+
+                $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
+            } catch(Exception $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Post #' . $postId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['action' => 'profile', 'postId' => $postId]);
         } else {
             $fb = new FormBuilder();
