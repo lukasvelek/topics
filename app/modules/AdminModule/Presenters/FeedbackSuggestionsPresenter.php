@@ -129,9 +129,74 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $filterControl = '';
         if($filterType != 'null') {
             $filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+        } else {
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory"></select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                </div>
+            ';
+
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();</script>';
         }
 
         $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+    }
+
+    public function actionGetFilterCategorySuboptions() {
+        global $app;
+
+        $category = $this->httpGet('category');
+
+        $options = [];
+        switch($category) {
+            case 'category':
+                foreach(SuggestionCategory::getAll() as $k => $v) {
+                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                }
+                break;
+
+            case 'status':
+                foreach(SuggestionStatus::getAll() as $k => $v) {
+                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                }
+                break;
+
+            case 'user':
+                $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
+                $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+
+                foreach($users as $user) {
+                    $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                }
+
+                break;
+        }
+
+        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
     }
     
     public function handleList() {

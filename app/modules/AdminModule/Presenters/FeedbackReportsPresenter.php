@@ -134,9 +134,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             ];
             $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
             foreach($filterCategories as $k => $v) {
-                $tmp = '<option value="' . $k . '">' . $v . '</option>';
-
-                $filterCategoriesSelect .= $tmp;
+                $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
             }
             $filterCategoriesSelect .= '</select>';
             /** END OF FILTER CATEGORIES */

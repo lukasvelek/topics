@@ -270,6 +270,24 @@ class SuggestionRepository extends ARepository {
 
         return $suggestions;
     }
+
+    public function getUsersInSuggestions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::PLANNED, SuggestionStatus::MORE_INFORMATION_NEEDED]))
+            ->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['userId'], $users)) {
+                $users[] = $row['userId'];
+            }
+        }
+
+        return $users;
+    }
 }
 
 ?>
