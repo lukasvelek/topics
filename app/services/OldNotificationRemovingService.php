@@ -64,7 +64,7 @@ class OldNotificationRemovingService extends AService {
         $date->modify(self::DATE_BEFORE);
         $date = $date->getResult();
 
-        return $this->nm->getOldSeenNotificationsStep($date, self::STEP, $offset);
+        return $this->nm->getOldSeenNotificationsStep($date, self::STEP, (self::STEP * $offset));
     }
 
     private function deleteNotifications(array $ids) {
