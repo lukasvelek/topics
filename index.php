@@ -15,8 +15,7 @@ try {
 
 if(!isset($_GET['page'])) {
     // default redirect address
-    //$app->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
-    $app->redirect(['page' => 'AnonymModule:Home']);
+    $app->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
 }
 
 try {
