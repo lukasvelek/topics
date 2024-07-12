@@ -19,14 +19,16 @@ class TopicManager extends AManager {
     private CacheManager $cm;
     private TopicMembershipManager $tmm;
     private VisibilityAuthorizator $va;
+    private ContentManager $com;
 
-    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va) {
+    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com) {
         parent::__construct($logger);
         
         $this->tr = $topicRepository;
         $this->tmm = $tmm;
         $this->va = $va;
         $this->cm = new CacheManager($logger);
+        $this->com = $com;
     }
 
     public function getTopicById(int $topicId, int $userId) {
@@ -105,6 +107,18 @@ class TopicManager extends AManager {
 
     public function isUserOwner(int $topicId, int $userId) {
         return ($this->tmm->getFollowRole($topicId, $userId) == TopicMemberRole::OWNER);
+    }
+
+    public function deleteTopic(int $topicId, int $userId) {
+        $this->com->deleteTopic($topicId);
+
+        $members = $this->tmm->getTopicMembers($topicId, 0, 0, false);
+
+        foreach($members as $member) {
+            $memberId = $member->getUserId();
+
+            $this->tmm->unfollowTopic($topicId, $memberId);
+        }
     }
 }
 

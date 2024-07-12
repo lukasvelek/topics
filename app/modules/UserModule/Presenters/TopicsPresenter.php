@@ -731,7 +731,7 @@ class TopicsPresenter extends AUserPresenter {
             $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
 
             try {
-                $app->contentManager->deleteTopic($topicId);
+                $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
 
                 $app->notificationManager->createNewTopicDeletedNotification($topicOwnerId, $topicLink, $userLink);
 
