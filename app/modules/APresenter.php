@@ -239,6 +239,14 @@ abstract class APresenter extends AGUICore {
         $this->params = $params;
     }
 
+    /**
+     * Renders the presenter. It runs operations before the rendering itself, then renders the template and finally performs operations after the rendering.
+     * 
+     * Here are also the macros of the common template filled.
+     * 
+     * @param string $moduleName Name of the current module
+     * @param bool $isAjax True if this request is AJAX or false if not
+     */
     public function render(string $moduleName, bool $isAjax) {
         global $app;
 
@@ -498,109 +506,12 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Performs an ajax request
-     * 
-     * @param array $urlParams Parameters of the URL the ajax will call
-     * @param string $method The method name
-     * @param array $headParams The ajax request head parameters
-     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
-     */
-    protected function ajax(array $urlParams, string $method, array $headParams, string $codeWhenDone) {
-        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone));
-    }
-
-    protected function ajaxMethod(string $methodName, array $methodParams, array $urlParams, string $method, array $headParams, string $codeWhenDone) {
-        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone, $methodName, $methodParams));
-    }
-
-    /**
-     * Creates a JS code that updates element content with given HTML ID. It implicitly performs .html() but if needed (and the page element is passed to the second parameter array) it can perform .append().
-     * 
-     * @param array $pageElementsValuesBinding An array with page elements and the JSON values binding
-     * @param array $appendPageElements An array with page elements that must not be overwritten
-     * @return string JS code
-     */
-    protected function ajaxUpdateElements(array $pageElementsValuesBinding, array $appendPageElements = []) {
-        $tmp = [];
-        foreach($pageElementsValuesBinding as $pageElement => $jsonValue) {
-            $t = '$("#' . $pageElement . '").';
-
-            if(in_array($pageElement, $appendPageElements)) {
-                $t .= 'append';
-            } else {
-                $t .= 'html';
-            }
-
-            $t .= '(obj.' . $jsonValue . ');';
-
-            $tmp[] = $t;
-        }
-
-        return implode(' ', $tmp);
-    }
-
-    /**
      * Sends AJAX response encoded to to JSON
      * 
      * @param array $data The response data.
      */
     protected function ajaxSendResponse(array $data) {
         $this->ajaxResponse = json_encode($data);
-    }
-
-    /**
-     * Creates a AJAX script call
-     * 
-     * @param array $urlParams Parameters of the URL the ajax will call
-     * @param array $headParams The ajax request head parameters
-     * @param string $method The method name
-     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
-     * @return string JS AJAX call code
-     */
-    protected function composeAjaxScript(array $urlParams, array $headParams, string $method, string $codeWhenDone, ?string $methodName = null, array $methodParams = []) {
-        global $app;
-
-        $url = $app->composeURL($urlParams);
-
-        if(!array_key_exists('isAjax', $headParams)) {
-            $headParams['isAjax'] = '1';
-        }
-
-        $params = json_encode($headParams);
-
-        if($methodName !== null) {
-            foreach($methodParams as $mp) {
-                if(str_contains($params, '"$' . $mp . '"')) {
-    
-                    $params = str_replace('"$' . $mp . '"', $mp, $params);
-                }
-            }
-        }
-
-        $code = '';
-
-        if($methodName !== null) {
-            $code = 'function ' . $methodName . '(' . implode(', ', $methodParams) . ') {';
-        }
-
-        if(strtoupper($method) == 'GET') {
-            $code .= '
-                $.get(
-                    "' . $url . '",
-                    ' . $params . '
-                )
-                .done(function ( data ) {
-                    const obj = JSON.parse(data);
-                    ' . $codeWhenDone . '
-                });
-            ';
-        }
-
-        if($methodName !== null) {
-            $code .= '}';
-        }
-
-        return $code;
     }
 
     /**

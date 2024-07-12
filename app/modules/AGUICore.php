@@ -2,9 +2,16 @@
 
 namespace App\Modules;
 
-use App\Components\Navbar\Navbar;
-
 abstract class AGUICore {
+    /**
+     * Creates a flash message and returns its HTML code
+     * 
+     * @param string $type Flash message type (info, success, warning, error)
+     * @param string $text Flash message text
+     * @param int $flashMessageCount Number of flash messages
+     * @param bool $custom True if flash message has custom handler or false if not
+     * @return string HTML code
+     */
     protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false) {
         $fmc = $flashMessageCount . '-' . ($custom ? '-custom' : '');
         $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . $fmc . '\')">&times;</p>';
