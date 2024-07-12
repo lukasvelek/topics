@@ -25,7 +25,6 @@ class TopicInvitesPresenter extends AUserPresenter {
             ->setFunctionArguments(['_page'])
             ->setFunctionName('getInvitesGrid')
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
@@ -46,7 +45,7 @@ class TopicInvitesPresenter extends AUserPresenter {
         $invites = $app->topicInviteRepository->getInvitesForUserForGrid($app->currentUser->getId(), $gridSize, ($gridSize * $page), $validOnly);
         $totalInviteCount = count($app->topicInviteRepository->getInvitesForUserForGrid($app->currentUser->getId(), 0, 0, $validOnly));
 
-        $lastPage = ceil($totalInviteCount / $gridSize) - 1;
+        $lastPage = ceil($totalInviteCount / $gridSize);
 
         $topicIds = $app->topicInviteRepository->getAllTopicsInUserInvites($app->currentUser->getId(), $validOnly);
         $topics = $app->topicRepository->bulkGetTopicsByIds($topicIds, true);
@@ -97,10 +96,9 @@ class TopicInvitesPresenter extends AUserPresenter {
                 return '-';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalInviteCount, 'getInvitesGrid');
 
-        $paginator = $gb->createGridControls2('getInvitesGrid', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleAcceptInvite() {

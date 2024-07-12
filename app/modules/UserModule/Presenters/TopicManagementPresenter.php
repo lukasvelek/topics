@@ -43,7 +43,6 @@ class TopicManagementPresenter extends AUserPresenter {
             ->setFunctionName('getUserRolesGrid')
             ->setFunctionArguments(['_page', '_topicId'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
@@ -75,7 +74,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
         $allMembersCount = count($app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
-        $lastPage = ceil($allMembersCount / $gridSize) - 1;
+        $lastPage = ceil($allMembersCount / $gridSize);
 
         $gb = new GridBuilder();
 
@@ -104,10 +103,9 @@ class TopicManagementPresenter extends AUserPresenter {
                 return '-';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $allMembersCount, 'getUserRolesGrid', [$topicId]);
 
-        $paginator = $gb->createGridControls2('getUserRolesGrid', $page, $lastPage, ['topicId' => $topicId]);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleChangeRoleForm() {
@@ -210,7 +208,6 @@ class TopicManagementPresenter extends AUserPresenter {
             ->setFunctionName('getPollGrid')
             ->setFunctionArguments(['_page', '_topicId'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
@@ -239,7 +236,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
         $pollCount = count($app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
-        $lastPage = ceil($pollCount / $gridSize) - 1;
+        $lastPage = ceil($pollCount / $gridSize);
 
         $gb = new GridBuilder();
         $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
@@ -288,10 +285,9 @@ class TopicManagementPresenter extends AUserPresenter {
                 return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $pollCount, 'getPollGrid', [$topicId]);
 
-        $paginator = $gb->createGridControls2('getPollGrid', $page, $lastPage, [$topicId]);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleDeactivatePoll() {
@@ -333,8 +329,7 @@ class TopicManagementPresenter extends AUserPresenter {
             ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
             ->setFunctionName('getInvitesGrid')
             ->setFunctionArguments(['_page', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator');
+            ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
         $this->addScript('getInvitesGrid(0, ' . $topicId . ')');
@@ -364,7 +359,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $invites = $app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
         $inviteCount = count($app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
 
-        $lastPage = ceil($inviteCount / $gridSize) - 1;
+        $lastPage = ceil($inviteCount / $gridSize);
 
         $userIds = [];
         foreach($invites as $invite) {
@@ -391,10 +386,9 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb->addAction(function(TopicInviteEntity $invite) {
             return LinkBuilder::createSimpleLink('Remove invite', ['page' => 'UserModule:TopicManagement', 'action' => 'removeInvite', 'topicId' => $invite->getTopicId(), 'userId' => $invite->getUserId()], 'post-data-link');
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $inviteCount, 'getInvitesGrid', [$topicId]);
 
-        $paginator = $gb->createGridControls2('getInvitesGrid', $page, $lastPage, [$topicId]);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleInviteForm() {

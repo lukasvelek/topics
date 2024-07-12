@@ -42,10 +42,13 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
             return null;
         };
 
+        $totalCount = 0;
+
         switch($filter) {
             case 'topics':
                 $data = $app->topicRepository->getDeletedTopicsForGrid($gridSize, ($gridSize * $page));
-                $lastPage = ceil($app->topicRepository->getDeletedTopicCount() / $gridSize) - 1;
+                $totalCount = $app->topicRepository->getDeletedTopicCount();
+                $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['title' => 'Title', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
@@ -70,7 +73,8 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
             case 'posts':
                 $data = $app->postRepository->getDeletedPostsForGrid($gridSize, ($gridSize * $page));
-                $lastPage = ceil($app->postRepository->getDeletedPostsCount() / $gridSize) - 1;
+                $totalCount = $app->postRepository->getDeletedPostsCount();
+                $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['title' => 'Title', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
@@ -95,7 +99,8 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
             case 'comments':
                 $data = $app->postCommentRepository->getDeletedComments();
-                $lastPage = ceil($app->postCommentRepository->getDeletedCommentCount() / $gridSize) - 1;
+                $totalCount = $app->postCommentRepository->getDeletedCommentCount();
+                $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['post' => 'Post', 'text' => 'Text', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
@@ -123,9 +128,9 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                 break;
         }
 
-        $paginator = $gb->createGridControls2('getDeletedContent', $page, $lastPage, [$filter]);
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getDeletedContent', [$filter]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -139,7 +144,6 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
             ->setFunctionArguments(['_page', '_filter'])
             ->setHeader(['gridPage' => '_page', 'gridFilter' => '_filter'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->addWhenDoneOperation('
                 if(_filter == "topics") {
                     $("#filter-btn-topics").css("font-weight", "bold");

@@ -27,7 +27,8 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $gridSize = $app->cfg['GRID_SIZE'];
 
         $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
-        $lastPage = ceil($app->contentRegulationRepository->getBannedWordsCount() / $gridSize) - 1;
+        $totalCount = $app->contentRegulationRepository->getBannedWordsCount();
+        $lastPage = ceil($totalCount / $gridSize);
 
         $gb = new GridBuilder();
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
@@ -42,10 +43,9 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $gb->addAction(function(BannedWordEntity $bwe) {
             return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'post-data-link');
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getBannedWordsGrid');
 
-        $paginator = $gb->createGridControls2('getBannedWordsGrid', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -54,7 +54,6 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $arb->setMethod('GET')
             ->setURL(['page' => 'AdminModule:ManageBannedWords', 'action' => 'gridList'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->setHeader(['gridPage' => '_page'])
             ->setFunctionName('getBannedWordsGrid')
             ->setFunctionArguments(['_page']);
