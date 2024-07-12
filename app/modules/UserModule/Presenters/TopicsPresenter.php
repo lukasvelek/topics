@@ -96,7 +96,7 @@ class TopicsPresenter extends AUserPresenter {
         $isMember = $app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId());
         $finalFollowLink = '';
 
-        if(!$topic->isDeleted()) {
+        if($app->topicMembershipManager->isTopicFollowable($topicId) || $isMember) {
             $finalFollowLink = ($isMember ? $unFollowLink : $followLink);
         }
 
@@ -182,6 +182,10 @@ class TopicsPresenter extends AUserPresenter {
             $this->addScript('reduceTopicProfile()');
         }
 
+        if(!$app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId())) {
+            $this->saveToPresenterCache('newPostForm', 'You cannot create posts.');
+        }
+
         $links = [];
 
         if($app->actionAuthorizator->canCreateTopicPoll($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
@@ -238,6 +242,12 @@ class TopicsPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->flashMessage($e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+        }
+
+        $isMember = $app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId());
+
+        if(!$isMember && $topic->isPrivate()) {
+            return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
         }
 
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());

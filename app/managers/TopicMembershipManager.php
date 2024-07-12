@@ -212,6 +212,24 @@ class TopicMembershipManager extends AManager {
     public function getTopicOwnerId(int $topicId) {
         return $this->topicMembershipRepository->getTopicOwner($topicId);
     }
+
+    public function isTopicFollowable(int $topicId) {
+        $topic = $this->topicRepository->getTopicById($topicId);
+
+        if($topic->isDeleted()) {
+            return false;
+        }
+
+        if(!$topic->isVisible()) {
+            return false;
+        }
+
+        if($topic->isPrivate()) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

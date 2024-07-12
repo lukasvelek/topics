@@ -48,7 +48,7 @@ class TopicManager extends AManager {
     }
 
     private function checkPrivacy(TopicEntity $topic, int $userId) {
-        if($topic->isPrivate()) {
+        if($topic->isPrivate() && !$topic->isVisible()) {
             if(!$this->isUserMember($topic->getId(), $userId)) {
                 if(!$this->va->canViewPrivateTopic($userId)) {
                     throw new TopicVisibilityException('You are not allowed to view private topics.');

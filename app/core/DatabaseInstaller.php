@@ -50,7 +50,8 @@ class DatabaseInstaller {
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
                 'tags' => 'TEXT NOT NULL',
-                'isPrivate' => 'INT(2) NOT NULL DEFAULT 0'
+                'isPrivate' => 'INT(2) NOT NULL DEFAULT 0',
+                'isVisible' => 'INT(2) NOT NULL DEFALT 1'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
