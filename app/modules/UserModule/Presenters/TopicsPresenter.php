@@ -144,6 +144,11 @@ class TopicsPresenter extends AUserPresenter {
             $inviteManagementLink = '<p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p>';
         }
 
+        $privacyManagementLink = '';
+        if($app->actionAuthorizator->canManageTopicPrivacy($app->currentUser->getId(), $topicId)) {
+            $privacyManagementLink = '<p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p>';
+        }
+
         $code = '
             <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
             <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
@@ -153,6 +158,7 @@ class TopicsPresenter extends AUserPresenter {
             ' . $deleteLink . '
             ' . $roleManagementLink . '
             ' . $inviteManagementLink . '
+            ' . $privacyManagementLink . '
         ';
 
         $this->saveToPresenterCache('topicData', $code);

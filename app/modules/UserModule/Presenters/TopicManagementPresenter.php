@@ -12,9 +12,11 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
+use Exception;
 
 class TopicManagementPresenter extends AUserPresenter {
     public function __construct() {
@@ -501,6 +503,73 @@ class TopicManagementPresenter extends AUserPresenter {
         }
 
         $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId]);
+    }
+
+    public function handleManagePrivacy() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        $this->saveToPresenterCache('topic_title', $topic->getTitle());
+
+        $links = [];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $fb = new FormBuilder();
+
+        $fb ->setAction($this->createURL('managePrivacyForm', ['topicId' => $topicId]))
+            ->setMethod()
+            ->addCheckbox('private', 'Is private?', $topic->isPrivate())
+            ->addCheckbox('visible', 'Is visible for non-followers?', $topic->isVisible())
+            ->addSubmit('Save')
+        ;
+
+        $this->saveToPresenterCache('form', $fb);
+    }
+
+    public function renderManagePrivacy() {
+        $topicTitle = $this->loadFromPresenterCache('topic_title');
+        $links = $this->loadFromPresenterCache('links');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->topic_title = $topicTitle;
+        $this->template->links = $links;
+        $this->template->form = $form;
+    }
+
+    public function handleManagePrivacyForm(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        if($fr === null) {
+            $this->flashMessage('Error processing submitted form.', 'error');
+            $this->redirect($this->createURL('managePrivacy', ['topicId' => $topicId]));
+        }
+
+        $private = false;
+
+        if(isset($fr->private)) {
+            $private = true;
+        }
+
+        $visible = false;
+
+        if(isset($fr->visible)) {
+            $visible = true;
+        }
+
+        try {
+            $app->topicManager->updateTopicPrivacy($app->currentUser->getId(), $topicId, $private, $visible);
+
+            $this->flashMessage('Settings updated successfully.', 'success');
+        } catch(Exception $e) {
+            $this->flashMessage('Could not update settings. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('managePrivacy', ['topicId' => $topicId]));
     }
 }
 

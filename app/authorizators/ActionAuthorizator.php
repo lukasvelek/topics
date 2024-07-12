@@ -138,7 +138,7 @@ class ActionAuthorizator extends AAuthorizator {
     }
 
     public function canManageTopicInvites(int $userId, int $topicId) {
-        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) {
             return false;
         }
 
@@ -147,6 +147,14 @@ class ActionAuthorizator extends AAuthorizator {
 
     public function canCreatePost(int $userId, int $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MEMBER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canManageTopicPrivacy(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER)) {
             return false;
         }
 

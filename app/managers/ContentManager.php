@@ -80,6 +80,10 @@ class ContentManager extends AManager {
             }
         }
     }
+
+    public function updateTopic(int $topicId, array $data) {
+        return $this->topicRepository->updateTopic($topicId, $data);
+    }
 }
 
 ?>

@@ -11,6 +11,7 @@ use App\Exceptions\GeneralException;
 use App\Exceptions\TopicVisibilityException;
 use App\Logger\Logger;
 use App\Repositories\TopicRepository;
+use Exception;
 
 class TopicManager extends AManager {
     private const CACHE_NAMESPACE = 'topics';
@@ -118,6 +119,20 @@ class TopicManager extends AManager {
             $memberId = $member->getUserId();
 
             $this->tmm->unfollowTopic($topicId, $memberId);
+        }
+    }
+
+    public function updateTopicPrivacy(int $userId, int $topicId, bool $isPrivate, bool $isVisible) {
+        if($this->tmm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER) {
+            throw new GeneralException('You are not authorized to change these settings.');
+        }
+
+        try {
+            $this->com->updateTopic($topicId, ['isPrivate' => $isPrivate, 'isVisible' => $isVisible]);
+
+            $this->cm->invalidateCache(self::CACHE_NAMESPACE);
+        } catch(Exception $e) {
+            throw $e;
         }
     }
 }
