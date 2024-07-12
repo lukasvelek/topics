@@ -176,6 +176,7 @@ class TopicRepository extends ARepository {
         $qb ->select(['*'])
             ->from('topics')
             ->where($qb->getColumnNotInValues('topicId', $topicIds))
+            ->andWhere('isDeleted = 0')
             ->execute();
 
         return $this->createTopicsArrayFromQb($qb);
