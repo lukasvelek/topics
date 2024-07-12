@@ -129,9 +129,9 @@ class Application {
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
-        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
-        
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
+
         $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator);
 
         $this->isAjaxRequest = false;

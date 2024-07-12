@@ -11,7 +11,7 @@ use App\UI\IRenderable;
  * @author Lukas Velek
  */
 class TemplateObject {
-    private const SHORTEN_CODE = true;
+    private const SHORTEN_CODE = false;
 
     private string $__templateContent;
     private array $__values;

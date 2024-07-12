@@ -116,7 +116,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $roleManagementLink = '';
 
-        if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId())) {
+        if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId()) && !$topic->isDeleted()) {
             $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
         }
 
@@ -184,11 +184,11 @@ class TopicsPresenter extends AUserPresenter {
 
         $links = [];
 
-        if($app->actionAuthorizator->canCreateTopicPoll($app->currentUser->getId(), $topicId)) {
+        if($app->actionAuthorizator->canCreateTopicPoll($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
             $links[] = LinkBuilder::createSimpleLink('Create a poll', ['page' => 'UserModule:Topics', 'action' => 'newPollForm', 'topicId' => $topicId], 'post-data-link');
         }
 
-        if($app->actionAuthorizator->canViewTopicPolls($app->currentUser->getId(), $topicId)) {
+        if($app->actionAuthorizator->canViewTopicPolls($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
             $links[] = LinkBuilder::createSimpleLink('Poll list', ['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId], 'post-data-link');
         }
 
@@ -728,10 +728,12 @@ class TopicsPresenter extends AUserPresenter {
 
             $app->topicRepository->beginTransaction();
 
+            $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
+
             try {
                 $app->contentManager->deleteTopic($topicId);
 
-                $app->notificationManager->createNewTopicDeletedNotification($topic->getAuthorId(), $topicLink, $userLink);
+                $app->notificationManager->createNewTopicDeletedNotification($topicOwnerId, $topicLink, $userLink);
 
                 $app->topicRepository->commit();
 

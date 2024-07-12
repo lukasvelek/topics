@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicMemberEntity;
 use App\Logger\Logger;
@@ -128,6 +129,18 @@ class TopicMembershipRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function getTopicOwner(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('topic_membership')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('role = ?', [TopicMemberRole::OWNER])
+            ->execute();
+
+        return $qb->fetch('userId');
     }
 }
 

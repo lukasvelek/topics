@@ -3,6 +3,7 @@
 namespace App\Managers;
 
 use App\Authorizators\VisibilityAuthorizator;
+use App\Constants\TopicMemberRole;
 use App\Core\CacheManager;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
@@ -100,6 +101,10 @@ class TopicManager extends AManager {
         }
 
         return $okTopics;
+    }
+
+    public function isUserOwner(int $topicId, int $userId) {
+        return ($this->tmm->getFollowRole($topicId, $userId) == TopicMemberRole::OWNER);
     }
 }
 

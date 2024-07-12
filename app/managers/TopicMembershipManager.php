@@ -208,6 +208,10 @@ class TopicMembershipManager extends AManager {
     public function rejectInvite(int $topicId, int $userId) {
         $this->removeInvite($topicId, $userId);
     }
+
+    public function getTopicOwnerId(int $topicId) {
+        return $this->topicMembershipRepository->getTopicOwner($topicId);
+    }
 }
 
 ?>

@@ -6,6 +6,7 @@ use App\Constants\AdministratorGroups;
 use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Logger\Logger;
+use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
 use App\Repositories\UserRepository;
@@ -138,6 +139,14 @@ class ActionAuthorizator extends AAuthorizator {
 
     public function canManageTopicInvites(int $userId, int $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canCreatePost(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MEMBER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
 

@@ -40,12 +40,14 @@ class ManageTopicsPresenter extends AAdminPresenter {
             $report = $app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
+            $topicOwner = $app->topicMembershipManager->getTopicOwnerId($topicId);
+
             $app->topicRepository->beginTransaction();
 
             try {
                 $app->contentManager->deleteTopic($topicId);
 
-                $app->notificationManager->createNewTopicDeleteDueToReportNotification($topic->getAuthorId(), $topicLink, $userLink, $reason);
+                $app->notificationManager->createNewTopicDeleteDueToReportNotification($topicOwner, $topicLink, $userLink, $reason);
 
                 $app->topicRepository->commit();
 
