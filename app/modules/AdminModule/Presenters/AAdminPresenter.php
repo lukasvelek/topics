@@ -43,6 +43,7 @@ abstract class AAdminPresenter extends APresenter {
         $deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
+        $systemCaching = $this->checkPage('AdminModule:ManageSystemCaching');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
@@ -63,6 +64,9 @@ abstract class AAdminPresenter extends APresenter {
         }
         if($app->sidebarAuthorizator->canManageBannedWords($app->currentUser->getId())) {
             $sb->addLink('Banned words', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'list'], $bannedWords);
+        }
+        if($app->sidebarAuthorizator->canManageSystemCaching($app->currentUser->getId())) {
+            $sb->addLink('System caching', ['page' => 'AdminModule:ManageSystemCaching', 'action' => 'list'], $systemCaching);
         }
 
         return $sb->render();

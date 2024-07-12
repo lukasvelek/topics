@@ -31,52 +31,64 @@ class FeedbackPresenter extends AAdminPresenter {
         // suggestions
         $suggestions = $app->suggestionRepository->getAllSuggestions();
 
-        $all = count($suggestions);
-        $open = $closed = 0;
-        foreach($suggestions as $suggestion) {
-            if(in_array($suggestion->getStatus(), [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED])) {
-                $open++;
-            }
-            if(in_array($suggestion->getStatus(), [SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED])) {
-                $closed++;
-            }
-        }
-
-        if($all == 0 && $open == 0 && $closed == 0) {
+        if(empty($suggestions)) {
             $resultData['suggestions'] = [
                 'error' => $noDataAvailableMessage
             ];
         } else {
-            $resultData['suggestions'] = [
-                'all' => $all,
-                'open' => $open,
-                'closed' => $closed
-            ];
+            $all = count($suggestions);
+            $open = $closed = 0;
+            foreach($suggestions as $suggestion) {
+                if(in_array($suggestion->getStatus(), [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED])) {
+                    $open++;
+                }
+                if(in_array($suggestion->getStatus(), [SuggestionStatus::RESOLVED, SuggestionStatus::NOT_PLANNED])) {
+                    $closed++;
+                }
+            }
+
+            if($all == 0 && $open == 0 && $closed == 0) {
+                $resultData['suggestions'] = [
+                    'error' => $noDataAvailableMessage
+                ];
+            } else {
+                $resultData['suggestions'] = [
+                    'all' => $all,
+                    'open' => $open,
+                    'closed' => $closed
+                ];
+            }
         }
 
         // reports
         $reports = $app->reportRepository->getAllReports();
 
-        $all = count($reports);
-        $open = $closed = 0;
-        foreach($reports as $report) {
-            if($report->getStatus() == ReportStatus::OPEN) {
-                $open++;
-            } else if($report->getStatus() == ReportStatus::RESOLVED) {
-                $closed++;
-            }
-        }
-
-        if($all == 0 && $open == 0 && $closed == 0) {
+        if(empty($reports)) {
             $resultData['reports'] = [
                 'error' => $noDataAvailableMessage
             ];
         } else {
-            $resultData['reports'] = [
-                'all' => $all,
-                'open' => $open,
-                'closed' => $closed
-            ];
+            $all = count($reports);
+            $open = $closed = 0;
+            foreach($reports as $report) {
+                if($report->getStatus() == ReportStatus::OPEN) {
+                    $open++;
+                } else if($report->getStatus() == ReportStatus::RESOLVED) {
+                    $closed++;
+                }
+            }
+
+            if($all == 0 && $open == 0 && $closed == 0) {
+                $resultData['reports'] = [
+                    'error' => $noDataAvailableMessage
+                ];
+            } else {
+                $resultData['reports'] = [
+                    'all' => $all,
+                    'open' => $open,
+                    'closed' => $closed
+                ];
+            }
         }
 
         // suggestion categories

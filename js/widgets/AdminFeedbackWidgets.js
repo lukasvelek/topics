@@ -40,7 +40,7 @@ async function createWidgets() {
         if(obj.reports.error) {
             $("#widget2").html("Reports<div style=\"width: 75%\">" + obj.reports.error + "</div>");
         } else {
-            $("#widget1").html("Suggestions<div style=\"width: 75%\"><canvas id=\"reportWidgetGraph\"></canvas></div>");
+            $("#widget2").html("Reports<div style=\"width: 75%\"><canvas id=\"reportWidgetGraph\"></canvas></div>");
 
             const ctxReports = $("#reportWidgetGraph");
 
@@ -67,7 +67,7 @@ async function createWidgets() {
         if(obj.suggestionCategories.error) {
             $("#widget3").html("Suggestion categories<div style=\"width: 75%\">" + obj.suggestionCategories.error + "</div>");
         } else {
-            $("#widget1").html("Suggestions<div style=\"width: 75%\"><canvas id=\"suggestionCategoriesWidgetGraph\"></canvas></div>");
+            $("#widget3").html("Suggestion categories<div style=\"width: 75%\"><canvas id=\"suggestionCategoriesWidgetGraph\"></canvas></div>");
 
             const ctxSuggestionCategories = $("#suggestionCategoriesWidgetGraph");
 
