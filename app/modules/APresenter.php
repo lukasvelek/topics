@@ -58,9 +58,21 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
+     * Alias of createURL()
+     * 
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return array $url
+     */
+    public function link(string $action, array $params = []) {
+        return $this->createURL($action, $params);
+    }
+
+    /**
      * Returns a URL with parameters saved in the presenter class
      * 
      * @param string $action Action name
+     * @param array $params Custom URL params
      * @return array URL
      */
     public function createURL(string $action, array $params = []) {
@@ -440,6 +452,7 @@ abstract class APresenter extends AGUICore {
      * Adds external JS script to the page
      * 
      * @param string $scriptPath Path to the JS script
+     * @param bool True if type should be added or false if not
      */
     protected function addExternalScript(string $scriptPath, bool $hasType = true) {
         $this->scripts[] = '<script ' . ($hasType ? 'type="text/javascript" ' : '') . 'src="' . $scriptPath . '"></script>';
@@ -450,7 +463,7 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $scriptContent JS script content
      */
-    protected function addScript(string $scriptContent) {
+    public function addScript(string $scriptContent) {
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 
