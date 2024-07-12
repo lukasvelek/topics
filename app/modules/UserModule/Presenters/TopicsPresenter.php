@@ -487,7 +487,7 @@ class TopicsPresenter extends AUserPresenter {
             $tags = serialize($tagArray);
 
             try {
-                $app->topicRepository->createNewTopic($title, $description, $tags);
+                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
