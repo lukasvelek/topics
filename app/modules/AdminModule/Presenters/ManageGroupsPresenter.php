@@ -27,11 +27,11 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $elementsOnPage = $app->cfg['GRID_SIZE'];
+        $gridSize = $app->cfg['GRID_SIZE'];
 
-        $count = $app->groupRepository->getGroupCount();
-        $lastPage = ceil($count / $elementsOnPage) - 1;
-        $groups = $app->groupRepository->getGroupsForGrid($elementsOnPage, ($page * $elementsOnPage));
+        $totalCount = $app->groupRepository->getGroupCount();
+        $lastPage = ceil($totalCount / $gridSize);
+        $groups = $app->groupRepository->getGroupsForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
@@ -39,10 +39,9 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addAction(function(GroupEntity $entity) {
             return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'post-data-link');
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroups');
 
-        $paginator = $gb->createGridControls2('getGroups', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -79,7 +78,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gridSize = $app->cfg['GRID_SIZE'];
 
         $membersCount = $app->groupRepository->getGroupMembersCount($groupId);
-        $lastPage = ceil($membersCount / $gridSize) - 1;
+        $lastPage = ceil($membersCount / $gridSize);
         $members = $app->groupRepository->getGroupMembersForGrid($groupId, $gridSize, ($page * $gridSize));
         $users = [];
 
@@ -104,10 +103,9 @@ class ManageGroupsPresenter extends AAdminPresenter {
                 return '-';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $membersCount, 'getGroupMembersGrid', [$groupId]);
 
-        $paginator = $gb->createGridControls2('getUserProsecutions', $page, $lastPage, [$groupId]);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleListMembers() {
@@ -125,7 +123,6 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ->setFunctionName('getGroupMembersGrid')
             ->setFunctionArguments(['_page', '_groupId'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());

@@ -34,11 +34,11 @@ class ManageUsersPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $elementsOnPage = $app->cfg['GRID_SIZE'];
+        $gridSize = $app->cfg['GRID_SIZE'];
 
         $userCount = $app->userRepository->getUsersCount();
-        $lastPage = ceil($userCount / $elementsOnPage) -1;
-        $users = $app->userRepository->getUsersForGrid($elementsOnPage, ($page * $elementsOnPage));
+        $lastPage = ceil($userCount / $gridSize);
+        $users = $app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
@@ -60,10 +60,9 @@ class ManageUsersPresenter extends AAdminPresenter {
                 return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=setAdmin&userId=' . $user->getId() . '">Set as administrator</a>';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
 
-        $paginator = $gb->createGridControls2('getUsers', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -75,7 +74,6 @@ class ManageUsersPresenter extends AAdminPresenter {
             ->setFunctionName('getUsers')
             ->setFunctionArguments(['_page'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());

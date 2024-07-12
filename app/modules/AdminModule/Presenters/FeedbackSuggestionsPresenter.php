@@ -62,7 +62,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                 break;
         }
 
-        $lastPage = ceil($suggestionCount / $gridSize) - 1;
+        $lastPage = ceil($suggestionCount / $gridSize);
 
         $gb = new GridBuilder();
 
@@ -118,8 +118,8 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $suggestionCount, 'getSuggestionsGrid', [$filterType, $filterKey]);
 
-        $paginator = $gb->createGridControls2('getSuggestionsGrid', $page, $lastPage, [$filterType, $filterKey]);
 
         $filterControl = '';
         if($filterType != 'null') {
@@ -238,7 +238,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
     }
 
     public function actionGetFilterCategorySuboptions() {
@@ -286,7 +286,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ->setFunctionName('getSuggestionsGrid')
             ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->updateHTMLElement('filter-control', 'filterControl')
         ;
 

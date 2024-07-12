@@ -33,6 +33,8 @@ class GridBuilder {
     private bool $alwaysDrawHeaderCheckbox;
     private bool $displayNoEntriesMessage;
 
+    private array $belowGridElementsCode;
+
     /**
      * Grid builder constructor
      */
@@ -51,6 +53,12 @@ class GridBuilder {
         $this->reverse = false;
         $this->alwaysDrawHeaderCheckbox = false;
         $this->displayNoEntriesMessage = true;
+
+        $this->belowGridElementsCode = [];
+    }
+
+    private function addBelowGridElementCode(string $code) {
+        $this->belowGridElementsCode[] = $code;
     }
 
     /**
@@ -157,7 +165,7 @@ class GridBuilder {
      * @return string HTML table code
      */
     public function build() {
-        $code = '<table border="' . $this->tableBorder . '" id="tablebuilder-table">';
+        $code = '<div class="row"><table border="' . $this->tableBorder . '" id="tablebuilder-table">';
 
         // title
         $headerRow = '<tr>';
@@ -267,7 +275,13 @@ class GridBuilder {
         }
         // end of data
 
-        $code .= '</table>';
+        $code .= '</table></div>';
+
+        if(!empty($this->belowGridElementsCode)) {
+            foreach($this->belowGridElementsCode as $bgec) {
+                $code .= $bgec;
+            }
+        }
 
         return $code;
     }
@@ -398,6 +412,31 @@ class GridBuilder {
         $code = $firstButton . $previousButton . $nextButton . $lastButton;
 
         return $code;
+    }
+
+    private function addGridPagingInfo(int $page, int $lastPage, int $limit, int $totalCount) {
+        $offset = ($limit * $page) + 1;
+        
+        if($lastPage < 1) {
+            $lastPage = 1;
+        }
+        
+        if($totalCount < $offset) {
+            $offset = $totalCount;
+        }
+        
+        $code = '<p class="post-data">Page ' . ($page + 1) . ' of ' . $lastPage . ' (' . $offset . ' - ' . $totalCount . ')</p>';
+
+        return $code;
+    }
+
+    public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
+        $code = '<div class="row">';
+        $code .= '<div class="col-md">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div>';
+        $code .= '<div class="col-md" id="right">' . $this->createGridControls2($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
+        $code .= '</div>';
+
+        $this->addBelowGridElementCode($code);
     }
 }
 

@@ -66,7 +66,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 break;
         }
 
-        $lastPage = ceil($reportCount / $gridSize) - 1;
+        $lastPage = ceil($reportCount / $gridSize);
 
         $gb = new GridBuilder();
 
@@ -113,8 +113,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('title', function(ReportEntity $re) {
             return '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $re->getId() . '">' . ReportEntityType::toString($re->getEntityType()) . ' report</a>';
         });
-
-        $paginator = $gb->createGridControls2('getReportGrid', $page, $lastPage, [$filterType, $filterKey]);
+        $gb->addGridPaging($page, $lastPage, $gridSize, $reportCount, 'getReportGrid', [$filterType, $filterKey]);
 
         $filterControl = '';
         if($filterType != 'null') {
@@ -234,7 +233,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
     }
 
     public function actionGetFilterCategorySuboptions() {
@@ -281,7 +280,6 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             ->setFunctionName('getReportGrid')
             ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->updateHTMLElement('grid-filter-control', 'filterControl')
         ;
 

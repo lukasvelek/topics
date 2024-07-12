@@ -37,7 +37,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gridSize = $app->cfg['GRID_SIZE'];
 
         $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
-        $lastPage = ceil($prosecutionCount / $gridSize) - 1;
+        $lastPage = ceil($prosecutionCount / $gridSize);
         $prosecutions = $app->userProsecutionRepository->getActiveProsecutionsForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
@@ -72,10 +72,9 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
                 return '-';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
 
-        $paginator = $gb->createGridControls2('getUserProsecutions', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
     
     public function handleList() {
@@ -86,7 +85,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             ->setFunctionArguments(['_page'])
             ->setURL(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'prosecutionGrid'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->setHeader(['gridPage' => '_page']);
 
         $this->addScript($arb->build());
@@ -162,7 +160,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gridSize = $app->cfg['GRID_SIZE'];
 
         $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
-        $lastPage = ceil($historyEntriesCount / $gridSize) - 1;
+        $lastPage = ceil($historyEntriesCount / $gridSize);
         $historyEntries = $app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
@@ -175,10 +173,9 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('dateCreated', function(UserProsecutionHistoryEntryEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $historyEntriesCount, 'getProsecutionLog');
 
-        $paginator = $gb->createGridControls2('getProsecutionLog', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleLogList() {
@@ -190,7 +187,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             ->setHeader(['gridPage' => '_page'])
             ->setMethod('GET')
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
