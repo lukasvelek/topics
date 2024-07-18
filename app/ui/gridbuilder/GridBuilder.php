@@ -3,6 +3,7 @@
 namespace App\UI\GridBuilder;
 
 use App\UI\LinkBuilder;
+use Exception;
 
 /**
  * Grid builder is a component used to create data grids or tables.
@@ -170,40 +171,45 @@ class GridBuilder {
         $code = '<div class="row"><table border="' . $this->tableBorder . '" id="tablebuilder-table">';
 
         // title
-        $headerRow = '<tr>';
+        $headerRow = new Row();
         if(!is_null($this->headerCheckbox) && (is_callable($this->renderRowCheckbox) || $this->alwaysDrawHeaderCheckbox)) {
-            $headerRow .= '<th>' . $this->headerCheckbox . '</th>';
+            $cell = new Cell();
+            $cell->setValue($this->headerCheckbox);
+            $cell->setHeader();
+            $headerRow->addCell($cell);
         }
         if(!empty($this->actions)) {
-            $headerRow .= '<th';
-
-            if(count($this->actions) > 1) {
-                $headerRow .= ' colspan="' . count($this->actions) . '"';
-            }
-
-            $headerRow .= '>';
-
-            $headerRow .= 'Actions</th>';
+            $cell = new Cell();
+            $cell->setValue('Actions');
+            $cell->setHeader();
+            $cell->setColspan(count($this->actions));
+            $headerRow->addCell($cell);
         }
         foreach($this->columns as $varName => $title) {
-            $headerRow .= '<th>' . $title . '</th>';
+            $cell = new Cell();
+            $cell->setValue($title);
+            $cell->setHeader();
+            $headerRow->addCell($cell);
         }
-        $headerRow .= '</tr>';
-        $code .= $headerRow;
+        $code .= $headerRow->render();
         // end of title
 
         // data
         $entityRows = [];
         if(empty($this->dataSourceArray) && (is_null($this->dataSourceCallback) || !is_callable($this->dataSourceCallback))) {
-            $entityRow = '<tr><td';
-
             $colspan = count($this->actions) + count($this->columns);
-
+            
             if(!is_null($this->headerCheckbox)) {
                 $colspan += 1;
             }
-
-            $entityRow .= ' colspan="' . $colspan . '" id="grid-empty-message">' . $this->emptyDataSourceMessage . '</td></tr>';
+            
+            $cell = new Cell();
+            $cell->setValue($this->emptyDataSourceMessage);
+            $cell->setColspan($colspan);
+            $cell->setElementId('grid-empty-message');
+            
+            $entityRow = new Row();
+            $entityRow->addCell($cell);
 
             if($this->displayNoEntriesMessage === TRUE) {
                 $entityRows[] = $entityRow;
@@ -214,49 +220,90 @@ class GridBuilder {
             }
 
             if(empty($this->dataSourceArray) || is_null($this->dataSourceArray)) {
-                $entityRow = '<tr><td';
-
                 $colspan = count($this->actions) + count($this->columns);
-
+            
                 if(!is_null($this->headerCheckbox)) {
                     $colspan += 1;
                 }
+                
+                $cell = new Cell();
+                $cell->setValue($this->emptyDataSourceMessage);
+                $cell->setColspan($colspan);
+                $cell->setElementId('grid-empty-message');
+                
+                $entityRow = new Row();
+                $entityRow->addCell($cell);
 
-                $entityRow .= ' colspan="' . $colspan . '" id="grid-empty-message">' . $this->emptyDataSourceMessage . '</td></tr>';
                 if($this->displayNoEntriesMessage === TRUE) {
                     $entityRows[] = $entityRow;
                 }
             } else {
                 foreach($this->dataSourceArray as $entity) {
-                    $entityRow = '<tr>';
+                    //entityRow = '<tr>';
+                    $entityRow = new Row();
     
                     if(!is_null($this->renderRowCheckbox)) {
-                        $entityRow .= '<td>' . call_user_func($this->renderRowCheckbox, $entity) . '</td>';
+                        $cell = new Cell();
+                    
+                        try {
+                            $result = call_user_func($this->renderRowCheckbox, $entity);
+
+                            $cell->setValue($result);
+                        } catch(Exception $e) {
+                            throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                        }
+
+                        $entityRow->addCell($cell);
                     }
         
                     foreach($this->actions as $action) {
-                        $entityRow .= '<td>' . $action($entity) . '</td>';
+                        $cell = new Cell();
+                        
+                        try {
+                            $result = $action($entity);
+
+                            $cell->setValue($result);
+                        } catch(Exception $e) {
+                            throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                        }
+
+                        $entityRow->addCell($cell);
                     }
         
                     foreach($this->columns as $varName => $title) {
                         $objectVarName = ucfirst($varName);
-        
-                        if(method_exists($entity, 'get' . $objectVarName)) {
-                            if(array_key_exists($varName, $this->callbacks)) {
-                                $entityRow .= '<td>' . $this->callbacks[$varName]($entity) . '</td>';
-                            } else {
-                                $entityRow .= '<td>' . ($entity->{'get' . $objectVarName}() ?? '-') . '</td>';
+
+                        $cell = new Cell();
+
+                        if(array_key_exists($varName, $this->callbacks)) {
+                            try {
+                                $result = $this->callbacks[$varName]($entity);
+
+                                $cell->setValue($result);
+                            } catch(Exception $e) {
+                                throw new GridBuilderCustomMethodException($e->getMessage(), $e);
                             }
                         } else {
-                            if(array_key_exists($varName, $this->callbacks)) {
-                                $entityRow .= '<td>' . $this->callbacks[$varName]($entity) . '</td>';
+                            if(method_exists($entity, 'get' . $objectVarName)) {
+                                try {
+                                    $result = $entity->{'get' . $objectVarName}();
+
+                                    $cell->setValue($result);
+                                } catch(Exception $e) {
+                                    throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                }
+                            } else if(isset($entity->$varName)) {
+                                $cell->setValue($entity->$varName);
                             } else {
-                                $entityRow .= '<td style="background-color: red">' . $varName . '</td>';
+                                $cell->setStyle('background-color: red');
                             }
                         }
+    
+                        //$entityRow .= $cell->render();
+                        $entityRow->addCell($cell);
                     }
         
-                    $entityRow .= '</tr>';
+                    //$entityRow .= '</tr>';
                     $entityRows[] = $entityRow;
                 }
             }
@@ -273,7 +320,7 @@ class GridBuilder {
         }
 
         foreach($entityRows as $entityRow) {
-            $code .= $entityRow;
+            $code .= $entityRow->render();
         }
         // end of data
 

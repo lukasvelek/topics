@@ -6,7 +6,6 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\CachedPageEntity;
 use App\Entities\UserEntity;
-use App\UI\GridBuilder\AjaxGridHelper;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
