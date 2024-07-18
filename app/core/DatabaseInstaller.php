@@ -51,7 +51,7 @@ class DatabaseInstaller {
                 'dateDeleted' => 'DATETIME NULL',
                 'tags' => 'TEXT NOT NULL',
                 'isPrivate' => 'INT(2) NOT NULL DEFAULT 0',
-                'isVisible' => 'INT(2) NOT NULL DEFALT 1'
+                'isVisible' => 'INT(2) NOT NULL DEFAULT 1'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -225,6 +225,7 @@ class DatabaseInstaller {
             $sql .= ')';
             
             $this->db->query($sql);
+            $this->logger->sql($sql, __METHOD__, null);
 
             $i++;
         }
