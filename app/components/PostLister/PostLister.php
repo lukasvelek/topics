@@ -136,31 +136,7 @@ class PostLister {
                     $code = '<div class="row" id="post-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
 
-                    if(!$this->topicLinkHidden) {
-                        $code .= '<div class="row">';
-
-                        $code .= '<div class="col-md">';
-                        $code .= '<p class="post-title">' . $topicLink . '</p>';
-                        $code .= '</div>';
-                        
-                        $code .= '<div class="col-md">';
-                        $code .= '<p class="post-title">' . $postLink . '</p>';
-                        $code .= '</div>';
-
-                        $code .= '</div>';
-                    }
-
-                    $code .= '<div class="row">';
-                    $code .= '<div class="col-md">';
-                    $code .= '</div>';
-
-                    $code .= '<div class="col-md">';
-                    $code .= '</div>';
-    
                     $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
-
-                    $code .= '</div>';
-
                     $code .= '<hr>';
     
                     $code .= '<p class="post-text">' . $text . '</p>';
