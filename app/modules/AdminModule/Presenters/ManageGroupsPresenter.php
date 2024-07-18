@@ -39,7 +39,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addAction(function(GroupEntity $entity) {
             return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'post-data-link');
         });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroups');
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroupGrid');
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
@@ -52,7 +52,6 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ->setFunctionName('getGroupGrid')
             ->setFunctionArguments(['_page'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
