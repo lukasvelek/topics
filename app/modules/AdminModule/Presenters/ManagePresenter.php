@@ -11,6 +11,8 @@ class ManagePresenter extends AAdminPresenter {
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        $this->setStatic();
     }
 
     public function handleDashboard() {

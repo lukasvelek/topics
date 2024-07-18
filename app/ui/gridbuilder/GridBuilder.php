@@ -2,6 +2,8 @@
 
 namespace App\UI\GridBuilder;
 
+use App\UI\LinkBuilder;
+
 /**
  * Grid builder is a component used to create data grids or tables.
  * 
@@ -296,63 +298,7 @@ class GridBuilder {
      * @param int $userId User ID
      * @return string HTML code
      */
-    public function createGridControls(string $jsHandlerName, int $page, int $lastPage, int $userId) {
-        $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if($page == 0) {
-            $firstButton .= '0, ' . $userId . ')" disabled>';
-        } else {
-            $firstButton .= '0, ' . $userId . ')">';
-        }
-
-        $firstButton .= '&lt;&lt;</button>';
-
-        $previousButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if($page == 0) {
-            $previousButton .= '0, ' . $userId . ')" disabled>';
-        } else {
-            $previousButton .= ($page - 1) . ', ' . $userId . ')">';
-        }
-
-        $previousButton .= '&lt;</button>';
-
-        $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if(($page + 1) >= $lastPage) {
-            $nextButton .= $lastPage . ', ' . $userId . ')" disabled>';
-        } else {
-            $nextButton .= ($page + 1) . ', ' . $userId . ')">';
-        }
-
-        $nextButton .= '&gt;</button>';
-
-        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if(($page + 1) >= $lastPage) {
-            $lastButton .= $lastPage . ', ' . $userId . ')" disabled>';
-        } else {
-            $lastButton .= $lastPage . ', ' . $userId . ')">';
-        }
-
-        $lastButton .= '&gt;&gt;</button>';
-        
-        $code = $firstButton . $previousButton . $nextButton . $lastButton;
-
-        return $code;
-    }
-
-    /**
-     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
-     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
-     * 
-     * @param string $jsHandlerName JS handler function
-     * @param int $page Current page
-     * @param int $lastPage Last page
-     * @param int $userId User ID
-     * @return string HTML code
-     */
-    public function createGridControls2(string $jsHandlerName, int $page, int $lastPage, array $otherArguments = []) {
+    private function createGridControls(string $jsHandlerName, int $page, int $lastPage, array $otherArguments = []) {
         if(!empty($otherArguments)) {
             $tmp = [];
 
@@ -430,10 +376,16 @@ class GridBuilder {
         return $code;
     }
 
+    private function addGridRefresh(string $jsHandlerName, array $otherArguments = []) {
+        $args = array_merge([0], $otherArguments);
+        $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh</a>';
+        return $code;
+    }
+
     public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
         $code = '<div class="row">';
-        $code .= '<div class="col-md">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div>';
-        $code .= '<div class="col-md" id="right">' . $this->createGridControls2($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
+        $code .= '<div class="col-md"><div class="row"><div class="col-md-4">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div></div></div>';
+        $code .= '<div class="col-md" id="right">' . $this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
         $code .= '</div>';
 
         $this->addBelowGridElementCode($code);

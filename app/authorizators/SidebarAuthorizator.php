@@ -96,6 +96,18 @@ class SidebarAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canManageSystemCaching(int $userId) {
+        if(!$this->isUserAdmin($userId)) {
+            return false;
+        }
+
+        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_SYSTEM_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>
