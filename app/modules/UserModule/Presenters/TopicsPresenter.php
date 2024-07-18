@@ -628,7 +628,7 @@ class TopicsPresenter extends AUserPresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">You are not following any topics.</p>
+                        <p class="post-text" id="center">You are not following any topics.</p>
                     </div>
                 </div>
             ';
@@ -667,7 +667,7 @@ class TopicsPresenter extends AUserPresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">You are following all topics that are available on this platform.</p>
+                        <p class="post-text" id="center">You are following all topics that are available on this platform.</p>
                     </div>
                 </div>
             ';
