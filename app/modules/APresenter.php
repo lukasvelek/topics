@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
@@ -463,7 +464,11 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $scriptContent JS script content
      */
-    public function addScript(string $scriptContent) {
+    public function addScript(AjaxRequestBuilder|string $scriptContent) {
+        if($scriptContent instanceof AjaxRequestBuilder) {
+            $scriptContent = $scriptContent->build();
+        }
+        
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 
