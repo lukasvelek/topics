@@ -7,6 +7,7 @@ use App\Entities\BannedWordEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -33,11 +34,11 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
         $gb->addDataSource($data);
-        $gb->addOnColumnRender('author', function(BannedWordEntity $bwe) use ($app) {
+        $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) use ($app) {
             $user = $app->userRepository->getUserById($bwe->getAuthorId());
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
         });
-        $gb->addOnColumnRender('date', function(BannedWordEntity $bwe) {
+        $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
         });
         $gb->addAction(function(BannedWordEntity $bwe) {

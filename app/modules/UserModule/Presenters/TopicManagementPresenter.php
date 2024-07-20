@@ -13,6 +13,7 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
@@ -80,19 +81,18 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $gb->addDataSource($members);
         $gb->addColumns(['userId' => 'User', 'role' => 'Role']);
-        $gb->addOnColumnRender('userId', function(TopicMemberEntity $tme) use ($app) {
+        $gb->addOnColumnRender('userId', function(Cell $cell, TopicMemberEntity $tme) use ($app) {
             $user = $app->userRepository->getUserById($tme->getUserId());
 
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserAdmin:Users', 'action' => 'profile', 'userId' => $tme->getUserId()], 'post-data-link');
         });
-        $gb->addOnColumnRender('role', function (TopicMemberEntity $tme) {
+        $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
             $text = TopicMemberRole::toString($tme->getRole());
 
-            $span = HTML::span();
-            $span->setText($text);
-            $span->setColor(TopicMemberRole::getColorByKey($tme->getRole()));
-            
-            return $span->render();
+            $cell->setTextColor(TopicMemberRole::getColorByKey($tme->getRole()));
+            $cell->setValue($text);
+
+            return $cell;
         });
         $gb->addAction(function(TopicMemberEntity $tme) use ($app) {
             $link = LinkBuilder::createSimpleLink('Change role', ['page' => 'UserModule:TopicManagement', 'action' => 'changeRoleForm', 'topicId' => $tme->getTopicId(), 'userId' => $tme->getUserId()], 'post-data-link');
@@ -241,36 +241,33 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
         $gb->addDataSource($polls);
-        $gb->addOnColumnRender('author', function(TopicPollEntity $tpe) use ($app) {
+        $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) use ($app) {
             $user = $app->userRepository->getUserById($tpe->getAuthorId());
 
             return UserEntity::createUserProfileLink($user);
         });
-        $gb->addOnColumnRender('dateCreated', function(TopicPollEntity $tpe) {
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, TopicPollEntity $tpe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateCreated());
         });
-        $gb->addOnColumnRender('status', function(TopicPollEntity $tpe) {
-            $code = function (string $text, bool $response) {
-                return '<span style="color: ' . ($response ? 'green' : 'red') . '">' . $text . '</span>';
-            };
-
-            if($tpe->getDateValid() === null) {
-                return $code('Active', true);
-            }
-            if(strtotime($tpe->getDateValid()) > time()) {
-                return $code('Active', true);
+        $gb->addOnColumnRender('status', function(Cell $cell, TopicPollEntity $tpe) {
+            if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
+                $cell->setTextColor('green');
+                $cell->setValue('Active');
+            } else {
+                $cell->setTextColor('red');
+                $cell->setValue('Inactive');
             }
 
-            return $code('Inactive', false);
+            return $cell;
         });
-        $gb->addOnColumnRender('dateValid', function(TopicPollEntity $tpe) {
+        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicPollEntity $tpe) {
             if($tpe->getDateValid() === null) {
                 return '-';
             }
 
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateValid());
         });
-        $gb->addOnColumnRender('votes', function(TopicPollEntity $tpe) use ($app) {
+        $gb->addOnColumnRender('votes', function(Cell $cell, TopicPollEntity $tpe) use ($app) {
             $votes = $app->topicPollRepository->getPollResponses($tpe->getId());
 
             return count($votes);
@@ -373,14 +370,14 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb = new GridBuilder();
         $gb->addDataSource($invites);
         $gb->addColumns(['user' => 'User', 'dateValid' => 'Valid until']);
-        $gb->addOnColumnRender('user', function(TopicInviteEntity $invite) use ($users) {
+        $gb->addOnColumnRender('user', function(Cell $cell, TopicInviteEntity $invite) use ($users) {
             if(array_key_exists($invite->getUserId(), $users)) {
                 return $users[$invite->getUserId()]->getUsername();
             } else {
                 return '-';
             }
         });
-        $gb->addOnColumnRender('dateValid', function(TopicInviteEntity $invite) {
+        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicInviteEntity $invite) {
             return DateTimeFormatHelper::formatDateToUserFriendly($invite->getDateValid());
         });
         $gb->addAction(function(TopicInviteEntity $invite) {

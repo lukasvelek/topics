@@ -8,6 +8,7 @@ use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Helpers\DateTimeFormatHelper;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -52,20 +53,21 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['title' => 'Title', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
-                $gb->addOnColumnRender('reported', function(TopicEntity $topic) use ($checkReport) {
+                $gb->addOnColumnRender('reported', function(Cell $cell, TopicEntity $topic) use ($checkReport) {
                     $report = $checkReport($topic->getId(), ReportEntityType::TOPIC);
 
                     if($report === null) {
-                        return '<span style="color: red">No</span>';
+                        $cell->setTextColor('red');
+                        $cell->setValue('No');
                     } else {
                         $link = '<a class="post-data-link" style="color: green" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $report->getId() . '">Yes</a>';
                         return $link;
                     }
                 });
-                $gb->addOnColumnRender('dateDeleted', function(TopicEntity $topic) {
+                $gb->addOnColumnRender('dateDeleted', function(Cell $cell, TopicEntity $topic) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted()) ?? '-';
                 });
-                $gb->addOnColumnRender('title', function(TopicEntity $topic) {
+                $gb->addOnColumnRender('title', function(Cell $cell, TopicEntity $topic) {
                     return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
                 });
 
@@ -78,20 +80,22 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['title' => 'Title', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
-                $gb->addOnColumnRender('reported', function(PostEntity $post) use ($checkReport) {
+                $gb->addOnColumnRender('reported', function(Cell $cell, PostEntity $post) use ($checkReport) {
                     $report = $checkReport($post->getId(), ReportEntityType::POST);
 
                     if($report === null) {
-                        return '<span style="color: red">No</span>';
+                        $cell->setTextColor('red');
+                        $cell->setValue('red');
+                        return $cell;
                     } else {
                         $link = '<a class="post-data-link" style="color: green" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $report->getId() . '">Yes</a>';
                         return $link;
                     }
                 });
-                $gb->addOnColumnRender('dateDeleted', function(PostEntity $post) {
+                $gb->addOnColumnRender('dateDeleted', function(Cell $cell, PostEntity $post) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateDeleted()) ?? '-';
                 });
-                $gb->addOnColumnRender('title', function(PostEntity $post) {
+                $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
                     return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
                 });
 
@@ -104,24 +108,26 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['post' => 'Post', 'text' => 'Text', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
-                $gb->addOnColumnRender('post', function(PostCommentEntity $comment) use ($app) {
+                $gb->addOnColumnRender('post', function(Cell $cell, PostCommentEntity $comment) use ($app) {
                     $post = $app->postRepository->getPostById($comment->getPostId());
                     return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
                 });
-                $gb->addOnColumnRender('text', function(PostCommentEntity $comment) {
+                $gb->addOnColumnRender('text', function(Cell $cell, PostCommentEntity $comment) {
                     return $comment->getShortenedText();
                 });
-                $gb->addOnColumnRender('reported', function(PostCommentEntity $comment) use ($checkReport) {
+                $gb->addOnColumnRender('reported', function(Cell $cell, PostCommentEntity $comment) use ($checkReport) {
                     $report = $checkReport($comment->getId(), ReportEntityType::COMMENT);
 
                     if($report === null) {
-                        return '<span style="color: red">No</span>';
+                        $cell->setTextColor('red');
+                        $cell->setValue('No');
+                        return $cell;
                     } else {
                         $link = '<a class="post-data-link" style="color: green" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $report->getId() . '">Yes</a>';
                         return $link;
                     }
                 });
-                $gb->addOnColumnRender('dateDeleted', function(PostCommentEntity $comment) {
+                $gb->addOnColumnRender('dateDeleted', function(Cell $cell, PostCommentEntity $comment) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateDeleted()) ?? '-';
                 });
 

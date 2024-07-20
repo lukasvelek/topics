@@ -10,6 +10,7 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -43,21 +44,21 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'reason' => 'Reason', 'type' => 'Type', 'dateFrom' => 'Date from', 'dateTo' => 'Date to']);
         $gb->addDataSource($prosecutions);
-        $gb->addOnColumnRender('user', function(UserProsecutionEntity $userProsecution) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) use ($app) {
             $user = $app->userRepository->getUserById($userProsecution->getUserId());
             return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
         });
-        $gb->addOnColumnRender('type', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('type', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             return UserProsecutionType::toString($userProsecution->getType());
         });
-        $gb->addOnColumnRender('dateFrom', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('dateFrom', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getStartDate() !== null) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate());
             } else {
                 return '-';
             }
         });
-        $gb->addOnColumnRender('dateTo', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('dateTo', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getEndDate() !== null) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate());
             } else {
@@ -166,11 +167,11 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $gb->addDataSource($historyEntries);
-        $gb->addOnColumnRender('user', function (UserProsecutionHistoryEntryEntity $entity) use ($app) {
+        $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) use ($app) {
             $user = $app->userRepository->getUserById($entity->getUserId());
             return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
         });
-        $gb->addOnColumnRender('dateCreated', function(UserProsecutionHistoryEntryEntity $entity) {
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $historyEntriesCount, 'getProsecutionLog');

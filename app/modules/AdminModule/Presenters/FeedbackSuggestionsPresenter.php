@@ -9,6 +9,7 @@ use App\Entities\UserSuggestionEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 
@@ -68,10 +69,10 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $gb->addDataSource($suggestions);
         $gb->addColumns(['title' => 'Title', 'text' => 'Text', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('text', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('text', function(Cell $cell, UserSuggestionEntity $e) {
             return $e->getShortenedText(100);
         });
-        $gb->addOnColumnRender('category', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('category', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
@@ -83,7 +84,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('status', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('status', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
@@ -95,7 +96,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $user = $app->userRepository->getUserById($e->getUserId());
 
             $a = HTML::a();
@@ -108,7 +109,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $a = HTML::a();
 
             $a->text($e->getTitle())

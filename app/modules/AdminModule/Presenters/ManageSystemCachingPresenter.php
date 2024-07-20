@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\CachedPageEntity;
 use App\Entities\UserEntity;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -46,7 +47,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                 $gb = new GridBuilder();
                 $gb->addDataSource($fileArray);
                 $gb->addColumns(['name' => 'Name']);
-                $gb->addOnColumnRender('name', function(CachedPageEntity $cpe) {
+                $gb->addOnColumnRender('name', function(Cell $cell, CachedPageEntity $cpe) {
                     $name = $cpe->getName();
 
                     if(explode('_', $name) == 2) {

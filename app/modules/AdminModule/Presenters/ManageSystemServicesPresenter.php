@@ -6,6 +6,7 @@ use App\Constants\SystemServiceStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\SystemServiceEntity;
 use App\Helpers\DateTimeFormatHelper;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -54,13 +55,13 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'status' => 'Status']);
         $gb->addDataSource($services);
-        $gb->addOnColumnRender('status', function(SystemServiceEntity $sse) {
+        $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {
             return SystemServiceStatus::toString($sse->getStatus());
         });
-        $gb->addOnColumnRender('dateStarted', function(SystemServiceEntity $sse) {
+        $gb->addOnColumnRender('dateStarted', function(Cell $cell, SystemServiceEntity $sse) {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted());
         });
-        $gb->addOnColumnRender('dateEnded', function(SystemServiceEntity $sse) {
+        $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
         });
         $gb->addAction(function(SystemServiceEntity $sse) {

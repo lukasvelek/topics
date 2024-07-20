@@ -40,6 +40,19 @@ class Cell implements IRenderable {
         $this->attributes['style'] = $style;
     }
 
+    public function addStyle(string $style) {
+        if(!isset($this->attributes['style'])) {
+            $this->setStyle($style);
+            return;
+        }
+
+        $this->attributes['style'] .= '; ' . $style;
+    }
+
+    public function setTextColor(string $color) {
+        $this->addStyle('color: ' . $color);
+    }
+
     public function render() {
         $code = '<';
         if($this->isHeader) {

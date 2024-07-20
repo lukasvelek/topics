@@ -11,6 +11,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
@@ -43,8 +44,16 @@ class ManageUsersPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
         $gb->addDataSource($users);
-        $gb->addOnColumnRender('isAdmin', function(UserEntity $entity) {
-            return $entity->isAdmin() ? 'Yes' : 'No';
+        $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
+            if($entity->isAdmin()) {
+                $cell->setValue('Yes');
+                $cell->setTextColor('green');
+            } else {
+                $cell->setValue('No');
+                $cell->setTextColor('red');
+            }
+
+            return $cell;
         });
         $gb->addAction(function (UserEntity $user) {
             return '<a class="grid-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">Profile</a>';

@@ -10,6 +10,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Option;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -88,11 +89,11 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'dateCreated' => 'Member since']);
         $gb->addDataSource($members);
-        $gb->addOnColumnRender('user', function(GroupMembershipEntity $entity) use ($users) {
+        $gb->addOnColumnRender('user', function(Cell $cell, GroupMembershipEntity $entity) use ($users) {
             $user = $users[$entity->getUserId()];
             return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
         });
-        $gb->addOnColumnRender('dateCreated', function(GroupMembershipEntity $entity) {
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, GroupMembershipEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
         $gb->addAction(function(GroupMembershipEntity $entity) use ($app) {

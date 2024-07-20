@@ -95,7 +95,7 @@ class GridBuilder {
     }
 
     /**
-     * Adds custom table element render
+     * Adds custom table element render. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity. The callback can return either the value itself or the modified Cell instance.
      * 
      * @param string $entityVarName Name of the column header
      * @param callable $func Method called when rendering
@@ -239,7 +239,6 @@ class GridBuilder {
                 }
             } else {
                 foreach($this->dataSourceArray as $entity) {
-                    //entityRow = '<tr>';
                     $entityRow = new Row();
     
                     if(!is_null($this->renderRowCheckbox)) {
@@ -277,9 +276,13 @@ class GridBuilder {
 
                         if(array_key_exists($varName, $this->callbacks)) {
                             try {
-                                $result = $this->callbacks[$varName]($entity);
+                                $result = $this->callbacks[$varName]($cell, $entity);
 
-                                $cell->setValue($result);
+                                if($result instanceof Cell) {
+                                    $cell = $result;
+                                } else {
+                                    $cell->setValue($result);
+                                }
                             } catch(Exception $e) {
                                 throw new GridBuilderCustomMethodException($e->getMessage(), $e);
                             }
@@ -299,11 +302,9 @@ class GridBuilder {
                             }
                         }
     
-                        //$entityRow .= $cell->render();
                         $entityRow->addCell($cell);
                     }
         
-                    //$entityRow .= '</tr>';
                     $entityRows[] = $entityRow;
                 }
             }

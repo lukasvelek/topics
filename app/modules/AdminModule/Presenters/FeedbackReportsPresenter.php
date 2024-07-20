@@ -12,6 +12,7 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
@@ -72,10 +73,10 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $gb->addDataSource($reports);
         $gb->addColumns(['title' => 'Title', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('title', function(ReportEntity $re) {
+        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
             return ReportEntityType::toString($re->getEntityType()) . ' report';
         });
-        $gb->addOnColumnRender('category', function(ReportEntity $re) {
+        $gb->addOnColumnRender('category', function(Cell $cell, ReportEntity $re) {
             $a = HTML::a();
 
             $a->href('#')
@@ -86,7 +87,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('status', function(ReportEntity $re) {
+        $gb->addOnColumnRender('status', function(Cell $cell, ReportEntity $re) {
             $a = HTML::a();
 
             $a->href('#')
@@ -97,7 +98,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(ReportEntity $re) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) use ($app) {
             $user = $app->userRepository->getUserById($re->getUserId());
 
             $a = HTML::a();
@@ -110,7 +111,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(ReportEntity $re) {
+        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
             return '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $re->getId() . '">' . ReportEntityType::toString($re->getEntityType()) . ' report</a>';
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $reportCount, 'getReportGrid', [$filterType, $filterKey]);
