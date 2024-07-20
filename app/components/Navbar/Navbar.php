@@ -2,6 +2,7 @@
 
 namespace App\Components\Navbar;
 
+use App\Managers\NotificationManager;
 use App\Modules\TemplateObject;
 use App\UI\IRenderable;
 
@@ -10,12 +11,16 @@ class Navbar implements IRenderable {
     private TemplateObject $template;
     private bool $hideSearchBar;
     private bool $hasCustomLinks;
+    private NotificationManager $notificationManager;
+    private ?int $currentUserId;
 
-    public function __construct() {
+    public function __construct(NotificationManager $notificationManager, ?int $currentUserId = null) {
         $this->links = [];
         $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template.html'));
         $this->hideSearchBar = false;
         $this->hasCustomLinks = false;
+        $this->notificationManager = $notificationManager;
+        $this->currentUserId = $currentUserId;
 
         $this->getLinks();
     }
@@ -53,7 +58,9 @@ class Navbar implements IRenderable {
             $profileLinkArray = NavbarLinks::USER_PROFILE;
             $profileLinkArray['userId'] = $app->currentUser->getId();
 
-            $this->template->user_info = [$this->createLink(NavbarLinks::USER_NOTIFICATIONS, 'notifications'), $this->createLink(NavbarLinks::USER_INVITES, 'invitations'), $this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+            $notificationLink = $this->createNotificationsLink(true);
+
+            $this->template->user_info = [$notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invitations'), $this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
         } else {
             $this->template->user_info = '';
         }
@@ -63,6 +70,20 @@ class Navbar implements IRenderable {
         } else {
             $this->template->search_bar = $this->createSearchBar();
         }
+    }
+
+    private function createNotificationsLink(bool $checkForNewNotifications = false) {
+        $text = 'notifications';
+
+        if($checkForNewNotifications && $this->currentUserId !== null) {
+            $notifications = $this->notificationManager->getUnseenNotificationsForUser($this->currentUserId);
+
+            if(count($notifications) > 0) {
+                $text .= ' (' . count($notifications) . ')';
+            }
+        }
+
+        return $this->createLink(NavbarLinks::USER_NOTIFICATIONS, $text);
     }
 
     private function createSearchBar() {

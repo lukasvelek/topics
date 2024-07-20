@@ -13,7 +13,13 @@ class ErrorModule extends AModule {
     public function renderModule() {
         global $app;
 
-        $navbar = new Navbar();
+        $currentUserId = null;
+
+        if($app->currentUser !== null) {
+            $currentUserId = $app->currentUser->getId();
+        }
+
+        $navbar = new Navbar($app->notificationManager, $currentUserId);
         $navbar->hideSearchBar();
         
         if($app->currentUser == null) {
