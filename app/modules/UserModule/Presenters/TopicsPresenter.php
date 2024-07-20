@@ -278,9 +278,12 @@ class TopicsPresenter extends AUserPresenter {
 
             $pollEntity = $app->topicPollRepository->getPollById($poll->getId());
         
-            $elapsedTime = new DateTime();
-            $elapsedTime->modify($pollEntity->getTimeElapsedForNextVote());
-            $elapsedTime = $elapsedTime->getResult();
+            $elapsedTime = null;
+            if($pollEntity->getTimeElapsedForNextVote() != '0') {
+                $elapsedTime = new DateTime();
+                $elapsedTime->modify($pollEntity->getTimeElapsedForNextVote());
+                $elapsedTime = $elapsedTime->getResult();
+            }
 
             $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $elapsedTime);
 
@@ -801,7 +804,9 @@ class TopicsPresenter extends AUserPresenter {
                 $dateValid = null;
             }
 
-            $timeElapsed = '-' . $timeElapsed;
+            if($timeElapsed != '0') {
+                $timeElapsed = '-' . $timeElapsed;
+            }
 
             $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
 
@@ -817,7 +822,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextArea('choices', 'Poll choices:', null, true)
                 ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
                 ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
-                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours', 'clbl2')
+                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create')
             ;
@@ -858,9 +863,13 @@ class TopicsPresenter extends AUserPresenter {
         $choice = $this->httpPost('choice');
 
         $poll = $app->topicPollRepository->getPollById($pollId);
-        $elapsedTime = new DateTime();
-        $elapsedTime->modify($poll->getTimeElapsedForNextVote());
-        $elapsedTime = $elapsedTime->getResult();
+        
+        $elapsedTime = null;
+        if($poll->getTimeElapsedForNextVote() != '0') {
+            $elapsedTime = new DateTime();
+            $elapsedTime->modify($poll->getTimeElapsedForNextVote());
+            $elapsedTime = $elapsedTime->getResult();
+        }
 
         if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId(), $elapsedTime) !== null) {
             $this->flashMessage('You have already voted.', 'error');

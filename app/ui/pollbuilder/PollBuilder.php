@@ -142,7 +142,7 @@ class PollBuilder implements IRenderable {
         ;
 
         if($this->userChoice !== null) {
-            if($this->timeNeededToElapse !== null) {
+            if($this->timeNeededToElapse !== null && $this->timeNeededToElapse != '0') {
                 $timeNeededToElapse = $this->timeNeededToElapse;
                 $timeNeededToElapse[0] = '+';
 
@@ -151,8 +151,10 @@ class PollBuilder implements IRenderable {
                 $dt = DateTimeFormatHelper::formatDateToUserFriendly($dt->getResult());
 
                 $fb->addLabel('You have to wait until ' . $dt . ' before another vote.', 'lbl_message1');
+            } else if($this->timeNeededToElapse !== null && $this->timeNeededToElapse == '0') {
+                $fb->addLabel('You can vote only once.', 'lbl_message1');
             } else {
-                $fb->addLabel('You have to wait before another vote.');
+                $fb->addLabel('You have to wait before another vote.', 'lbl_message1');
             }
         }
 
