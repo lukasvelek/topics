@@ -58,7 +58,7 @@ class Navbar implements IRenderable {
             $profileLinkArray = NavbarLinks::USER_PROFILE;
             $profileLinkArray['userId'] = $app->currentUser->getId();
 
-            $notificationLink = $this->createNotificationsLink(true);
+            $notificationLink = $this->createNotificationsLink();
 
             $this->template->user_info = [$notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invitations'), $this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
         } else {
@@ -72,10 +72,10 @@ class Navbar implements IRenderable {
         }
     }
 
-    private function createNotificationsLink(bool $checkForNewNotifications = false) {
+    private function createNotificationsLink() {
         $text = 'notifications';
 
-        if($checkForNewNotifications && $this->currentUserId !== null) {
+        if($this->currentUserId !== null) {
             $notifications = $this->notificationManager->getUnseenNotificationsForUser($this->currentUserId);
 
             if(count($notifications) > 0) {
