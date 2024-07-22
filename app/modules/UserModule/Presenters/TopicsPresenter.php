@@ -494,9 +494,12 @@ class TopicsPresenter extends AUserPresenter {
             $topicId = null;
 
             $tagArray = [];
+            $rawTagsArray = [];
             foreach(explode(',', $tags) as $tag) {
                 $tag = trim($tag);
                 $tag = ucfirst($tag);
+
+                $rawTagsArray[] = $tag;
 
                 [$fg, $bg] = ColorHelper::createColorCombination();
                 $tag = '<span style="color: ' . $fg . '; background-color: ' . $bg . '; border: 1px solid ' . $fg . '; border-radius: 10px; padding: 5px; margin-right: 5px">' . $tag . '</span>';
@@ -505,9 +508,10 @@ class TopicsPresenter extends AUserPresenter {
             }
 
             $tags = serialize($tagArray);
+            $rawTags = implode(',', $rawTagsArray);
 
             try {
-                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate);
+                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate, $rawTags);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);

@@ -60,11 +60,11 @@ class TopicRepository extends ARepository {
         return $qb;
     }
 
-    public function createNewTopic(string $title, string $description, string $tags, bool $isPrivate) {
+    public function createNewTopic(string $title, string $description, string $tags, bool $isPrivate, string $rawTags) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description', 'tags', 'isPrivate'])
-            ->values([$title, $description, $tags, $isPrivate])
+        $qb ->insert('topics', ['title', 'description', 'tags', 'isPrivate', 'rawTags'])
+            ->values([$title, $description, $tags, $isPrivate, $rawTags])
             ->execute();
 
         return $qb->fetch();
@@ -190,6 +190,39 @@ class TopicRepository extends ARepository {
         }
 
         $qb->andWhere('isPrivate = 1')
+            ->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function searchTags(string $query) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['rawTags'])
+            ->from('topics')
+            ->where('rawTags LIKE ?', ['%' . $query . '%'])
+            ->execute();
+
+        $tags = [];
+        while($row = $qb->fetchAssoc()) {
+            $topicTags = explode(',', $row['rawTags']);
+
+            foreach($topicTags as $tt) {
+                if(str_contains($tt, $query)) {
+                    $tags[] = $tt;
+                }
+            }
+        }
+
+        return $tags;
+    }
+
+    public function getTopicsWithTag(string $tag) {
+        $qb = $this->qb(__METHOD__);
+        
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where('rawTags LIKE ?', ['%' . $tag . '%'])
             ->execute();
 
         return $this->createTopicsArrayFromQb($qb);
