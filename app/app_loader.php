@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Creates a list of all files in the given folder
+ * 
+ * @param string $folder Folder to look in
+ * @param array $files Link to array of found files
+ * @param array $skipFolders List of parent folders to skip
+ * @param array $skipFiles List of files to skip
+ * @param array $skipExtensions List of extensions to skip
+ */
 function getFilesInFolderRecursively(string $folder, array &$files, array $skipFolders = [], array $skipFiles = [], array $skipExtensions = []) {
     $objects = scandir($folder);
 
@@ -31,6 +40,14 @@ function getFilesInFolderRecursively(string $folder, array &$files, array $skipF
     }
 }
 
+/**
+ * Sorts files by priority:
+ * 1. Interfaces
+ * 2. Abstract classes
+ * 3. Classes
+ * 
+ * @param array $files Link to array with files
+ */
 function sortFilesByPriority(array &$files) {
     $interfaces = [];
     $abstractClasses = [];
@@ -57,16 +74,47 @@ function sortFilesByPriority(array &$files) {
     $files = array_merge($interfaces, $abstractClasses, $classes);
 }
 
+/**
+ * Creates a "container" -> a list of all files saved to a tmp file
+ */
+function createContainer($files) {
+    $data = serialize(['files' => $files, 'created_on' => date('Y-m-d H:i:s')]);
+
+    file_put_contents('cache\\Container_' . md5(date('Y-m-d')) . '.tmp', $data);
+}
+
+/**
+ * Returns a "container" -> a list of all files saved to a tmp file
+ * 
+ * @return array File array
+ */
+function getContainer() {
+    if(file_exists('cache\\Container_' . md5(date('Y-m-d')) . '.tmp')) {
+        return unserialize(file_get_contents('cache\\Container_' . md5(date('Y-m-d')) . '.tmp'))['files'];
+    } else {
+        return [];
+    }
+}
+
+/**
+ * Requires all given files
+ * 
+ * @param array $files File array
+ */
 function requireFiles(array $files) {
     foreach($files as $realPath => $file) {
         require_once($realPath);
     }
 }
 
-$files = [];
+$files = getContainer();
 
-getFilesInFolderRecursively(__DIR__, $files, ['ajax\\'], ['app_loader.php'], ['html', 'distrib']);
-sortFilesByPriority($files);
+if(empty($files)) {
+    getFilesInFolderRecursively(__DIR__, $files, ['ajax\\'], ['app_loader.php'], ['html', 'distrib']);
+    sortFilesByPriority($files);
+    createContainer($files);
+}
+
 requireFiles($files);
 
 ?>
