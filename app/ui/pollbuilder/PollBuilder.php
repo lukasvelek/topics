@@ -20,6 +20,7 @@ class PollBuilder implements IRenderable {
     private ?int $topicId;
     private ?string $timeNeededToElapse;
     private bool $canUserSeeAnalyticsAllTheTime;
+    private ?string $userChoiceDate;
 
     public function __construct() {
         $this->choices = [];
@@ -33,6 +34,7 @@ class PollBuilder implements IRenderable {
         $this->topicId = null;
         $this->timeNeededToElapse = null;
         $this->canUserSeeAnalyticsAllTheTime = false;
+        $this->userChoiceDate = null;
     }
 
     public function setUserCanSeeAnalyticsAllTheTime(bool $canUserSeeAnalyticsAllTheTime = true) {
@@ -85,16 +87,28 @@ class PollBuilder implements IRenderable {
         return $this;
     }
 
+    public function setUserChoiceDate(string $date) {
+        $this->userChoiceDate = $date;
+
+        return $this;
+    }
+
     public function setCurrentUserId(int $userId) {
         $this->currentUserId = $userId;
+
+        return $this;
     }
 
     public function setManagerId(int $managerId) {
         $this->managerId = $managerId;
+
+        return $this;
     }
 
     public function setTopicId(int $topicId) {
         $this->topicId = $topicId;
+
+        return $this;
     }
 
     public function render() {
@@ -142,11 +156,11 @@ class PollBuilder implements IRenderable {
         ;
 
         if($this->userChoice !== null) {
-            if($this->timeNeededToElapse !== null && $this->timeNeededToElapse != '0') {
+            if($this->timeNeededToElapse !== null && $this->timeNeededToElapse != '0' && $this->userChoiceDate !== null) {
                 $timeNeededToElapse = $this->timeNeededToElapse;
                 $timeNeededToElapse[0] = '+';
 
-                $dt = new DateTime();
+                $dt = new DateTime(strtotime($this->userChoiceDate));
                 $dt->modify($timeNeededToElapse);
                 $dt = DateTimeFormatHelper::formatDateToUserFriendly($dt->getResult());
 

@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicPollChoiceEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\UI\PollBuilder\PollBuilder;
@@ -65,7 +66,7 @@ class TopicPollRepository extends ARepository {
     public function getPollChoice(int $pollId, int $userId, ?string $dateLimit) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['choice'])
+        $qb ->select(['*'])
             ->from('topic_polls_responses')
             ->where('pollId = ?', [$pollId])
             ->andWhere('userId = ?', [$userId]);
@@ -76,7 +77,7 @@ class TopicPollRepository extends ARepository {
 
         $qb->execute();
 
-        return $qb->fetch('choice');
+        return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
     }
 
     public function getPollRowById(int $pollId) {

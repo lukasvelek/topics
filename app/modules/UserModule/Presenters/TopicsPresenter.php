@@ -288,7 +288,8 @@ class TopicsPresenter extends AUserPresenter {
             $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $elapsedTime);
 
             if($myPollChoice !== null) {
-                $poll->setUserChoice($myPollChoice);
+                $poll->setUserChoice($myPollChoice->getChoice());
+                $poll->setUserChoiceDate($myPollChoice->getDateCreated());
             }
             
             $poll->setCurrentUserId($app->currentUser->getId());
