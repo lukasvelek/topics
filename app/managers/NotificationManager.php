@@ -189,9 +189,11 @@ class NotificationManager extends AManager {
 
         $id = $this->createNotificationId();
 
-        $topicLink = $this->processURL($id, [$topicLink]);
+        $invitationsLink = LinkBuilder::createSimpleLinkObject('here', ['page' => 'UserModule:TopicInvites', 'action' => 'list'], 'post-data-link');
+
+        [$topicLink, $invitationsLink] = $this->processURL($id, [$topicLink, $invitationsLink]);
         
-        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink]);
+        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink, '$INVITATIONS_LINK$' => $invitationsLink]);
 
         if(self::LOG) {
             $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$TOPIC_LINK$' => $topicLink];

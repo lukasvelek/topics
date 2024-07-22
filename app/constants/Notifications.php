@@ -33,7 +33,7 @@ class Notifications {
 
     public static function getTextByKey(int $key) {
         return match($key) {
-            self::NEW_TOPIC_INVITE => 'You have been invited to join topic $TOPIC_LINK$.',
+            self::NEW_TOPIC_INVITE => 'You have been invited to join topic $TOPIC_LINK$. You can find and manage your invites $INVITATIONS_LINK$.',
             self::NEW_POST_COMMENT => 'User $AUTHOR_LINK$ commented on your post $POST_LINK$.',
             self::NEW_POST_LIKE => 'User $AUTHOR_LINK$ liked your post $POST_LINK$.',
             self::NEW_COMMENT_COMMENT => 'User $AUTHOR_LINK$ commented on your comment on post $POST_LINK$.',

@@ -35,18 +35,27 @@ class SearchPresenter extends AUserPresenter {
 
         // topics
         $topicRows = $app->topicRepository->composeQueryForTopicsSearch($query)->execute();
+        
+        $topics = [];
+        while($row = $topicRows->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+        
+        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
 
         $topicArray = [];
-        while($row = $topicRows->fetchAssoc()) {
-            $topic = TopicEntity::createEntityFromDbRow($row);
-            $link = TopicEntity::createTopicProfileLink($topic);
-
-            $topicArray[] = $link;
+        if(!empty($topics)) {
+            foreach($topics as $t) {
+                $link = TopicEntity::createTopicProfileLink($t);
+                
+                $topicArray[] = $link;
+            }
         }
 
         $createLink = LinkBuilder::createSimpleLink('create', ['page' => 'UserModule:Topics', 'action' => 'form', 'title' => $query], 'post-data-link');
 
         $topicResult = 'No topics found. But you can ' . $createLink . ' one!';
+
         if(!empty($topicArray)) {
             $topicResult = implode('<br>', $topicArray);
         }
