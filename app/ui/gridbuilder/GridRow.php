@@ -30,6 +30,10 @@ class Row implements IRenderable {
             $this->attributes['style'] = 'background-color: ' . $color;
         }
     }
+    
+    public function setDescription(string $description) {
+        $this->attributes['title'] = $description;
+    }
 
     public function setPrimaryKey(string $primaryKey) {
         $this->primaryKey = $primaryKey;

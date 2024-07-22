@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Constants\SystemServiceStatus;
 use App\Core\AjaxRequestBuilder;
+use App\Core\Datetypes\DateTime;
 use App\Entities\SystemServiceEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\Cell;
@@ -83,6 +84,19 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             return $text;
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $count, 'getServicesGrid');
+
+        foreach($services as $service) {
+            $date = new DateTime();
+            $date->modify('-2d');
+            
+            if(strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
+                $gb->addOnRowRender($service->getId(), function(Row $row) {
+                    $row->setBackgroundColor('orange');
+                    $row->setDescription('This service has not run in 2 days or more.');
+                    return $row;
+                });
+            }
+        }
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
