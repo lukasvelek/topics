@@ -6,6 +6,7 @@ use App\Constants\ReportCategory;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class UsersPresenter extends AUserPresenter {
     public function __construct() {
@@ -75,15 +76,23 @@ class UsersPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $userId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportUser() {
         $user = $this->loadFromPresenterCache('user');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->username = $user->getUsername();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 
