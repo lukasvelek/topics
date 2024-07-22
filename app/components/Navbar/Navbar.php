@@ -96,7 +96,7 @@ class Navbar implements IRenderable {
         }
 
         $code = '
-            <input type="text" name="searchQuery" id="searchQuery" placeholder="Search topics..."' . $query . '>
+            <input type="text" name="searchQuery" id="searchQuery" placeholder="Search..."' . $query . '>
             <button type="button" style="border: 1px solid black;" onclick="doSearch(' . $app->currentUser->getId() . ')">Search</button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';
