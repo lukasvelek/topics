@@ -208,6 +208,14 @@ class DatabaseInstaller {
                 'message' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateSeen' => 'DATETIME NULL'
+            ],
+            'post_file_uploads' => [
+                'uploadId' => 'VARCHAR(256)',
+                'postId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'filename' => 'VARCHAR(256) NOT NULL',
+                'filepath' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

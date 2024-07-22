@@ -10,12 +10,14 @@ use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\FileUploadManager;
 use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\FileUploadRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
@@ -69,6 +71,7 @@ class Application {
     public TopicPollRepository $topicPollRepository;
     public TopicInviteRepository $topicInviteRepository;
     public NotificationRepository $notificationRepository;
+    public FileUploadRepository $fileUploadRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -76,6 +79,7 @@ class Application {
     public ServiceManager $serviceManager;
     public TopicManager $topicManager;
     public NotificationManager $notificationManager;
+    public FileUploadManager $fileUploadManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -118,6 +122,7 @@ class Application {
         $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
         $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
         $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
+        $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -126,6 +131,7 @@ class Application {
         $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
+        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

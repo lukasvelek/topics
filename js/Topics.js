@@ -47,3 +47,13 @@ async function autoHideFlashMessage(_divId) {
 
     closeFlashMessage(_divId);
 }
+
+function openImage(_src) {
+    $("#image-modal-content").html('<img src="' + _src + '" width="600px">');
+    $("#image-modal").show();
+    $("#image-modal-open-link").html('<a class="post-data-link" href="' + _src + '" target="_blank">Open</a>');
+}
+
+function closeImage() {
+    $("#image-modal").hide();
+}

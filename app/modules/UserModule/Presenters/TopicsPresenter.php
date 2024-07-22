@@ -12,6 +12,7 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -200,6 +201,10 @@ class TopicsPresenter extends AUserPresenter {
 
         if($app->actionAuthorizator->canViewTopicPolls($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
             $links[] = LinkBuilder::createSimpleLink('Poll list', ['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId], 'post-data-link');
+        }
+
+        if($app->actionAuthorizator->canCreatePost($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
+            array_unshift($links, LinkBuilder::createSimpleLink('Create a post', ['page' => 'UserModule:Topics', 'action' => 'newPostForm', 'topicId' => $topicId], 'post-data-link'));
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;', $links));
@@ -414,6 +419,54 @@ class TopicsPresenter extends AUserPresenter {
         $this->template->links_hr = $linksHr;
     }
 
+    public function handleNewPostForm() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        $this->saveToPresenterCache('topicLink', TopicEntity::createTopicProfileLink($topic));
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+
+        // form
+        $postTags = [];
+        foreach(PostTags::getAll() as $key => $text) {
+            $postTags[] = [
+                'value' => $key,
+                'text' => $text
+            ];
+        }
+
+        $fb = new FormBuilder();
+
+        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
+            ->addTextInput('title', 'Title:', null, true)
+            ->addTextArea('text', 'Text:', null, true)
+            ->addSelect('tag', 'Tag:', $postTags, true)
+            ->addFileInput('image', 'Image:')
+            ->addSubmit('Post')
+            ->setCanHaveFiles()
+        ;
+
+        $this->saveToPresenterCache('form', $fb);
+    }
+
+    public function renderNewPostForm() {
+        $topicLink = $this->loadFromPresenterCache('topicLink');
+        $links = $this->loadFromPresenterCache('links');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->topic_link = $topicLink;
+        $this->template->links = $links;
+        $this->template->form = $form;
+    }
+
     public function handleNewPost(?FormResponse $fr = null) {
         global $app;
 
@@ -423,9 +476,20 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
+        $app->topicRepository->beginTransaction();
+
         try {
             $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
-        } catch (AException $e) {
+
+            if(isset($_FILES['image']['name'])) {
+                $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
+            
+                $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+            }
+
+            $app->topicRepository->commit();
+        } catch(Exception $e) {
+            $app->topicRepository->rollback();
             $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }

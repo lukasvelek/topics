@@ -12,6 +12,7 @@ class FormBuilder implements IFormRenderable {
     private bool $isInSection;
     private ?Section $currentSection;
     private string $name;
+    private bool $canHaveFiles;
 
     public function __construct() {
         $this->handlerUrl = [];
@@ -20,6 +21,7 @@ class FormBuilder implements IFormRenderable {
         $this->isInSection = false;
         $this->currentSection = null;
         $this->name = 'form_' . HashManager::createHash(8, false);
+        $this->canHaveFiles = false;
     }
 
     public function getName() {
@@ -253,6 +255,24 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
+    public function setCanHaveFiles(bool $canHaveFiles = true) {
+        $this->canHaveFiles = $canHaveFiles;
+
+        return $this;
+    }
+
+    public function addFileInput(string $name, ?string $label = null) {
+        $fi = new FileInput($name);
+
+        if($label !== null) {
+            $fi = new ElementDuo($fi, new Label($label, $name), $name);
+        }
+
+        $this->addElement($name, $fi);
+
+        return $this;
+    }
+
     public function render() {
         $tmp = [];
         foreach($this->handlerUrl as $k => $v) {
@@ -261,7 +281,13 @@ class FormBuilder implements IFormRenderable {
 
         $url = '?' . implode('&', $tmp);
 
-        $code = '<form action="' . $url . '" method="' . $this->method . '" data-formname="' . $this->name . '">';
+        $code = '<form action="' . $url . '" method="' . $this->method . '" data-formname="' . $this->name . '"';
+
+        if($this->canHaveFiles) {
+            $code .= ' enctype="multipart/form-data"';
+        }
+
+        $code .= '>';
 
         $i = 0;
         foreach($this->elements as $element) {

@@ -381,6 +381,20 @@ class PostRepository extends ARepository {
 
         return $qb->fetch('cnt');
     }
+
+    public function getLastCreatedPostInTopicByUserId(int $topicId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return PostEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>

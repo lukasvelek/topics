@@ -61,8 +61,8 @@ class FileManager {
         }
     }
 
-    public static function createFolder(string $dirPath) {
-        return mkdir($dirPath);
+    public static function createFolder(string $dirPath, bool $recursive = false) {
+        return mkdir($dirPath, 0777, $recursive);
     }
 
     public static function deleteFolderRecursively(string $dirPath) {

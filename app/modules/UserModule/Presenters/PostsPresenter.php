@@ -157,6 +157,30 @@ class PostsPresenter extends AUserPresenter {
             $this->addExternalScript('js/Reducer.js');
             $this->addScript('reducePostProfile()');
         }
+
+        $postImages = '';
+
+        $postImage = $app->fileUploadRepository->getFileForPost($postId);
+        if($postImage !== null) {
+            $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
+            $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" height="64px"></a>';
+
+            $postImages = '
+                <div class="row">
+                    <div class="col-md-3"></div>
+        
+                    <div class="col-md">
+                        ' . $imageLink . '
+                    </div>
+        
+                    <div class="col-md-3"></div>
+                </div>
+
+                <hr>
+            ';
+        }
+
+        $this->saveToPresenterCache('postImages', $postImages);
     }
 
     public function renderProfile() {
@@ -165,11 +189,13 @@ class PostsPresenter extends AUserPresenter {
         $postData = $this->loadFromPresenterCache('postData');
         $postTitle = $this->loadFromPresenterCache('postTitle');
         $postDescription = $this->loadFromPresenterCache('postDescription');
+        $postImages = $this->loadFromPresenterCache('postImages');
 
         $this->template->post_title = $topicLink . ' | ' . $postTitle;
         $this->template->post_text = $postDescription;
         $this->template->new_comment_form = $form;
         $this->template->post_data = $postData;
+        $this->template->post_images = $postImages;
     }
 
     public function actionCreateNewCommentForm() {
