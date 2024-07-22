@@ -209,7 +209,9 @@ class PostsPresenter extends AUserPresenter {
                 $app->postCommentRepository->likeComment($userId, $commentId);
                 $liked = true;
 
-                $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+                if($app->currentUser->getId() != $comment->getAuthorId()) {
+                    $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+                }
             } else {
                 $app->postCommentRepository->unlikeComment($userId, $commentId);
             }
@@ -385,7 +387,9 @@ class PostsPresenter extends AUserPresenter {
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
 
-            $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            if($post->getAuthorId() != $authorId) {
+                $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            }
 
             $app->postCommentRepository->commit();
 
@@ -597,7 +601,9 @@ class PostsPresenter extends AUserPresenter {
             $app->postRepository->likePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
-            $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
+            if($app->currentUser->getId() != $post->getAuthorId()) {
+                $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
+            }
 
             $cm = new CacheManager($app->logger);
             $cm->invalidateCache('posts');

@@ -8,7 +8,6 @@ use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
-use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
 use App\Managers\NotificationManager;

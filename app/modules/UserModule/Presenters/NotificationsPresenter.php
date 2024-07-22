@@ -117,7 +117,7 @@ class NotificationsPresenter extends AUserPresenter {
             $text = '';
         } else {
             $empty = 1;
-            $text = 'No notifications found';
+            $text = '<div style="text-align: center">No notifications found</div>';
         }
 
         $this->ajaxSendResponse(['text' => $text, 'empty' => $empty]);

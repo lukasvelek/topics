@@ -209,7 +209,6 @@ class GridBuilder {
             
             $entityRow = new Row();
             $entityRow->addCell($cell);
-            $entityRow->setBackgroundColor('rgba(100,100,255,0.75)');
 
             if($this->displayNoEntriesMessage === TRUE) {
                 $entityRows[] = $entityRow;
@@ -233,7 +232,6 @@ class GridBuilder {
                 
                 $entityRow = new Row();
                 $entityRow->addCell($cell);
-                $entityRow->setBackgroundColor('rgba(100,100,255,0.75)');
 
                 if($this->displayNoEntriesMessage === TRUE) {
                     $entityRows[] = $entityRow;
