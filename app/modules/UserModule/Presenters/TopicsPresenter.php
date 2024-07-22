@@ -857,15 +857,23 @@ class TopicsPresenter extends AUserPresenter {
             $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
 
             $this->saveToPresenterCache('topicLink', $topicLink);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewPollForm() {
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topicLink');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
         $this->template->topic_link = $topicLink;
+        $this->template->links = $links;
     }
 
     public function handlePollSubmit() {

@@ -126,8 +126,17 @@ class TopicManagementPresenter extends AUserPresenter {
 
             $app->topicMembershipRepository->beginTransaction();
 
+            $oldRole = $app->topicMembershipManager->getFollowRole($topicId, $userId);
+            $oldRole = '<span style="color: ' . TopicMemberRole::getColorByKey($oldRole) . '">' . TopicMemberRole::toString($oldRole) . '</span>';
+
+            $newRole = '<span style="color: ' . TopicMemberRole::getColorByKey($role) . '">' . TopicMemberRole::toString($role) . '</span>';
+
+            $topic = $app->topicRepository->getTopicById($topicId);
+
             try {
                 $app->topicMembershipManager->changeRole($topicId, $userId, $app->currentUser->getId(), $role);
+
+                $app->notificationManager->createNewTopicRoleChangedNotification($userId, LinkBuilder::createSimpleLinkObject($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'), $oldRole, $newRole);
 
                 $ok = true;
             } catch(AException $e) {
@@ -234,9 +243,15 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $gridSize = $app->cfg['GRID_SIZE'];
 
-        $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
-        $pollCount = count($app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
-        $lastPage = ceil($pollCount / $gridSize);
+        if($app->actionAuthorizator->canSeeAllTopicPolls($app->currentUser->getId(), $topicId)) {
+            $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
+            $pollCount = count($app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
+            $lastPage = ceil($pollCount / $gridSize);
+        } else {
+            $polls = $app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $app->currentUser->getId(), $gridSize, ($gridSize * $page));
+            $pollCount = count($app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $app->currentUser->getId(), 0, 0));
+            $lastPage = ceil($pollCount / $gridSize);
+        }
 
         $gb = new GridBuilder();
         $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
@@ -272,14 +287,22 @@ class TopicManagementPresenter extends AUserPresenter {
 
             return count($votes);
         });
-        $gb->addAction(function(TopicPollEntity $tpe) {
-            return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'post-data-link');
-        });
-        $gb->addAction(function(TopicPollEntity $tpe) {
-            if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
-                return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+        $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
+            if($app->actionAuthorizator->canSeePollAnalytics($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
+                return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'post-data-link');
             } else {
-                return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                return '-';
+            }
+        });
+        $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
+            if($app->actionAuthorizator->canDeactivePoll($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
+                if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
+                    return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                } else {
+                    return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                }
+            } else {
+                return '-';
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $pollCount, 'getPollGrid', [$topicId]);

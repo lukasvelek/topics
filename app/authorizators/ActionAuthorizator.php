@@ -5,8 +5,8 @@ namespace App\Authorizators;
 use App\Constants\AdministratorGroups;
 use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
+use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
-use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
 use App\Repositories\UserRepository;
@@ -122,7 +122,7 @@ class ActionAuthorizator extends AAuthorizator {
     }
 
     public function canCreateTopicPoll(int $userId, int $topicId) {
-        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER)) {
             return false;
         }
 
@@ -155,6 +155,34 @@ class ActionAuthorizator extends AAuthorizator {
 
     public function canManageTopicPrivacy(int $userId, int $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canSeePollAnalytics(int $userId, int $topicId, TopicPollEntity $tpe) {
+        if($tpe->getAuthorId() != $userId) {
+            if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER)/* && (!$this->commonContentManagement($userId))*/) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function canDeactivePoll(int $userId, int $topicId, TopicPollEntity $tpe) {
+        if($tpe->getAuthorId() != $userId) {
+            if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function canSeeAllTopicPolls(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
 

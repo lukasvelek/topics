@@ -176,6 +176,27 @@ class TopicPollRepository extends ARepository {
 
         return TopicPollEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getMyPollsForTopicForGrid(int $topicId, int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('pollId', 'DESC');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        $polls = [];
+        while($row = $qb->fetchAssoc()) {
+            $polls[] = TopicPollEntity::createEntityFromDbRow($row);
+        }
+
+        return $polls;
+    }
 }
 
 ?>
