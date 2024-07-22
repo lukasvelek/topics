@@ -23,8 +23,7 @@ class GridBuilder {
     private array $columns;
     private array $dataSourceArray;
     private array $callbacks;
-
-    private int $tableBorder;
+    private array $rowCallbacks;
     
     private ?string $headerCheckbox;
     private string $emptyDataSourceMessage;
@@ -46,8 +45,7 @@ class GridBuilder {
         $this->actions = [];
         $this->dataSourceArray = [];
         $this->callbacks = [];
-
-        $this->tableBorder = 1;
+        $this->rowCallbacks = [];
 
         $this->headerCheckbox = null;
         $this->renderRowCheckbox = null;
@@ -95,13 +93,23 @@ class GridBuilder {
     }
 
     /**
-     * Adds custom table element render. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity. The callback can return either the value itself or the modified Cell instance.
+     * Adds custom table cell value override. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity. The callback can return either the value itself or the modified Cell instance.
      * 
      * @param string $entityVarName Name of the column header
      * @param callable $func Method called when rendering
      */
     public function addOnColumnRender(string $entityVarName, callable $func) {
         $this->callbacks[$entityVarName] = $func;
+    }
+
+    /**
+     * Adds custom table row override. It calls the callback with parameters: Row entity (see App\UI\GridBuilder\Row). The callback must return the modified Row instance.
+     * 
+     * @param string $entityPrimaryKey Primary key of the table entity
+     * @param callable $func Callback method called when rendering
+     */
+    public function addOnRowRender(string $entityPrimaryKey, callable $func) {
+        $this->rowCallbacks[$entityPrimaryKey] = $func;
     }
 
     /**
@@ -154,21 +162,12 @@ class GridBuilder {
     }
 
     /**
-     * Sets custom table border
-     * 
-     * @param int $border Table border
-     */
-    public function setTableBorder(int $border) {
-        $this->tableBorder = $border;
-    }
-
-    /**
      * Method that builds the table and returns its HTML code
      * 
      * @return string HTML table code
      */
     public function build() {
-        $code = '<div class="row"><table border="' . $this->tableBorder . '" id="tablebuilder-table">';
+        $table = new Table();
 
         // title
         $headerRow = new Row();
@@ -191,7 +190,7 @@ class GridBuilder {
             $cell->setHeader();
             $headerRow->addCell($cell);
         }
-        $code .= $headerRow->render();
+        $table->addRow($headerRow, true);
         // end of title
 
         // data
@@ -268,11 +267,35 @@ class GridBuilder {
 
                         $entityRow->addCell($cell);
                     }
-        
+
                     foreach($this->columns as $varName => $title) {
                         $objectVarName = ucfirst($varName);
 
                         $cell = new Cell();
+
+                        if(!$entityRow->hasPrimaryKey()) {
+                            if(method_exists($entity, 'getId')) {
+                                $entityRow->setPrimaryKey($entity->getId());
+                                
+                                if(!empty($this->rowCallbacks) && array_key_exists($entity->getId(), $this->rowCallbacks)) {
+                                    try {
+                                        $entityRow = $this->rowCallbacks[$entity->getId()]($entityRow);
+                                    } catch(Exception $e) {
+                                        throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                    }
+                                }
+                            } else if(isset($entity->id)) {
+                                $entityRow->setPrimaryKey($entity->id);
+
+                                if(!empty($this->rowCallbacks) && array_key_exists($entity->id, $this->rowCallbacks)) {
+                                    try {
+                                        $entityRow = $this->rowCallbacks[$entity->id]($entityRow);
+                                    } catch(Exception $e) {
+                                        throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                    }
+                                }
+                            }
+                        }
 
                         if(array_key_exists($varName, $this->callbacks)) {
                             try {
@@ -320,12 +343,10 @@ class GridBuilder {
             $entityRows = $tmp;
         }
 
-        foreach($entityRows as $entityRow) {
-            $code .= $entityRow->render();
-        }
+        $table->bulkAddRows($entityRows);
         // end of data
 
-        $code .= '</table></div>';
+        $code = $table->render();
 
         if(!empty($this->belowGridElementsCode)) {
             foreach($this->belowGridElementsCode as $bgec) {

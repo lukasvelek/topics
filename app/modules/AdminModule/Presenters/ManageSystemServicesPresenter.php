@@ -8,6 +8,7 @@ use App\Entities\SystemServiceEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder\Row;
 use App\UI\LinkBuilder;
 
 class ManageSystemServicesPresenter extends AAdminPresenter {
@@ -56,7 +57,15 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'status' => 'Status']);
         $gb->addDataSource($services);
         $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {
-            return SystemServiceStatus::toString($sse->getStatus());
+            $cell->setValue(SystemServiceStatus::toString($sse->getStatus()));
+
+            if($sse->getStatus() == SystemServiceStatus::RUNNING) {
+                $cell->setTextColor('green');
+            } else {
+                $cell->setTextColor('red');
+            }
+
+            return $cell;
         });
         $gb->addOnColumnRender('dateStarted', function(Cell $cell, SystemServiceEntity $sse) {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted());
