@@ -195,12 +195,13 @@ class TopicRepository extends ARepository {
         return $this->createTopicsArrayFromQb($qb);
     }
 
-    public function searchTags(string $query) {
+    public function searchTags(string $query, array $topicIdsOnly) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['rawTags'])
             ->from('topics')
             ->where('rawTags LIKE ?', ['%' . $query . '%'])
+            ->andWhere($qb->getColumnInValues('topicId', $topicIdsOnly))
             ->execute();
 
         $tags = [];

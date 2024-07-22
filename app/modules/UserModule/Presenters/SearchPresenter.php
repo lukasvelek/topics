@@ -54,13 +54,27 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topics', $topicResult);
 
         // tags
-        $tags = $app->topicRepository->searchTags(ucfirst($query));
+        $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
+
+        $topics = [];
+        while($row = $topicsDb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+
+        $topicIds = [];
+        foreach($topics as $topic) {
+            $topicIds[] = $topic->getId();
+        }
+
+        $tags = $app->topicRepository->searchTags(ucfirst($query), $topicIds);
 
         $tagArray = [];
         foreach($tags as $t) {
             $link = LinkBuilder::createSimpleLink($t, $this->createURL('tagTopics', ['tag' => $t, 'backQuery' => $query]), 'post-data-link');
 
-            $tagArray[] = $link;
+            $tagArray[$t] = $link;
         }
 
         $tagResult = 'No tags found';
@@ -96,6 +110,7 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('links', $links);
 
         $topics = $app->topicRepository->getTopicsWithTag($tag);
+        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
 
         $topicArray = [];
         foreach($topics as $t) {
