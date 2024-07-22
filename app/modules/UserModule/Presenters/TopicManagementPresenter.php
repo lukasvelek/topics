@@ -504,7 +504,9 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('topic_title', $topic->getTitle());
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+        ];
 
         $this->saveToPresenterCache('links', $links);
 

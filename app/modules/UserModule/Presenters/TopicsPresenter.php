@@ -725,15 +725,23 @@ class TopicsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportForm() {
         $topic = $this->loadFromPresenterCache('topic');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->topic_title = $topic->getTitle();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDeleteTopic(?FormResponse $fr = null) {

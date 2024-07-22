@@ -438,15 +438,23 @@ class PostsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $postId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportForm() {
         $post = $this->loadFromPresenterCache('post');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->post_title = $post->getTitle();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleReportComment(?FormResponse $fr = null) {
@@ -484,15 +492,23 @@ class PostsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $comment->getPostId()]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportComment() {
         $comment = $this->loadFromPresenterCache('comment');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->comment_id = $comment->getId();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDeleteComment(?FormResponse $fr = null) {
