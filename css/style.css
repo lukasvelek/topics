@@ -116,7 +116,7 @@ div[class^="fm-"], div[class*="fm-"] {
     height: 60px;
 }
 
-.navbar-link {
+/*.navbar-link {
     color: white;
     text-decoration: none;
 }
@@ -124,6 +124,17 @@ div[class^="fm-"], div[class*="fm-"] {
 .navbar-link:hover {
     color: white;
     text-decoration: underline;
+}*/
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+    transition: color 0.25s;
+}
+
+.navbar-link:hover {
+    text-decoration: none;
+    color: rgb(200, 200, 200);
 }
 
 #left .navbar-link {
@@ -171,7 +182,7 @@ div[class^="fm-"], div[class*="fm-"] {
     text-align: left;
 }
 
-.post-like, .post-data-link {
+.post-like {
     color: black;
 
     text-decoration: underline;
@@ -179,12 +190,24 @@ div[class^="fm-"], div[class*="fm-"] {
     text-align: left;
 }
 
-.post-comment-border {
-    border-left: 1px solid lightgrey;
+.post-data-link, .footer-link {
+    font-size: 16px;
+
+    color: black;
+
+    text-decoration: none;
+
+    transition: color 0.25s;
 }
 
-.footer-link {
-    color: black;
+.post-data-link:hover, .footer-link:hover {
+    text-decoration: none;
+
+    color: rgb(100, 100, 100);
+}
+
+.post-comment-border {
+    border-left: 1px solid lightgrey;
 }
 
 .topic-title {
@@ -220,6 +243,12 @@ div[class^="fm-"], div[class*="fm-"] {
     text-decoration: none;
 
     margin-left: 10px;
+
+    transition: color 0.25s;
+}
+
+.sidebar-link:hover {
+    color: rgb(100, 100, 100);
 }
 
 .system-status-item-link {
@@ -236,4 +265,12 @@ div[class^="fm-"], div[class*="fm-"] {
 
 .grid-link {
     color: black;
+
+    text-decoration: underline;
+
+    transition: color 0.25s;
+}
+
+.grid-link:hover {
+    color: rgb(100, 100, 100);
 }

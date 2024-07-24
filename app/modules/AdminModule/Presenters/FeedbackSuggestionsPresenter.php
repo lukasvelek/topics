@@ -77,7 +77,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
                 ->text(SuggestionCategory::toString($e->getCategory()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
@@ -89,7 +89,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
                 ->text(SuggestionStatus::toString($e->getStatus()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
@@ -103,7 +103,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             $a->onClick('getSuggestionsGrid(0, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href('#')
             ;
 
@@ -113,7 +113,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $a = HTML::a();
 
             $a->text($e->getTitle())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href($app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
             ;
 

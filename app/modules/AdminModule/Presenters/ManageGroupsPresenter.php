@@ -38,7 +38,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
         $gb->addDataSource($groups);
         $gb->addAction(function(GroupEntity $entity) {
-            return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'grid-link');
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroupGrid');
 
@@ -91,14 +91,14 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addDataSource($members);
         $gb->addOnColumnRender('user', function(Cell $cell, GroupMembershipEntity $entity) use ($users) {
             $user = $users[$entity->getUserId()];
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, GroupMembershipEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
         $gb->addAction(function(GroupMembershipEntity $entity) use ($app) {
             if($app->actionAuthorizator->canRemoveMemberFromGroup($app->currentUser->getId()) && $entity->getUserId() != $app->currentUser->getId()) {
-                return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'grid-link');
             } else {
                 return '-';
             }

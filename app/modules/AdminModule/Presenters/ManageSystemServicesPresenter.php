@@ -78,7 +78,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             $text = '-';
 
             if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING) {
-                $text = LinkBuilder::createSimpleLink('Run', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'run', 'serviceId' => $sse->getId()], 'post-data-link');
+                $text = LinkBuilder::createSimpleLink('Run', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'run', 'serviceId' => $sse->getId()], 'grid-link');
             }
 
             return $text;

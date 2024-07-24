@@ -82,7 +82,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $a->href('#')
                 ->onClick('getReportGrid(0, \'category\', \'' . $re->getCategory() . '\')')
                 ->text(ReportCategory::toString($re->getCategory()))
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
@@ -93,7 +93,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $a->href('#')
                 ->text(ReportStatus::toString($re->getStatus()))
                 ->onClick('getReportGrid(0, \'status\', \'' . $re->getStatus() . '\')')
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
@@ -106,13 +106,20 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $a->href('#')
                 ->text($user->getUsername())
                 ->onClick('getReportGrid(0, \'user\', \'' . $user->getId() . '\')')
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
         });
         $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
-            return '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $re->getId() . '">' . ReportEntityType::toString($re->getEntityType()) . ' report</a>';
+            $a = HTML::a();
+
+            $a->href($this->createURLString('profile', ['reportId' => $re->getId()]))
+                ->text(ReportEntityType::toString($re->getEntityType()) . ' report')
+                ->class('grid-link')
+            ;
+
+            return $a->render();
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $reportCount, 'getReportGrid', [$filterType, $filterKey]);
 

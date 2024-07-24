@@ -84,7 +84,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb->addOnColumnRender('userId', function(Cell $cell, TopicMemberEntity $tme) use ($app) {
             $user = $app->userRepository->getUserById($tme->getUserId());
 
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserAdmin:Users', 'action' => 'profile', 'userId' => $tme->getUserId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserAdmin:Users', 'action' => 'profile', 'userId' => $tme->getUserId()], 'grid-link');
         });
         $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
             $text = TopicMemberRole::toString($tme->getRole());
@@ -95,7 +95,7 @@ class TopicManagementPresenter extends AUserPresenter {
             return $cell;
         });
         $gb->addAction(function(TopicMemberEntity $tme) use ($app) {
-            $link = LinkBuilder::createSimpleLink('Change role', ['page' => 'UserModule:TopicManagement', 'action' => 'changeRoleForm', 'topicId' => $tme->getTopicId(), 'userId' => $tme->getUserId()], 'post-data-link');
+            $link = LinkBuilder::createSimpleLink('Change role', ['page' => 'UserModule:TopicManagement', 'action' => 'changeRoleForm', 'topicId' => $tme->getTopicId(), 'userId' => $tme->getUserId()], 'grid-link');
 
             if($app->actionAuthorizator->canChangeUserTopicRole($tme->getTopicId(), $app->currentUser->getId(), $tme->getUserId())) {
                 return $link;
@@ -259,7 +259,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) use ($app) {
             $user = $app->userRepository->getUserById($tpe->getAuthorId());
 
-            return UserEntity::createUserProfileLink($user);
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getID()], 'grid-link');
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TopicPollEntity $tpe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateCreated());
@@ -289,7 +289,7 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
             if($app->actionAuthorizator->canSeePollAnalytics($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
-                return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'grid-link');
             } else {
                 return '-';
             }
@@ -297,9 +297,9 @@ class TopicManagementPresenter extends AUserPresenter {
         $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
             if($app->actionAuthorizator->canDeactivePoll($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
                 if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
-                    return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                    return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'grid-link');
                 } else {
-                    return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'post-data-link');
+                    return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'grid-link');
                 }
             } else {
                 return '-';
@@ -404,7 +404,7 @@ class TopicManagementPresenter extends AUserPresenter {
             return DateTimeFormatHelper::formatDateToUserFriendly($invite->getDateValid());
         });
         $gb->addAction(function(TopicInviteEntity $invite) {
-            return LinkBuilder::createSimpleLink('Remove invite', ['page' => 'UserModule:TopicManagement', 'action' => 'removeInvite', 'topicId' => $invite->getTopicId(), 'userId' => $invite->getUserId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink('Remove invite', ['page' => 'UserModule:TopicManagement', 'action' => 'removeInvite', 'topicId' => $invite->getTopicId(), 'userId' => $invite->getUserId()], 'grid-link');
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $inviteCount, 'getInvitesGrid', [$topicId]);
 

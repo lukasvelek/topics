@@ -46,7 +46,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addDataSource($prosecutions);
         $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) use ($app) {
             $user = $app->userRepository->getUserById($userProsecution->getUserId());
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('type', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             return UserProsecutionType::toString($userProsecution->getType());
@@ -68,7 +68,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addAction(function(UserProsecutionEntity $userProsecution) {
             if(($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) && 
                 (strtotime($userProsecution->getEndDate()) > time())) {
-                return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'grid-link');
             } else {
                 return '-';
             }
@@ -169,7 +169,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addDataSource($historyEntries);
         $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) use ($app) {
             $user = $app->userRepository->getUserById($entity->getUserId());
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());

@@ -59,7 +59,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             if(array_key_exists($tie->getTopicId(), $topics)) {
                 $topic = $topics[$tie->getTopicId()];
 
-                return TopicEntity::createTopicProfileLink($topic);
+                return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'grid-link');
             } else {
                 return '-';
             }
@@ -72,7 +72,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }
@@ -82,7 +82,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }
@@ -92,7 +92,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) <= strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }

@@ -42,7 +42,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             return $cell;
         });
         $gb->addAction(function(SystemStatusEntity $sse) {
-            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'post-data-link');
+            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
         });
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);

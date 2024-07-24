@@ -36,13 +36,13 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $gb->addDataSource($data);
         $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) use ($app) {
             $user = $app->userRepository->getUserById($bwe->getAuthorId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
         });
         $gb->addAction(function(BannedWordEntity $bwe) {
-            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'grid-link');
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getBannedWordsGrid');
 
