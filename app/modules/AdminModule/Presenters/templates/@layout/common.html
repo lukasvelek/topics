@@ -9,6 +9,15 @@
         <script type="text/javascript" src="js/Topics.js"></script>
     </head>
     <body>
+        <div id="image-modal" style="display: none; position: fixed; left: 2vw; top: 5vh; z-index: 9999; background-color: rgba(125,125,125,0.9); padding: 15px; width: 96%; height: 90%">
+            <div id="image-modal-content" style="text-align: center; position: relative"></div>
+        
+            <div style="position: relative; text-align: center">
+                <span id="image-modal-close-link"></span>
+                <span id="image-modal-open-link"></span>
+            </div>
+        </div>
+        
         <div class="row">
             <div class="col-md" id="flash-messages">
                 $SYS_FLASH_MESSAGES$
