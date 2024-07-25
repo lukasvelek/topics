@@ -477,13 +477,21 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             ;
         
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['reportId' => $reportId]), 'post-data-link')
+            ];
+            
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderResolutionForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 

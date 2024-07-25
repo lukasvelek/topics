@@ -12,6 +12,7 @@ use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
 class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -504,15 +505,23 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['suggestionId' => $suggestionId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderEditForm() {
         $form = $this->loadFromPresenterCache('form');
         $suggestion = $this->loadFromPresenterCache('suggestion');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
         $this->template->suggestion_title = $suggestion->getTitle();
+        $this->template->links = $links;
     }
 
     public function handleUpdateComment() {

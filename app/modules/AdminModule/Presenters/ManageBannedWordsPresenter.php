@@ -95,13 +95,21 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDelete() {

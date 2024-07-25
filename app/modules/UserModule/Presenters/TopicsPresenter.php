@@ -173,7 +173,7 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         // new post form
-        $fb = new FormBuilder();
+        /*$fb = new FormBuilder();
 
         $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
             ->addTextInput('title', 'Title:', null, true)
@@ -187,7 +187,7 @@ class TopicsPresenter extends AUserPresenter {
         if($topic->isDeleted()) {
             $this->addExternalScript('js/Reducer.js');
             $this->addScript('reduceTopicProfile()');
-        }
+        }*/
 
         if(!$app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId())) {
             $this->saveToPresenterCache('newPostForm', 'You cannot create posts.');
@@ -404,7 +404,6 @@ class TopicsPresenter extends AUserPresenter {
     public function renderProfile() {
         $posts = $this->loadFromPresenterCache('posts');
         $topicData = $this->loadFromPresenterCache('topicData');
-        $fb = $this->loadFromPresenterCache('newPostForm');
         $topicName = $this->loadFromPresenterCache('topicName');
         $topicDescription = $this->loadFromPresenterCache('topicDescription');
         $links = $this->loadFromPresenterCache('links');
@@ -414,7 +413,6 @@ class TopicsPresenter extends AUserPresenter {
         $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
-        $this->template->new_post_form = $fb;
         $this->template->links = $links;
         $this->template->links_hr = $linksHr;
     }

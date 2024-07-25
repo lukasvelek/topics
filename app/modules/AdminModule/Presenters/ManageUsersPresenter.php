@@ -174,7 +174,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Set user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'');
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -206,7 +206,8 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId])
                 ->addTextArea('description', 'Reason:', null, true)
-                ->addSubmit('Warn user \'' . $user->getUsername() .  '\'');
+                ->addSubmit('Warn user \'' . $user->getUsername() .  '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -261,6 +262,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
                 ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;
 
@@ -305,13 +307,21 @@ class ManageUsersPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 

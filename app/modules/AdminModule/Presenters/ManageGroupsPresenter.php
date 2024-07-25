@@ -128,7 +128,9 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $this->addScript($arb->build());
         $this->addScript('getGroupMembersGrid(0, ' . $groupId . ')');
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link') . "&nbsp;"
+        ];
 
         if($app->actionAuthorizator->canAddMemberToGroup($app->currentUser->getId())) {
             $links[] = LinkBuilder::createSimpleLink('Add member', ['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'groupId' => $groupId], 'post-data-link');
@@ -188,6 +190,12 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ;
 
             $this->addScript($arb->build());
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('listMembers', ['groupId' => $groupId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
@@ -218,8 +226,10 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
     public function renderNewMember() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleRemoveMember(?FormResponse $fr = null) {
