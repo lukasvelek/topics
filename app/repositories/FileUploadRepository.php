@@ -21,7 +21,7 @@ class FileUploadRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getFileForPost(int $postId) {
+    public function getFilesForPost(int $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -29,7 +29,12 @@ class FileUploadRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->execute();
 
-        return PostImageFileEntity::createEntityFromDbRow($qb->fetch());
+        $files = [];
+        while($row = $qb->fetchAssoc()) {
+            $files[] = PostImageFileEntity::createEntityFromDbRow($row);
+        }
+        
+        return $files;
     }
 }
 

@@ -158,29 +158,30 @@ class PostsPresenter extends AUserPresenter {
             $this->addScript('reducePostProfile()');
         }
 
-        $postImages = '';
+        $imagesCode = [];
 
-        $postImage = $app->fileUploadRepository->getFileForPost($postId);
-        if($postImage !== null) {
-            $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
-            $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" height="64px"></a>';
+        $postImages = $app->fileUploadRepository->getFilesForPost($postId);
+        if(!empty($postImages)) {
+            foreach($postImages as $postImage) {
+                $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
+                $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" height="64px"></a>';
 
-            $postImages = '
-                <div class="row">
-                    <div class="col-md-3"></div>
-        
-                    <div class="col-md">
-                        ' . $imageLink . '
-                    </div>
-        
-                    <div class="col-md-3"></div>
-                </div>
-
-                <hr>
-            ';
+                $imagesCode[] = $imageLink;
+            }
         }
 
-        $this->saveToPresenterCache('postImages', $postImages);
+        $postImageCode = '
+            <div class="row">
+                <div class="col-md-3"></div>
+        
+                <div class="col-md">' . implode('&nbsp;&nbsp;', $imagesCode) . '</div>
+        
+                <div class="col-md-3"></div>
+            </div>
+
+            <hr>';
+
+        $this->saveToPresenterCache('postImages', $postImageCode);
     }
 
     public function renderProfile() {
