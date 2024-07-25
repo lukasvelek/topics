@@ -5,6 +5,7 @@ namespace App\Authorizators;
 use App\Constants\AdministratorGroups;
 use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
+use App\Entities\PostEntity;
 use App\Entities\PostImageFileEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
@@ -202,6 +203,14 @@ class ActionAuthorizator extends AAuthorizator {
             }
         }
         
+        return true;
+    }
+
+    public function canUploadFileForPost(int $userId, PostEntity $post) {
+        if($post->getAuthorId() != $userId) {
+            return false;
+        }
+
         return true;
     }
 }

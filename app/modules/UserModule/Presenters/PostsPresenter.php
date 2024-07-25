@@ -10,6 +10,7 @@ use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
@@ -91,7 +92,7 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post')
+            ->addSubmit('Post comment')
         ;
 
         $this->saveToPresenterCache('form', $fb);
@@ -170,16 +171,64 @@ class PostsPresenter extends AUserPresenter {
             }
         }
 
-        $postImageCode = '
-            <div class="row">
+        $newImageUploadLink = LinkBuilder::createSimpleLink('Upload image', $this->createURL('uploadImageForm', ['postId' => $postId]), 'post-data-link');
+
+        $newImageUploadSection = '<div class="row">
                 <div class="col-md-3"></div>
-        
-                <div class="col-md">' . implode('&nbsp;&nbsp;', $imagesCode) . '</div>
-        
+
+                <div class="col-md">
+                    ' . $newImageUploadLink . '
+                </div>
+
                 <div class="col-md-3"></div>
             </div>
 
             <hr>';
+
+        if(!$app->actionAuthorizator->canUploadFileForPost($app->currentUser->getId(), $post)) {
+            $newImageUploadSection = '';
+        }
+
+        $postImageCode = '';
+        if(!empty($imagesCode)) {
+            $tmp = $imagesCode;
+
+            $imagesCode = '';
+
+            $i = 0;
+            $x = 0;
+            $max = count($tmp);
+            while($i < 5) {
+                if($x == $max) {
+                    break;
+                }
+
+                if($i == 4) {
+                    $i = 0;
+                    $imagesCode .= '<br>';
+                } else {
+                    $i++;
+                }
+
+                $imagesCode .= $tmp[$x];
+
+                $x++;
+            }
+
+            $postImageCode = '
+                ' . $newImageUploadSection . '
+
+                <div class="row">
+                    <div class="col-md-3"></div>
+            
+                    <div class="col-md">' . $imagesCode . '</div>
+            
+                    <div class="col-md-3"></div>
+                </div>
+
+                <hr>
+            ';
+        }
 
         $this->saveToPresenterCache('postImages', $postImageCode);
     }
@@ -199,6 +248,56 @@ class PostsPresenter extends AUserPresenter {
         $this->template->post_images = $postImages;
     }
 
+    public function handleUploadImageForm() {
+        $postId = $this->httpGet('postId');
+
+        $links = [];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $fb = new FormBuilder();
+        $fb->setAction($this->createURL('uploadImage', ['postId' => $postId]))
+            ->setCanHaveFiles()
+            ->addFileInput('image', 'Image:')
+            ->addSubmit('Upload')
+        ;
+
+        $this->saveToPresenterCache('form', $fb->render());
+    }
+
+    public function renderUploadImageForm() {
+        $links = $this->loadFromPresenterCache('links');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->links = $links;
+        $this->template->form = $form;
+    }
+
+    public function handleUploadImage() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->topicRepository->beginTransaction();
+
+        try {
+            if(isset($_FILES['image']['name'])) {
+                $app->fileUploadManager->uploadPostImage($app->currentUser->getId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+            } else {
+                throw new FileUploadException('No file selected.');
+            }
+
+            $app->topicRepository->commit();
+            $this->flashMessage('Image uploaded.', 'success');
+        } catch(Exception $e) {
+            $app->topicRepository->rollback();
+            $this->flashMessage('Image could not be uploaded. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('profile', ['postId' => $postId]));
+    }
+
     public function actionCreateNewCommentForm() {
         $postId = $this->httpGet('postId');
         $parentCommentId = $this->httpGet('commentId');
@@ -207,7 +306,7 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post')
+            ->addSubmit('Post comment')
         ;
 
         $this->ajaxSendResponse(['form' => $fb->render()]);
