@@ -2,9 +2,11 @@
 
 namespace App\Managers;
 
+use App\Authorizators\ActionAuthorizator;
 use App\Core\FileManager;
 use App\Core\HashManager;
 use App\Entities\PostImageFileEntity;
+use App\Exceptions\FileUploadDeleteException;
 use App\Exceptions\FileUploadException;
 use App\Logger\Logger;
 use App\Repositories\FileUploadRepository;
@@ -15,12 +17,14 @@ class FileUploadManager extends AManager {
 
     private FileUploadRepository $fur;
     private array $cfg;
+    private ActionAuthorizator $aa;
 
-    public function __construct(Logger $logger, FileUploadRepository $fur, array $cfg) {
+    public function __construct(Logger $logger, FileUploadRepository $fur, array $cfg, ActionAuthorizator $aa) {
         parent::__construct($logger);
 
         $this->fur = $fur;
         $this->cfg = $cfg;
+        $this->aa = $aa;
     }
 
     private function createUploadId() {
@@ -95,6 +99,28 @@ class FileUploadManager extends AManager {
         $src = implode('/', $parts);
 
         return '/' . $src;
+    }
+
+    public function deleteUploadedFile(PostImageFileEntity $pife, int $userId, bool $checkForFileExistance = false) {
+        if(!$this->aa->canDeleteFileUpload($userId, $pife)) {
+            throw new FileUploadDeleteException('The post the file is related to, still exists and has not been deleted yet.');
+        }
+
+        if($checkForFileExistance) {
+            if(!FileManager::fileExists($pife->getFilepath())) {
+                throw new FileUploadDeleteException('File does not exist.');
+            }
+        }
+
+        try {
+            unlink($pife->getFilepath());
+        } catch(Exception $e) {
+            throw new FileUploadDeleteException(sprintf('Error while deleting the binary file. Reason: %s', $e->getMessage()), $e);
+        }
+
+        if(!$this->fur->deleteFileUploadById($pife->getId())) {
+            throw new FileUploadDeleteException('Error while deleting the database entry for the file upload.');
+        }
     }
 }
 

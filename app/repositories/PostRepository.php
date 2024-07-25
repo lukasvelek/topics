@@ -240,7 +240,7 @@ class PostRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getPostById(int $postId) {
+    public function getPostById(int $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

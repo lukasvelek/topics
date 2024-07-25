@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Core\DatabaseConnection;
 use App\Entities\PostImageFileEntity;
 use App\Logger\Logger;
+use QueryBuilder\QueryBuilder;
 
 class FileUploadRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -22,19 +23,73 @@ class FileUploadRepository extends ARepository {
     }
 
     public function getFilesForPost(int $postId) {
-        $qb = $this->qb(__METHOD__);
+        $qb = $this->composeQueryForFiles(__METHOD__);
 
-        $qb ->select(['*'])
-            ->from('post_file_uploads')
-            ->where('postId = ?', [$postId])
+        $qb ->where('postId = ?', [$postId])
             ->execute();
 
+        return $this->createEntitiesFromQb($qb);
+    }
+
+    public function getAllFiles() {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+
+        $qb->execute();
+
+        return $this->createEntitiesFromQb($qb);
+    }
+
+    public function getAllFilesForGrid(int $limit, int $offset) {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createEntitiesFromQb($qb);
+    }
+
+    private function composeQueryForFiles(string $method = __METHOD__) {
+        $qb = $this->qb($method);
+
+        $qb ->select(['*'])
+            ->from('post_file_uploads');
+
+        return $qb;
+    }
+
+    private function createEntitiesFromQb(QueryBuilder $qb) {
         $files = [];
         while($row = $qb->fetchAssoc()) {
             $files[] = PostImageFileEntity::createEntityFromDbRow($row);
         }
         
         return $files;
+    }
+
+    public function getFileById(string $id) {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+
+        $qb->where('uploadId = ?', [$id])
+            ->execute();
+
+        return PostImageFileEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function deleteFileUploadById(string $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('post_file_uploads')
+            ->where('uploadId = ?', [$id])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 

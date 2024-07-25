@@ -5,19 +5,23 @@ namespace App\Authorizators;
 use App\Constants\AdministratorGroups;
 use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
+use App\Entities\PostImageFileEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
+use App\Repositories\PostRepository;
 use App\Repositories\UserRepository;
 
 class ActionAuthorizator extends AAuthorizator {
     private TopicMembershipManager $tpm;
+    private PostRepository $pr;
 
-    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm) {
+    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm, PostRepository $pr) {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
 
         $this->tpm = $tpm;
+        $this->pr = $pr;
     }
 
     public function canChangeUserTopicRole(int $topicId, int $callingUserId, int $userId) {
@@ -186,6 +190,18 @@ class ActionAuthorizator extends AAuthorizator {
             return false;
         }
 
+        return true;
+    }
+    
+    public function canDeleteFileUpload(int $userId, PostImageFileEntity $pife) {
+        $post = $this->pr->getPostById($pife->getPostId());
+
+        if($post !== null) {
+            if(!$post->isDeleted()) {
+                return false;
+            }
+        }
+        
         return true;
     }
 }

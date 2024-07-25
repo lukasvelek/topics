@@ -131,13 +131,13 @@ class Application {
         $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
-        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
-        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
         $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager);
+        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator);
 
         $this->isAjaxRequest = false;
 

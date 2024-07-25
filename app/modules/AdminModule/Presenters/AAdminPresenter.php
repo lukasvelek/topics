@@ -44,6 +44,7 @@ abstract class AAdminPresenter extends APresenter {
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
         $systemCaching = $this->checkPage('AdminModule:ManageSystemCaching');
+        $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
@@ -67,6 +68,9 @@ abstract class AAdminPresenter extends APresenter {
         }
         if($app->sidebarAuthorizator->canManageSystemCaching($app->currentUser->getId())) {
             $sb->addLink('System caching', ['page' => 'AdminModule:ManageSystemCaching', 'action' => 'list'], $systemCaching);
+        }
+        if($app->sidebarAuthorizator->canManagePostFileUploads($app->currentUser->getId())) {
+            $sb->addLink('Post file uploads', ['page' => 'AdminModule:ManagePostFileUploads', 'action' => 'list'], $postFileUploads);
         }
 
         return $sb->render();
