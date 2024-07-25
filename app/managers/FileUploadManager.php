@@ -62,18 +62,19 @@ class FileUploadManager extends AManager {
             $this->logger->info('File type of the uploaded file is: ' . $fileType, __METHOD__);
         }
 
+        if($fileData['size'] > 500000) {
+            throw new FileUploadException('File exceeds the maximum file size limit ' . $filename . ' of 500,000 bytes.');
+        }
+
+        $allowedFormats = ['jpg', 'png', 'jpeg', 'gif', 'webp'];
+        if(!in_array($fileType, $allowedFormats)) {
+            throw new FileUploadException('File format is not supported. Only ' . implode(', ', $allowedFormats) . ' formats are now supported.');
+        }
+
         $newFilePath = $this->createPostImageFileUploadPath($userId, $postId, $topicId, $filename, $fileType, $uploadId);
 
         if(FileManager::fileExists($newFilePath)) {
             throw new FileUploadException('File already exists in path ' . $newFilePath . '.');
-        }
-
-        if($fileData['size'] > 500000) {
-            throw new FileUploadException('File exceeds the maximum file size limit ' . $newFilePath . ' of 500,000 bytes.');
-        }
-
-        if(!in_array($fileType, ['jpg', 'png', 'jpeg', 'gif'])) {
-            throw new FileUploadException('File format is not supported. Only jpg, png, jpeg and gif formats are now supported.');
         }
 
         if(!move_uploaded_file($filepath, $newFilePath)) {
