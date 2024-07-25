@@ -172,23 +172,6 @@ class TopicsPresenter extends AUserPresenter {
             ];
         }
 
-        // new post form
-        /*$fb = new FormBuilder();
-
-        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
-            ->addTextInput('title', 'Title:', null, true)
-            ->addTextArea('text', 'Text:', null, true)
-            ->addSelect('tag', 'Tag:', $postTags, true)
-            ->addSubmit('Post')
-        ;
-
-        $this->saveToPresenterCache('newPostForm', $fb);
-
-        if($topic->isDeleted()) {
-            $this->addExternalScript('js/Reducer.js');
-            $this->addScript('reduceTopicProfile()');
-        }*/
-
         if(!$app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId())) {
             $this->saveToPresenterCache('newPostForm', 'You cannot create posts.');
         }
