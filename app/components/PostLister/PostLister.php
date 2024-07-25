@@ -5,7 +5,9 @@ namespace App\Components\PostLister;
 use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
+use App\Managers\FileUploadManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\FileUploadRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
@@ -20,12 +22,16 @@ class PostLister {
     private TopicRepository $topicRepository;
     private PostRepository $postRepository;
     private ?ContentRegulationRepository $crr;
+    private FileUploadRepository $fur;
+    private FileUploadManager $fum;
 
-    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr) {
+    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr, FileUploadRepository $fur, FileUploadManager $fum) {
         $this->userRepository = $userRepository;
         $this->topicRepository = $topicRepository;
         $this->postRepository = $postRepository;
         $this->crr = $crr;
+        $this->fur = $fur;
+        $this->fum = $fum;
 
         $this->posts = [];
         $this->topics = [];
@@ -138,6 +144,16 @@ class PostLister {
 
                     $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
                     $code .= '<hr>';
+
+                    $images = $this->fur->getFilesForPost($post->getId());
+
+                    if(count($images) == 1) {
+                        $image = $images[0];
+
+                        $path = $this->fum->createPostImageSourceLink($image);
+
+                        $code .= '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '"></a><hr>';
+                    }
     
                     $code .= '<p class="post-text">' . $text . '</p>';
                     $code .= '<hr>';

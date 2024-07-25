@@ -49,9 +49,17 @@ async function autoHideFlashMessage(_divId) {
 }
 
 function openImage(_src) {
-    $("#image-modal-content").html('<img src="' + _src + '" width="600px">');
+    $("#image-modal-content").html('<img src="' + _src + '">');
     $("#image-modal").show();
-    $("#image-modal-open-link").html('<a class="post-data-link" href="' + _src + '" target="_blank">Open</a>');
+    $("#image-modal-open-link").html('<a class="post-data-link" href="' + _src + '" target="_blank" style="font-size: 22px">Open</a>');
+    $("#image-modal-close-link").html('<a class="post-data-link" style="font-size: 22px" href="#" onclick="closeImage()">Close</a>');
+}
+
+function openImagePostLister(_src, _id) {
+    $("#image-modal-content").html('<img src="' + _src + '">');
+    $("#image-modal").show();
+    $("#image-modal-open-link").html('<a class="post-data-link" href="' + _src + '" target="_blank" style="font-size: 22px">Open</a>');
+    $("#image-modal-close-link").html('<a class="post-data-link" style="font-size: 22px" href="#post-' + _id + '" onclick="closeImage()">Close</a>');
 }
 
 function closeImage() {
