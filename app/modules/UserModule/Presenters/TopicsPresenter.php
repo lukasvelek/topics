@@ -323,9 +323,29 @@ class TopicsPresenter extends AUserPresenter {
 
             $images = $app->fileUploadRepository->getFilesForPost($post->getId());
 
-            if(count($images) == 1) {
+            if(!empty($images)) {
+                $imageJson = [];
+                foreach($images as $image) {
+                    $imageJson[] = $app->fileUploadManager->createPostImageSourceLink($image);
+                }
+                $imageJson = json_encode($imageJson);
+
                 $path = $app->fileUploadManager->createPostImageSourceLink($images[0]);
-                $imageCode = '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a>';
+
+                $imageCode = '<div id="post-' . $post->getId() . '-image-preview-json" style="position: relative; visibility: hidden; width: 0; height: 0">' . $imageJson . '</div><div class="row">';
+
+                // left button
+                if(count($images) > 1) {
+                    $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-left-button"></span></div>';
+                }
+
+                // image
+                $imageCode .= '<div class="col-md"><span id="post-' . $post->getId() . '-image-preview"><a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a></span></div>';
+
+                // right button
+                if(count($images) > 1) {
+                    $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><a href="#post-' . $post->getId() . '" class="post-image-browser-link" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</a></span></div>';
+                }
             }
 
             $tmp = '

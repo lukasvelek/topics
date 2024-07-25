@@ -65,3 +65,24 @@ function openImagePostLister(_src, _id) {
 function closeImage() {
     $("#image-modal").hide();
 }
+
+function changeImage(_postId, _id, _maxId) {
+    const json = $("#post-" + _postId + "-image-preview-json").html();
+    const images = JSON.parse(json); // is an array, so values can be accessed using []
+
+    if(_id > 0) {
+        $("#post-" + _postId + "-image-preview-left-button").html('<a href="#post-' + _postId + '" class="post-image-browser-link" onclick="changeImage(' + _postId + ', ' + (_id - 1) + ', ' + _maxId + ')">&larr;</a>');
+    } else {
+        $("#post-" + _postId + "-image-preview-left-button").html('');
+    }
+
+    if(_maxId == _id) {
+        $("#post-" + _postId + "-image-preview-right-button").html('');
+    } else {
+        $("#post-" + _postId + "-image-preview-right-button").html('<a href="#post-' + _postId + '" class="post-image-browser-link" onclick="changeImage(' + _postId + ', ' + (_id + 1) + ', ' + _maxId + ')">&rarr;</a>');
+    }
+
+    var path = images[_id]; 
+
+    $("#post-" + _postId + "-image-preview").html('<a href="#post-' + _postId + '" onclick="openImagePostLister(\'' + path + '\', ' + _postId + ')"><img src="' + path + '" class="limited"></a>');
+}
