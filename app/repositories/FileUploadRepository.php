@@ -91,6 +91,74 @@ class FileUploadRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getFilesForPostForGrid(int $postId, int $limit, int $offset) {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+        
+        $qb->where('postId = ?', [$postId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createEntitiesFromQb($qb);
+    }
+
+    public function getFilesForUserForGrid(int $userId, int $limit, int $offset) {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+        
+        $qb->where('userId = ?', [$userId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        return $this->createEntitiesFromQb($qb);
+    }
+
+    public function getPostIdsWithFileUploads() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['postId'])
+            ->from('post_file_uploads')
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['postId'], $ids)) {
+                $ids[] = $row['postId'];
+            }
+        }
+
+        return $ids;
+    }
+
+    public function getUserIdsWithFileUploads() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('post_file_uploads')
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['userId'], $ids)) {
+                $ids[] = $row['userId'];
+            }
+        }
+
+        return $ids;
+    }
 }
 
 ?>

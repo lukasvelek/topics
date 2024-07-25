@@ -395,6 +395,17 @@ class PostRepository extends ARepository {
 
         return PostEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function bulkGetPostsByIds(array $ids) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where($qb->getColumnInValues('postId', $ids))
+            ->execute();
+        
+        return $this->createPostsArrayFromQb($qb);
+    }
 }
 
 ?>

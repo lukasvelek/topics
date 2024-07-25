@@ -206,7 +206,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm;
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/PostUploadImagesFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [

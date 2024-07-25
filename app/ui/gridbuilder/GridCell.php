@@ -53,6 +53,10 @@ class Cell implements IRenderable {
         $this->addStyle('color: ' . $color);
     }
 
+    public function setTitle(string $title) {
+        $this->attributes['title'] = $title;
+    }
+
     public function render() {
         $code = '<';
         if($this->isHeader) {
