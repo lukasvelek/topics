@@ -363,7 +363,7 @@ class TopicsPresenter extends AUserPresenter {
                             <div class="col-md-2"></div>
                         </div>
 
-                        ' . $imageCode . '
+                        <div class="row">' . $imageCode . '</div>
 
                         <hr>
 

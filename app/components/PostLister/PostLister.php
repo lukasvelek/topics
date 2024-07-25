@@ -141,24 +141,54 @@ class PostLister {
     
                     $code = '<div class="row" id="post-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
-
+                    
+                    $code .= '<div class="row">';
+                    $code .= '<div class="col-md">';
                     $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
+                    $code .= '</div>';
+                    $code .= '</div>';
                     $code .= '<hr>';
 
                     $images = $this->fur->getFilesForPost($post->getId());
 
-                    if(count($images) == 1) {
-                        $image = $images[0];
+                    if(!empty($images)) {
+                        $imageJson = [];
+                        foreach($images as $image) {
+                            $imageJson[] = $this->fum->createPostImageSourceLink($image);
+                        }
+                        $imageJson = json_encode($imageJson);
 
-                        $path = $this->fum->createPostImageSourceLink($image);
+                        $path = $this->fum->createPostImageSourceLink($images[0]);
 
-                        $code .= '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a><hr>';
+                        $imageCode = '<div id="post-' . $post->getId() . '-image-preview-json" style="position: relative; visibility: hidden; width: 0; height: 0">' . $imageJson . '</div><div class="row">';
+
+                        // left button
+                        if(count($images) > 1) {
+                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-left-button"></span></div>';
+                        }
+
+                        // image
+                        $imageCode .= '<div class="col-md"><span id="post-' . $post->getId() . '-image-preview"><a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a></span></div>';
+
+                        // right button
+                        if(count($images) > 1) {
+                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><a href="#post-' . $post->getId() . '" class="post-image-browser-link" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</a></span></div>';
+                        }
+
+                        $imageCode .= '</div>';
+
+                        $code .= $imageCode;
                     }
+
+                    $code .= '<div class="row"><div class="col-md">';
     
                     $code .= '<p class="post-text">' . $text . '</p>';
+                    $code .= '</div></div>';
                     $code .= '<hr>';
     
+                    $code .= '<div class="row"><div class="col-md">';
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
+                    $code .= '</div></div>';
                     $code .= '</div></div>';
                     $code .= '<br><br>';
     
