@@ -82,7 +82,7 @@ function changeImage(_postId, _id, _maxId) {
         $("#post-" + _postId + "-image-preview-right-button").html('<a href="#post-' + _postId + '" class="post-image-browser-link" onclick="changeImage(' + _postId + ', ' + (_id + 1) + ', ' + _maxId + ')">&rarr;</a>');
     }
 
-    var path = images[_id]; 
+    const path = images[_id];
 
-    $("#post-" + _postId + "-image-preview").html('<a href="#post-' + _postId + '" onclick="openImagePostLister(\'' + path + '\', ' + _postId + ')"><img src="' + path + '" class="limited"></a>');
+    $("#post-" + _postId + "-image-preview").html('<a href="#post-' + _postId + '" onclick="openImagePostLister(\'' + path + '\', ' + _postId + ')"><img id="post-' + _postId + '-image-preview-source" src="' + path + '" class="limited"></a>');
 }
