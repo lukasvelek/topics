@@ -165,7 +165,7 @@ class PostsPresenter extends AUserPresenter {
         if(!empty($postImages)) {
             foreach($postImages as $postImage) {
                 $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
-                $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" height="64px"></a>';
+                $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" class="limited"></a>';
 
                 $imagesCode[] = $imageLink;
             }

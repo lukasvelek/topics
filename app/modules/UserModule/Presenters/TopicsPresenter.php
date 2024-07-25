@@ -319,6 +319,15 @@ class TopicsPresenter extends AUserPresenter {
     
             [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 
+            $imageCode = '';
+
+            $images = $app->fileUploadRepository->getFilesForPost($post->getId());
+
+            if(count($images) == 1) {
+                $path = $app->fileUploadManager->createPostImageSourceLink($images[0]);
+                $imageCode = '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a>';
+            }
+
             $tmp = '
                 <div class="row" id="post-' . $post->getId() . '">
                     <div class="col-md">
@@ -333,6 +342,8 @@ class TopicsPresenter extends AUserPresenter {
 
                             <div class="col-md-2"></div>
                         </div>
+
+                        ' . $imageCode . '
 
                         <hr>
 

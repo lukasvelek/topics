@@ -274,3 +274,8 @@ div[class^="fm-"], div[class*="fm-"] {
 .grid-link:hover {
     color: rgb(100, 100, 100);
 }
+
+.limited {
+    width: 100%;
+    max-width: 800px;
+}

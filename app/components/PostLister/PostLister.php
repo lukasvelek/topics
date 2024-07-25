@@ -152,7 +152,7 @@ class PostLister {
 
                         $path = $this->fum->createPostImageSourceLink($image);
 
-                        $code .= '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '"></a><hr>';
+                        $code .= '<a href="#post-' . $post->getId() . '" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a><hr>';
                     }
     
                     $code .= '<p class="post-text">' . $text . '</p>';
