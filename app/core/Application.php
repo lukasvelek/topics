@@ -205,7 +205,7 @@ class Application {
         header('Location: ' . $url);
         exit;
     }
-
+    
     /**
      * Creates a single line URL from a URL params array
      * 

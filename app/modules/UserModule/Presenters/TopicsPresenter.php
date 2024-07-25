@@ -438,7 +438,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $topic = $app->topicRepository->getTopicById($topicId);
 
-        $this->saveToPresenterCache('topicLink', TopicEntity::createTopicProfileLink($topic));
+        $this->saveToPresenterCache('topicLink', TopicEntity::createTopicProfileLink($topic, false, 'topic-title-link'));
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')

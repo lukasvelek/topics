@@ -116,16 +116,6 @@ div[class^="fm-"], div[class*="fm-"] {
     height: 60px;
 }
 
-/*.navbar-link {
-    color: white;
-    text-decoration: none;
-}
-
-.navbar-link:hover {
-    color: white;
-    text-decoration: underline;
-}*/
-
 .navbar-link {
     color: white;
     text-decoration: none;
@@ -212,15 +202,20 @@ div[class^="fm-"], div[class*="fm-"] {
 
 .topic-title {
     font-size: 16px;
+
     color: black;
+
+    transition: color 0.25s;
 }
 
 .topic-title-link {
     color: black;
+
+    text-decoration: none;
 }
 
 .topic-title-link:hover {
-    color: cadetblue;
+    color: rgb(100, 100, 100);
 }
 
 .system-status-item-title {
@@ -259,8 +254,24 @@ div[class^="fm-"], div[class*="fm-"] {
 
 #grid table {
     width: 100%;
-
+ 
     text-align: center;
+}
+
+#grid thead tr {
+    border-bottom: 1px solid black;
+}
+
+#grid [class*="grid-row-"] {
+    border-top: 1px solid rgb(220, 220, 220);
+}
+
+#grid [class*="grid-row-"]:nth-child(even) {
+    background-color: rgb(250, 250, 250);
+}
+
+#grid [class*="grid-row-"]:hover {
+    background-color: rgb(240, 240, 240);
 }
 
 .grid-link {
