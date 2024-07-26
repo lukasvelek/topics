@@ -310,6 +310,15 @@ class Application {
 
         return $gridSize;
     }
+
+    /**
+     * Returns true if this is the development version
+     * 
+     * @return bool True if this is development version or false if not
+     */
+    public function getIsDev() {
+        return $this->cfg['IS_DEV'];
+    }
 }
 
 ?>

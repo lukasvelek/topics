@@ -56,18 +56,11 @@ class ManageTransactionsPresenter extends AAdminPresenter {
 
         $gb = new GridBuilder();
 
-        $gb->addColumns(['action' => 'Action', 'user' => 'User', 'dateCreated' => 'Date created']);
+        $gb->addColumns(['method' => 'Method', 'user' => 'User', 'dateCreated' => 'Date created']);
         $gb->addDataSource($transactions);
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid');
-        $gb->addOnColumnRender('action', function(Cell $cell, TransactionEntity $te) {
-            $method = $te->getMethod();
-
-            $parts = explode('::', $method);
-            $action = $parts[1];
-            $module = explode('\\', $parts[0])[2];
-            $presenter = explode('\\', $parts[0])[3];
-
-            return $module . ':' . $presenter . ':' . $action . '()';
+        $gb->addOnColumnRender('method', function(Cell $cell, TransactionEntity $te) {
+            return $te->getMethod() . '()';
         });
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
             $user = $app->userRepository->getUserById($te->getUserId());

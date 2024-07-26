@@ -22,9 +22,21 @@ if(!isset($_GET['page'])) {
 try {
     $app->run();
 } catch(AException $e) {
-    echo($e->getExceptionHTML());
+    if($app->getIsDev()) {
+        echo($e->getExceptionHTML());
+    } else {
+        if($_GET['page'] != 'ErrorModule:E500Presenter') {
+            $app->redirect(['page' => 'ErrorModule:E500Presenter']);
+        }
+    }
 } catch(Exception $e) {
-    echo($e->__toString());
+    if($app->getIsDev()) {
+        echo($e->__toString());
+    } else {
+        if($_GET['page'] != 'ErrorModule:E500Presenter') {
+            $app->redirect(['page' => 'ErrorModule:E500Presenter']);
+        }
+    }
 }
 
 ?>
