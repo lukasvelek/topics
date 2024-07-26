@@ -3,6 +3,7 @@
 session_start();
 
 use App\Core\Application;
+use App\Exceptions\AException;
 use App\Exceptions\ApplicationInitializationException;
 
 require_once('app/app_loader.php');
@@ -20,6 +21,8 @@ if(!isset($_GET['page'])) {
 
 try {
     $app->run();
+} catch(AException $e) {
+    echo($e->getExceptionHTML());
 } catch(Exception $e) {
     echo($e->__toString());
 }

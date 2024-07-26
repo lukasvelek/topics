@@ -8,6 +8,7 @@ use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
+use App\Exceptions\StaticPageException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
@@ -563,6 +564,14 @@ abstract class APresenter extends AGUICore {
      * @param bool $static True if the page is static and false if not
      */
     public function setStatic(bool $static = true) {
+        $methods = get_class_methods($this);
+
+        foreach($methods as $method) {
+            if(str_contains($method, 'action')) {
+                throw new StaticPageException('Presenter contains AJAX requests and thus cannot be set as static.');
+            }
+        }
+
         $this->isStatic = $static;
     }
 
