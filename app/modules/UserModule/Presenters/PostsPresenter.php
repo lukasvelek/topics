@@ -251,7 +251,9 @@ class PostsPresenter extends AUserPresenter {
     public function handleUploadImageForm() {
         $postId = $this->httpGet('postId');
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $postId]), 'post-data-link')
+        ];
 
         $this->saveToPresenterCache('links', $links);
 

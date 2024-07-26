@@ -409,7 +409,7 @@ class GridBuilder {
         $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
 
         if(($page + 1) >= $lastPage) {
-            $nextButton .= $lastPage . $otherArguments . ')" disabled>';
+            $nextButton .= ($lastPage - 1) . $otherArguments . ')" disabled>';
         } else {
             $nextButton .= ($page + 1) . $otherArguments . ')">';
         }
@@ -419,9 +419,9 @@ class GridBuilder {
         $lastButton = '<button type="button" class="grid-control-button-last" onclick="' . $jsHandlerName . '(';
 
         if(($page + 1) >= $lastPage) {
-            $lastButton .= $lastPage . $otherArguments . ')" disabled>';
+            $lastButton .= ($lastPage - 1) . $otherArguments . ')" disabled>';
         } else {
-            $lastButton .= $lastPage . $otherArguments . ')">';
+            $lastButton .= ($lastPage - 1) . $otherArguments . ')">';
         }
 
         $lastButton .= '&gt;&gt;</button>';
