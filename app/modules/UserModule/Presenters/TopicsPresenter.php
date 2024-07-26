@@ -443,7 +443,12 @@ class TopicsPresenter extends AUserPresenter {
 
         $topicId = $this->httpGet('topicId', true);
 
-        $topic = $app->topicRepository->getTopicById($topicId);
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not retrieve information about the topic. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
+        }
 
         $this->saveToPresenterCache('topicLink', TopicEntity::createTopicProfileLink($topic, false, 'topic-title-link'));
 
@@ -850,11 +855,16 @@ class TopicsPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not delete this topic. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
+            }
+
             $topicLink = TopicEntity::createTopicProfileLink($topic, true);
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            
             $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
             
             try {

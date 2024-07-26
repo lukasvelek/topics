@@ -125,7 +125,12 @@ class TopicManagementPresenter extends AUserPresenter {
 
             $newRole = '<span style="color: ' . TopicMemberRole::getColorByKey($role) . '">' . TopicMemberRole::toString($role) . '</span>';
 
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not change role of the selected user. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
+            }
 
             try {
                 $app->topicMembershipRepository->beginTransaction();
@@ -551,7 +556,13 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
-        $topic = $app->topicRepository->getTopicById($topicId);
+
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not retrieve information about this topic. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
 
         $this->saveToPresenterCache('topic_title', $topic->getTitle());
 

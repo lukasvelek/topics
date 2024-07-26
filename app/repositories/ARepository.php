@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
+use App\Core\HashManager;
 use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
@@ -104,8 +105,10 @@ abstract class ARepository {
     private function logTransaction(int $userId, string $method, string &$sql) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('transaction_log', ['userId', 'methodName'])
-            ->values([$userId, $method])
+        $transactionId = HashManager::createHash(64, false);
+
+        $qb ->insert('transaction_log', ['transactionId', 'userId', 'methodName'])
+            ->values([$transactionId, $userId, $method])
             ->execute();
 
         $sql = $qb->getSQL();
