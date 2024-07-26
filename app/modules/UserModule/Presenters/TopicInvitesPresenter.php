@@ -39,7 +39,7 @@ class TopicInvitesPresenter extends AUserPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $validOnly = true;
 

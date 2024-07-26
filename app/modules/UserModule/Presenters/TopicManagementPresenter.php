@@ -71,7 +71,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $topicId = $this->httpGet('topicId');
         $page = $this->httpGet('gridPage');
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
         $allMembersCount = count($app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
@@ -241,7 +241,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         if($app->actionAuthorizator->canSeeAllTopicPolls($app->currentUser->getId(), $topicId)) {
             $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
@@ -374,7 +374,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
         $page = $this->httpGet('gridPage');
         
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $invites = $app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
         $inviteCount = count($app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));

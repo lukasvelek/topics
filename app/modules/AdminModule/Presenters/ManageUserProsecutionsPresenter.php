@@ -35,7 +35,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
         $lastPage = ceil($prosecutionCount / $gridSize);
@@ -158,7 +158,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
         $lastPage = ceil($historyEntriesCount / $gridSize);

@@ -28,7 +28,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $totalCount = $app->groupRepository->getGroupCount();
         $lastPage = ceil($totalCount / $gridSize);
@@ -75,7 +75,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $page = $this->httpGet('gridPage');
         $groupId = $this->httpGet('groupId');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $membersCount = $app->groupRepository->getGroupMembersCount($groupId);
         $lastPage = ceil($membersCount / $gridSize);

@@ -37,7 +37,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $suggestions = [];
         $suggestionCount = 0;

@@ -40,7 +40,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $app->getGridSize();
 
         $reports = [];
         $reportCount = 0;

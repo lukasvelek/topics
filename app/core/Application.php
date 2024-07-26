@@ -292,6 +292,21 @@ class Application {
 
         $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ', isAjax => ' . $isAjax . ']', __METHOD__);
     }
+
+    /**
+     * Returns the grid size from the config file
+     * 
+     * @return int Grid size
+     */
+    public function getGridSize() {
+        $gridSize = $this->cfg['GRID_SIZE'];
+
+        if($gridSize < 1) {
+            $gridSize = 1;
+        }
+
+        return $gridSize;
+    }
 }
 
 ?>

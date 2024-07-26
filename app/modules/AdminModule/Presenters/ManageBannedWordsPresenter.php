@@ -25,7 +25,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
         $totalCount = $app->contentRegulationRepository->getBannedWordsCount();

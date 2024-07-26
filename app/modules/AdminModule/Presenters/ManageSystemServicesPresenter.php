@@ -48,7 +48,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         global $app;
 
         $page = $this->httpGet('gridPage');
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $services = $app->systemServicesRepository->getAllServices();
         $count = count($services);

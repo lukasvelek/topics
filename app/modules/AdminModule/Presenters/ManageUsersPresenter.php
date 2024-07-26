@@ -36,7 +36,7 @@ class ManageUsersPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $userCount = $app->userRepository->getUsersCount();
         $lastPage = ceil($userCount / $gridSize);
