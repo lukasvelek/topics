@@ -119,6 +119,14 @@ class UserAuthenticator {
 
         return true;
     }
+
+    public function checkUserByEmail(string $email) {
+        if($this->userRepository->getUserByEmailForAuthentication($email)->fetch() !== null) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

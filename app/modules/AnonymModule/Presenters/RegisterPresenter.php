@@ -18,6 +18,7 @@ class RegisterPresenter extends APresenter {
         if($fr !== null) {
             $username = $fr->username;
             $password = $fr->password;
+            $email = $fr->email;
 
             if(!$app->userAuth->checkUser($username)) {
                 $this->flashMessage('User with these credentials already exists. Please choose different credentials.', 'error');
@@ -25,7 +26,13 @@ class RegisterPresenter extends APresenter {
                 $this->redirect();
             }
 
-            if($app->userRepository->createNewUser($username, HashManager::hashPassword($password), null, false)) {
+            if(!$app->userAuth->checkUserByEmail($email)) {
+                $this->flashMessage('User with this email already exists. Please choose different email.', 'error');
+                $this->logger->error('User with email "' . $email . '" already exists.', __METHOD__);
+                $this->redirect();
+            }
+
+            if($app->userRepository->createNewUser($username, HashManager::hashPassword($password), $email, false)) {
                 $this->flashMessage('You have been registered. Now you can log in.', 'success');
                 $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
             } else {
@@ -39,6 +46,7 @@ class RegisterPresenter extends APresenter {
                 ->addTextInput('username', 'Username:', null, true)
                 ->addPassword('password', 'Password:', null, true)
                 ->addPassword('passwordCheck', 'Password again:', null, true)
+                ->addEmailInput('email', 'Email:', null, true)
                 ->addSubmit('Register')
                 ->addJSHandler('js/UserRegistrationFormHandler.js')
             ;
