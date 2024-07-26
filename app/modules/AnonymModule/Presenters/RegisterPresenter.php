@@ -3,9 +3,12 @@
 namespace App\Modules\AnonymModule;
 
 use App\Core\HashManager;
+use App\Exceptions\AException;
+use App\Exceptions\UserRegistrationException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use Exception;
 
 class RegisterPresenter extends APresenter {
     public function __construct() {
@@ -20,23 +23,27 @@ class RegisterPresenter extends APresenter {
             $password = $fr->password;
             $email = $fr->email;
 
-            if(!$app->userAuth->checkUser($username)) {
-                $this->flashMessage('User with these credentials already exists. Please choose different credentials.', 'error');
-                $this->logger->error('User with usernane "' . $username . '" already exists.', __METHOD__);
-                $this->redirect();
-            }
+            try {
+                $app->userRepository->beginTransaction();
 
-            if(!$app->userAuth->checkUserByEmail($email)) {
-                $this->flashMessage('User with this email already exists. Please choose different email.', 'error');
-                $this->logger->error('User with email "' . $email . '" already exists.', __METHOD__);
-                $this->redirect();
-            }
+                if(!$app->userAuth->checkUser($username)) {
+                    throw new UserRegistrationException('User with username \'' . $username . '\' already exists.');
+                }
 
-            if($app->userRepository->createNewUser($username, HashManager::hashPassword($password), $email, false)) {
+                if(!$app->userAuth->checkUserByEmail($email)) {
+                    throw new UserRegistrationException('User with email \'' . $email . '\' already exists.');
+                }
+
+                $app->userRepository->createNewUser($username, HashManager::hashPassword($password), $email, false);
+
+                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+
                 $this->flashMessage('You have been registered. Now you can log in.', 'success');
                 $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
-            } else {
-                $this->flashMessage('Could not create a user. Please try again later.', 'error');
+            } catch(AException|Exception $e) {
+                $app->userRepository->rollback();
+                
+                $this->flashMessage('Your registration could not be finished. Reason: ' . $e->getMessage(), 'error');
                 $this->redirect();
             }
         } else {

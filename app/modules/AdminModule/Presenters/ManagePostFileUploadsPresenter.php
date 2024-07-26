@@ -79,8 +79,6 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
                 break;
         }
 
-        /*$fileUploads = $app->fileUploadRepository->getAllFilesForGrid($gridSize, ($page * $gridSize));
-        $totalCount = count($app->fileUploadRepository->getAllFilesForGrid(0, 0));*/
         $lastPage = ceil($totalCount / $gridSize);
 
         $gb = new GridBuilder();
@@ -262,10 +260,16 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $pife = $app->fileUploadRepository->getFileById($uploadId);
 
         try {
+            $app->fileUploadRepository->beginTransaction();
+            
             $app->fileUploadManager->deleteUploadedFile($pife, $app->currentUser->getId());
+
+            $app->fileUploadRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('File deleted.', 'success');
         } catch(AException $e) {
+            $app->fileUploadRepository->rollback();
+            
             $this->flashMessage('File could not be deleted. Reason: ' . $e->getMessage(), 'error');
         }
 

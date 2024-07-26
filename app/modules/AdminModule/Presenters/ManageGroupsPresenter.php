@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -156,13 +157,24 @@ class ManageGroupsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $user = $fr->user;
             $userEntity = $app->userRepository->getUserById($user);
+            
+            try {
+                $app->groupRepository->beginTransaction();
 
-            $app->groupRepository->addGroupMember($groupId, $user);
+                $app->groupRepository->addGroupMember($groupId, $user);
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('groupMemberships');
+                $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
 
-            $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
+                $cm = new CacheManager($app->logger);
+                $cm->invalidateCache('groupMemberships');
+                
+                $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
+            } catch(AException $e) {
+                $app->groupRepository->rollback();
+
+                $this->flashMessage('Could not added user to the group. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
         } else {
             $fb = new FormBuilder();
@@ -242,12 +254,23 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $user = $app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') == '1') {
-            $app->groupRepository->removeGroupMember($groupId, $userId);
+            try {
+                $app->groupRepository->beginTransaction();
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('groupMemberships');
+                $app->groupRepository->removeGroupMember($groupId, $userId);
 
-            $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
+                $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $cm = new CacheManager($app->logger);
+                $cm->invalidateCache('groupMemberships');
+
+                $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
+            } catch(AException $e) {
+                $app->groupRepository->rollback();
+
+                $this->flashMessage('Could not remove user from the group. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['action' => 'listMembers', 'groupId' => $groupId]);
         } else {
             $fb = new FormBuilder();

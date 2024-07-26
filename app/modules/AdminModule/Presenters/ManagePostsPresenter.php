@@ -39,14 +39,15 @@ class ManagePostsPresenter extends AAdminPresenter {
             $report = $app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $app->postRepository->beginTransaction();
             
             try {
+                $app->postRepository->beginTransaction();
+
                 $app->contentManager->deleteComment($commentId);
 
                 $app->notificationManager->createNewCommentDeleteDueToReportNotification($comment->getAuthorId(), $postLink, $userLink, $reason);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Comment #' . $commentId . ' deleted.', 'success');
             } catch(Exception $e) {
@@ -92,20 +93,21 @@ class ManagePostsPresenter extends AAdminPresenter {
             $report = $app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $app->postRepository->beginTransaction();
-
+            
             try {
+                $app->postRepository->beginTransaction();
+
                 $app->contentManager->deletePost($postId);
 
                 $app->notificationManager->createNewPostDeleteDueToReportNotification($post->getAuthorId(), $postLink, $userLink, $reason);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Post #' . $postId . ' deleted with all its comments.', 'success');
             } catch(Exception $e) {
                 $app->postRepository->rollback();
 
-                $this->flashMessage('Post #' . $postId . ' could not be deleted.', 'error');
+                $this->flashMessage('Could not delete post. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);

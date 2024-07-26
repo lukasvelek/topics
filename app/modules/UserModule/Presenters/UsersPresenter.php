@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -52,9 +53,20 @@ class UsersPresenter extends AUserPresenter {
             $description = $fr->description;
             $authorId = $app->currentUser->getId();
             
-            $app->reportRepository->createUserReport($authorId, $userId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('User reported.', 'success');
+                $app->reportRepository->createUserReport($authorId, $userId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('User reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('User could not be reported. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $userId]);
         } else {
             $this->saveToPresenterCache('user', $user);

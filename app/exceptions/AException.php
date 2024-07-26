@@ -10,12 +10,20 @@ use Exception;
 use Throwable;
 
 abstract class AException extends Exception {
+    private string $hash;
+
     protected function __construct(string $name, string $message, ?Throwable $previous = null, bool $createFile = true) {
-        parent::__construct($message, 9999, $previous);
+        $this->hash = HashManager::createHash(8, false);
+        
+        parent::__construct($message . ' [#' . $this->hash . ']', 9999, $previous);
 
         if($createFile && FileManager::folderExists('logs\\')) {
             $this->createExceptionFile($name, $message);
         }
+    }
+
+    public function getHash() {
+        return $this->hash;
     }
 
     private function createExceptionFile(string $name, string $message) {
@@ -66,12 +74,10 @@ abstract class AException extends Exception {
         $to->render();
         $content = $to->getRenderedContent();
 
-        $hash = HashManager::createHash(8, false);
-
         $date = new DateTime();
         $date->format('Y-m-d_H-i-s');
 
-        $filePath = 'exception_' . $date . '_' . $hash . '.html';
+        $filePath = 'exception_' . $date . '_' . $this->hash . '.html';
 
         FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $content);
     }

@@ -7,7 +7,6 @@ use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\PostCommentEntity;
-use App\Entities\PostEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\FileUploadException;
@@ -281,16 +280,17 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
-        $app->topicRepository->beginTransaction();
-
+        
         try {
+            $app->topicRepository->beginTransaction();
+            
             if(isset($_FILES['image']['name'])) {
                 $app->fileUploadManager->uploadPostImage($app->currentUser->getId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
             } else {
                 throw new FileUploadException('No file selected.');
             }
 
-            $app->topicRepository->commit();
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
             $this->flashMessage('Image uploaded.', 'success');
         } catch(Exception $e) {
             $app->topicRepository->rollback();
@@ -330,9 +330,9 @@ class PostsPresenter extends AUserPresenter {
 
         $liked = false;
         
-        $app->postCommentRepository->beginTransaction();
-
         try {
+            $app->postCommentRepository->beginTransaction();
+
             if($toLike == 'true') {
                 $app->postCommentRepository->likeComment($userId, $commentId);
                 $liked = true;
@@ -344,11 +344,11 @@ class PostsPresenter extends AUserPresenter {
                 $app->postCommentRepository->unlikeComment($userId, $commentId);
             }
 
-            $app->postCommentRepository->commit();
+            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
             $app->postCommentRepository->rollback();
             
-            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '.', 'error');
+            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
             
             $liked = false;
         }
@@ -510,22 +510,23 @@ class PostsPresenter extends AUserPresenter {
 
         $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-        $app->postCommentRepository->beginTransaction();
         
         try {
+            $app->postCommentRepository->beginTransaction();
+
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
 
             if($post->getAuthorId() != $authorId) {
                 $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
             }
 
-            $app->postCommentRepository->commit();
+            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Comment posted.', 'success');
         } catch (AException $e) {
             $app->postCommentRepository->rollback();
 
-            $this->flashMessage('Comment could not be created. Error: ' . $e->getMessage(), 'error');
+            $this->flashMessage('Comment could not be created. Reason: ' . $e->getMessage(), 'error');
         }
         
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
@@ -541,9 +542,20 @@ class PostsPresenter extends AUserPresenter {
             $description = $fr->description;
             $userId = $app->currentUser->getId();
 
-            $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Post reported.', 'success');
+                $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('Post could not be reported. Reason: ' . $e->getMessage());
+            }
+
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
         } else {
             $post = $app->postRepository->getPostById($postId);
@@ -596,9 +608,20 @@ class PostsPresenter extends AUserPresenter {
             $description = $fr->description;
             $userId = $app->currentUser->getId();
 
-            $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Comment reported.', 'success');
+                $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Comment reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('Comment could not be reported. Reason: ' . $e->getMessage(), __METHOD__);
+            }
+
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
         } else {
             $this->saveToPresenterCache('comment', $comment);
@@ -650,15 +673,15 @@ class PostsPresenter extends AUserPresenter {
             $comment = $app->postCommentRepository->getCommentById($commentId);
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
-
-            $app->postRepository->beginTransaction();
-
+            
             try {
+                $app->postRepository->beginTransaction();
+                
                 $app->contentManager->deleteComment($commentId);
 
                 $app->notificationManager->createNewCommentDeletedNotification($comment->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
             } catch(Exception $e) {
@@ -696,14 +719,14 @@ class PostsPresenter extends AUserPresenter {
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $app->postRepository->beginTransaction();
-
             try {
+                $app->postRepository->beginTransaction();
+
                 $app->contentManager->deletePost($postId);
 
                 $app->notificationManager->createNewPostDeletedNotification($post->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
             } catch(Exception $e) {
@@ -739,9 +762,9 @@ class PostsPresenter extends AUserPresenter {
 
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
         
-        $app->postRepository->beginTransaction();
-
         try {
+            $app->postRepository->beginTransaction();
+            
             $app->postRepository->likePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
@@ -752,7 +775,7 @@ class PostsPresenter extends AUserPresenter {
             $cm = new CacheManager($app->logger);
             $cm->invalidateCache('posts');
 
-            $app->postRepository->commit();
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
             $app->postRepository->rollback();
             $this->flashMessage('Could not like post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
@@ -767,12 +790,21 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId', true);
         $post = $app->postRepository->getPostById($postId);
 
-        $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
-        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
+        try {
+            $app->postRepository->beginTransaction();
 
-        $cm = new CacheManager($app->logger);
+            $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
+            $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
 
-        $cm->invalidateCache('posts');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+            
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+
+            $this->flashMessage('Could not unlike post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
+        }
 
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }

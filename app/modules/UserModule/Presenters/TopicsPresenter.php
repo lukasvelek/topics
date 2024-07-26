@@ -12,14 +12,12 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
-use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\FormBuilder\IFormRenderable;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -208,17 +206,26 @@ class TopicsPresenter extends AUserPresenter {
 
         $liked = false;
 
-        if($toLike == 'true') {
-            $app->postRepository->likePost($userId, $postId);
-            $liked = true;
-        } else {
-            $app->postRepository->unlikePost($userId, $postId);
+        try {
+            $app->postRepository->beginTransaction();
+
+            if($toLike == 'true') {
+                $app->postRepository->likePost($userId, $postId);
+                $liked = true;
+            } else {
+                $app->postRepository->unlikePost($userId, $postId);
+            }
+
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+
+            $this->flashMessage('Post could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
         }
-
-        $cm = new CacheManager($app->logger);
-
-        $cm->invalidateCache('posts');
-
+ 
         $likes = $app->postRepository->getLikes($postId);
 
         $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($postId, $liked), 'postLikes' => $likes]);
@@ -488,9 +495,9 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
-        $app->topicRepository->beginTransaction();
-
         try {
+            $app->topicRepository->beginTransaction();
+            
             $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
 
             if(isset($_FILES['image']['name'])) {
@@ -499,14 +506,15 @@ class TopicsPresenter extends AUserPresenter {
                 $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
             }
 
-            $app->topicRepository->commit();
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Post created.', 'success');
         } catch(Exception $e) {
             $app->topicRepository->rollback();
+
             $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
-            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }
 
-        $this->flashMessage('Post created.', 'success');
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 
@@ -587,6 +595,8 @@ class TopicsPresenter extends AUserPresenter {
             $rawTags = implode(',', $rawTagsArray);
 
             try {
+                $app->topicRepository->beginTransaction();
+
                 $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate, $rawTags);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
@@ -594,13 +604,18 @@ class TopicsPresenter extends AUserPresenter {
 
                 $cm = new CacheManager($this->logger);
                 $cm->invalidateCache('topics');
+                
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Topic \'' . $title . '\' created.', 'success');
             } catch(AException $e) {
+                $app->topicRepository->rollback();
+
                 $this->flashMessage('Could not create a new topic. Reason: ' . $e->getMessage(), 'error');
                 $app->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
             }
 
-            $this->flashMessage('Topic \'' . $title . '\' created.', 'success');
-            $app->redirect(['page' => 'UserModule:Topics&action=profile&topicId=' . $topicId]);
+            $app->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
             $title = $this->httpGet('title');
 
@@ -633,21 +648,18 @@ class TopicsPresenter extends AUserPresenter {
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
         }
 
-        $ok = false;
-
-        $app->topicRepository->beginTransaction();
-
         try {
+            $app->topicRepository->beginTransaction();
+
             $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
-            $ok = true;
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' followed.', 'success');
         } catch(AException $e) {
             $app->topicRepository->rollback();
-            $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
-        }
 
-        if($ok) {
-            $app->topicRepository->commit();
-            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' followed.', 'success');
+            $this->flashMessage('Could not follow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -664,21 +676,18 @@ class TopicsPresenter extends AUserPresenter {
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
         }
 
-        $ok = false;
-
-        $app->topicRepository->beginTransaction();
-
         try {
+            $app->topicRepository->beginTransaction();
+            
             $app->topicMembershipManager->unfollowTopic($topicId, $app->currentUser->getId());
-            $ok = true;
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' unfollowed.', 'success');
         } catch(AException $e) {
             $app->topicRepository->rollback();
-            $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
-        }
 
-        if($ok) {
-            $app->topicRepository->commit();
-            $this->flashMessage('Topic \'' . $topic->getTitle() . '\' unfollowed.', 'success');
+            $this->flashMessage('Could not unfollow topic \'' . $topic->getTitle() . '\'. Reason: ' . $e->getMessage(), 'error');
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -775,9 +784,20 @@ class TopicsPresenter extends AUserPresenter {
             $description = $fr->description;
             $userId = $app->currentUser->getId();
 
-            $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Topic reported.', 'success');
+                $app->reportRepository->createTopicReport($userId, $topicId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Topic reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('Could not report topic. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
             try {
@@ -834,16 +854,17 @@ class TopicsPresenter extends AUserPresenter {
             $topicLink = TopicEntity::createTopicProfileLink($topic, true);
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $app->topicRepository->beginTransaction();
-
+            
             $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
-
+            
             try {
+                $app->topicRepository->beginTransaction();
+
                 $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
 
                 $app->notificationManager->createNewTopicDeletedNotification($topicOwnerId, $topicLink, $userLink);
 
-                $app->topicRepository->commit();
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
             } catch(Exception $e) {
@@ -897,9 +918,20 @@ class TopicsPresenter extends AUserPresenter {
                 $timeElapsed = '-' . $timeElapsed;
             }
 
-            $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
+            try {
+                $app->topicPollRepository->beginTransaction();
 
-            $this->flashMessage('Poll created.', 'success');
+                $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
+
+                $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Poll created.', 'success');
+            } catch(AException $e) {
+                $app->topicPollRepository->rollback();
+
+                $this->flashMessage('Could not create poll. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
             $fb = new FormBuilder();
@@ -973,9 +1005,20 @@ class TopicsPresenter extends AUserPresenter {
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }
 
-        $app->topicPollRepository->submitPoll($pollId, $app->currentUser->getId(), $choice);
+        try {
+            $app->topicPollRepository->beginTransaction();
 
-        $this->flashMessage('Poll submitted.', 'success');
+            $app->topicPollRepository->submitPoll($pollId, $app->currentUser->getId(), $choice);
+
+            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Poll submitted.', 'success');
+        } catch(AException $e) {
+            $app->topicPollRepository->rollback();
+
+            $this->flashMessage('Could not submit poll vote. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 
@@ -1068,9 +1111,20 @@ class TopicsPresenter extends AUserPresenter {
         $pollId = $this->httpGet('pollId', true);
         $topicId = $this->httpGet('topicId', true);
 
-        $app->topicPollRepository->closePoll($pollId);
+        try {
+            $app->topicPollRepository->beginTransaction();
 
-        $this->flashMessage('Poll closed. You can find it in your profile in the "My polls" section.', 'success');
+            $app->topicPollRepository->closePoll($pollId);
+
+            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+            
+            $this->flashMessage('Poll closed. You can find it in your profile in the "My polls" section.', 'success');
+        } catch(AException $e) {
+            $app->topicPollRepository->rollback();
+
+            $this->flashMessage('Could not close poll. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
     }
 }

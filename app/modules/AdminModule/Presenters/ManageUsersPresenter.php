@@ -117,13 +117,25 @@ class ManageUsersPresenter extends AAdminPresenter {
                 $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'unsetAdmin', 'userId' => $userId]);
             }
 
-            $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
-            $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+            try {
+                $app->userRepository->beginTransaction();
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('users');
+                $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
 
-            $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
+                $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+                $cm = new CacheManager($app->logger);
+                $cm->invalidateCache('users');
+
+                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
+            } catch(AException $e) {
+                $app->userRepository->rollback();
+
+                $this->flashMessage('Could not unset user as administrator. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
         } else {
             $fb = new FormBuilder();
@@ -160,13 +172,25 @@ class ManageUsersPresenter extends AAdminPresenter {
                 $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'userId' => $userId]);
             }
 
-            $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
-            $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+            try {
+                $app->userRepository->beginTransaction();
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('users');
+                $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
 
-            $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
+                $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+
+                $cm = new CacheManager($app->logger);
+                $cm->invalidateCache('users');
+
+                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
+            } catch(AException $e) {
+                $app->userRepository->rollback();
+                
+                $this->flashMessage('Could not set user as administrator. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
         } else {
             $fb = new FormBuilder();
@@ -197,9 +221,20 @@ class ManageUsersPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;
 
-            $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
+            try {
+                $app->userProsecutionRepository->beginTransaction();
 
-            $this->flashMessage('User \'' . $user->getUsername() . '\' has been warned.');
+                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
+
+                $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('User \'' . $user->getUsername() . '\' has been warned.');
+            } catch(AException $e) {
+                $app->userProsecutionRepository->rollback();
+
+                $this->flashMessage('Could not warn user. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
         } else {
             $fb = new FormBuilder();
@@ -235,16 +270,24 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             if($type == UserProsecutionType::PERMA_BAN) {
                 try {
+                    $app->userProsecutionRepository->beginTransaction();
+
                     $app->userProsecutionManager->permaBanUser($userId, $app->currentUser->getId(), $reason);
+
+                    $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
                 } catch(AException $e) {
-                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Please try again.', 'error');
+                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
                 }
             } else {
                 try {
+                    $app->userProsecutionRepository->beginTransaction();
+
                     $app->userProsecutionManager->banUser($userId, $app->currentUser->getId(), $reason, $startDate, $endDate);
+
+                    $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
                 } catch(AException $e) {
-                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Please try again.', 'error');
+                    $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
                 }
             }
@@ -291,9 +334,20 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             $password = HashManager::hashPassword($password);
 
-            $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+            try {
+                $app->userRepository->beginTransaction();
 
-            $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
+                $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+
+                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
+            } catch(AException $e) {
+                $app->userRepository->rollback();
+
+                $this->flashMessage('Could not create user. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['action' => 'list']);
         } else {
             $fb = new FormBuilder();

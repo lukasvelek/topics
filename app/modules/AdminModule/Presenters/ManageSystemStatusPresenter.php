@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Constants\SystemStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\SystemStatusEntity;
+use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -78,12 +79,23 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
                 $description = null;
             }
 
-            $app->logger->warning('User #' . $app->currentUser->getId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
-            $app->logger->warning('User #' . $app->currentUser->getId() . ' changed description for system #' . $systemId . ' from \'' . $system->getDescription() . '\' to \'' . $description . '\'.', __METHOD__);
+            try {
+                $app->systemStatusRepository->beginTransaction();
+                
+                $app->systemStatusRepository->updateStatus($systemId, $status, $description);
 
-            $app->systemStatusRepository->updateStatus($systemId, $status, $description);
+                $app->logger->warning('User #' . $app->currentUser->getId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
+                $app->logger->warning('User #' . $app->currentUser->getId() . ' changed description for system #' . $systemId . ' from \'' . $system->getDescription() . '\' to \'' . $description . '\'.', __METHOD__);
 
-            $this->flashMessage('System status updated.', 'success');
+                $app->systemStatusRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('System status updated.', 'success');
+            } catch(AException $e) {
+                $app->systemStatusRepository->rollback();
+
+                $this->flashMessage('Could not update system status. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list']);
         } else {
             $statusArray = [];
