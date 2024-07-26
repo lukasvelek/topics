@@ -549,7 +549,7 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Sends AJAX response encoded to to JSON
+     * Sends AJAX response encoded to JSON
      * 
      * @param array $data The response data.
      */
