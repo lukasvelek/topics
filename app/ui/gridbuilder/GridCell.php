@@ -8,15 +8,21 @@ class Cell implements IRenderable {
     private mixed $text;
     private bool $isHeader;
     private array $attributes;
+    private bool $isForAction;
 
     public function __construct() {
         $this->text = null;
         $this->isHeader = false;
         $this->attributes = [];
+        $this->isForAction = false;
     }
 
     public function setHeader(bool $isHeader = true) {
         $this->isHeader = $isHeader;
+    }
+
+    public function setIsForAction(bool $isForAction = true) {
+        $this->isForAction = $isForAction;
     }
 
     public function setValue(mixed $value) {
@@ -63,6 +69,14 @@ class Cell implements IRenderable {
             $code .= 'th';
         } else {
             $code .= 'td';
+        }
+
+        if($this->isForAction) {
+            if(array_key_exists('class', $this->attributes)) {
+                $this->attributes['class'] .= ' grid-cell-action';
+            } else {
+                $this->attributes['class'] = 'grid-cell-action';
+            }
         }
 
         if(!empty($this->attributes)) {

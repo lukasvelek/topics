@@ -171,6 +171,7 @@ class GridBuilder {
 
         // title
         $headerRow = new Row();
+        $headerRow->setHeader();
         if(!is_null($this->headerCheckbox) && (is_callable($this->renderRowCheckbox) || $this->alwaysDrawHeaderCheckbox)) {
             $cell = new Cell();
             $cell->setValue($this->headerCheckbox);
@@ -256,6 +257,7 @@ class GridBuilder {
         
                     foreach($this->actions as $action) {
                         $cell = new Cell();
+                        $cell->setIsForAction();
                         
                         try {
                             $result = $action($entity);
@@ -414,7 +416,7 @@ class GridBuilder {
 
         $nextButton .= '&gt;</button>';
 
-        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+        $lastButton = '<button type="button" class="grid-control-button-last" onclick="' . $jsHandlerName . '(';
 
         if(($page + 1) >= $lastPage) {
             $lastButton .= $lastPage . $otherArguments . ')" disabled>';

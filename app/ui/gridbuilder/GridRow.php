@@ -8,11 +8,13 @@ class Row implements IRenderable {
     private array $cells;
     private array $attributes;
     private ?string $primaryKey;
+    private bool $isHeader;
 
     public function __construct() {
         $this->cells = [];
         $this->attributes = [];
         $this->primaryKey = null;
+        $this->isHeader = false;
     }
 
     public function addCell(Cell $cell) {
@@ -43,8 +45,20 @@ class Row implements IRenderable {
         return $this->primaryKey !== null;
     }
 
+    public function setHeader(bool $isHeader = true) {
+        $this->isHeader = $isHeader;
+    }
+
     public function render() {
         $code = '<tr';
+
+        if($this->isHeader) {
+            if(array_key_exists('style', $this->attributes)) {
+                $this->attributes['style'] .= '; position: sticky';
+            } else {
+                $this->attributes['style'] = 'position: sticky';
+            }
+        }
 
         if(!empty($this->attributes)) {
             $tmp = [];
