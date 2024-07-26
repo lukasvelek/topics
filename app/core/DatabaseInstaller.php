@@ -201,7 +201,7 @@ class DatabaseInstaller {
                 'dateValid' => 'DATETIME NOT NULL'
             ],
             'notifications' => [
-                'notificationId' => 'VARCHAR(256)',
+                'notificationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'userId' => 'INT(32) NOT NULL',
                 'type' => 'INT(4) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
@@ -210,11 +210,17 @@ class DatabaseInstaller {
                 'dateSeen' => 'DATETIME NULL'
             ],
             'post_file_uploads' => [
-                'uploadId' => 'VARCHAR(256)',
+                'uploadId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'postId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'filename' => 'VARCHAR(256) NOT NULL',
                 'filepath' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'transaction_log' => [
+                'transactionId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'methodName' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];

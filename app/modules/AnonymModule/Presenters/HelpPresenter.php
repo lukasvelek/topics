@@ -26,13 +26,19 @@ class HelpPresenter extends APresenter {
             $user = $fr->user;
 
             try {
+                $app->suggestionRepository->beginTransaction();
+
                 $app->suggestionRepository->createNewSuggestion($user, $title, $text, $category);
+
+                $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+                
+                $app->flashMessage('Suggestion created. Thank you :)', 'success');
             } catch(AException $e) {
+                $app->suggestionRepository->rollback();
+
                 $app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
-                $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
             }
 
-            $app->flashMessage('Suggestion created. Thank you :)', 'success');
             $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
         } else {
             try {

@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Exceptions\AException;
 use App\UI\LinkBuilder;
 
 class NotificationsPresenter extends AUserPresenter {
@@ -107,7 +108,18 @@ class NotificationsPresenter extends AUserPresenter {
 
         $notificationId = $this->httpGet('notificationId', true);
 
-        $app->notificationManager->setNotificationAsSeen($notificationId);
+        try {
+            $app->notificationRepository->beginTransaction();
+            
+            $app->notificationManager->setNotificationAsSeen($notificationId);
+
+            $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->notificationRepository->rollback();
+
+            $this->flashMessage('Could not close notification. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect();
+        }
 
         $cnt = count($app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId()));
 
@@ -128,8 +140,17 @@ class NotificationsPresenter extends AUserPresenter {
 
         $notifications = $app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId());
 
-        foreach($notifications as $notification) {
-            $app->notificationManager->setNotificationAsSeen($notification->getId());
+        try {
+            $app->notificationRepository->beginTransaction();
+
+            foreach($notifications as $notification) {
+                $app->notificationManager->setNotificationAsSeen($notification->getId());
+            }
+
+            $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->notificationRepository->rollback();
+            $this->flashMessage('Could not close notifications. Reason: ' . $e->getMessage(), 'error');
         }
 
         $this->ajaxSendResponse(['text' => '<div style="text-align: center">No notifications found</div>']);

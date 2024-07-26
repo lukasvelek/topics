@@ -6,6 +6,7 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Exceptions\AException;
 
 class HomePresenter extends AUserPresenter {
     public function __construct() {
@@ -72,15 +73,25 @@ class HomePresenter extends AUserPresenter {
         $toLike = $this->httpGet('toLike');
 
         $link = PostLister::createLikeLink($postId, ($toLike == 'true'));
-        if($toLike == 'true') {
-            $app->postRepository->likePost($userId, $postId);
-        } else {
-            $app->postRepository->unlikePost($userId, $postId);
+
+        try {
+            $app->postRepository->beginTransaction();
+
+            if($toLike == 'true') {
+                $app->postRepository->likePost($userId, $postId);
+            } else {
+                $app->postRepository->unlikePost($userId, $postId);
+            }
+
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+
+            $this->flashMessage('Could not like post. Reason: ' . $e->getMessage(), 'error');
         }
-
-        $cm = new CacheManager($app->logger);
-
-        $cm->invalidateCache('posts');
 
         $post = $app->postRepository->getPostById($postId);
 

@@ -8,14 +8,12 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicInviteEntity;
 use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
-use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
-use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -122,31 +120,31 @@ class TopicManagementPresenter extends AUserPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $role = $this->httpPost('role');
 
-            $ok = false;
-
-            $app->topicMembershipRepository->beginTransaction();
-
             $oldRole = $app->topicMembershipManager->getFollowRole($topicId, $userId);
             $oldRole = '<span style="color: ' . TopicMemberRole::getColorByKey($oldRole) . '">' . TopicMemberRole::toString($oldRole) . '</span>';
 
             $newRole = '<span style="color: ' . TopicMemberRole::getColorByKey($role) . '">' . TopicMemberRole::toString($role) . '</span>';
 
-            $topic = $app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not change role of the selected user. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
+            }
 
             try {
+                $app->topicMembershipRepository->beginTransaction();
+
                 $app->topicMembershipManager->changeRole($topicId, $userId, $app->currentUser->getId(), $role);
 
                 $app->notificationManager->createNewTopicRoleChangedNotification($userId, LinkBuilder::createSimpleLinkObject($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'), $oldRole, $newRole);
 
-                $ok = true;
+                $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Role of the selected user changed.', 'success');
             } catch(AException $e) {
                 $app->topicMembershipRepository->rollback();
                 $this->flashMessage('Could not change role of the selected user. Reason: ' . $e->getMessage(), 'error');
-            }
-
-            if($ok) {
-                $app->topicMembershipRepository->commit();
-                $this->flashMessage('Role of the selected user changed.', 'success');
             }
 
             $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
@@ -316,9 +314,20 @@ class TopicManagementPresenter extends AUserPresenter {
         $pollId = $this->httpGet('pollId');
         $topicId = $this->httpGet('topicId');
 
-        $app->topicPollRepository->closePoll($pollId);
+        try {
+            $app->topicPollRepository->beginTransaction();
 
-        $this->flashMessage('Poll deactivated.', 'success');
+            $app->topicPollRepository->closePoll($pollId);
+
+            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Poll deactivated.', 'success');
+        } catch(AException $e) {
+            $app->topicPollRepository->rollback();
+
+            $this->flashMessage('Poll could not be deactivated. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId]);
     }
 
@@ -332,9 +341,20 @@ class TopicManagementPresenter extends AUserPresenter {
         $tomorrow->modify('+1d');
         $tomorrow = $tomorrow->getResult();
 
-        $app->topicPollRepository->openPoll($pollId, $tomorrow);
+        try {
+            $app->topicPollRepository->beginTransaction();
 
-        $this->flashMessage('Poll reactivated.', 'success');
+            $app->topicPollRepository->openPoll($pollId, $tomorrow);
+
+            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Poll reactivated.', 'success');
+        } catch(AException $e) {
+            $app->topicPollRepository->rollback();
+
+            $this->flashMessage('Poll could not be reactivated. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId]);
     }
 
@@ -420,10 +440,16 @@ class TopicManagementPresenter extends AUserPresenter {
             $userId = $this->httpPost('userSelect');
 
             try {
-                $app->topicMembershipManager->inviteUser($topicId, $userId);
+                $app->topicMembershipRepository->beginTransaction();
+
+                $app->topicMembershipManager->inviteUser($topicId, $userId, $app->currentUser->getId());
+
+                $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('User invited.', 'success');
             } catch(AException $e) {
+                $app->topicMembershipRepository->rollback();
+
                 $this->flashMessage('Could not invite user. Reason: ' . $e->getMessage(), 'error');
             }
             
@@ -510,9 +536,16 @@ class TopicManagementPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         try {
+            $app->topicMembershipRepository->beginTransaction();
+
             $app->topicMembershipManager->removeInvite($topicId, $userId);
+
+            $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
+
             $this->flashMessage('Invitation removed.', 'success');
         } catch(AException $e) {
+            $app->topicMembershipRepository->rollback();
+
             $this->flashMessage('Could not remove invite. Reason: ' . $e->getMessage(), 'error');
         }
 
@@ -523,7 +556,13 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
-        $topic = $app->topicRepository->getTopicById($topicId);
+
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not retrieve information about this topic. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
 
         $this->saveToPresenterCache('topic_title', $topic->getTitle());
 
@@ -578,10 +617,16 @@ class TopicManagementPresenter extends AUserPresenter {
         }
 
         try {
+            $app->topicRepository->beginTransaction();
+
             $app->topicManager->updateTopicPrivacy($app->currentUser->getId(), $topicId, $private, $visible);
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Settings updated successfully.', 'success');
         } catch(Exception $e) {
+            $app->topicRepository->rollback();
+            
             $this->flashMessage('Could not update settings. Reason: ' . $e->getMessage(), 'error');
         }
 

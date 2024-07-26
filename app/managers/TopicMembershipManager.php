@@ -151,7 +151,7 @@ class TopicMembershipManager extends AManager {
         return $memberships;
     }
 
-    public function inviteUser(int $topicId, int $userId) {
+    public function inviteUser(int $topicId, int $userId, int $callingUserId) {
         if($this->checkUserInviteExists($topicId, $userId) !== null) {
             throw new GeneralException('This user has already been invited.');
         }
@@ -177,7 +177,7 @@ class TopicMembershipManager extends AManager {
             throw new GeneralException('Could not create a notification.');
         }
         
-        $this->topicRepository->commit();
+        $this->topicRepository->commit($callingUserId, __METHOD__);
     }
 
     public function checkUserInviteExists(int $topicId, int $userId) {

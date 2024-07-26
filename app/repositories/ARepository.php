@@ -4,6 +4,8 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
+use App\Core\HashManager;
+use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
 use QueryBuilder\ExpressionBuilder;
@@ -38,7 +40,12 @@ abstract class ARepository {
         return $this->conn->rollback();
     }
 
-    public function commit() {
+    public function commit(int $userId, string $method) {
+        $sql = '';
+        if(!$this->logTransaction($userId, $method, $sql)) {
+            $this->rollback();
+            throw new DatabaseExecutionException('Could not log transcation. Rolling back.', $sql);
+        }
         $this->logger->warning('Transaction commited.', __METHOD__);
         return $this->conn->commit();
     }
@@ -63,8 +70,8 @@ abstract class ARepository {
         return $result;
     }
 
-    public function tryCommit() {
-        $result = $this->commit();
+    public function tryCommit(int $userId, string $method) {
+        $result = $this->commit($userId, $method);
 
         if($result === false) {
             throw new GeneralException('Could not commit database transaction');
@@ -93,6 +100,22 @@ abstract class ARepository {
         if($offset > 0) {
             $qb->offset($offset);
         }
+    }
+
+    private function logTransaction(int $userId, string $method, string &$sql) {
+        $qb = $this->qb(__METHOD__);
+
+        $transactionId = HashManager::createHash(64, false);
+
+        $method = str_replace('\\', '\\\\', $method);
+
+        $qb ->insert('transaction_log', ['transactionId', 'userId', 'methodName'])
+            ->values([$transactionId, $userId, $method])
+            ->execute();
+
+        $sql = $qb->getSQL();
+        
+        return $qb->fetchBool();
     }
 }
 

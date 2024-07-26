@@ -443,28 +443,46 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $report = $app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
+            /** SELECTED REPORT */
             $comment = $fr->comment;
             $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
             $text = 'User ' . $userLink . ' closed this report with comment: ' . $comment;
-
-            $app->reportRepository->updateReport($reportId, ['statusComment' => $text, 'status' => ReportStatus::RESOLVED]);
+            /** END OF SELECTED REPORT */
             
-            
+            /** RELEVANT REPORTS */
             $reportLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '">' . ReportEntityType::toString($report->getEntityType()) . ' report</a>';
             $relevantText = 'User ' . $userLink . ' closed report ' . $reportLink . ' that is relevant to this. Thus this report has been closed as well.';
             
             $relevantReports = $app->reportRepository->getRelevantReports($reportId);
-            $idReleveantReports = [];
+            $idRelevantReports = [];
             foreach($relevantReports as $rr) {
-                $idReleveantReports[] = $rr->getId();
+                $idRelevantReports[] = $rr->getId();
             }
+            /** END OF RELEVANT REPORTS */
             
-            $app->reportRepository->updateRelevantReports($reportId, $report->getEntityType(), $report->getEntityId(), ['statusComment' => $relevantText, 'status' => ReportStatus::RESOLVED]);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Closed report #' . $reportId . '.');
-            
-            if(!empty($idReleveantReports)) {
-                $this->flashMessage('Closed relevant reports: #' . implode(', #', $idReleveantReports));
+                $app->reportRepository->updateReport($reportId, ['statusComment' => $text, 'status' => ReportStatus::RESOLVED]);
+                
+                if(!empty($idReleveantReports)) {
+                    $app->reportRepository->updateRelevantReports($reportId, $report->getEntityType(), $report->getEntityId(), ['statusComment' => $relevantText, 'status' => ReportStatus::RESOLVED]);
+                }
+                
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->flashMessage('Closed report #' . $reportId . '.');
+
+                if(!empty($idRelevantReports)) {
+                    $this->flashMessage('Closed relevant reports: #' . implode(', #', $idRelevantReports));
+                }
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                if(empty($idRelevantReports)) {
+                    $this->flashMessage('Could not close report. Reason: ' . $e->getMessage(), 'error');
+                } else {
+                    $this->flashMessage('Could not close report or any relevant report. Reason: ' . $e->getMessage(), 'error');
+                }
             }
 
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);

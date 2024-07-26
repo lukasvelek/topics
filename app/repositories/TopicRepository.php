@@ -2,12 +2,9 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
-use App\Entities\TopicMemberEntity;
-use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
 

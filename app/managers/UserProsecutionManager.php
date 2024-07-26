@@ -63,7 +63,7 @@ class UserProsecutionManager extends AManager {
             throw new GeneralException('Could not remove ban.');
         }
 
-        $this->commit();
+        $this->commit($byUser->getId(), __METHOD__);
     }
 
     public function warnUser(int $who, int $byWhom, string $reason) {
@@ -135,7 +135,7 @@ class UserProsecutionManager extends AManager {
             throw new GeneralException('Could not create a prosecution.');
         }
 
-        $this->commit();
+        $this->commit($byUser->getId(), __METHOD__);
 
         if($invalidateCache) {
             $cm = new CacheManager($this->userProsecutionRepository->getLogger());
@@ -163,9 +163,9 @@ class UserProsecutionManager extends AManager {
         return true;
     }
 
-    private function commit() {
+    private function commit(int $userId, string $method) {
         try {
-            $this->userRepository->tryCommit();
+            $this->userRepository->tryCommit($userId, $method);
         } catch(AException $e) {
             return false;
         }
