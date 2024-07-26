@@ -6,7 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Entities\CachedPageEntity;
 use App\Entities\UserEntity;
-use App\UI\GridBuilder\AjaxGridHelper;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -47,7 +47,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                 $gb = new GridBuilder();
                 $gb->addDataSource($fileArray);
                 $gb->addColumns(['name' => 'Name']);
-                $gb->addOnColumnRender('name', function(CachedPageEntity $cpe) {
+                $gb->addOnColumnRender('name', function(Cell $cell, CachedPageEntity $cpe) {
                     $name = $cpe->getName();
 
                     if(explode('_', $name) == 2) {
@@ -61,7 +61,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                     return $name;
                 });
                 $gb->addAction(function(CachedPageEntity $cpe) {
-                    return LinkBuilder::createSimpleLink('Delete', $this->link('deletePage', ['name' => $cpe->getName()]), 'post-data-link');
+                    return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePage', ['name' => $cpe->getName()]), 'grid-link');
                 });
                 break;
 
@@ -79,7 +79,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                     $gb->addDataSource($fileArray);
                     $gb->addColumns(['username' => 'Username']);
                     $gb->addAction(function(UserEntity $ue) {
-                        return LinkBuilder::createSimpleLink('Delete', $this->link('deleteUser', ['userId' => $ue->getId()]), 'post-data-link');
+                        return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteUser', ['userId' => $ue->getId()]), 'grid-link');
                     });
                 break;
 
@@ -95,7 +95,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
 
     public function handleList() {
         $arb = new AjaxRequestBuilder();
-        $arb->setURL($this->link('getGrid'))
+        $arb->setURL($this->createURL('getGrid'))
             ->setHeader(['gridPage' => '_page', 'type' => '_type'])
             ->setMethod()
             ->setFunctionName('getGrid')
@@ -149,7 +149,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
 
         $this->flashMessage('Cached page deleted.', 'success');
 
-        $this->redirect($this->link('list'));
+        $this->redirect($this->createURL('list'));
     }
 
     public function handleDeleteUser() {
@@ -175,7 +175,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
 
         $this->flashMessage('Cached user deleted.', 'success');
 
-        $this->redirect($this->link('list'));
+        $this->redirect($this->createURL('list'));
     }
 }
 

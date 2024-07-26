@@ -13,7 +13,7 @@ class AnonymModule extends AModule {
     public function renderModule() {
         global $app;
 
-        $navbar = new Navbar();
+        $navbar = new Navbar($app->notificationManager);
         $navbar->hideSearchBar();
         
         if($app->currentUser == null) {

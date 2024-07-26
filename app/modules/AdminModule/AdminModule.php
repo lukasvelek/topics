@@ -12,7 +12,8 @@ class AdminModule extends AModule {
     }
 
     public function renderModule() {
-        $navbar = new Navbar();
+        global $app;
+        $navbar = new Navbar($app->notificationManager, $app->currentUser->getId());
         $navbar->setCustomLinks(NavbarAdminLinks::toArray());
         $navbar->hideSearchBar();
         $this->template->sys_navbar = $navbar;

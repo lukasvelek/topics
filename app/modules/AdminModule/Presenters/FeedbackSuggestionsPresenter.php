@@ -9,8 +9,10 @@ use App\Entities\UserSuggestionEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
 class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -35,7 +37,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $suggestions = [];
         $suggestionCount = 0;
@@ -68,51 +70,51 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $gb->addDataSource($suggestions);
         $gb->addColumns(['title' => 'Title', 'text' => 'Text', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('text', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('text', function(Cell $cell, UserSuggestionEntity $e) {
             return $e->getShortenedText(100);
         });
-        $gb->addOnColumnRender('category', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('category', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
                 ->text(SuggestionCategory::toString($e->getCategory()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('status', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('status', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
                 ->text(SuggestionStatus::toString($e->getStatus()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $user = $app->userRepository->getUserById($e->getUserId());
 
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $a = HTML::a();
 
             $a->text($e->getTitle())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href($app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
             ;
 
@@ -503,15 +505,23 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['suggestionId' => $suggestionId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderEditForm() {
         $form = $this->loadFromPresenterCache('form');
         $suggestion = $this->loadFromPresenterCache('suggestion');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
         $this->template->suggestion_title = $suggestion->getTitle();
+        $this->template->links = $links;
     }
 
     public function handleUpdateComment() {

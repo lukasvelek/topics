@@ -51,7 +51,8 @@ class DatabaseInstaller {
                 'dateDeleted' => 'DATETIME NULL',
                 'tags' => 'TEXT NOT NULL',
                 'isPrivate' => 'INT(2) NOT NULL DEFAULT 0',
-                'isVisible' => 'INT(2) NOT NULL DEFALT 1'
+                'isVisible' => 'INT(2) NOT NULL DEFAULT 1',
+                'rawTags' => 'TEXT NOT NULL'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -207,6 +208,14 @@ class DatabaseInstaller {
                 'message' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateSeen' => 'DATETIME NULL'
+            ],
+            'post_file_uploads' => [
+                'uploadId' => 'VARCHAR(256)',
+                'postId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'filename' => 'VARCHAR(256) NOT NULL',
+                'filepath' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
@@ -225,6 +234,7 @@ class DatabaseInstaller {
             $sql .= ')';
             
             $this->db->query($sql);
+            $this->logger->sql($sql, __METHOD__, null);
 
             $i++;
         }

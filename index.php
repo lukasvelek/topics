@@ -10,7 +10,7 @@ require_once('app/app_loader.php');
 try {
     $app = new Application();
 } catch(Exception $e) {
-    throw new ApplicationInitializationException($e->getMessage());
+    throw new ApplicationInitializationException($e->getMessage() . '<br>' . $e->getTraceAsString());
 }
 
 if(!isset($_GET['page'])) {

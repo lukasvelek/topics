@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
@@ -57,15 +58,40 @@ abstract class APresenter extends AGUICore {
         $this->moduleName = null;
     }
 
+    public function createURLString(string $action, array $params = []) {
+        $urlParts = $this->createURL($action, $params);
+
+        $tmp = [];
+        foreach($urlParts as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        return '?' . implode('&', $tmp);
+    }
+
+    public function createFullURLString(string $modulePresenter, string $action, array $params = []) {
+        $urlParts = $this->createFullURL($modulePresenter, $action, $params);
+
+        $tmp = [];
+        foreach($urlParts as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        return '?' . implode('&', $tmp);
+    }
+
     /**
-     * Alias of createURL()
+     * Creates a full URL with parameters
      * 
+     * @param string $modulePresenter Module and presenter name
      * @param string $action Action name
      * @param array $params Custom URL params
      * @return array $url
      */
-    public function link(string $action, array $params = []) {
-        return $this->createURL($action, $params);
+    public function createFullURL(string $modulePresenter, string $action, array $params = []) {
+        $url = ['page' => $modulePresenter, 'action' => $action];
+
+        return array_merge($url, $params);
     }
 
     /**
@@ -463,7 +489,11 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $scriptContent JS script content
      */
-    public function addScript(string $scriptContent) {
+    public function addScript(AjaxRequestBuilder|string $scriptContent) {
+        if($scriptContent instanceof AjaxRequestBuilder) {
+            $scriptContent = $scriptContent->build();
+        }
+        
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 

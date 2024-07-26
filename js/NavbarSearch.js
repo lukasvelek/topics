@@ -15,7 +15,7 @@ source.addEventListener('input', inputHandler);
 function doSearch(_userId) {
     if(submittable) {
         const _query = $("#searchQuery").val();
-        location.replace("?page=UserModule:Topics&action=search&q=" + _query);
+        location.replace("?page=UserModule:Search&action=search&q=" + _query);
     } else {
         alert('Search bar must contain minimum of 3 letters.');
     }

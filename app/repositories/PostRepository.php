@@ -240,7 +240,7 @@ class PostRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getPostById(int $postId) {
+    public function getPostById(int $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -380,6 +380,31 @@ class PostRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function getLastCreatedPostInTopicByUserId(int $topicId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return PostEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function bulkGetPostsByIds(array $ids) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where($qb->getColumnInValues('postId', $ids))
+            ->execute();
+        
+        return $this->createPostsArrayFromQb($qb);
     }
 }
 

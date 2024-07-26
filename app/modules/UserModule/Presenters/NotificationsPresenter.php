@@ -40,9 +40,34 @@ class NotificationsPresenter extends AUserPresenter {
             ->disableLoadingAnimation();
 
         $this->addScript($arb->build());
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setAction($this, 'closeAll')
+            ->setMethod()
+            ->setFunctionName('closeAllNotifications')
+            ->addCustomWhenDoneCode('
+                $("#notifications").html(obj.text);
+            ')
+            ->disableLoadingAnimation()
+        ;
+
+        $this->addScript($arb);
+
+        $closeAllLink = LinkBuilder::createJSOnclickLink('Close all', 'closeAllNotifications()', 'post-data-link');
+
+        $links = [
+            $closeAllLink
+        ];
+
+        $this->saveToPresenterCache('links', $links);
     }
 
-    public function renderList() {}
+    public function renderList() {
+        $links = $this->loadFromPresenterCache('links');
+
+        $this->template->links = $links;
+    }
 
     public function actionGetNotificationsList() {
         global $app;
@@ -92,10 +117,22 @@ class NotificationsPresenter extends AUserPresenter {
             $text = '';
         } else {
             $empty = 1;
-            $text = 'No notifications found';
+            $text = '<div style="text-align: center">No notifications found</div>';
         }
 
         $this->ajaxSendResponse(['text' => $text, 'empty' => $empty]);
+    }
+
+    public function actionCloseAll() {
+        global $app;
+
+        $notifications = $app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId());
+
+        foreach($notifications as $notification) {
+            $app->notificationManager->setNotificationAsSeen($notification->getId());
+        }
+
+        $this->ajaxSendResponse(['text' => '<div style="text-align: center">No notifications found</div>']);
     }
 }
 

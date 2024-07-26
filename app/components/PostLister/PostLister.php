@@ -5,7 +5,9 @@ namespace App\Components\PostLister;
 use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
+use App\Managers\FileUploadManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\FileUploadRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
@@ -20,12 +22,16 @@ class PostLister {
     private TopicRepository $topicRepository;
     private PostRepository $postRepository;
     private ?ContentRegulationRepository $crr;
+    private FileUploadRepository $fur;
+    private FileUploadManager $fum;
 
-    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr) {
+    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr, FileUploadRepository $fur, FileUploadManager $fum) {
         $this->userRepository = $userRepository;
         $this->topicRepository = $topicRepository;
         $this->postRepository = $postRepository;
         $this->crr = $crr;
+        $this->fur = $fur;
+        $this->fum = $fum;
 
         $this->posts = [];
         $this->topics = [];
@@ -135,14 +141,54 @@ class PostLister {
     
                     $code = '<div class="row" id="post-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
-    
+                    
+                    $code .= '<div class="row">';
+                    $code .= '<div class="col-md">';
                     $code .= '<p class="post-title">' . (!$this->topicLinkHidden ? $topicLink . ' | ' : '') . $postLink . '</p>';
+                    $code .= '</div>';
+                    $code .= '</div>';
                     $code .= '<hr>';
+
+                    $images = $this->fur->getFilesForPost($post->getId());
+
+                    if(!empty($images)) {
+                        $imageJson = [];
+                        foreach($images as $image) {
+                            $imageJson[] = $this->fum->createPostImageSourceLink($image);
+                        }
+                        $imageJson = json_encode($imageJson);
+
+                        $path = $this->fum->createPostImageSourceLink($images[0]);
+
+                        $imageCode = '<div id="post-' . $post->getId() . '-image-preview-json" style="position: relative; visibility: hidden; width: 0; height: 0">' . $imageJson . '</div><div class="row">';
+
+                        // left button
+                        if(count($images) > 1) {
+                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-left-button"></span></div>';
+                        }
+
+                        // image
+                        $imageCode .= '<div class="col-md"><span id="post-' . $post->getId() . '-image-preview"><a href="#post-' . $post->getId() . '" id="post-' . $post->getId() . '-image-preview-source" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a></span></div>';
+                        
+                        // right button
+                        if(count($images) > 1) {
+                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><a href="#post-' . $post->getId() . '" class="post-image-browser-link" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</a></span></div>';
+                        }
+
+                        $imageCode .= '</div>';
+
+                        $code .= $imageCode;
+                    }
+
+                    $code .= '<div class="row"><div class="col-md">';
     
                     $code .= '<p class="post-text">' . $text . '</p>';
+                    $code .= '</div></div>';
                     $code .= '<hr>';
     
+                    $code .= '<div class="row"><div class="col-md">';
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
+                    $code .= '</div></div>';
                     $code .= '</div></div>';
                     $code .= '<br><br>';
     

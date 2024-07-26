@@ -10,6 +10,7 @@ use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
@@ -91,7 +92,7 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post')
+            ->addSubmit('Post comment')
         ;
 
         $this->saveToPresenterCache('form', $fb);
@@ -157,6 +158,79 @@ class PostsPresenter extends AUserPresenter {
             $this->addExternalScript('js/Reducer.js');
             $this->addScript('reducePostProfile()');
         }
+
+        $imagesCode = [];
+
+        $postImages = $app->fileUploadRepository->getFilesForPost($postId);
+        if(!empty($postImages)) {
+            foreach($postImages as $postImage) {
+                $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
+                $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" class="limited"></a>';
+
+                $imagesCode[] = $imageLink;
+            }
+        }
+
+        $newImageUploadLink = LinkBuilder::createSimpleLink('Upload image', $this->createURL('uploadImageForm', ['postId' => $postId]), 'post-data-link');
+
+        $newImageUploadSection = '<div class="row">
+                <div class="col-md-3"></div>
+
+                <div class="col-md">
+                    ' . $newImageUploadLink . '
+                </div>
+
+                <div class="col-md-3"></div>
+            </div>
+
+            <hr>';
+
+        if(!$app->actionAuthorizator->canUploadFileForPost($app->currentUser->getId(), $post)) {
+            $newImageUploadSection = '';
+        }
+
+        $postImageCode = '';
+        if(!empty($imagesCode)) {
+            $tmp = $imagesCode;
+
+            $imagesCode = '';
+
+            $i = 0;
+            $x = 0;
+            $max = count($tmp);
+            while($i < 5) {
+                if($x == $max) {
+                    break;
+                }
+
+                if($i == 4) {
+                    $i = 0;
+                    $imagesCode .= '<br>';
+                } else {
+                    $i++;
+                }
+
+                $imagesCode .= $tmp[$x];
+
+                $x++;
+            }
+
+            $postImageCode = '
+                ' . $newImageUploadSection . '
+
+                <div class="row">
+                    <div class="col-md-3"></div>
+            
+                    <div class="col-md">' . $imagesCode . '</div>
+            
+                    <div class="col-md-3"></div>
+                </div>
+
+                <hr>
+            ';
+        }
+
+        $this->saveToPresenterCache('postImages', $postImageCode);
     }
 
     public function renderProfile() {
@@ -165,11 +239,65 @@ class PostsPresenter extends AUserPresenter {
         $postData = $this->loadFromPresenterCache('postData');
         $postTitle = $this->loadFromPresenterCache('postTitle');
         $postDescription = $this->loadFromPresenterCache('postDescription');
+        $postImages = $this->loadFromPresenterCache('postImages');
 
         $this->template->post_title = $topicLink . ' | ' . $postTitle;
         $this->template->post_text = $postDescription;
         $this->template->new_comment_form = $form;
         $this->template->post_data = $postData;
+        $this->template->post_images = $postImages;
+    }
+
+    public function handleUploadImageForm() {
+        $postId = $this->httpGet('postId');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $postId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $fb = new FormBuilder();
+        $fb->setAction($this->createURL('uploadImage', ['postId' => $postId]))
+            ->setCanHaveFiles()
+            ->addFileInput('image', 'Image:')
+            ->addSubmit('Upload')
+        ;
+
+        $this->saveToPresenterCache('form', $fb->render());
+    }
+
+    public function renderUploadImageForm() {
+        $links = $this->loadFromPresenterCache('links');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->links = $links;
+        $this->template->form = $form;
+    }
+
+    public function handleUploadImage() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+        $post = $app->postRepository->getPostById($postId);
+
+        $app->topicRepository->beginTransaction();
+
+        try {
+            if(isset($_FILES['image']['name'])) {
+                $app->fileUploadManager->uploadPostImage($app->currentUser->getId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+            } else {
+                throw new FileUploadException('No file selected.');
+            }
+
+            $app->topicRepository->commit();
+            $this->flashMessage('Image uploaded.', 'success');
+        } catch(Exception $e) {
+            $app->topicRepository->rollback();
+            $this->flashMessage('Image could not be uploaded. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('profile', ['postId' => $postId]));
     }
 
     public function actionCreateNewCommentForm() {
@@ -180,7 +308,7 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post')
+            ->addSubmit('Post comment')
         ;
 
         $this->ajaxSendResponse(['form' => $fb->render()]);
@@ -209,7 +337,9 @@ class PostsPresenter extends AUserPresenter {
                 $app->postCommentRepository->likeComment($userId, $commentId);
                 $liked = true;
 
-                $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+                if($app->currentUser->getId() != $comment->getAuthorId()) {
+                    $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+                }
             } else {
                 $app->postCommentRepository->unlikeComment($userId, $commentId);
             }
@@ -385,7 +515,9 @@ class PostsPresenter extends AUserPresenter {
         try {
             $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
 
-            $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            if($post->getAuthorId() != $authorId) {
+                $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            }
 
             $app->postCommentRepository->commit();
 
@@ -434,15 +566,23 @@ class PostsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $postId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportForm() {
         $post = $this->loadFromPresenterCache('post');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->post_title = $post->getTitle();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleReportComment(?FormResponse $fr = null) {
@@ -480,15 +620,23 @@ class PostsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['postId' => $comment->getPostId()]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportComment() {
         $comment = $this->loadFromPresenterCache('comment');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->comment_id = $comment->getId();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDeleteComment(?FormResponse $fr = null) {
@@ -597,7 +745,9 @@ class PostsPresenter extends AUserPresenter {
             $app->postRepository->likePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
-            $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
+            if($app->currentUser->getId() != $post->getAuthorId()) {
+                $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
+            }
 
             $cm = new CacheManager($app->logger);
             $cm->invalidateCache('posts');

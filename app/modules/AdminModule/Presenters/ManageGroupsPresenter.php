@@ -10,6 +10,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Option;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -27,7 +28,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $totalCount = $app->groupRepository->getGroupCount();
         $lastPage = ceil($totalCount / $gridSize);
@@ -37,9 +38,9 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
         $gb->addDataSource($groups);
         $gb->addAction(function(GroupEntity $entity) {
-            return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink('Members', ['page' => 'AdminModule:ManageGroups', 'action' => 'listMembers', 'groupId' => $entity->getId()], 'grid-link');
         });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroups');
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroupGrid');
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
@@ -52,7 +53,6 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ->setFunctionName('getGroupGrid')
             ->setFunctionArguments(['_page'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
@@ -75,7 +75,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $page = $this->httpGet('gridPage');
         $groupId = $this->httpGet('groupId');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $membersCount = $app->groupRepository->getGroupMembersCount($groupId);
         $lastPage = ceil($membersCount / $gridSize);
@@ -89,16 +89,16 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'dateCreated' => 'Member since']);
         $gb->addDataSource($members);
-        $gb->addOnColumnRender('user', function(GroupMembershipEntity $entity) use ($users) {
+        $gb->addOnColumnRender('user', function(Cell $cell, GroupMembershipEntity $entity) use ($users) {
             $user = $users[$entity->getUserId()];
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
-        $gb->addOnColumnRender('dateCreated', function(GroupMembershipEntity $entity) {
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, GroupMembershipEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
         $gb->addAction(function(GroupMembershipEntity $entity) use ($app) {
             if($app->actionAuthorizator->canRemoveMemberFromGroup($app->currentUser->getId()) && $entity->getUserId() != $app->currentUser->getId()) {
-                return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'grid-link');
             } else {
                 return '-';
             }
@@ -128,7 +128,9 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $this->addScript($arb->build());
         $this->addScript('getGroupMembersGrid(0, ' . $groupId . ')');
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link') . "&nbsp;"
+        ];
 
         if($app->actionAuthorizator->canAddMemberToGroup($app->currentUser->getId())) {
             $links[] = LinkBuilder::createSimpleLink('Add member', ['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'groupId' => $groupId], 'post-data-link');
@@ -188,6 +190,12 @@ class ManageGroupsPresenter extends AAdminPresenter {
             ;
 
             $this->addScript($arb->build());
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('listMembers', ['groupId' => $groupId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
@@ -218,8 +226,10 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
     public function renderNewMember() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleRemoveMember(?FormResponse $fr = null) {

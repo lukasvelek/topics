@@ -5,19 +5,24 @@ namespace App\Authorizators;
 use App\Constants\AdministratorGroups;
 use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
+use App\Entities\PostEntity;
+use App\Entities\PostImageFileEntity;
+use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
-use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
+use App\Repositories\PostRepository;
 use App\Repositories\UserRepository;
 
 class ActionAuthorizator extends AAuthorizator {
     private TopicMembershipManager $tpm;
+    private PostRepository $pr;
 
-    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm) {
+    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm, PostRepository $pr) {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
 
         $this->tpm = $tpm;
+        $this->pr = $pr;
     }
 
     public function canChangeUserTopicRole(int $topicId, int $callingUserId, int $userId) {
@@ -122,7 +127,7 @@ class ActionAuthorizator extends AAuthorizator {
     }
 
     public function canCreateTopicPoll(int $userId, int $topicId) {
-        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER)) {
             return false;
         }
 
@@ -155,6 +160,54 @@ class ActionAuthorizator extends AAuthorizator {
 
     public function canManageTopicPrivacy(int $userId, int $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canSeePollAnalytics(int $userId, int $topicId, TopicPollEntity $tpe) {
+        if($tpe->getAuthorId() != $userId) {
+            if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER)/* && (!$this->commonContentManagement($userId))*/) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function canDeactivePoll(int $userId, int $topicId, TopicPollEntity $tpe) {
+        if($tpe->getAuthorId() != $userId) {
+            if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function canSeeAllTopicPolls(int $userId, int $topicId) {
+        if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    public function canDeleteFileUpload(int $userId, PostImageFileEntity $pife) {
+        $post = $this->pr->getPostById($pife->getPostId());
+
+        if($post !== null) {
+            if(!$post->isDeleted()) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    public function canUploadFileForPost(int $userId, PostEntity $post) {
+        if($post->getAuthorId() != $userId) {
             return false;
         }
 

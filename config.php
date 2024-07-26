@@ -9,6 +9,7 @@ $cfg['SQL_SEPARATE_LOGGING'] = 0; // 0 - off, 1 - on
 
 $cfg['LOG_DIR'] = '';
 $cfg['CACHE_DIR'] = '';
+$cfg['UPLOAD_DIR'] = '';
 
 $cfg['ENABLE_CACHING'] = true; // true if caching is enabled or false if not
 

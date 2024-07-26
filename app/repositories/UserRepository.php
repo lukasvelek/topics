@@ -42,6 +42,17 @@ class UserRepository extends ARepository {
         return $qb;
     }
 
+    public function getUserByEmailForAuthentication(string $email) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('email = ?', [$email])
+            ->execute();
+
+        return $qb;
+    }
+
     public function saveLoginHash(int $userId, string $hash) {
         $qb = $this->qb(__METHOD__);
 

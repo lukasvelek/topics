@@ -119,11 +119,12 @@ div[class^="fm-"], div[class*="fm-"] {
 .navbar-link {
     color: white;
     text-decoration: none;
+    transition: color 0.25s;
 }
 
 .navbar-link:hover {
-    color: white;
-    text-decoration: underline;
+    text-decoration: none;
+    color: rgb(200, 200, 200);
 }
 
 #left .navbar-link {
@@ -171,7 +172,7 @@ div[class^="fm-"], div[class*="fm-"] {
     text-align: left;
 }
 
-.post-like, .post-data-link {
+.post-like {
     color: black;
 
     text-decoration: underline;
@@ -179,25 +180,42 @@ div[class^="fm-"], div[class*="fm-"] {
     text-align: left;
 }
 
+.post-data-link, .footer-link {
+    font-size: 16px;
+
+    color: black;
+
+    text-decoration: none;
+
+    transition: color 0.25s;
+}
+
+.post-data-link:hover, .footer-link:hover {
+    text-decoration: none;
+
+    color: rgb(100, 100, 100);
+}
+
 .post-comment-border {
     border-left: 1px solid lightgrey;
 }
 
-.footer-link {
-    color: black;
-}
-
 .topic-title {
     font-size: 16px;
+
     color: black;
+
+    transition: color 0.25s;
 }
 
 .topic-title-link {
     color: black;
+
+    text-decoration: none;
 }
 
 .topic-title-link:hover {
-    color: cadetblue;
+    color: rgb(100, 100, 100);
 }
 
 .system-status-item-title {
@@ -220,6 +238,12 @@ div[class^="fm-"], div[class*="fm-"] {
     text-decoration: none;
 
     margin-left: 10px;
+
+    transition: color 0.25s;
+}
+
+.sidebar-link:hover {
+    color: rgb(100, 100, 100);
 }
 
 .system-status-item-link {
@@ -230,10 +254,76 @@ div[class^="fm-"], div[class*="fm-"] {
 
 #grid table {
     width: 100%;
-
+ 
     text-align: center;
+}
+
+#grid thead tr {
+    border-bottom: 1px solid black;
+}
+
+#grid [class*="grid-row-"] {
+    border-top: 1px solid rgb(220, 220, 220);
+}
+
+#grid [class*="grid-row-"]:nth-child(even) {
+    background-color: rgb(250, 250, 250);
+}
+
+#grid [class*="grid-row-"]:hover {
+    background-color: rgb(240, 240, 240);
+}
+
+.grid-cell-action {
+    background-color: rgba(230, 230, 230, 0.5);
+}
+
+.grid-control-button, .grid-control-button-last {
+    width: 35px;
+
+    border: 1px solid black;
+
+    border-radius: 5px;
+}
+
+.grid-control-button {
+    margin-right: 5px;
 }
 
 .grid-link {
     color: black;
+
+    text-decoration: underline;
+
+    transition: color 0.25s;
+}
+
+.grid-link:hover {
+    color: rgb(100, 100, 100);
+}
+
+.limited {
+    width: 100%;
+    max-width: 800px;
+}
+
+.post-image-browser-link {
+    color: black;
+    text-decoration: none;
+
+    border: 1px solid black;
+    border-radius: 100px;
+
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    padding-top: 1px;
+}
+
+.post-image-browser-link:hover {
+    color: black;
+    
+    text-decoration: none;
+
+    background-color: rgb(220, 220, 220);
 }

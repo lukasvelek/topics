@@ -12,7 +12,7 @@ class LogoutPresenter extends AUserPresenter {
 
         $_SESSION['is_logging_in'] = true;
 
-        $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
+        $this->redirect(['page' => 'AnonymModule:Home']);
     }
 }
 

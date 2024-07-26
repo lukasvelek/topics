@@ -12,6 +12,7 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -171,23 +172,6 @@ class TopicsPresenter extends AUserPresenter {
             ];
         }
 
-        // new post form
-        $fb = new FormBuilder();
-
-        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
-            ->addTextInput('title', 'Title:', null, true)
-            ->addTextArea('text', 'Text:', null, true)
-            ->addSelect('tag', 'Tag:', $postTags, true)
-            ->addSubmit('Post')
-        ;
-
-        $this->saveToPresenterCache('newPostForm', $fb);
-
-        if($topic->isDeleted()) {
-            $this->addExternalScript('js/Reducer.js');
-            $this->addScript('reduceTopicProfile()');
-        }
-
         if(!$app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId())) {
             $this->saveToPresenterCache('newPostForm', 'You cannot create posts.');
         }
@@ -200,6 +184,10 @@ class TopicsPresenter extends AUserPresenter {
 
         if($app->actionAuthorizator->canViewTopicPolls($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
             $links[] = LinkBuilder::createSimpleLink('Poll list', ['page' => 'UserModule:TopicManagement', 'action' => 'listPolls', 'topicId' => $topicId], 'post-data-link');
+        }
+
+        if($app->actionAuthorizator->canCreatePost($app->currentUser->getId(), $topicId) && !$topic->isDeleted()) {
+            array_unshift($links, LinkBuilder::createSimpleLink('Create a post', ['page' => 'UserModule:Topics', 'action' => 'newPostForm', 'topicId' => $topicId], 'post-data-link'));
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;', $links));
@@ -278,14 +266,18 @@ class TopicsPresenter extends AUserPresenter {
 
             $pollEntity = $app->topicPollRepository->getPollById($poll->getId());
         
-            $elapsedTime = new DateTime();
-            $elapsedTime->modify($pollEntity->getTimeElapsedForNextVote());
-            $elapsedTime = $elapsedTime->getResult();
+            $elapsedTime = null;
+            if($pollEntity->getTimeElapsedForNextVote() != '0') {
+                $elapsedTime = new DateTime();
+                $elapsedTime->modify($pollEntity->getTimeElapsedForNextVote());
+                $elapsedTime = $elapsedTime->getResult();
+            }
 
             $myPollChoice = $app->topicPollRepository->getPollChoice($poll->getId(), $app->currentUser->getId(), $elapsedTime);
 
             if($myPollChoice !== null) {
-                $poll->setUserChoice($myPollChoice);
+                $poll->setUserChoice($myPollChoice->getChoice());
+                $poll->setUserChoiceDate($myPollChoice->getDateCreated());
             }
             
             $poll->setCurrentUserId($app->currentUser->getId());
@@ -321,11 +313,40 @@ class TopicsPresenter extends AUserPresenter {
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
             $liked = in_array($post->getId(), $likedArray);
-            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . $app->currentUser->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
             [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
+
+            $imageCode = '';
+
+            $images = $app->fileUploadRepository->getFilesForPost($post->getId());
+
+            if(!empty($images)) {
+                $imageJson = [];
+                foreach($images as $image) {
+                    $imageJson[] = $app->fileUploadManager->createPostImageSourceLink($image);
+                }
+                $imageJson = json_encode($imageJson);
+
+                $path = $app->fileUploadManager->createPostImageSourceLink($images[0]);
+
+                $imageCode = '<div id="post-' . $post->getId() . '-image-preview-json" style="position: relative; visibility: hidden; width: 0; height: 0">' . $imageJson . '</div><div class="row">';
+
+                // left button
+                if(count($images) > 1) {
+                    $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-left-button"></span></div>';
+                }
+
+                // image
+                $imageCode .= '<div class="col-md"><span id="post-' . $post->getId() . '-image-preview"><a href="#post-' . $post->getId() . '" id="post-' . $post->getId() . '-image-preview-source" onclick="openImagePostLister(\'' . $path . '\', ' . $post->getId() . ')"><img src="' . $path . '" class="limited"></a></span></div>';
+
+                // right button
+                if(count($images) > 1) {
+                    $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><a href="#post-' . $post->getId() . '" class="post-image-browser-link" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</a></span></div>';
+                }
+            }
 
             $tmp = '
                 <div class="row" id="post-' . $post->getId() . '">
@@ -341,6 +362,8 @@ class TopicsPresenter extends AUserPresenter {
 
                             <div class="col-md-2"></div>
                         </div>
+
+                        <div class="row">' . $imageCode . '</div>
 
                         <hr>
 
@@ -395,7 +418,6 @@ class TopicsPresenter extends AUserPresenter {
     public function renderProfile() {
         $posts = $this->loadFromPresenterCache('posts');
         $topicData = $this->loadFromPresenterCache('topicData');
-        $fb = $this->loadFromPresenterCache('newPostForm');
         $topicName = $this->loadFromPresenterCache('topicName');
         $topicDescription = $this->loadFromPresenterCache('topicDescription');
         $links = $this->loadFromPresenterCache('links');
@@ -405,9 +427,56 @@ class TopicsPresenter extends AUserPresenter {
         $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
-        $this->template->new_post_form = $fb;
         $this->template->links = $links;
         $this->template->links_hr = $linksHr;
+    }
+
+    public function handleNewPostForm() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+
+        $topic = $app->topicRepository->getTopicById($topicId);
+
+        $this->saveToPresenterCache('topicLink', TopicEntity::createTopicProfileLink($topic, false, 'topic-title-link'));
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+
+        // form
+        $postTags = [];
+        foreach(PostTags::getAll() as $key => $text) {
+            $postTags[] = [
+                'value' => $key,
+                'text' => $text
+            ];
+        }
+
+        $fb = new FormBuilder();
+
+        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
+            ->addTextInput('title', 'Title:', null, true)
+            ->addTextArea('text', 'Text:', null, true)
+            ->addSelect('tag', 'Tag:', $postTags, true)
+            ->addFileInput('image', 'Image:')
+            ->addSubmit('Post')
+            ->setCanHaveFiles()
+        ;
+
+        $this->saveToPresenterCache('form', $fb);
+    }
+
+    public function renderNewPostForm() {
+        $topicLink = $this->loadFromPresenterCache('topicLink');
+        $links = $this->loadFromPresenterCache('links');
+        $form = $this->loadFromPresenterCache('form');
+
+        $this->template->topic_link = $topicLink;
+        $this->template->links = $links;
+        $this->template->form = $form;
     }
 
     public function handleNewPost(?FormResponse $fr = null) {
@@ -419,9 +488,20 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
 
+        $app->topicRepository->beginTransaction();
+
         try {
             $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
-        } catch (AException $e) {
+
+            if(isset($_FILES['image']['name'])) {
+                $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
+            
+                $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+            }
+
+            $app->topicRepository->commit();
+        } catch(Exception $e) {
+            $app->topicRepository->rollback();
             $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }
@@ -490,9 +570,12 @@ class TopicsPresenter extends AUserPresenter {
             $topicId = null;
 
             $tagArray = [];
+            $rawTagsArray = [];
             foreach(explode(',', $tags) as $tag) {
                 $tag = trim($tag);
                 $tag = ucfirst($tag);
+
+                $rawTagsArray[] = $tag;
 
                 [$fg, $bg] = ColorHelper::createColorCombination();
                 $tag = '<span style="color: ' . $fg . '; background-color: ' . $bg . '; border: 1px solid ' . $fg . '; border-radius: 10px; padding: 5px; margin-right: 5px">' . $tag . '</span>';
@@ -501,9 +584,10 @@ class TopicsPresenter extends AUserPresenter {
             }
 
             $tags = serialize($tagArray);
+            $rawTags = implode(',', $rawTagsArray);
 
             try {
-                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate);
+                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate, $rawTags);
                 $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
@@ -628,7 +712,7 @@ class TopicsPresenter extends AUserPresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">You are not following any topics.</p>
+                        <p class="post-text" id="center">You are not following any topics.</p>
                     </div>
                 </div>
             ';
@@ -667,7 +751,7 @@ class TopicsPresenter extends AUserPresenter {
             $code[] = '
                 <div class="row">
                     <div class="col-md">
-                        <p class="post-text">You are following all topics that are available on this platform.</p>
+                        <p class="post-text" id="center">You are following all topics that are available on this platform.</p>
                     </div>
                 </div>
             ';
@@ -721,15 +805,23 @@ class TopicsPresenter extends AUserPresenter {
                 ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderReportForm() {
         $topic = $this->loadFromPresenterCache('topic');
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->topic_title = $topic->getTitle();
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDeleteTopic(?FormResponse $fr = null) {
@@ -801,7 +893,9 @@ class TopicsPresenter extends AUserPresenter {
                 $dateValid = null;
             }
 
-            $timeElapsed = '-' . $timeElapsed;
+            if($timeElapsed != '0') {
+                $timeElapsed = '-' . $timeElapsed;
+            }
 
             $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
 
@@ -817,7 +911,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextArea('choices', 'Poll choices:', null, true)
                 ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
                 ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
-                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours', 'clbl2')
+                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create')
             ;
@@ -839,15 +933,23 @@ class TopicsPresenter extends AUserPresenter {
             $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
 
             $this->saveToPresenterCache('topicLink', $topicLink);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewPollForm() {
         $form = $this->loadFromPresenterCache('form');
         $topicLink = $this->loadFromPresenterCache('topicLink');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
         $this->template->topic_link = $topicLink;
+        $this->template->links = $links;
     }
 
     public function handlePollSubmit() {
@@ -858,9 +960,13 @@ class TopicsPresenter extends AUserPresenter {
         $choice = $this->httpPost('choice');
 
         $poll = $app->topicPollRepository->getPollById($pollId);
-        $elapsedTime = new DateTime();
-        $elapsedTime->modify($poll->getTimeElapsedForNextVote());
-        $elapsedTime = $elapsedTime->getResult();
+        
+        $elapsedTime = null;
+        if($poll->getTimeElapsedForNextVote() != '0') {
+            $elapsedTime = new DateTime();
+            $elapsedTime->modify($poll->getTimeElapsedForNextVote());
+            $elapsedTime = $elapsedTime->getResult();
+        }
 
         if($app->topicPollRepository->getPollChoice($pollId, $app->currentUser->getId(), $elapsedTime) !== null) {
             $this->flashMessage('You have already voted.', 'error');

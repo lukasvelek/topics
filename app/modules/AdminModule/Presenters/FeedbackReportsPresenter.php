@@ -12,6 +12,7 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
@@ -39,7 +40,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $app->getGridSize();
 
         $reports = [];
         $reportCount = 0;
@@ -72,32 +73,32 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $gb->addDataSource($reports);
         $gb->addColumns(['title' => 'Title', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('title', function(ReportEntity $re) {
+        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
             return ReportEntityType::toString($re->getEntityType()) . ' report';
         });
-        $gb->addOnColumnRender('category', function(ReportEntity $re) {
+        $gb->addOnColumnRender('category', function(Cell $cell, ReportEntity $re) {
             $a = HTML::a();
 
             $a->href('#')
                 ->onClick('getReportGrid(0, \'category\', \'' . $re->getCategory() . '\')')
                 ->text(ReportCategory::toString($re->getCategory()))
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('status', function(ReportEntity $re) {
+        $gb->addOnColumnRender('status', function(Cell $cell, ReportEntity $re) {
             $a = HTML::a();
 
             $a->href('#')
                 ->text(ReportStatus::toString($re->getStatus()))
                 ->onClick('getReportGrid(0, \'status\', \'' . $re->getStatus() . '\')')
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(ReportEntity $re) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) use ($app) {
             $user = $app->userRepository->getUserById($re->getUserId());
 
             $a = HTML::a();
@@ -105,13 +106,20 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $a->href('#')
                 ->text($user->getUsername())
                 ->onClick('getReportGrid(0, \'user\', \'' . $user->getId() . '\')')
-                ->class('post-data-link')
+                ->class('grid-link')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(ReportEntity $re) {
-            return '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $re->getId() . '">' . ReportEntityType::toString($re->getEntityType()) . ' report</a>';
+        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
+            $a = HTML::a();
+
+            $a->href($this->createURLString('profile', ['reportId' => $re->getId()]))
+                ->text(ReportEntityType::toString($re->getEntityType()) . ' report')
+                ->class('grid-link')
+            ;
+
+            return $a->render();
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $reportCount, 'getReportGrid', [$filterType, $filterKey]);
 
@@ -198,7 +206,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm;
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/PostUploadImagesFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [
@@ -469,13 +477,21 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             ;
         
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['reportId' => $reportId]), 'post-data-link')
+            ];
+            
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderResolutionForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 

@@ -168,7 +168,7 @@ class TopicMembershipManager extends AManager {
         }
 
         $topic = $this->topicRepository->getTopicById($topicId);
-        $link = TopicEntity::createTopicProfileLink($topic);
+        $link = TopicEntity::createTopicProfileLink($topic, true);
 
         try {
             $this->notificationManager->createNewTopicInviteNotification($userId, $link);

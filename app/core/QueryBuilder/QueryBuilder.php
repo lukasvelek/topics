@@ -4,6 +4,7 @@ namespace QueryBuilder;
 
 use App\Exceptions\AException;
 use App\Exceptions\DatabaseConnectionException;
+use App\Exceptions\DatabaseExecutionException;
 use Exception;
 
 /**
@@ -578,7 +579,7 @@ class QueryBuilder
         } catch(\mysqli_sql_exception $e) {
             $this->logException($e);
             
-            throw new DatabaseConnectionException($e->getMessage());
+            throw new DatabaseExecutionException($e->getMessage(), $this->getSQL(), $e);
         }
 
         $this->currentState = self::STATE_CLEAN;

@@ -189,12 +189,32 @@ class NotificationManager extends AManager {
 
         $id = $this->createNotificationId();
 
-        $topicLink = $this->processURL($id, [$topicLink]);
+        $invitationsLink = LinkBuilder::createSimpleLinkObject('here', ['page' => 'UserModule:TopicInvites', 'action' => 'list'], 'post-data-link');
+
+        [$topicLink, $invitationsLink] = $this->processURL($id, [$topicLink, $invitationsLink]);
         
-        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink]);
+        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink, '$INVITATIONS_LINK$' => $invitationsLink]);
 
         if(self::LOG) {
             $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$TOPIC_LINK$' => $topicLink];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
+    public function createNewTopicRoleChangedNotification(int $userId, LinkBuilder $topicLink, string $oldRole, string $newRole) {
+        $type = Notifications::TOPIC_ROLE_CHANGE;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$topicLink] = $this->processURL($id, [$topicLink]);
+
+        $message = $this->prepareMessage($type, ['$TOPIC_LINK$' => $topicLink, '$OLD_ROLE$' => $oldRole, '$NEW_ROLE$' => $newRole]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$TOPIC_LINK$' => $topicLink, '$OLD_ROLE$' => $oldRole, '$NEW_ROLE$' => $newRole];
             $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
         }
 

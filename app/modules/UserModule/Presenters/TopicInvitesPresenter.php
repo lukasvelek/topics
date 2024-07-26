@@ -8,6 +8,7 @@ use App\Entities\TopicEntity;
 use App\Entities\TopicInviteEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -38,7 +39,7 @@ class TopicInvitesPresenter extends AUserPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $validOnly = true;
 
@@ -54,16 +55,16 @@ class TopicInvitesPresenter extends AUserPresenter {
 
         $gb->addDataSource($invites);
         $gb->addColumns(['topic' => 'Topic', 'dateValid' => 'Valid until']);
-        $gb->addOnColumnRender('topic', function(TopicInviteEntity $tie) use ($topics) {
+        $gb->addOnColumnRender('topic', function(Cell $cell, TopicInviteEntity $tie) use ($topics) {
             if(array_key_exists($tie->getTopicId(), $topics)) {
                 $topic = $topics[$tie->getTopicId()];
 
-                return TopicEntity::createTopicProfileLink($topic);
+                return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'grid-link');
             } else {
                 return '-';
             }
         });
-        $gb->addOnColumnRender('dateValid', function(TopicInviteEntity $tie) {
+        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicInviteEntity $tie) {
             return DateTimeFormatHelper::formatDateToUserFriendly($tie->getDateValid());
         });
         $gb->addAction(function(TopicInviteEntity $tie) {
@@ -71,7 +72,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }
@@ -81,7 +82,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }
@@ -91,7 +92,7 @@ class TopicInvitesPresenter extends AUserPresenter {
             $now = $now->getResult();
 
             if(strtotime($tie->getDateValid()) <= strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'post-data-link');
+                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
             } else {
                 return '-';
             }

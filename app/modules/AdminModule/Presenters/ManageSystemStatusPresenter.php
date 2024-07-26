@@ -7,6 +7,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\SystemStatusEntity;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -35,11 +36,13 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
 
         $gb->addDataSource($statuses);
         $gb->addColumns(['name' => 'Name', 'status' => 'Status', 'description' => 'Description']);
-        $gb->addOnColumnRender('status', function(SystemStatusEntity $sse) {
-            return '<span style="color: ' . SystemStatus::getColorByCode($sse->getStatus()) . '">' . SystemStatus::toString($sse->getStatus()) . '</span>';
+        $gb->addOnColumnRender('status', function(Cell $cell, SystemStatusEntity $sse) {
+            $cell->setTextColor(SystemStatus::getColorByCode($sse->getStatus()));
+            $cell->setValue(SystemStatus::toString($sse->getStatus()));
+            return $cell;
         });
         $gb->addAction(function(SystemStatusEntity $sse) {
-            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'post-data-link');
+            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
         });
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
