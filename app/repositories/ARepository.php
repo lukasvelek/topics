@@ -107,6 +107,8 @@ abstract class ARepository {
 
         $transactionId = HashManager::createHash(64, false);
 
+        $method = str_replace('\\', '\\\\', $method);
+
         $qb ->insert('transaction_log', ['transactionId', 'userId', 'methodName'])
             ->values([$transactionId, $userId, $method])
             ->execute();

@@ -45,6 +45,7 @@ abstract class AAdminPresenter extends APresenter {
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
         $systemCaching = $this->checkPage('AdminModule:ManageSystemCaching');
         $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
+        $transactions = $this->checkPage('AdminModule:ManageTransactions');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
@@ -71,6 +72,9 @@ abstract class AAdminPresenter extends APresenter {
         }
         if($app->sidebarAuthorizator->canManagePostFileUploads($app->currentUser->getId())) {
             $sb->addLink('Post file uploads', ['page' => 'AdminModule:ManagePostFileUploads', 'action' => 'list'], $postFileUploads);
+        }
+        if($app->sidebarAuthorizator->canManageTransactions($app->currentUser->getId())) {
+            $sb->addLink('Transactions', ['page' => 'AdminModule:ManageTransactions', 'action' => 'list'], $transactions);
         }
 
         return $sb->render();

@@ -30,6 +30,7 @@ use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\TransactionLogRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
 
@@ -72,6 +73,7 @@ class Application {
     public TopicInviteRepository $topicInviteRepository;
     public NotificationRepository $notificationRepository;
     public FileUploadRepository $fileUploadRepository;
+    public TransactionLogRepository $transactionLogRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -123,6 +125,7 @@ class Application {
         $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
         $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
         $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
+        $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 

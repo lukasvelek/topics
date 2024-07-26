@@ -120,6 +120,10 @@ class SidebarAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canManageTransactions(int $userId) {
+        return $this->canManageSystemCaching($userId);
+    }
 }
 
 ?>
