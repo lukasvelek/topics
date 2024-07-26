@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
+use App\Entities\TopicMemberEntity;
 use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
@@ -33,39 +34,37 @@ class TopicRepository extends ARepository {
         return $entity;
     }
 
-    public function bulkGetTopicsByIds(array $ids) {
+    public function bulkGetTopicsByIds(array $ids, bool $idAsKey = false) {
         $entities = [];
 
         foreach($ids as $id) {
-            $entities[] = $this->getTopicById($id);
+            if($idAsKey) {
+                $entities[$id] = $this->getTopicById($id);
+            } else {
+                $entities[] = $this->getTopicById($id);
+            }
         }
 
         return $entities;
     }
 
-    public function searchTopics(string $query) {
+    public function composeQueryForTopicsSearch(string $query) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('topics')
             ->where('(title LIKE ?', ['%' . $query . '%'])
             ->orWhere('description LIKE ?)', ['%' . $query . '%'])
-            ->andWhere('(isDeleted = 0)')
-            ->execute();
+            ->andWhere('(isDeleted = 0)');
 
-        $topics = [];
-        while($row = $qb->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
-        }
-
-        return $topics;
+        return $qb;
     }
 
-    public function createNewTopic(string $title, string $description, string $tags) {
+    public function createNewTopic(string $title, string $description, string $tags, bool $isPrivate, string $rawTags) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description', 'tags'])
-            ->values([$title, $description, $tags])
+        $qb ->insert('topics', ['title', 'description', 'tags', 'isPrivate', 'rawTags'])
+            ->values([$title, $description, $tags, $isPrivate, $rawTags])
             ->execute();
 
         return $qb->fetch();
@@ -96,13 +95,13 @@ class TopicRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getTopicCount(bool $deletedOnly = true) {
+    public function getTopicCount(bool $notDeletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(topicId) AS cnt'])
             ->from('topics');
 
-        if($deletedOnly) {
+        if($notDeletedOnly) {
             $qb->where('isDeleted = 0');
         }
 
@@ -134,12 +133,7 @@ class TopicRepository extends ARepository {
             ->from('topics')
             ->where('isDeleted = 1');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -182,6 +176,54 @@ class TopicRepository extends ARepository {
         $qb ->select(['*'])
             ->from('topics')
             ->where($qb->getColumnNotInValues('topicId', $topicIds))
+            ->andWhere('isDeleted = 0')
+            ->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function getPrivateTopics(bool $notDeletedOnly = true) {
+        $qb = $this->composeQueryForTopics();
+
+        if($notDeletedOnly) {
+            $qb->andWhere('isDeleted = 0');
+        }
+
+        $qb->andWhere('isPrivate = 1')
+            ->execute();
+
+        return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function searchTags(string $query, array $topicIdsOnly) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['rawTags'])
+            ->from('topics')
+            ->where('rawTags LIKE ?', ['%' . $query . '%'])
+            ->andWhere($qb->getColumnInValues('topicId', $topicIdsOnly))
+            ->execute();
+
+        $tags = [];
+        while($row = $qb->fetchAssoc()) {
+            $topicTags = explode(',', $row['rawTags']);
+
+            foreach($topicTags as $tt) {
+                if(str_contains($tt, $query)) {
+                    $tags[] = $tt;
+                }
+            }
+        }
+
+        return $tags;
+    }
+
+    public function getTopicsWithTag(string $tag) {
+        $qb = $this->qb(__METHOD__);
+        
+        $qb ->select(['*'])
+            ->from('topics')
+            ->where('rawTags LIKE ?', ['%' . $tag . '%'])
             ->execute();
 
         return $this->createTopicsArrayFromQb($qb);

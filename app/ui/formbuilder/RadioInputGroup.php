@@ -2,12 +2,12 @@
 
 namespace App\UI\FormBuilder;
 
-use App\UI\IRenderable;
-
-class RadioInputGroup implements IRenderable {
+class RadioInputGroup implements IFormRenderable {
     private array $radios;
+    private string $name;
 
-    public function __construct() {
+    public function __construct(string $name) {
+        $this->name = $name;
         $this->radios = [];
     }
 
@@ -25,6 +25,10 @@ class RadioInputGroup implements IRenderable {
         $code .= '</span>';
 
         return $code;
+    }
+
+    public function getName() {
+        return $this->name;
     }
 }
 

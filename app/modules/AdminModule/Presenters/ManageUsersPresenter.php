@@ -11,7 +11,9 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
     public function __construct() {
@@ -34,20 +36,28 @@ class ManageUsersPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $elementsOnPage = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $userCount = $app->userRepository->getUsersCount();
-        $lastPage = ceil($userCount / $elementsOnPage) -1;
-        $users = $app->userRepository->getUsersForGrid($elementsOnPage, ($page * $elementsOnPage));
+        $lastPage = ceil($userCount / $gridSize);
+        $users = $app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
         $gb->addDataSource($users);
-        $gb->addOnColumnRender('isAdmin', function(UserEntity $entity) {
-            return $entity->isAdmin() ? 'Yes' : 'No';
+        $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
+            if($entity->isAdmin()) {
+                $cell->setValue('Yes');
+                $cell->setTextColor('green');
+            } else {
+                $cell->setValue('No');
+                $cell->setTextColor('red');
+            }
+
+            return $cell;
         });
         $gb->addAction(function (UserEntity $user) {
-            return '<a class="grid-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">Profile</a>';
+            return LinkBuilder::createSimpleLink('Profile', ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addAction(function (UserEntity $user) use ($app) {
             if($user->getId() == $app->currentUser->getId()) {
@@ -55,15 +65,14 @@ class ManageUsersPresenter extends AAdminPresenter {
             }
 
             if($user->isAdmin()) {
-                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=unsetAdmin&userId=' . $user->getId() . '">Unset as administrator</a>';
+                return LinkBuilder::createSimpleLink('Unset as administrator', $this->createURL('unsetAdmin', ['userId' => $user->getId()]), 'grid-link');
             } else {
-                return '<a class="grid-link" href="?page=AdminModule:ManageUsers&action=setAdmin&userId=' . $user->getId() . '">Set as administrator</a>';
+                return LinkBuilder::createSimpleLink('Set as administrator', $this->createURL('setAdmin', ['userId' => $user->getId()]), 'grid-link');
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
 
-        $paginator = $gb->createGridControls2('getUsers', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -75,7 +84,6 @@ class ManageUsersPresenter extends AAdminPresenter {
             ->setFunctionName('getUsers')
             ->setFunctionArguments(['_page'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());
@@ -112,7 +120,8 @@ class ManageUsersPresenter extends AAdminPresenter {
             $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
             $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
-            CacheManager::invalidateCache('users');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -154,7 +163,8 @@ class ManageUsersPresenter extends AAdminPresenter {
             $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
             $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
-            CacheManager::invalidateCache('users');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('users');
 
             $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
             $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
@@ -164,7 +174,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Set user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'');
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -196,7 +206,8 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId])
                 ->addTextArea('description', 'Reason:', null, true)
-                ->addSubmit('Warn user \'' . $user->getUsername() .  '\'');
+                ->addSubmit('Warn user \'' . $user->getUsername() .  '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -251,6 +262,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
                 ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;
 
@@ -295,13 +307,21 @@ class ManageUsersPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 

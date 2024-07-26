@@ -37,7 +37,6 @@ class ContentManager extends AManager {
         }
 
         $this->topicRepository->deleteTopic($topicId, $this->isHide());
-        $this->topicRepository->removeAllTopicFollows($topicId);
 
         $this->afterDelete(self::T_TOPIC, $deleteCache);
         $this->afterDelete(self::T_POST, $deleteCache);
@@ -66,18 +65,24 @@ class ContentManager extends AManager {
     }
 
     private function afterDelete(int $type, bool $deleteCache) {
+        $cm = new CacheManager($this->postRepository->getLogger());
+
         if($deleteCache) {
             switch($type) {
                 case self::T_POST:
-                    CacheManager::invalidateCache('posts');
+                    $cm->invalidateCache('posts');
                     break;
                 
                 case self::T_TOPIC:
-                    CacheManager::invalidateCache('topics');
-                    CacheManager::invalidateCache('topicMemberships');
+                    $cm->invalidateCache('topics');
+                    $cm->invalidateCache('topicMemberships');
                     break;
             }
         }
+    }
+
+    public function updateTopic(int $topicId, array $data) {
+        return $this->topicRepository->updateTopic($topicId, $data);
     }
 }
 

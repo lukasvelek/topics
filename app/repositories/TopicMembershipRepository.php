@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicMemberEntity;
 use App\Logger\Logger;
@@ -76,12 +77,7 @@ class TopicMembershipRepository extends ARepository {
             ->from('topic_membership')
             ->where('topicId = ?', [$topicId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
         if($orderByRoleDesc) {
             $qb->orderBy('role', 'DESC');
         }
@@ -133,6 +129,18 @@ class TopicMembershipRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function getTopicOwner(int $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('topic_membership')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('role = ?', [TopicMemberRole::OWNER])
+            ->execute();
+
+        return $qb->fetch('userId');
     }
 }
 

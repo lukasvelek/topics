@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Modules\APresenter;
+
 class AjaxRequestBuilder {
     private ?string $url;
     private array $headerParams;
@@ -47,6 +49,15 @@ class AjaxRequestBuilder {
         return $this;
     }
 
+    public function setAction(APresenter $presenter, string $actionName) {
+        $module = $presenter->moduleName;
+        $presenter = $presenter->getCleanName();
+
+        $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $actionName]);
+
+        return $this;
+    }
+
     public function setURL(array $url) {
         $this->url = $this->composeURLFromArray($url);
 
@@ -85,6 +96,24 @@ class AjaxRequestBuilder {
             $this->elements[] = $htmlElementId;
         }
         $this->addWhenDoneOperation('$(' . $htmlElementId . ').' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
+
+        return $this;
+    }
+
+    public function hideHTMLElementRaw(string $htmlElementId) {
+        $this->addWhenDoneOperation('$(' . $htmlElementId . ').hide();');
+
+        return $this;
+    }
+
+    public function hideHTMLElement(string $htmlElementId) {
+        $this->hideHTMLElementRaw('"#' . $htmlElementId . '"');
+
+        return $this;
+    }
+
+    public function addCustomWhenDoneCode(string $code) {
+        $this->addWhenDoneOperation($code);
 
         return $this;
     }

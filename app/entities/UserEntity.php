@@ -80,8 +80,12 @@ class UserEntity implements ICreatableFromRow {
         return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin']);
     }
 
-    public static function createUserProfileLink(UserEntity $user) {
-        return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+    public static function createUserProfileLink(UserEntity $user, bool $object = false) {
+        if($object) {
+            return LinkBuilder::createSimpleLinkObject($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+        } else {
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+        }
     }
 }
 

@@ -14,7 +14,7 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $count = 5, int $offset = 0, bool $deletedOnly = true) {
+    public function getLatestPostsForTopicId(int $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -25,12 +25,7 @@ class PostRepository extends ARepository {
         if($deletedOnly) {
             $qb->andWhere('isDeleted = 0');
         }   
-        if($count > 0) {
-            $qb->limit($count);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -245,7 +240,7 @@ class PostRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getPostById(int $postId) {
+    public function getPostById(int $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -360,6 +355,56 @@ class PostRepository extends ARepository {
             ->from('posts');
 
         return $qb;
+    }
+
+    public function getPostsForGrid(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getLikeCount(int $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(likeId) AS cnt'])
+            ->from('post_likes')
+            ->where('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetch('cnt');
+    }
+
+    public function getLastCreatedPostInTopicByUserId(int $topicId, int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return PostEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function bulkGetPostsByIds(array $ids) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where($qb->getColumnInValues('postId', $ids))
+            ->execute();
+        
+        return $this->createPostsArrayFromQb($qb);
     }
 }
 

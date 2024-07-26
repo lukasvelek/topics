@@ -42,6 +42,17 @@ class UserRepository extends ARepository {
         return $qb;
     }
 
+    public function getUserByEmailForAuthentication(string $email) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users')
+            ->where('email = ?', [$email])
+            ->execute();
+
+        return $qb;
+    }
+
     public function saveLoginHash(int $userId, string $hash) {
         $qb = $this->qb(__METHOD__);
 
@@ -101,12 +112,7 @@ class UserRepository extends ARepository {
         $qb ->select(['*'])
             ->from('users');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -124,14 +130,18 @@ class UserRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getUsersByIdBulk(array $ids) {
+    public function getUsersByIdBulk(array $ids, bool $idAsKey = false) {
         $users = [];
 
         foreach($ids as $id) {
             $result = $this->getUserById($id);
 
             if($result !== null) {
-                $users[] = $result;
+                if($idAsKey) {
+                    $users[$id] = $result;
+                } else {
+                    $users[] = $result;
+                }
             }
         }
 
@@ -181,7 +191,7 @@ class UserRepository extends ARepository {
             ->values($values)
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     private function createUsersArrayFromQb(QueryBuilder $qb) {

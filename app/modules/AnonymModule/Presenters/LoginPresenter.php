@@ -14,7 +14,7 @@ class LoginPresenter extends APresenter {
 
     public function handleCheckLogin() {
         if(is_null($this->httpSessionGet('userId'))) {
-            $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
+            $this->redirect(['page' => 'AnonymModule:Home']);
         } else {
             $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
         }

@@ -98,7 +98,7 @@ class Logger implements ILoggerCallable {
         $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' ms] ' . $method . '(): ' . $text;
 
         if($this->separateSQLLogging && $this->sqlLogLevel >= 1) {
-            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $text;
+            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $method . '(): ' . $text;
 
             $oldSpecialFilename = $this->specialFilename;
             $this->specialFilename = 'sql_log';

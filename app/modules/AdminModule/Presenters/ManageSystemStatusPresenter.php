@@ -3,8 +3,13 @@
 namespace App\Modules\AdminModule;
 
 use App\Constants\SystemStatus;
+use App\Core\AjaxRequestBuilder;
+use App\Entities\SystemStatusEntity;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 class ManageSystemStatusPresenter extends AAdminPresenter {
     public function __construct() {
@@ -22,44 +27,42 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         }
     }
 
-    public function handleList() {
+    public function actionCreateGrid() {
         global $app;
+
+        $gb = new GridBuilder();
 
         $statuses = $app->systemStatusRepository->getAllStatuses();
 
-        $statusCode = [];
-        foreach($statuses as $status) {
-            $statusText = SystemStatus::toString($status->getStatus());
-            $color = SystemStatus::getColorByCode($status->getStatus());
+        $gb->addDataSource($statuses);
+        $gb->addColumns(['name' => 'Name', 'status' => 'Status', 'description' => 'Description']);
+        $gb->addOnColumnRender('status', function(Cell $cell, SystemStatusEntity $sse) {
+            $cell->setTextColor(SystemStatus::getColorByCode($sse->getStatus()));
+            $cell->setValue(SystemStatus::toString($sse->getStatus()));
+            return $cell;
+        });
+        $gb->addAction(function(SystemStatusEntity $sse) {
+            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
+        });
 
-            $description = '';
-
-            if($status->getDescription() !== null) {
-                $description = '<p style="font-size: 14px">' . $status->getDescription() . '</p>';
-            }
-
-            $statusCode[] = '
-                <div class="row">
-                    <div class="col-md">
-                        <div class="system-status-item">
-                            <span class="system-status-item-title" style="font-size: 20px; margin-right: 10px">' . $status->getName() . '</span>
-                            <span style="font-size: 16px"><span style="color: ' . $color . '; font-size: 23px">&#x25cf;</span> ' . $statusText . '</span>
-                            ' . $description . '
-                            <a class="system-status-item-link" href="?page=AdminModule:ManageSystemStatus&action=form&systemId=' . $status->getId() . '">Update</a>
-                        </div>
-                    </div>
-                </div>
-            ';
-        }
-
-        $this->saveToPresenterCache('statusCode', implode('', $statusCode));
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
-    public function renderList() {
-        $list = $this->loadFromPresenterCache('statusCode');
+    public function handleList() {
+        $arb = new AjaxRequestBuilder();
 
-        $this->template->list = $list;
+        $arb->setURL($this->createURL('createGrid'))
+            ->setMethod()
+            ->setHeader(['gridPage' => '_page'])
+            ->setFunctionName('createGrid')
+            ->setFunctionArguments(['_page'])
+            ->updateHTMLElement('grid-content', 'grid');
+
+        $this->addScript($arb->build());
+        $this->addScript('createGrid(0)');
     }
+
+    public function renderList() {}
 
     public function handleForm(?FormResponse $fr = null) {
         global $app;
@@ -106,13 +109,21 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 }
 

@@ -6,25 +6,23 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
-use App\Modules\APresenter;
 
-class HomePresenter extends APresenter {
+class HomePresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('HomePresenter', 'Home');
+
+        $this->setDefaultAction('dashboard');
     }
 
     public function handleDashboard() {
         global $app;
-
-        /*$followedTopicIds = $app->topicRepository->getFollowedTopicIdsForUser($app->currentUser->getId());
-        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($followedTopicIds);*/
 
         $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
         $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
 
         $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 10);
 
-        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository);
+        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository, $app->fileUploadRepository, $app->fileUploadManager);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);
@@ -80,7 +78,9 @@ class HomePresenter extends APresenter {
             $app->postRepository->unlikePost($userId, $postId);
         }
 
-        CacheManager::invalidateCache('posts');
+        $cm = new CacheManager($app->logger);
+
+        $cm->invalidateCache('posts');
 
         $post = $app->postRepository->getPostById($postId);
 

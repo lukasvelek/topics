@@ -10,6 +10,7 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -34,30 +35,30 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
-        $lastPage = ceil($prosecutionCount / $gridSize) - 1;
+        $lastPage = ceil($prosecutionCount / $gridSize);
         $prosecutions = $app->userProsecutionRepository->getActiveProsecutionsForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'reason' => 'Reason', 'type' => 'Type', 'dateFrom' => 'Date from', 'dateTo' => 'Date to']);
         $gb->addDataSource($prosecutions);
-        $gb->addOnColumnRender('user', function(UserProsecutionEntity $userProsecution) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) use ($app) {
             $user = $app->userRepository->getUserById($userProsecution->getUserId());
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
-        $gb->addOnColumnRender('type', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('type', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             return UserProsecutionType::toString($userProsecution->getType());
         });
-        $gb->addOnColumnRender('dateFrom', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('dateFrom', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getStartDate() !== null) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate());
             } else {
                 return '-';
             }
         });
-        $gb->addOnColumnRender('dateTo', function(UserProsecutionEntity $userProsecution) {
+        $gb->addOnColumnRender('dateTo', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getEndDate() !== null) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate());
             } else {
@@ -67,15 +68,14 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addAction(function(UserProsecutionEntity $userProsecution) {
             if(($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) && 
                 (strtotime($userProsecution->getEndDate()) > time())) {
-                return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'post-data-link');
+                return LinkBuilder::createSimpleLink('Remove ban', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'removeProsecution', 'prosecutionId' => $userProsecution->getId()], 'grid-link');
             } else {
                 return '-';
             }
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
 
-        $paginator = $gb->createGridControls2('getUserProsecutions', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
     
     public function handleList() {
@@ -86,7 +86,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             ->setFunctionArguments(['_page'])
             ->setURL(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'prosecutionGrid'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->setHeader(['gridPage' => '_page']);
 
         $this->addScript($arb->build());
@@ -159,26 +158,25 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
-        $lastPage = ceil($historyEntriesCount / $gridSize) - 1;
+        $lastPage = ceil($historyEntriesCount / $gridSize);
         $historyEntries = $app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $gb->addDataSource($historyEntries);
-        $gb->addOnColumnRender('user', function (UserProsecutionHistoryEntryEntity $entity) use ($app) {
+        $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) use ($app) {
             $user = $app->userRepository->getUserById($entity->getUserId());
-            return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
-        $gb->addOnColumnRender('dateCreated', function(UserProsecutionHistoryEntryEntity $entity) {
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $historyEntriesCount, 'getProsecutionLog');
 
-        $paginator = $gb->createGridControls2('getProsecutionLog', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleLogList() {
@@ -190,7 +188,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             ->setHeader(['gridPage' => '_page'])
             ->setMethod('GET')
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
         ;
 
         $this->addScript($arb->build());

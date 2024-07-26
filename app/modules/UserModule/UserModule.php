@@ -4,7 +4,6 @@ namespace App\Modules\UserModule;
 
 use App\Components\Navbar\Navbar;
 use App\Modules\AModule;
-use App\Modules\TemplateObject;
 
 class UserModule extends AModule {
     public function __construct() {
@@ -12,7 +11,9 @@ class UserModule extends AModule {
     }
 
     public function renderModule() {
-        $navbar = new Navbar();
+        global $app;
+        
+        $navbar = new Navbar($app->notificationManager, $app->currentUser->getId());
         if($this->template !== null) {
             $this->template->sys_navbar = $navbar;
         }

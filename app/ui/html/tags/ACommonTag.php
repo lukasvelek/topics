@@ -61,7 +61,9 @@ abstract class ACommonTag implements IRenderable {
             }
         }
 
-        $tmp[] = 'style="' . $styleAttr . '"';
+        if($styleAttr !== null) {
+            $tmp[] = 'style="' . $styleAttr . '"';
+        }
 
         $code .= ' ' . implode(' ', $tmp) . '>';
         if($this->betweenBracketsContent !== null) {
@@ -79,6 +81,10 @@ abstract class ACommonTag implements IRenderable {
     }
 
     private function convertStyles() {
+        if(empty($this->styleArray)) {
+            return null;
+        }
+
         $tmp = [];
 
         foreach($this->styleArray as $k => $v) {

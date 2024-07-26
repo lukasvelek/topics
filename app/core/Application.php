@@ -8,20 +8,25 @@ use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
 use App\Exceptions\ModuleDoesNotExistException;
-use App\Exceptions\URLParamIsNotDefinedException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\FileUploadManager;
+use App\Managers\NotificationManager;
+use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\FileUploadRepository;
 use App\Repositories\GroupRepository;
+use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
@@ -64,11 +69,17 @@ class Application {
     public TopicMembershipRepository $topicMembershipRepository;
     public SystemServicesRepository $systemServicesRepository;
     public TopicPollRepository $topicPollRepository;
+    public TopicInviteRepository $topicInviteRepository;
+    public NotificationRepository $notificationRepository;
+    public FileUploadRepository $fileUploadRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
     public TopicMembershipManager $topicMembershipManager;
     public ServiceManager $serviceManager;
+    public TopicManager $topicManager;
+    public NotificationManager $notificationManager;
+    public FileUploadManager $fileUploadManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -109,17 +120,24 @@ class Application {
         $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
         $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
         $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
+        $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
+        $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
+        $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
-        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger);
+        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
-
+        
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
-        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
+        $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
+
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager);
+        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator);
 
         $this->isAjaxRequest = false;
 
@@ -187,7 +205,7 @@ class Application {
         header('Location: ' . $url);
         exit;
     }
-
+    
     /**
      * Creates a single line URL from a URL params array
      * 
@@ -253,21 +271,17 @@ class Application {
      * Returns the current module, presenter and action from URL
      */
     private function getCurrentModulePresenterAction() {
-        if(isset($_GET['page'])) {
-            $page = htmlspecialchars($_GET['page']);
+        $page = htmlspecialchars($_GET['page']);
 
-            $pageParts = explode(':', $page);
+        $pageParts = explode(':', $page);
 
-            $this->currentModule = $pageParts[0];
-            $this->currentPresenter = $pageParts[1] . 'Presenter';
-        } else {
-            throw new URLParamIsNotDefinedException('page');
-        }
+        $this->currentModule = $pageParts[0];
+        $this->currentPresenter = $pageParts[1] . 'Presenter';
 
         if(isset($_GET['action'])) {
             $this->currentAction = htmlspecialchars($_GET['action']);
         } else {
-            throw new URLParamIsNotDefinedException('action');
+            $this->currentAction = 'default';
         }
 
         $isAjax = '0';
@@ -277,6 +291,21 @@ class Application {
         }
 
         $this->logger->info('Current URL: [module => ' . $this->currentModule . ', presenter => ' . $this->currentPresenter . ', action => ' . $this->currentAction . ', isAjax => ' . $isAjax . ']', __METHOD__);
+    }
+
+    /**
+     * Returns the grid size from the config file
+     * 
+     * @return int Grid size
+     */
+    public function getGridSize() {
+        $gridSize = $this->cfg['GRID_SIZE'];
+
+        if($gridSize < 1) {
+            $gridSize = 1;
+        }
+
+        return $gridSize;
     }
 }
 

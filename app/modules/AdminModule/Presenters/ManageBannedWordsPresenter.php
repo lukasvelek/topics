@@ -7,6 +7,7 @@ use App\Entities\BannedWordEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -24,28 +25,28 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
 
         $page = $this->httpGet('gridPage');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
-        $lastPage = ceil($app->contentRegulationRepository->getBannedWordsCount() / $gridSize) - 1;
+        $totalCount = $app->contentRegulationRepository->getBannedWordsCount();
+        $lastPage = ceil($totalCount / $gridSize);
 
         $gb = new GridBuilder();
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
         $gb->addDataSource($data);
-        $gb->addOnColumnRender('author', function(BannedWordEntity $bwe) use ($app) {
+        $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) use ($app) {
             $user = $app->userRepository->getUserById($bwe->getAuthorId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
-        $gb->addOnColumnRender('date', function(BannedWordEntity $bwe) {
+        $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
         });
         $gb->addAction(function(BannedWordEntity $bwe) {
-            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'grid-link');
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getBannedWordsGrid');
 
-        $paginator = $gb->createGridControls2('getBannedWordsGrid', $page, $lastPage);
-
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator]);
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 
     public function handleList() {
@@ -54,7 +55,6 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $arb->setMethod('GET')
             ->setURL(['page' => 'AdminModule:ManageBannedWords', 'action' => 'gridList'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->setHeader(['gridPage' => '_page'])
             ->setFunctionName('getBannedWordsGrid')
             ->setFunctionArguments(['_page']);
@@ -95,13 +95,21 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderNewForm() {
         $form = $this->loadFromPresenterCache('form');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
+        $this->template->links = $links;
     }
 
     public function handleDelete() {

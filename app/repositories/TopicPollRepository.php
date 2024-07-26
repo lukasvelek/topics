@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicPollChoiceEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\UI\PollBuilder\PollBuilder;
@@ -65,7 +66,7 @@ class TopicPollRepository extends ARepository {
     public function getPollChoice(int $pollId, int $userId, ?string $dateLimit) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['choice'])
+        $qb ->select(['*'])
             ->from('topic_polls_responses')
             ->where('pollId = ?', [$pollId])
             ->andWhere('userId = ?', [$userId]);
@@ -76,7 +77,7 @@ class TopicPollRepository extends ARepository {
 
         $qb->execute();
 
-        return $qb->fetch('choice');
+        return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
     }
 
     public function getPollRowById(int $pollId) {
@@ -153,12 +154,7 @@ class TopicPollRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('pollId', 'DESC');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -179,6 +175,27 @@ class TopicPollRepository extends ARepository {
             ->execute();
 
         return TopicPollEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getMyPollsForTopicForGrid(int $topicId, int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('pollId', 'DESC');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        $polls = [];
+        while($row = $qb->fetchAssoc()) {
+            $polls[] = TopicPollEntity::createEntityFromDbRow($row);
+        }
+
+        return $polls;
     }
 }
 

@@ -9,8 +9,10 @@ use App\Entities\UserSuggestionEntity;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
 class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function __construct() {
@@ -35,12 +37,10 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
-        $gridSize = $app->cfg['GRID_SIZE'];
+        $gridSize = $gridSize = $app->getGridSize();
 
         $suggestions = [];
         $suggestionCount = 0;
-
-        $filterText = '';
 
         switch($filterType) {
             case 'null':
@@ -51,87 +51,229 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             case 'category':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
-                $filterText = 'Category: <span style="color: ' . SuggestionCategory::getColorByKey($filterKey) . '">' . SuggestionCategory::toString($filterKey) . '</span>';
                 break;
     
             case 'status':
                 $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
-                $filterText = 'Status: <span style="color: ' . SuggestionStatus::getColorByStatus($filterKey) . '">' . SuggestionStatus::toString($filterKey) . '</span>';
                 break;
     
             case 'user':
                 $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
                 $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
-                $filterText = 'User: ' . $app->userRepository->getUserById($filterKey);
                 break;
         }
 
-        $lastPage = ceil($suggestionCount / $gridSize) - 1;
+        $lastPage = ceil($suggestionCount / $gridSize);
 
         $gb = new GridBuilder();
 
         $gb->addDataSource($suggestions);
         $gb->addColumns(['title' => 'Title', 'text' => 'Text', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('text', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('text', function(Cell $cell, UserSuggestionEntity $e) {
             return $e->getShortenedText(100);
         });
-        $gb->addOnColumnRender('category', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('category', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
                 ->text(SuggestionCategory::toString($e->getCategory()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('status', function(UserSuggestionEntity $e) {
+        $gb->addOnColumnRender('status', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
                 ->text(SuggestionStatus::toString($e->getStatus()))
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $user = $app->userRepository->getUserById($e->getUserId());
 
             $a = HTML::a();
 
             $a->onClick('getSuggestionsGrid(0, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href('#')
             ;
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
             $a = HTML::a();
 
             $a->text($e->getTitle())
-                ->class('post-data-link')
+                ->class('grid-link')
                 ->href($app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
             ;
 
             return $a->render();
         });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $suggestionCount, 'getSuggestionsGrid', [$filterType, $filterKey]);
 
-        $paginator = $gb->createGridControls2('getSuggestionsGrid', $page, $lastPage, [$filterType, $filterKey]);
 
         $filterControl = '';
         if($filterType != 'null') {
-            $filterControl = $filterText . '&nbsp;<a class="post-data-link" href="#" onclick="getSuggestionsGrid(0, \'null\', \'null\')">Clear filter</a>';
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                if($k == $filterType) {
+                    $filterCategoriesSelect .= '<option value="' . $k . '" selected>' . $v . '</option>';
+                } else {
+                    $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
+                }
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory">';
+
+            $options = [];
+            switch($filterType) {
+                case 'category':
+                    foreach(SuggestionCategory::getAll() as $k => $v) {
+                        if($filterKey == $k) {
+                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                        }
+                    }
+                    break;
+
+                case 'status':
+                    foreach(SuggestionStatus::getAll() as $k => $v) {
+                        if($filterKey == $k) {
+                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                        }
+                    }
+                    break;
+
+                case 'user':
+                    $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
+                    $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+
+                    foreach($users as $user) {
+                        if($user->getId() == $filterKey) {
+                            $options[] = '<option value="' . $user->getId() . '" selected>'. $user->getUsername() . '</option>';
+                        } else {
+                            $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                        }
+                    }
+
+                    break;
+            }
+
+            $filterSubcategoriesSelect .= implode('', $options);
+
+            $filterSubcategoriesSelect .= '</select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            /** FILTER CLEAR */
+            $filterClear = '<button type="button" id="filter-clear" onclick="handleGridFilterClear()" style="border: 1px solid black">Clear filter</button>';
+            /** END OF FILTER CLEAR */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                    ' . $filterClear . '
+                </div>
+            ';
+
+            $filterControl = $filterForm;
+        } else {
+            /** FILTER CATEGORIES */
+            $filterCategories = [
+                'all' => 'All',
+                'category' => 'Category',
+                'status' => 'Status',
+                'user' => 'User'
+            ];
+            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
+            foreach($filterCategories as $k => $v) {
+                $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
+            }
+            $filterCategoriesSelect .= '</select>';
+            /** END OF FILTER CATEGORIES */
+
+            /** FILTER SUBCATEGORIES */
+            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory"></select>';
+            /** END OF FILTER SUBCATEGORIES */
+
+            /** FILTER SUBMIT */
+            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
+            /** END OF FILTER SUBMIT */
+
+            $filterForm = '
+                <div>
+                    ' . $filterCategoriesSelect . '
+                    ' . $filterSubcategoriesSelect . '
+                    ' . $filterSubmit . '
+                </div>
+            ';
+
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'paginator' => $paginator, 'filterControl' => $filterControl]);
+        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
+    }
+
+    public function actionGetFilterCategorySuboptions() {
+        global $app;
+
+        $category = $this->httpGet('category');
+
+        $options = [];
+        switch($category) {
+            case 'category':
+                foreach(SuggestionCategory::getAll() as $k => $v) {
+                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                }
+                break;
+
+            case 'status':
+                foreach(SuggestionStatus::getAll() as $k => $v) {
+                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
+                }
+                break;
+
+            case 'user':
+                $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
+                $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+
+                foreach($users as $user) {
+                    $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
+                }
+
+                break;
+        }
+
+        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
     }
     
     public function handleList() {
@@ -146,7 +288,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ->setFunctionName('getSuggestionsGrid')
             ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
             ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-paginator', 'paginator')
             ->updateHTMLElement('filter-control', 'filterControl')
         ;
 
@@ -364,15 +505,23 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['suggestionId' => $suggestionId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
         }
     }
 
     public function renderEditForm() {
         $form = $this->loadFromPresenterCache('form');
         $suggestion = $this->loadFromPresenterCache('suggestion');
+        $links = $this->loadFromPresenterCache('links');
 
         $this->template->form = $form;
         $this->template->suggestion_title = $suggestion->getTitle();
+        $this->template->links = $links;
     }
 
     public function handleUpdateComment() {

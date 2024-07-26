@@ -2,7 +2,6 @@
 
 namespace App\Core;
 
-use App\Exceptions\GeneralException;
 use App\Logger\Logger;
 use App\Modules\AModule;
 
@@ -74,6 +73,9 @@ class RenderEngine {
         }
     }
 
+    /**
+     * Loads cached pages from cache
+     */
     private function loadCachedPages() {
         $cm = new CacheManager($this->logger);
         $result = $cm->loadPagesFromCache();
@@ -85,6 +87,9 @@ class RenderEngine {
         }
     }
 
+    /**
+     * Saves page to cache
+     */
     private function cachePage() {
         $cm = new CacheManager($this->logger);
         $cm->savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);

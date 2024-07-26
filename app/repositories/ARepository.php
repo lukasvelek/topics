@@ -81,6 +81,19 @@ abstract class ARepository {
     public function getQb() {
         return $this->qb(__METHOD__);
     }
+
+    public function getLogger() {
+        return $this->logger;
+    }
+
+    protected function applyGridValuesToQb(QueryBuilder &$qb, int $limit, int $offset) {
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+    }
 }
 
 ?>

@@ -2,6 +2,8 @@
 
 namespace App\UI\PollBuilder;
 
+use App\Core\Datetypes\DateTime;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
@@ -16,6 +18,9 @@ class PollBuilder implements IRenderable {
     private int $managerId;
     private ?int $currentUserId;
     private ?int $topicId;
+    private ?string $timeNeededToElapse;
+    private bool $canUserSeeAnalyticsAllTheTime;
+    private ?string $userChoiceDate;
 
     public function __construct() {
         $this->choices = [];
@@ -27,6 +32,17 @@ class PollBuilder implements IRenderable {
         $this->managerId = 1;
         $this->currentUserId = null;
         $this->topicId = null;
+        $this->timeNeededToElapse = null;
+        $this->canUserSeeAnalyticsAllTheTime = false;
+        $this->userChoiceDate = null;
+    }
+
+    public function setUserCanSeeAnalyticsAllTheTime(bool $canUserSeeAnalyticsAllTheTime = true) {
+        $this->canUserSeeAnalyticsAllTheTime = $canUserSeeAnalyticsAllTheTime;
+    }
+
+    public function setTimeNeededToElapse(string $timeNeededToElapse) {
+        $this->timeNeededToElapse = $timeNeededToElapse;
     }
 
     public function setTitle(string $title) {
@@ -71,16 +87,28 @@ class PollBuilder implements IRenderable {
         return $this;
     }
 
+    public function setUserChoiceDate(string $date) {
+        $this->userChoiceDate = $date;
+
+        return $this;
+    }
+
     public function setCurrentUserId(int $userId) {
         $this->currentUserId = $userId;
+
+        return $this;
     }
 
     public function setManagerId(int $managerId) {
         $this->managerId = $managerId;
+
+        return $this;
     }
 
     public function setTopicId(int $topicId) {
         $this->topicId = $topicId;
+
+        return $this;
     }
 
     public function render() {
@@ -88,8 +116,8 @@ class PollBuilder implements IRenderable {
 
         $management = '';
 
-        if($this->currentUserId !== null && $this->currentUserId == $this->managerId) {
-            $analyticsLink = LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
+        if(($this->currentUserId !== null && $this->currentUserId == $this->managerId) || $this->canUserSeeAnalyticsAllTheTime) {
+            $analyticsLink = LinkBuilder::createSimpleLink('Results', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $this->pollId], 'post-data-link');
             $closeVotingLink = LinkBuilder::createSimpleLink('Close voting', ['page' => 'UserModule:Topics', 'action' => 'pollCloseVoting', 'pollId' => $this->pollId, 'topicId' => $this->topicId], 'post-data-link');
 
             $management = '
@@ -125,8 +153,26 @@ class PollBuilder implements IRenderable {
         $fb ->setAction($this->handlerUrl)
             ->setMethod('POST')
             ->addRadios('choice', 'Choose:', $this->choices, $this->userChoice, true)
-            ->addSubmit('Submit', ($this->userChoice !== null))
         ;
+
+        if($this->userChoice !== null) {
+            if($this->timeNeededToElapse !== null && $this->timeNeededToElapse != '0' && $this->userChoiceDate !== null) {
+                $timeNeededToElapse = $this->timeNeededToElapse;
+                $timeNeededToElapse[0] = '+';
+
+                $dt = new DateTime(strtotime($this->userChoiceDate));
+                $dt->modify($timeNeededToElapse);
+                $dt = DateTimeFormatHelper::formatDateToUserFriendly($dt->getResult());
+
+                $fb->addLabel('You have to wait until ' . $dt . ' before another vote.', 'lbl_message1');
+            } else if($this->timeNeededToElapse !== null && $this->timeNeededToElapse == '0') {
+                $fb->addLabel('You can vote only once.', 'lbl_message1');
+            } else {
+                $fb->addLabel('You have to wait before another vote.', 'lbl_message1');
+            }
+        }
+
+        $fb->addSubmit('Submit', ($this->userChoice !== null));
 
         return $fb->render();
     }

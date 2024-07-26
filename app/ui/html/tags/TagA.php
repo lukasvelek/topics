@@ -20,6 +20,11 @@ class TagA extends ACommonTag {
         return $this;
     }
 
+    public function onClick(string $onclickAction) {
+        $this->setCustomElement('onclick', $onclickAction);
+        return $this;
+    }
+
     public function hrefArray(array $array) {
         return $this->href($this->createHrefFromArray($array));
     }

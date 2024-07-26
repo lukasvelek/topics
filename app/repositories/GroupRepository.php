@@ -41,12 +41,7 @@ class GroupRepository extends ARepository {
         $qb ->select(['*'])
             ->from('groups');
 
-        if($limit > 0){
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -76,12 +71,7 @@ class GroupRepository extends ARepository {
             ->from('group_membership')
             ->where('groupId = ?', [$groupId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

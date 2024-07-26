@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
@@ -18,13 +19,15 @@ use App\UI\FormBuilder\FormResponse;
  */
 abstract class APresenter extends AGUICore {
     private array $params;
-    private string $name;
+    public string $name;
     private string $title;
     private ?string $action;
     private array $presenterCache;
     private array $scripts;
     private ?string $ajaxResponse;
     private bool $isStatic;
+    private ?string $defaultAction;
+    public ?string $moduleName;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
@@ -51,8 +54,91 @@ abstract class APresenter extends AGUICore {
         $this->ajaxResponse = null;
         $this->isStatic = false;
         $this->logger = null;
+        $this->defaultAction = null;
+        $this->moduleName = null;
     }
 
+    public function createURLString(string $action, array $params = []) {
+        $urlParts = $this->createURL($action, $params);
+
+        $tmp = [];
+        foreach($urlParts as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        return '?' . implode('&', $tmp);
+    }
+
+    public function createFullURLString(string $modulePresenter, string $action, array $params = []) {
+        $urlParts = $this->createFullURL($modulePresenter, $action, $params);
+
+        $tmp = [];
+        foreach($urlParts as $k => $v) {
+            $tmp[] = $k . '=' . $v;
+        }
+
+        return '?' . implode('&', $tmp);
+    }
+
+    /**
+     * Creates a full URL with parameters
+     * 
+     * @param string $modulePresenter Module and presenter name
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return array $url
+     */
+    public function createFullURL(string $modulePresenter, string $action, array $params = []) {
+        $url = ['page' => $modulePresenter, 'action' => $action];
+
+        return array_merge($url, $params);
+    }
+
+    /**
+     * Returns a URL with parameters saved in the presenter class
+     * 
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return array URL
+     */
+    public function createURL(string $action, array $params = []) {
+        $module = $this->moduleName;
+        $presenter = $this->getCleanName();
+
+        $url = ['page' => $module . ':' . $presenter, 'action' => $action];
+
+        return array_merge($url, $params);
+    }
+
+    /**
+     * Returns cleaned version of the presenter's name
+     * 
+     * Clean means that it does not contain the word "Presenter" at the end
+     * 
+     * @return string Clean name or name itself
+     */
+    public function getCleanName() {
+        if(str_contains($this->name, 'Presenter')) {
+            return substr($this->name, 0, -9);
+        } else {
+            return $this->name;
+        }
+    }
+
+    /**
+     * Sets the default action name
+     * 
+     * @param string $actionName Default action name
+     */
+    public function setDefaultAction(string $actionName) {
+        $this->defaultAction = $actionName;
+    }
+
+    /**
+     * Sets the logger instance to be used for CacheManager
+     * 
+     * @param Logger $logger Logger instance
+     */
     public function setLogger(Logger $logger) {
         $this->logger = $logger;
     }
@@ -191,6 +277,14 @@ abstract class APresenter extends AGUICore {
         $this->params = $params;
     }
 
+    /**
+     * Renders the presenter. It runs operations before the rendering itself, then renders the template and finally performs operations after the rendering.
+     * 
+     * Here are also the macros of the common template filled.
+     * 
+     * @param string $moduleName Name of the current module
+     * @param bool $isAjax True if this request is AJAX or false if not
+     */
     public function render(string $moduleName, bool $isAjax) {
         global $app;
 
@@ -340,9 +434,21 @@ abstract class APresenter extends AGUICore {
 
         if($ok === false) {
             if($isAjax) {
-                throw new ActionDoesNotExistException($actionAction);
+                if($app->cfg['IS_DEV']) {
+                    throw new ActionDoesNotExistException($actionAction);
+                } else {
+                    $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
             } else {
-                throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+                if($this->defaultAction !== null) {
+                    $this->redirect(['page' => $moduleName . ':' . $this->title, 'action' => $this->defaultAction]);
+                }
+
+                if($app->cfg['IS_DEV']) {
+                    throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
+                } else {
+                    $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
             }
         }
 
@@ -372,6 +478,7 @@ abstract class APresenter extends AGUICore {
      * Adds external JS script to the page
      * 
      * @param string $scriptPath Path to the JS script
+     * @param bool True if type should be added or false if not
      */
     protected function addExternalScript(string $scriptPath, bool $hasType = true) {
         $this->scripts[] = '<script ' . ($hasType ? 'type="text/javascript" ' : '') . 'src="' . $scriptPath . '"></script>';
@@ -382,7 +489,11 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $scriptContent JS script content
      */
-    protected function addScript(string $scriptContent) {
+    public function addScript(AjaxRequestBuilder|string $scriptContent) {
+        if($scriptContent instanceof AjaxRequestBuilder) {
+            $scriptContent = $scriptContent->build();
+        }
+        
         $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
     }
 
@@ -438,109 +549,12 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Performs an ajax request
-     * 
-     * @param array $urlParams Parameters of the URL the ajax will call
-     * @param string $method The method name
-     * @param array $headParams The ajax request head parameters
-     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
-     */
-    protected function ajax(array $urlParams, string $method, array $headParams, string $codeWhenDone) {
-        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone));
-    }
-
-    protected function ajaxMethod(string $methodName, array $methodParams, array $urlParams, string $method, array $headParams, string $codeWhenDone) {
-        $this->addScript($this->composeAjaxScript($urlParams, $headParams, $method, $codeWhenDone, $methodName, $methodParams));
-    }
-
-    /**
-     * Creates a JS code that updates element content with given HTML ID. It implicitly performs .html() but if needed (and the page element is passed to the second parameter array) it can perform .append().
-     * 
-     * @param array $pageElementsValuesBinding An array with page elements and the JSON values binding
-     * @param array $appendPageElements An array with page elements that must not be overwritten
-     * @return string JS code
-     */
-    protected function ajaxUpdateElements(array $pageElementsValuesBinding, array $appendPageElements = []) {
-        $tmp = [];
-        foreach($pageElementsValuesBinding as $pageElement => $jsonValue) {
-            $t = '$("#' . $pageElement . '").';
-
-            if(in_array($pageElement, $appendPageElements)) {
-                $t .= 'append';
-            } else {
-                $t .= 'html';
-            }
-
-            $t .= '(obj.' . $jsonValue . ');';
-
-            $tmp[] = $t;
-        }
-
-        return implode(' ', $tmp);
-    }
-
-    /**
      * Sends AJAX response encoded to to JSON
      * 
      * @param array $data The response data.
      */
     protected function ajaxSendResponse(array $data) {
         $this->ajaxResponse = json_encode($data);
-    }
-
-    /**
-     * Creates a AJAX script call
-     * 
-     * @param array $urlParams Parameters of the URL the ajax will call
-     * @param array $headParams The ajax request head parameters
-     * @param string $method The method name
-     * @param string $codeWhenDone The code that is executed after the ajax request is performed.
-     * @return string JS AJAX call code
-     */
-    protected function composeAjaxScript(array $urlParams, array $headParams, string $method, string $codeWhenDone, ?string $methodName = null, array $methodParams = []) {
-        global $app;
-
-        $url = $app->composeURL($urlParams);
-
-        if(!array_key_exists('isAjax', $headParams)) {
-            $headParams['isAjax'] = '1';
-        }
-
-        $params = json_encode($headParams);
-
-        if($methodName !== null) {
-            foreach($methodParams as $mp) {
-                if(str_contains($params, '"$' . $mp . '"')) {
-    
-                    $params = str_replace('"$' . $mp . '"', $mp, $params);
-                }
-            }
-        }
-
-        $code = '';
-
-        if($methodName !== null) {
-            $code = 'function ' . $methodName . '(' . implode(', ', $methodParams) . ') {';
-        }
-
-        if(strtoupper($method) == 'GET') {
-            $code .= '
-                $.get(
-                    "' . $url . '",
-                    ' . $params . '
-                )
-                .done(function ( data ) {
-                    const obj = JSON.parse(data);
-                    ' . $codeWhenDone . '
-                });
-            ';
-        }
-
-        if($methodName !== null) {
-            $code .= '}';
-        }
-
-        return $code;
     }
 
     /**

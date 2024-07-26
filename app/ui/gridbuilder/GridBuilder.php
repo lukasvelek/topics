@@ -2,6 +2,9 @@
 
 namespace App\UI\GridBuilder;
 
+use App\UI\LinkBuilder;
+use Exception;
+
 /**
  * Grid builder is a component used to create data grids or tables.
  * 
@@ -20,8 +23,7 @@ class GridBuilder {
     private array $columns;
     private array $dataSourceArray;
     private array $callbacks;
-
-    private int $tableBorder;
+    private array $rowCallbacks;
     
     private ?string $headerCheckbox;
     private string $emptyDataSourceMessage;
@@ -33,6 +35,8 @@ class GridBuilder {
     private bool $alwaysDrawHeaderCheckbox;
     private bool $displayNoEntriesMessage;
 
+    private array $belowGridElementsCode;
+
     /**
      * Grid builder constructor
      */
@@ -41,8 +45,7 @@ class GridBuilder {
         $this->actions = [];
         $this->dataSourceArray = [];
         $this->callbacks = [];
-
-        $this->tableBorder = 1;
+        $this->rowCallbacks = [];
 
         $this->headerCheckbox = null;
         $this->renderRowCheckbox = null;
@@ -51,6 +54,12 @@ class GridBuilder {
         $this->reverse = false;
         $this->alwaysDrawHeaderCheckbox = false;
         $this->displayNoEntriesMessage = true;
+
+        $this->belowGridElementsCode = [];
+    }
+
+    private function addBelowGridElementCode(string $code) {
+        $this->belowGridElementsCode[] = $code;
     }
 
     /**
@@ -84,13 +93,23 @@ class GridBuilder {
     }
 
     /**
-     * Adds custom table element render
+     * Adds custom table cell value override. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity. The callback can return either the value itself or the modified Cell instance.
      * 
      * @param string $entityVarName Name of the column header
      * @param callable $func Method called when rendering
      */
     public function addOnColumnRender(string $entityVarName, callable $func) {
         $this->callbacks[$entityVarName] = $func;
+    }
+
+    /**
+     * Adds custom table row override. It calls the callback with parameters: Row entity (see App\UI\GridBuilder\Row). The callback must return the modified Row instance.
+     * 
+     * @param string $entityPrimaryKey Primary key of the table entity
+     * @param callable $func Callback method called when rendering
+     */
+    public function addOnRowRender(string $entityPrimaryKey, callable $func) {
+        $this->rowCallbacks[$entityPrimaryKey] = $func;
     }
 
     /**
@@ -143,57 +162,54 @@ class GridBuilder {
     }
 
     /**
-     * Sets custom table border
-     * 
-     * @param int $border Table border
-     */
-    public function setTableBorder(int $border) {
-        $this->tableBorder = $border;
-    }
-
-    /**
      * Method that builds the table and returns its HTML code
      * 
      * @return string HTML table code
      */
     public function build() {
-        $code = '<table border="' . $this->tableBorder . '" id="tablebuilder-table">';
+        $table = new Table();
 
         // title
-        $headerRow = '<tr>';
+        $headerRow = new Row();
+        $headerRow->setHeader();
         if(!is_null($this->headerCheckbox) && (is_callable($this->renderRowCheckbox) || $this->alwaysDrawHeaderCheckbox)) {
-            $headerRow .= '<th>' . $this->headerCheckbox . '</th>';
+            $cell = new Cell();
+            $cell->setValue($this->headerCheckbox);
+            $cell->setHeader();
+            $headerRow->addCell($cell);
         }
         if(!empty($this->actions)) {
-            $headerRow .= '<th';
-
-            if(count($this->actions) > 1) {
-                $headerRow .= ' colspan="' . count($this->actions) . '"';
-            }
-
-            $headerRow .= '>';
-
-            $headerRow .= 'Actions</th>';
+            $cell = new Cell();
+            $cell->setValue('Actions');
+            $cell->setHeader();
+            $cell->setColspan(count($this->actions));
+            $headerRow->addCell($cell);
         }
         foreach($this->columns as $varName => $title) {
-            $headerRow .= '<th>' . $title . '</th>';
+            $cell = new Cell();
+            $cell->setValue($title);
+            $cell->setHeader();
+            $headerRow->addCell($cell);
         }
-        $headerRow .= '</tr>';
-        $code .= $headerRow;
+        $table->addRow($headerRow, true);
         // end of title
 
         // data
         $entityRows = [];
         if(empty($this->dataSourceArray) && (is_null($this->dataSourceCallback) || !is_callable($this->dataSourceCallback))) {
-            $entityRow = '<tr><td';
-
             $colspan = count($this->actions) + count($this->columns);
-
+            
             if(!is_null($this->headerCheckbox)) {
                 $colspan += 1;
             }
-
-            $entityRow .= ' colspan="' . $colspan . '" id="grid-empty-message">' . $this->emptyDataSourceMessage . '</td></tr>';
+            
+            $cell = new Cell();
+            $cell->setValue($this->emptyDataSourceMessage);
+            $cell->setColspan($colspan);
+            $cell->setElementId('grid-empty-message');
+            
+            $entityRow = new Row();
+            $entityRow->addCell($cell);
 
             if($this->displayNoEntriesMessage === TRUE) {
                 $entityRows[] = $entityRow;
@@ -204,49 +220,116 @@ class GridBuilder {
             }
 
             if(empty($this->dataSourceArray) || is_null($this->dataSourceArray)) {
-                $entityRow = '<tr><td';
-
                 $colspan = count($this->actions) + count($this->columns);
-
+            
                 if(!is_null($this->headerCheckbox)) {
                     $colspan += 1;
                 }
+                
+                $cell = new Cell();
+                $cell->setValue($this->emptyDataSourceMessage);
+                $cell->setColspan($colspan);
+                $cell->setElementId('grid-empty-message');
+                
+                $entityRow = new Row();
+                $entityRow->addCell($cell);
 
-                $entityRow .= ' colspan="' . $colspan . '" id="grid-empty-message">' . $this->emptyDataSourceMessage . '</td></tr>';
                 if($this->displayNoEntriesMessage === TRUE) {
                     $entityRows[] = $entityRow;
                 }
             } else {
                 foreach($this->dataSourceArray as $entity) {
-                    $entityRow = '<tr>';
+                    $entityRow = new Row();
     
                     if(!is_null($this->renderRowCheckbox)) {
-                        $entityRow .= '<td>' . call_user_func($this->renderRowCheckbox, $entity) . '</td>';
+                        $cell = new Cell();
+                    
+                        try {
+                            $result = call_user_func($this->renderRowCheckbox, $entity);
+
+                            $cell->setValue($result);
+                        } catch(Exception $e) {
+                            throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                        }
+
+                        $entityRow->addCell($cell);
                     }
         
                     foreach($this->actions as $action) {
-                        $entityRow .= '<td>' . $action($entity) . '</td>';
+                        $cell = new Cell();
+                        $cell->setIsForAction();
+                        
+                        try {
+                            $result = $action($entity);
+
+                            $cell->setValue($result);
+                        } catch(Exception $e) {
+                            throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                        }
+
+                        $entityRow->addCell($cell);
                     }
-        
+
                     foreach($this->columns as $varName => $title) {
                         $objectVarName = ucfirst($varName);
-        
-                        if(method_exists($entity, 'get' . $objectVarName)) {
-                            if(array_key_exists($varName, $this->callbacks)) {
-                                $entityRow .= '<td>' . $this->callbacks[$varName]($entity) . '</td>';
-                            } else {
-                                $entityRow .= '<td>' . ($entity->{'get' . $objectVarName}() ?? '-') . '</td>';
-                            }
-                        } else {
-                            if(array_key_exists($varName, $this->callbacks)) {
-                                $entityRow .= '<td>' . $this->callbacks[$varName]($entity) . '</td>';
-                            } else {
-                                $entityRow .= '<td style="background-color: red">' . $varName . '</td>';
+
+                        $cell = new Cell();
+
+                        if(!$entityRow->hasPrimaryKey()) {
+                            if(method_exists($entity, 'getId')) {
+                                $entityRow->setPrimaryKey($entity->getId());
+                                
+                                if(!empty($this->rowCallbacks) && array_key_exists($entity->getId(), $this->rowCallbacks)) {
+                                    try {
+                                        $entityRow = $this->rowCallbacks[$entity->getId()]($entityRow);
+                                    } catch(Exception $e) {
+                                        throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                    }
+                                }
+                            } else if(isset($entity->id)) {
+                                $entityRow->setPrimaryKey($entity->id);
+
+                                if(!empty($this->rowCallbacks) && array_key_exists($entity->id, $this->rowCallbacks)) {
+                                    try {
+                                        $entityRow = $this->rowCallbacks[$entity->id]($entityRow);
+                                    } catch(Exception $e) {
+                                        throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                    }
+                                }
                             }
                         }
+
+                        if(array_key_exists($varName, $this->callbacks)) {
+                            try {
+                                $result = $this->callbacks[$varName]($cell, $entity);
+
+                                if($result instanceof Cell) {
+                                    $cell = $result;
+                                } else {
+                                    $cell->setValue($result);
+                                }
+                            } catch(Exception $e) {
+                                throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                            }
+                        } else {
+                            if(method_exists($entity, 'get' . $objectVarName)) {
+                                try {
+                                    $result = $entity->{'get' . $objectVarName}();
+
+                                    $cell->setValue($result);
+                                } catch(Exception $e) {
+                                    throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                                }
+                            } else if(isset($entity->$varName)) {
+                                $cell->setValue($entity->$varName);
+                            } else {
+                                $cell->setStyle('background-color: red');
+                            }
+                        }
+    
+                        $entityRow->addCell($cell);
                     }
         
-                    $entityRow .= '</tr>';
                     $entityRows[] = $entityRow;
                 }
             }
@@ -262,12 +345,16 @@ class GridBuilder {
             $entityRows = $tmp;
         }
 
-        foreach($entityRows as $entityRow) {
-            $code .= $entityRow;
-        }
+        $table->bulkAddRows($entityRows);
         // end of data
 
-        $code .= '</table>';
+        $code = $table->render();
+
+        if(!empty($this->belowGridElementsCode)) {
+            foreach($this->belowGridElementsCode as $bgec) {
+                $code .= $bgec;
+            }
+        }
 
         return $code;
     }
@@ -282,63 +369,7 @@ class GridBuilder {
      * @param int $userId User ID
      * @return string HTML code
      */
-    public function createGridControls(string $jsHandlerName, int $page, int $lastPage, int $userId) {
-        $firstButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if($page == 0) {
-            $firstButton .= '0, ' . $userId . ')" disabled>';
-        } else {
-            $firstButton .= '0, ' . $userId . ')">';
-        }
-
-        $firstButton .= '&lt;&lt;</button>';
-
-        $previousButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if($page == 0) {
-            $previousButton .= '0, ' . $userId . ')" disabled>';
-        } else {
-            $previousButton .= ($page - 1) . ', ' . $userId . ')">';
-        }
-
-        $previousButton .= '&lt;</button>';
-
-        $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if(($page + 1) >= $lastPage) {
-            $nextButton .= $lastPage . ', ' . $userId . ')" disabled>';
-        } else {
-            $nextButton .= ($page + 1) . ', ' . $userId . ')">';
-        }
-
-        $nextButton .= '&gt;</button>';
-
-        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
-
-        if(($page + 1) >= $lastPage) {
-            $lastButton .= $lastPage . ', ' . $userId . ')" disabled>';
-        } else {
-            $lastButton .= $lastPage . ', ' . $userId . ')">';
-        }
-
-        $lastButton .= '&gt;&gt;</button>';
-        
-        $code = $firstButton . $previousButton . $nextButton . $lastButton;
-
-        return $code;
-    }
-
-    /**
-     * Method that creates grid paging controls. It displays all the buttons but only those that are available are not disabled. When a button is clicked a JS function (provided in the first parameter - $jsHandlerName) is called.
-     * The parameters of the JS handler function are the page and the calling user ID (provided in method's last parameter - $userId).
-     * 
-     * @param string $jsHandlerName JS handler function
-     * @param int $page Current page
-     * @param int $lastPage Last page
-     * @param int $userId User ID
-     * @return string HTML code
-     */
-    public function createGridControls2(string $jsHandlerName, int $page, int $lastPage, array $otherArguments = []) {
+    private function createGridControls(string $jsHandlerName, int $page, int $lastPage, array $otherArguments = []) {
         if(!empty($otherArguments)) {
             $tmp = [];
 
@@ -378,19 +409,19 @@ class GridBuilder {
         $nextButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
 
         if(($page + 1) >= $lastPage) {
-            $nextButton .= $lastPage . $otherArguments . ')" disabled>';
+            $nextButton .= ($lastPage - 1) . $otherArguments . ')" disabled>';
         } else {
             $nextButton .= ($page + 1) . $otherArguments . ')">';
         }
 
         $nextButton .= '&gt;</button>';
 
-        $lastButton = '<button type="button" class="grid-control-button" onclick="' . $jsHandlerName . '(';
+        $lastButton = '<button type="button" class="grid-control-button-last" onclick="' . $jsHandlerName . '(';
 
         if(($page + 1) >= $lastPage) {
-            $lastButton .= $lastPage . $otherArguments . ')" disabled>';
+            $lastButton .= ($lastPage - 1) . $otherArguments . ')" disabled>';
         } else {
-            $lastButton .= $lastPage . $otherArguments . ')">';
+            $lastButton .= ($lastPage - 1) . $otherArguments . ')">';
         }
 
         $lastButton .= '&gt;&gt;</button>';
@@ -398,6 +429,37 @@ class GridBuilder {
         $code = $firstButton . $previousButton . $nextButton . $lastButton;
 
         return $code;
+    }
+
+    private function addGridPagingInfo(int $page, int $lastPage, int $limit, int $totalCount) {
+        $offset = ($limit * $page) + 1;
+        
+        if($lastPage < 1) {
+            $lastPage = 1;
+        }
+        
+        if($totalCount < $offset) {
+            $offset = $totalCount;
+        }
+        
+        $code = '<p class="post-data">Page ' . ($page + 1) . ' of ' . $lastPage . ' (' . $offset . ' - ' . $totalCount . ')</p>';
+
+        return $code;
+    }
+
+    private function addGridRefresh(string $jsHandlerName, array $otherArguments = []) {
+        $args = array_merge([0], $otherArguments);
+        $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh</a>';
+        return $code;
+    }
+
+    public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
+        $code = '<div class="row">';
+        $code .= '<div class="col-md"><div class="row"><div class="col-md-4">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div></div></div>';
+        $code .= '<div class="col-md" id="right">' . $this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
+        $code .= '</div>';
+
+        $this->addBelowGridElementCode($code);
     }
 }
 

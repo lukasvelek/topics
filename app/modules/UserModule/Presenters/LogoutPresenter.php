@@ -2,9 +2,7 @@
 
 namespace App\Modules\UserModule;
 
-use App\Modules\APresenter;
-
-class LogoutPresenter extends APresenter {
+class LogoutPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('LogoutPresenter', 'Logout');
     }
@@ -14,7 +12,7 @@ class LogoutPresenter extends APresenter {
 
         $_SESSION['is_logging_in'] = true;
 
-        $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'loginForm']);
+        $this->redirect(['page' => 'AnonymModule:Home']);
     }
 }
 

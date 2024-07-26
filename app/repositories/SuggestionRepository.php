@@ -68,12 +68,7 @@ class SuggestionRepository extends ARepository {
             ->from('user_suggestions')
             ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]));
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -93,12 +88,7 @@ class SuggestionRepository extends ARepository {
             ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]))
             ->andWhere('category = ?', [$category]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -117,12 +107,7 @@ class SuggestionRepository extends ARepository {
             ->from('user_suggestions')
             ->where('status = ?', [$status]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -141,12 +126,7 @@ class SuggestionRepository extends ARepository {
             ->from('user_suggestions')
             ->where('userId = ?', [$userId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -177,12 +157,7 @@ class SuggestionRepository extends ARepository {
             ->where('suggestionId = ?', [$id])
             ->orderBy('dateCreated', 'DESC');
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -294,6 +269,24 @@ class SuggestionRepository extends ARepository {
         }
 
         return $suggestions;
+    }
+
+    public function getUsersInSuggestions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::PLANNED, SuggestionStatus::MORE_INFORMATION_NEEDED]))
+            ->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['userId'], $users)) {
+                $users[] = $row['userId'];
+            }
+        }
+
+        return $users;
     }
 }
 

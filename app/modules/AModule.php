@@ -37,6 +37,11 @@ abstract class AModule extends AGUICore {
         $this->logger = null;
     }
 
+    /**
+     * Sets the logger instance
+     * 
+     * @param Logger $logger Logger instance
+     */
     public function setLogger(Logger $logger) {
         $this->logger = $logger;
     }

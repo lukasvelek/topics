@@ -6,6 +6,12 @@ use App\Components\Sidebar\Sidebar;
 use App\Modules\APresenter;
 
 abstract class AAdminPresenter extends APresenter {
+    protected function __construct(string $name, string $title) {
+        parent::__construct($name, $title);
+
+        $this->moduleName = 'AdminModule';
+    }
+
     protected function createFeedbackSidebar() {
         global $app;
 
@@ -37,6 +43,8 @@ abstract class AAdminPresenter extends APresenter {
         $deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
+        $systemCaching = $this->checkPage('AdminModule:ManageSystemCaching');
+        $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
 
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
@@ -57,6 +65,12 @@ abstract class AAdminPresenter extends APresenter {
         }
         if($app->sidebarAuthorizator->canManageBannedWords($app->currentUser->getId())) {
             $sb->addLink('Banned words', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'list'], $bannedWords);
+        }
+        if($app->sidebarAuthorizator->canManageSystemCaching($app->currentUser->getId())) {
+            $sb->addLink('System caching', ['page' => 'AdminModule:ManageSystemCaching', 'action' => 'list'], $systemCaching);
+        }
+        if($app->sidebarAuthorizator->canManagePostFileUploads($app->currentUser->getId())) {
+            $sb->addLink('Post file uploads', ['page' => 'AdminModule:ManagePostFileUploads', 'action' => 'list'], $postFileUploads);
         }
 
         return $sb->render();

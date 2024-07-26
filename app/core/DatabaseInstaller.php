@@ -49,7 +49,10 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
-                'tags' => 'TEXT NOT NULL'
+                'tags' => 'TEXT NOT NULL',
+                'isPrivate' => 'INT(2) NOT NULL DEFAULT 0',
+                'isVisible' => 'INT(2) NOT NULL DEFAULT 1',
+                'rawTags' => 'TEXT NOT NULL'
             ],
             'posts' => [
                 'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -179,7 +182,7 @@ class DatabaseInstaller {
                 'authorId' => 'INT(32) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
-                'choices' => 'VARCHAR(256) NOT NULL',
+                'choices' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NULL',
                 'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
@@ -189,6 +192,29 @@ class DatabaseInstaller {
                 'pollId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'choice' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_invites' => [
+                'topicId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateValid' => 'DATETIME NOT NULL'
+            ],
+            'notifications' => [
+                'notificationId' => 'VARCHAR(256)',
+                'userId' => 'INT(32) NOT NULL',
+                'type' => 'INT(4) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateSeen' => 'DATETIME NULL'
+            ],
+            'post_file_uploads' => [
+                'uploadId' => 'VARCHAR(256)',
+                'postId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'filename' => 'VARCHAR(256) NOT NULL',
+                'filepath' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
@@ -208,6 +234,7 @@ class DatabaseInstaller {
             $sql .= ')';
             
             $this->db->query($sql);
+            $this->logger->sql($sql, __METHOD__, null);
 
             $i++;
         }
@@ -411,7 +438,9 @@ class DatabaseInstaller {
         $this->logger->info('Adding system services.', __METHOD__);
 
         $services = [
-            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php'
+            'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
+            'PostLikeEqualizer' => 'PostLikeEqualizer.php',
+            'OldNotificationRemoving' => 'OldNotificationRemoving.php'
         ];
 
         foreach($services as $title => $path) {

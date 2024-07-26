@@ -111,6 +111,22 @@ class UserAuthenticator {
             return false;
         }
     }
+
+    public function checkUser(string $username) {
+        if($this->userRepository->getUserForAuthentication($username)->fetch() !== null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function checkUserByEmail(string $email) {
+        if($this->userRepository->getUserByEmailForAuthentication($email)->fetch() !== null) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

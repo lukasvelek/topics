@@ -47,12 +47,7 @@ class ReportRepository extends ARepository {
             ->from('reports')
             ->where('status = ?', [ReportStatus::OPEN]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -72,12 +67,7 @@ class ReportRepository extends ARepository {
             ->where('status = ?', [ReportStatus::OPEN])
             ->andWhere('userId = ?', [$userId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -97,12 +87,7 @@ class ReportRepository extends ARepository {
             ->where('status = ?', [ReportStatus::OPEN])
             ->andWhere('category = ?', [$category]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -121,12 +106,7 @@ class ReportRepository extends ARepository {
             ->from('reports')
             ->where('status = ?', [$status]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -245,6 +225,24 @@ class ReportRepository extends ARepository {
         $qb->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function getUsersInReports() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['userId'])
+            ->from('reports')
+            ->where('status = 1')
+            ->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            if(!in_array($row['userId'], $users)) {
+                $users[] = $row['userId'];
+            }
+        }
+
+        return $users;
     }
 }
 
