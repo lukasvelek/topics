@@ -29,17 +29,27 @@ class UsersPresenter extends AUserPresenter {
         $reportLink = '<a class="post-data-link" href="?page=UserModule:Users&action=reportUser&userId=' . $userId . '">Report</a>';
 
         $this->saveToPresenterCache('reportLink', $reportLink);
+
+        /** ACTION HISTORY */
+        $actionHistory = null;
+        $app->logger->stopwatch(function() use (&$actionHistory, $app) {
+            $actionHistory = $app->contentManager->getUserActionHistory($app->currentUser->getId(), 10);
+        }, 'App\\Managers\\ContentManager::getUserActionHistory');
+
+        $this->saveToPresenterCache('actionHistory', $actionHistory);
     }
 
     public function renderProfile() {
         $user = $this->loadFromPresenterCache('user');
         $postCount = $this->loadFromPresenterCache('postCount');
         $reportLink = $this->loadFromPresenterCache('reportLink');
+        $actionHistory = $this->loadFromPresenterCache('actionHistory');
 
         $this->template->username = $user->getUsername();
         $this->template->post_count = $postCount;
         $this->template->first_login_date = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated());
         $this->template->report_link = $reportLink;
+        $this->template->action_history = $actionHistory;
     }
 
     public function handleReportUser(?FormResponse $fr = null) {

@@ -406,6 +406,24 @@ class PostRepository extends ARepository {
         
         return $this->createPostsArrayFromQb($qb);
     }
+
+    public function getPostsCreatedByUser(int $userId, string $maxDate) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('authorId = ?', [$userId])
+            ->andWhere('dateCreated >= ?', [$maxDate])
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $posts = [];
+        while($row = $qb->fetchAssoc()) {
+            $posts[] = PostEntity::createEntityFromDbRow($row);
+        }
+
+        return $posts;
+    }
 }
 
 ?>

@@ -25,16 +25,16 @@ try {
     if($app->getIsDev()) {
         echo($e->getExceptionHTML());
     } else {
-        if($_GET['page'] != 'ErrorModule:E500Presenter') {
-            $app->redirect(['page' => 'ErrorModule:E500Presenter']);
+        if($_GET['page'] != 'ErrorModule:E500') {
+            $app->redirect(['page' => 'ErrorModule:E500']);
         }
     }
 } catch(Exception $e) {
     if($app->getIsDev()) {
         echo($e->__toString());
     } else {
-        if($_GET['page'] != 'ErrorModule:E500Presenter') {
-            $app->redirect(['page' => 'ErrorModule:E500Presenter']);
+        if($_GET['page'] != 'ErrorModule:E500') {
+            $app->redirect(['page' => 'ErrorModule:E500']);
         }
     }
 }

@@ -315,6 +315,26 @@ class PostCommentRepository extends ARepository {
 
         return $comments;
     }
+
+    public function getCommentsForUser(int $userId, string $maxDate) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('authorId = ?', [$userId])
+            ->andWhere('dateCreated >= ?', [$maxDate])
+            ->execute();
+
+        $comments = [];
+        while($row = $qb->fetchAssoc()) {
+            if($row === null) {
+                continue;
+            }
+            $comments[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $comments;
+    }
 }
 
 ?>

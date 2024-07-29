@@ -142,6 +142,23 @@ class TopicMembershipRepository extends ARepository {
 
         return $qb->fetch('userId');
     }
+
+    public function getTopicIdsForOwner(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['topicId'])
+            ->from('topic_membership')
+            ->where('userId = ?', [$userId])
+            ->andWhere('role = ?', [TopicMemberRole::OWNER])
+            ->execute();
+
+        $topicIds = [];
+        while($row = $qb->fetchAssoc()) {
+            $topicIds[] = $row['topicId'];
+        }
+
+        return $topicIds;
+    }
 }
 
 ?>

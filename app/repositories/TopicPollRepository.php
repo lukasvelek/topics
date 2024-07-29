@@ -197,6 +197,51 @@ class TopicPollRepository extends ARepository {
 
         return $polls;
     }
+
+    public function getPollCreatedByUserOrderedByDateDesc(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('authorId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $polls = [];
+        while($row = $qb->fetchAssoc()) {
+            $polls[] = TopicPollEntity::createEntityFromDbRow($row);            
+        }
+    
+        return $polls;
+    }
+
+    public function getPollResponsesForUserOrderedByDateDesc(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls_responses')
+            ->where('userId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $choices = [];
+        while($row = $qb->fetchAssoc()) {
+            $choices[] = TopicPollChoiceEntity::createEntityFromDbRow($row);
+        }
+
+        return $choices;
+    }
+
+    public function getPollResponseById(int $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls_responses')
+            ->where('responseId = ?', [$id])
+            ->execute();
+
+        return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
