@@ -313,11 +313,6 @@ div[class^="fm-"], div[class*="fm-"] {
 
     border: 1px solid black;
     border-radius: 100px;
-
-    padding-left: 5px;
-    padding-right: 5px;
-    padding-bottom: 5px;
-    padding-top: 1px;
 }
 
 .post-image-browser-link:hover {
