@@ -398,10 +398,16 @@ class PostsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $commentCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
+            //$loadMoreLink = '<br><a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
+            $loadMoreLink = '<br><button type="button" id="formSubmit" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</button>';
         }
 
-        $this->ajaxSendResponse(['comments' => implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
+        $c = '';
+        if($offset > 0) {
+            $c = '<br>';
+        }
+
+        $this->ajaxSendResponse(['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
     private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {

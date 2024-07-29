@@ -31,8 +31,8 @@ class NotificationsPresenter extends AUserPresenter {
             ->setHeader(['notificationId' => '_notificationId'])
             ->setFunctionName('closeNotification')
             ->setFunctionArguments(['_notificationId'])
-            ->hideHTMLElementRaw('"#notification-" + _notificationId')
-            ->hideHTMLElementRaw('"#notification-" + _notificationId + "-hr"')
+            ->hideHTMLElementRaw('"#notification-id-" + _notificationId')
+            ->hideHTMLElementRaw('"#notification-id-" + _notificationId + "-br"')
             ->addCustomWhenDoneCode('
                 if(obj.empty == "1") {
                     $("#notifications").html(obj.text);
@@ -80,7 +80,7 @@ class NotificationsPresenter extends AUserPresenter {
             $closeLink = '<a class="post-data-link" href="#" onclick="closeNotification(\'' . $notification->getId() . '\')">x</a>';
 
             $code = '
-            <div class="row" id="notification-' . $notification->getId() . '">
+            <div class="row" id="notification-id-' . $notification->getId() . '">
                 <div class="col-md" id="notification-' . $notification->getId() . '-data">
                     <p class="post-text">' . $notification->getTitle() . '</p>
                     <p class="post-data">' . $notification->getMessage() . '</p>
@@ -90,7 +90,7 @@ class NotificationsPresenter extends AUserPresenter {
                     ' . $closeLink . '
                 </div>
             </div>
-            <hr id="notification-' . $notification->getId() . '-hr">
+            <br id="notification-' . $notification->getId() . '-br">
             ';
 
             $listCode .= $code;

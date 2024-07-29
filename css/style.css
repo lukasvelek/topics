@@ -105,17 +105,24 @@ div[class^="fm-"], div[class*="fm-"] {
 }
 
 #navbar {
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
-
-    font-size: 20px;
 
     padding: 10px;
     padding-left: 20px;
     padding-right: 20px;
 
-    height: 60px;
+    border: 0;
+    border-radius: 10px;
+
+    backdrop-filter: blur(5px);
+
+    position: fixed;
+    right: 1%;
+    top: 1%;
+
+    width: 98%;
 }
 
 .navbar-link {
@@ -259,25 +266,27 @@ div[class^="fm-"], div[class*="fm-"] {
 
     text-align: center;
 
-    background-color: rgb(230, 230, 230);
-
-    border: 1px solid rgb(200, 200, 200);
-    
-    border-radius: 5px;
-
+    border: 0;
     border-collapse: inherit;
+    border-radius: 10px;
+
+    background-color: rgba(255, 255, 255, 0.75);
 }
 
-#grid thead {
-    background-color: rgb(200, 200, 200);
-    
-    border: 1px solid rgb(200, 200, 200);
+#grid thead th {
+    background-color: rgb(220, 220, 220);
 
-    border-radius: 5px;
+    border: 0;
+    border-collapse: inherit;
+    border-radius: 10px;
 }
 
 .grid-cell-action {
-    background-color: rgba(230, 230, 230, 0.5);
+    background-color: rgb(245, 245, 245);
+
+    border: 0;
+    border-collapse: inherit;
+    border-radius: 10px;
 }
 
 .grid-control-button, .grid-control-button-last {
@@ -331,6 +340,8 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     border-radius: 10px;
 
     padding-top: 10px;
+
+    backdrop-filter: blur(5px);
 }
 
 #post-comment-form {
@@ -349,17 +360,23 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     width: 30%;
 }
 
-#post-comment-form #formSubmit, #poll-choice-form #formSubmit {
-    background-color: black;
+#post-comments-load-more-link button {
+    width: 160px;
+    height: 36px;
+}
+
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button {
+    background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
 
     transition: background-color 0.25s;
 
+    border: 1px solid rgba(0, 0, 0, 0.75);;
     border-radius: 10px;
 }
 
-#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover {
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover {
     background-color: rgb(50, 50, 50);
     border: 1px solid rgb(50, 50, 50);
 }
@@ -367,13 +384,13 @@ div [id*="post-id-"], div [id*="poll-id-"] {
 #post-comment-form textarea {
     border: 0;
 
-    background-color: rgba(230, 230, 230, 0.75);
+    background-color: rgba(240, 240, 240, 0.75);
 
     border-radius: 10px;
 }
 
 div [id*="post-comment-id-"] {
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.75);
 
     border-radius: 10px;
 
@@ -428,4 +445,30 @@ div [id*="post-comment-id-"] {
 
     margin: 5px;
     margin-bottom: -5px;
+}
+
+div [id*="notification-id-"] {
+    background-color: rgb(255, 255, 255);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+div [id*="user-action-history-"] {
+    background-color: rgb(255, 255, 255);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+    padding-bottom: 1px;
+
+    margin-bottom: -5px;
+}
+
+#page-content {
+    margin-top: 60px;
 }
