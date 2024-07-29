@@ -66,6 +66,10 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
             $user = $app->userRepository->getUserById($te->getUserId());
 
+            if($user === null) {
+                return '-';
+            }
+
             $a = HTML::a();
 
             $a->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))

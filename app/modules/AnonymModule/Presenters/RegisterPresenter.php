@@ -36,7 +36,7 @@ class RegisterPresenter extends APresenter {
 
                 $app->userRepository->createNewUser($username, HashManager::hashPassword($password), $email, false);
 
-                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+                $app->userRepository->commit(null, __METHOD__);
 
                 $this->flashMessage('You have been registered. Now you can log in.', 'success');
                 $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
