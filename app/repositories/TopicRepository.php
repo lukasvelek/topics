@@ -13,7 +13,7 @@ class TopicRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getTopicById(int $id) {
+    public function getTopicById(int $id): TopicEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

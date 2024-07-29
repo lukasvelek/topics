@@ -10,6 +10,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
+use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
@@ -18,6 +19,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\IRenderable;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -131,7 +133,13 @@ class TopicsPresenter extends AUserPresenter {
                 $tagCode .= '<br>';
             }
 
-            $tagCode .= $tag;
+            //$tagCode .= $tag;
+
+            if($tag instanceof IRenderable) {
+                $tagCode .= $tag->render();
+            } else {
+                $tagCode .= $tag;
+            }
 
             $i++;
         }
@@ -591,13 +599,15 @@ class TopicsPresenter extends AUserPresenter {
                 $rawTagsArray[] = $tag;
 
                 [$fg, $bg] = ColorHelper::createColorCombination();
-                $tag = '<span style="color: ' . $fg . '; background-color: ' . $bg . '; border: 1px solid ' . $fg . '; border-radius: 10px; padding: 5px; margin-right: 5px">' . $tag . '</span>';
+                $tte = new TopicTagEntity($tag, $fg, $bg);
 
-                $tagArray[] = $tag;
+                $tagArray[] = $tte;
             }
 
             $tags = serialize($tagArray);
             $rawTags = implode(',', $rawTagsArray);
+
+            $tags = str_replace('\\', '\\\\', $tags);
 
             try {
                 $app->topicRepository->beginTransaction();
@@ -972,7 +982,7 @@ class TopicsPresenter extends AUserPresenter {
                 $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
             }
 
-            $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'post-data-link');
+            $topicLink = LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'topic-title-link');
 
             $this->saveToPresenterCache('topicLink', $topicLink);
 
