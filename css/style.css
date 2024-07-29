@@ -341,20 +341,22 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     border-radius: 10px;
 }
 
-#post-comment-form #formSubmit, #poll-choice-form #formSubmit {
-    background-color: black;
-
-    color: white;
-
-    transition: background-color 0.25s;
-}
-
 #form-centered {
     display: inherit;
 
     margin: auto;
 
     width: 30%;
+}
+
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit {
+    background-color: black;
+
+    color: white;
+
+    transition: background-color 0.25s;
+
+    border-radius: 10px;
 }
 
 #post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover {
