@@ -37,6 +37,8 @@ class GridBuilder {
 
     private array $belowGridElementsCode;
 
+    private string $idElement;
+
     /**
      * Grid builder constructor
      */
@@ -56,6 +58,12 @@ class GridBuilder {
         $this->displayNoEntriesMessage = true;
 
         $this->belowGridElementsCode = [];
+
+        $this->idElement = 'gridbuilder-grid';
+    }
+
+    public function setIdElement(string $idElement) {
+        $this->idElement = $idElement;
     }
 
     private function addBelowGridElementCode(string $code) {
@@ -168,6 +176,8 @@ class GridBuilder {
      */
     public function build() {
         $table = new Table();
+
+        $table->setId($this->idElement);
 
         // title
         $headerRow = new Row();
