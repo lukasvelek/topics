@@ -513,7 +513,7 @@ class TopicsPresenter extends AUserPresenter {
             
             $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
 
-            if(isset($_FILES['image']['name'])) {
+            if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
                 $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
             
                 $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);

@@ -230,6 +230,22 @@ class TopicMembershipManager extends AManager {
 
         return true;
     }
+
+    public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(int $userId) {
+        $topicIds = $this->topicMembershipRepository->getTopicIdsForOwner($userId);
+
+        $qb = $this->topicRepository->composeQueryForTopics();
+        $qb ->where($qb->getColumnInValues('topicId', $topicIds))
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $topics = [];
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        return $topics;
+    }
 }
 
 ?>
