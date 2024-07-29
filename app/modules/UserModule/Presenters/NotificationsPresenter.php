@@ -55,7 +55,8 @@ class NotificationsPresenter extends AUserPresenter {
 
         $this->addScript($arb);
 
-        $closeAllLink = LinkBuilder::createJSOnclickLink('Close all', 'closeAllNotifications()', 'post-data-link');
+        //$closeAllLink = LinkBuilder::createJSOnclickLink('Close all', 'closeAllNotifications()', 'post-data-link');
+        $closeAllLink = '<button type="button" id="formSubmit" onclick="closeAllNotifications()">Close all</button>';
 
         $links = [
             $closeAllLink

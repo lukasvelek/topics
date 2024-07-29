@@ -360,12 +360,12 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     width: 30%;
 }
 
-#post-comments-load-more-link button {
+#post-comments-load-more-link button, #notification-links button {
     width: 160px;
     height: 36px;
 }
 
-#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button {
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button {
     background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
@@ -376,7 +376,7 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     border-radius: 10px;
 }
 
-#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover {
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover {
     background-color: rgb(50, 50, 50);
     border: 1px solid rgb(50, 50, 50);
 }
@@ -471,4 +471,12 @@ div [id*="user-action-history-"] {
 
 #page-content {
     margin-top: 60px;
+}
+
+#notification-links button {
+    width: 250px;
+}
+
+#notification-links {
+    text-align: center;
 }
