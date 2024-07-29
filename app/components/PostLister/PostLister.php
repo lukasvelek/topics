@@ -118,6 +118,9 @@ class PostLister {
                     $topics = [];
     
                     foreach($this->topics as $topic) {
+                        if($topic === null) {
+                            continue;
+                        }
                         $topics[$topic->getId()] = $topic;
                     }
 
