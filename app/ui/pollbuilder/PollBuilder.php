@@ -130,16 +130,22 @@ class PollBuilder implements IRenderable {
         }
 
         $code = '
-            <div class="row">
-                <div class="col-md" id="center">
-                    <p class="post-title">' . $this->title . '</p>
-                    <p class="post-data">' . $this->description . '</p>
-                </div>
-            </div>
-            ' . $management . '
-            <div class="row">
-                <div class="col-md" id="form">
-                    ' . $form . '
+            <div class="row" id="poll-id-' . $this->pollId . '">
+                <div class="col-md">
+                    <div class="row">
+                        <div class="col-md" id="center">
+                            <p class="post-title">' . $this->title . '</p>
+                            <p class="post-data">' . $this->description . '</p>
+                        </div>
+                    </div>
+                    ' . $management . '
+                    <div class="row">
+                        <div class="col-md" id="form">
+                            <div id="poll-choice-form">
+                                ' . $form . '
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         ';
@@ -172,7 +178,7 @@ class PollBuilder implements IRenderable {
             }
         }
 
-        $fb->addSubmit('Submit', ($this->userChoice !== null));
+        $fb->addSubmit('Submit', ($this->userChoice !== null), true);
 
         return $fb->render();
     }

@@ -91,7 +91,7 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment')
+            ->addSubmit('Post comment', false, true)
         ;
 
         $this->saveToPresenterCache('form', $fb);
@@ -355,7 +355,7 @@ class PostsPresenter extends AUserPresenter {
             
         $likes = $app->postCommentRepository->getLikes($commentId);
         
-        $link = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+        $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
         $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
     }
@@ -401,7 +401,7 @@ class PostsPresenter extends AUserPresenter {
             $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
         }
 
-        $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
+        $this->ajaxSendResponse(['comments' => implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
     private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
@@ -410,11 +410,11 @@ class PostsPresenter extends AUserPresenter {
         $post = $app->postRepository->getPostById($postId);
 
         $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
+        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId(), '', 'post-comment-link');
 
         $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
-            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
         } else {
             $likeLink = '';
         }
@@ -430,14 +430,14 @@ class PostsPresenter extends AUserPresenter {
         }
 
         if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $post->getTopicId())) {
-            $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+            $reportForm = '<a class="post-comment-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
         } else {
             $reportForm = '';
         }
         $deleteLink = '';
         
         if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
-            $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
+            $deleteLink = ' | <a class="post-comment-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
         $text = $bwh->checkText($comment->getText());
@@ -468,15 +468,18 @@ class PostsPresenter extends AUserPresenter {
         $text = preg_replace($pattern, $replacement, $text);
 
         $code = '
-            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
+            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-id-' . $comment->getId() . '">
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 <div class="col-md">
                     <div>
-                        <p class="post-text">' . $text . '</p>
-                        <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
+                        <p class="post-comment-text">' . $text . '</p>
+                        <p class="post-comment-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
+                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
                         </p>
-                        ' . ($post->isDeleted() ? '' : '<a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
+                        <p class="post-comment-data">
+                            ' . $reportForm . $deleteLink . '
+                        </p>
+                        ' . ($post->isDeleted() ? '' : '<a class="post-comment-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
                     </div>
                     <div class="row">
                         <div class="col-md-2"></div>
@@ -491,7 +494,6 @@ class PostsPresenter extends AUserPresenter {
                     ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 </div>
             </div>
-            <br>
         ';
 
         return $code;

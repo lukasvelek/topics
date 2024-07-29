@@ -11,6 +11,12 @@ class SubmitButton extends AInput {
 
         $this->setDisabled($disabled);
     }
+
+    public function setCenter(bool $center) {
+        $this->centered = $center;
+
+        return $this;
+    }
 }
 
 ?>

@@ -364,7 +364,7 @@ class TopicsPresenter extends AUserPresenter {
             }
 
             $tmp = '
-                <div class="row" id="post-' . $post->getId() . '">
+                <div class="row" id="post-id-' . $post->getId() . '">
                     <div class="col-md">
                         <div class="row">
                             <div class="col-md-2">

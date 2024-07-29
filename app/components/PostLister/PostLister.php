@@ -142,7 +142,7 @@ class PostLister {
                     $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
                     $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topicTitle . '</a>';
     
-                    $code = '<div class="row" id="post-' . $post->getId() . '">';
+                    $code = '<div class="row" id="post-id-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
                     
                     $code .= '<div class="row">';

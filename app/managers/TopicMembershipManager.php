@@ -106,7 +106,7 @@ class TopicMembershipManager extends AManager {
         $this->invalidateMembershipCache();
     }
 
-    public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '') {
+    public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '', string $class = 'post-data-link') {
         $role = $this->getFollowRole($topicId, $user->getId());
 
         if($role === null) {
@@ -119,7 +119,7 @@ class TopicMembershipManager extends AManager {
 
         $text = $namePrefix . $user->getUsername() . ' (' . $span->render() . ')';
 
-        return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+        return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $class);
     }
 
     private function loadMembershipDataFromCache(int $topicId, int $userId) {

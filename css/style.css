@@ -1,5 +1,7 @@
 body {
     overflow-x: hidden;
+
+    background-color: rgb(245, 245, 245);
 }
 
 #form input, #form select, #form textarea, #form button {
@@ -321,4 +323,87 @@ div[class^="fm-"], div[class*="fm-"] {
     text-decoration: none;
 
     background-color: rgb(220, 220, 220);
+}
+
+div [id*="post-id-"], div [id*="poll-id-"] {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+
+    padding-top: 10px;
+}
+
+#post-comment-form {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    padding: 10px;
+
+    border-radius: 10px;
+}
+
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit {
+    background-color: black;
+
+    color: white;
+
+    transition: background-color 0.25s;
+}
+
+#form-centered {
+    display: inherit;
+
+    margin: auto;
+
+    width: 30%;
+}
+
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover {
+    background-color: rgb(50, 50, 50);
+    border: 1px solid rgb(50, 50, 50);
+}
+
+div [id*="post-comment-id-"] {
+    background-color: rgba(255, 255, 255, 0.7);
+
+    border-radius: 10px;
+
+    padding-top: 5px;
+    padding-bottom: 5px;
+
+    margin: -5px;
+}
+
+#form {
+    margin: -5px;
+}
+
+.post-comment-text {
+    text-align: left;
+
+    font-size: 18px;
+}
+
+.post-comment-data {
+    text-align: left;
+
+    font-size: 14px;
+}
+
+.post-comment-link {
+    font-size: 14px;
+    color: black;
+
+    text-decoration: none;
+
+    transition: color 0.25s;
+}
+
+.post-comment-link:hover {
+    text-decoration: none;
+
+    color: rgb(100, 100, 100);
+}
+
+#poll-choice-form input[type=radio] {
+    accent-color: black;
 }
