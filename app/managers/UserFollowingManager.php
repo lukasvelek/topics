@@ -48,7 +48,7 @@ class UserFollowingManager extends AManager {
     }
 
     public function canFollowUser(int $authorId, int $userId) {
-        if(!$this->userFollowingRepository->checkFollow($authorId, $userId)) {
+        if($this->userFollowingRepository->checkFollow($authorId, $userId)) { // is following
             return false;
         }
 
@@ -61,6 +61,14 @@ class UserFollowingManager extends AManager {
 
     public function getFollowingCount(int $userId) {
         return count($this->userFollowingRepository->getFollowsForUser($userId));
+    }
+
+    public function getFollowersForUserWithOffset(int $userId, int $limit, int $offset) {
+        return $this->userFollowingRepository->getFollowersForUserWithOffset($userId, $limit, $offset);
+    }
+
+    public function getFollowsForUserWithOffset(int $userId, int $limit, int $offset) {
+        return $this->userFollowingRepository->getFollowsForUserWithOffset($userId, $limit, $offset);
     }
 }
 

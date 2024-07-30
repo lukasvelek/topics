@@ -91,6 +91,30 @@ class UserFollowingRepository extends ARepository {
         return $follows;
     }
 
+    public function getFollowersForUserWithOffset(int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_following')
+            ->where('userId = ?', [$userId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $follows = [];
+        while($row = $qb->fetchAssoc()) {
+            $follows[] = UserFollowEntity::createEntityFromDbRow($row);
+        }
+
+        return $follows;
+    }
+
     public function getFollowsForUser(int $userId) {
         $qb = $this->qb(__METHOD__);
 
@@ -98,6 +122,30 @@ class UserFollowingRepository extends ARepository {
             ->from('user_following')
             ->where('authorId = ?', [$userId])
             ->execute();
+
+        $follows = [];
+        while($row = $qb->fetchAssoc()) {
+            $follows[] = UserFollowEntity::createEntityFromDbRow($row);
+        }
+
+        return $follows;
+    }
+
+    public function getFollowsForUserWithOffset(int $userId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_following')
+            ->where('authorId = ?', [$userId]);
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
 
         $follows = [];
         while($row = $qb->fetchAssoc()) {

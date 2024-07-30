@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\ReportCategory;
+use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
@@ -92,6 +93,146 @@ class UsersPresenter extends AUserPresenter {
         $this->template->follow_link = $followLink;
         $this->template->manage_followers_link = $manageFollowersLink;
         $this->template->manage_following_link = $manageFollowingLink;
+    }
+
+    public function handleManageFollowers() {
+        global $app;
+
+        $totalFollowers = $app->userFollowingManager->getFollowerCount($app->currentUser->getId());
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setAction($this, 'getFollowersList')
+            ->setMethod()
+            ->setHeader(['offset' => '_offset'])
+            ->setFunctionName('getFollowersList')
+            ->setFunctionArguments(['_offset'])
+            ->updateHTMLElement('followers-list', 'list', true)
+            ->updateHTMLElement('followers-list-load-more-link', 'loadMoreLink', false);
+
+        $this->addScript($arb);
+        $this->addScript('getFollowersList(0)');
+
+        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $app->currentUser->getId()]), 'post-data-link');
+        
+        $this->saveToPresenterCache('username', $app->currentUser->getUsername());
+        $this->saveToPresenterCache('totalFollowers', $totalFollowers);
+        $this->saveToPresenterCache('backLink', $backLink);
+    }
+
+    public function renderManageFollowers() {
+        $followers = $this->loadFromPresenterCache('followers');
+        $username = $this->loadFromPresenterCache('username');
+        $totalFollowers = $this->loadFromPresenterCache('totalFollowers');
+        $backLink = $this->loadFromPresenterCache('backLink');
+
+        $this->template->followers = $followers;
+        $this->template->username = $username;
+        $this->template->total_followers = $totalFollowers;
+        $this->template->back_link = $backLink;
+    }
+
+    public function actionGetFollowersList() {
+        global $app;
+
+        $offset = $this->httpGet('offset');
+        $limit = 10;
+
+        $followers = $app->userFollowingManager->getFollowersForUserWithOffset($app->currentUser->getId(), $limit, $offset);
+
+        $totalFollowers = $app->userFollowingManager->getFollowerCount($app->currentUser->getId());
+
+        $codeArray = [];
+        foreach($followers as $follower) {
+            $user = $app->userRepository->getUserById($follower->getAuthorId());
+
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md col-lg" id="center">
+                        ' . LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link') . '
+                    </div>
+                </div>
+            ';
+        }
+
+        $loadMoreLink = '';
+        if(($limit * ($offset + 1)) < $totalFollowers) {
+            $loadMoreLink = '<br><button type="button" onclick="getFollowersList(' . ($offset + $limit) . ')">Load more</button>';
+        }
+
+        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray), 'loadMoreLink' => $loadMoreLink]);
+    }
+
+    public function handleManageFollowing() {
+        global $app;
+
+        $totalFollowers = $app->userFollowingManager->getFollowingCount($app->currentUser->getId());
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setAction($this, 'getFollowsList')
+            ->setMethod()
+            ->setHeader(['offset' => '_offset'])
+            ->setFunctionName('getFollowsList')
+            ->setFunctionArguments(['_offset'])
+            ->updateHTMLElement('follows-list', 'list', true)
+            ->updateHTMLElement('follows-list-load-more-link', 'loadMoreLink', false);
+
+        $this->addScript($arb);
+        $this->addScript('getFollowsList(0)');
+
+        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $app->currentUser->getId()]), 'post-data-link');
+        
+        $this->saveToPresenterCache('username', $app->currentUser->getUsername());
+        $this->saveToPresenterCache('totalFollows', $totalFollowers);
+        $this->saveToPresenterCache('backLink', $backLink);
+    }
+
+    public function renderManageFollowing() {
+        $follows = $this->loadFromPresenterCache('followers');
+        $username = $this->loadFromPresenterCache('username');
+        $totalFollows = $this->loadFromPresenterCache('totalFollows');
+        $backLink = $this->loadFromPresenterCache('backLink');
+
+        $this->template->follows = $follows;
+        $this->template->username = $username;
+        $this->template->total_follows = $totalFollows;
+        $this->template->back_link = $backLink;
+    }
+
+    public function actionGetFollowsList() {
+        global $app;
+
+        $offset = $this->httpGet('offset');
+        $limit = 10;
+
+        $followers = $app->userFollowingManager->getFollowsForUserWithOffset($app->currentUser->getId(), $limit, $offset);
+
+        $totalFollows = $app->userFollowingManager->getFollowingCount($app->currentUser->getId());
+
+        $codeArray = [];
+        foreach($followers as $follower) {
+            $user = $app->userRepository->getUserById($follower->getUserId());
+
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md col-lg" id="center">
+                        ' . LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link') . '
+                    </div>
+                </div>
+            ';
+        }
+
+        $loadMoreLink = '';
+        if(($limit * ($offset + 1)) < $totalFollows) {
+            $loadMoreLink = '<br><button type="button" onclick="getFollowsList(' . ($offset + $limit) . ')">Load more</button>';
+        }
+
+        $result = implode('<br>', $codeArray);
+
+        if($offset > 0) {
+            $result = '<br>' . $result;
+        }
+
+        $this->ajaxSendResponse(['list' => $result, 'loadMoreLink' => $loadMoreLink]);
     }
 
     public function handleFollowUser() {
