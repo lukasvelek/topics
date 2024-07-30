@@ -1,5 +1,7 @@
 body {
     overflow-x: hidden;
+
+    background-color: rgb(245, 245, 245);
 }
 
 #form input, #form select, #form textarea, #form button {
@@ -103,17 +105,62 @@ div[class^="fm-"], div[class*="fm-"] {
 }
 
 #navbar {
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
-
-    font-size: 20px;
 
     padding: 10px;
     padding-left: 20px;
     padding-right: 20px;
 
-    height: 60px;
+    border: 0;
+    border-radius: 10px;
+
+    backdrop-filter: blur(5px);
+
+    position: fixed;
+    right: 1%;
+    top: 1%;
+
+    width: 98%;
+
+    z-index: 9999;
+}
+
+#navbar input[type=text] {
+    border: 0;
+
+    border-radius: 10px;
+    
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#navbar input[type=text]:focus {
+    border: 0;
+}
+
+#navbar button {
+    border: 0;
+
+    background-color: rgba(0, 0, 0, 0.75);
+
+    color: white;
+
+    border-radius: 10px;
+
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+
+    transition: background-color 0.25s;
+}
+
+#navbar button:hover {
+    background-color: rgb(50, 50, 50);
 }
 
 .navbar-link {
@@ -254,28 +301,30 @@ div[class^="fm-"], div[class*="fm-"] {
 
 #grid table {
     width: 100%;
- 
+
     text-align: center;
+
+    border: 0;
+    border-collapse: inherit;
+    border-radius: 10px;
+
+    background-color: rgba(255, 255, 255, 0.75);
 }
 
-#grid thead tr {
-    border-bottom: 1px solid black;
-}
+#grid thead th {
+    background-color: rgb(220, 220, 220);
 
-#grid [class*="grid-row-"] {
-    border-top: 1px solid rgb(220, 220, 220);
-}
-
-#grid [class*="grid-row-"]:nth-child(even) {
-    background-color: rgb(250, 250, 250);
-}
-
-#grid [class*="grid-row-"]:hover {
-    background-color: rgb(240, 240, 240);
+    border: 0;
+    border-collapse: inherit;
+    border-radius: 10px;
 }
 
 .grid-cell-action {
-    background-color: rgba(230, 230, 230, 0.5);
+    background-color: rgb(245, 245, 245);
+
+    border: 0;
+    border-collapse: inherit;
+    border-radius: 10px;
 }
 
 .grid-control-button, .grid-control-button-last {
@@ -321,4 +370,203 @@ div[class^="fm-"], div[class*="fm-"] {
     text-decoration: none;
 
     background-color: rgb(220, 220, 220);
+}
+
+div [id*="post-id-"], div [id*="poll-id-"] {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+
+    padding-top: 10px;
+
+    backdrop-filter: blur(5px);
+}
+
+#post-comment-form {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    padding: 10px;
+
+    border-radius: 10px;
+}
+
+#form-centered {
+    display: inherit;
+
+    margin: auto;
+
+    width: 30%;
+}
+
+#post-comments-load-more-link button, #notification-links button {
+    width: 160px;
+    height: 36px;
+}
+
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button {
+    background-color: rgba(0, 0, 0, 0.75);
+
+    color: white;
+
+    transition: background-color 0.25s;
+
+    border: 1px solid rgba(0, 0, 0, 0.75);;
+    border-radius: 10px;
+}
+
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover {
+    background-color: rgb(50, 50, 50);
+    border: 1px solid rgb(50, 50, 50);
+}
+
+#post-comment-form textarea {
+    border: 0;
+
+    background-color: rgba(240, 240, 240, 0.75);
+
+    border-radius: 10px;
+}
+
+div [id*="post-comment-id-"] {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.post-comment-text {
+    text-align: left;
+
+    font-size: 18px;
+}
+
+.post-comment-data {
+    text-align: left;
+
+    font-size: 14px;
+}
+
+.post-comment-link {
+    font-size: 14px;
+    color: black;
+
+    text-decoration: none;
+
+    transition: color 0.25s;
+}
+
+.post-comment-link:hover {
+    text-decoration: none;
+
+    color: rgb(100, 100, 100);
+}
+
+#poll-choice-form input[type=radio] {
+    accent-color: black;
+}
+
+#post-text, #topic-text {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+div [id*="notification-id-"] {
+    background-color: rgb(255, 255, 255);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+div [id*="user-action-history-"] {
+    background-color: rgb(255, 255, 255);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+    padding-bottom: 1px;
+
+    margin-bottom: -5px;
+}
+
+#page-content {
+    margin-top: 60px;
+}
+
+@media screen and (max-width: 1000px) {
+    #page-content {
+        margin-top: 100px;
+    }
+}
+
+#notification-links button {
+    width: 250px;
+}
+
+#notification-links {
+    text-align: center;
+}
+
+#post-data-section, #post-upload-image-section, #post-images-section, #topic-data-section, #post-title-section {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+    border: 0;
+
+    padding: 10px;
+}
+
+#post-comment-form {
+    margin-left: -12px;
+    margin-right: -12px;
+}
+
+#topic-links, #topic-title-section, #topic-followed-section {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+}
+
+#topic-title-section, #post-title-section {
+    font-size: 27px;
+
+    text-align: center;
+}
+
+#sidebar {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+
+    margin-left: 25px;
+}
+
+#feedback-title-section, #manage-title-section, #user-title-section {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+
+    margin-top: 10px;
+
+    font-size: 27px;
+
+    text-align: center;
 }

@@ -40,7 +40,7 @@ abstract class ARepository {
         return $this->conn->rollback();
     }
 
-    public function commit(int $userId, string $method) {
+    public function commit(?int $userId, string $method) {
         $sql = '';
         if(!$this->logTransaction($userId, $method, $sql)) {
             $this->rollback();
@@ -102,8 +102,12 @@ abstract class ARepository {
         }
     }
 
-    private function logTransaction(int $userId, string $method, string &$sql) {
+    private function logTransaction(?int $userId, string $method, string &$sql) {
         $qb = $this->qb(__METHOD__);
+
+        if($userId === null) {
+            $userId = -1;
+        }
 
         $transactionId = HashManager::createHash(64, false);
 

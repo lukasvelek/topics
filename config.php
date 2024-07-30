@@ -22,7 +22,7 @@ $cfg['DB_USER'] = ''; // database user
 $cfg['DB_PASS'] = ''; // database user password
 $cfg['DB_NAME'] = ''; // database name
 
-$cfg['GRID_SIZE'] = 50; // grid row count
+$cfg['GRID_SIZE'] = 20; // grid row count
 
 $cfg['FULL_DELETE'] = false; // true if content is deleted fully or false if it just has isDeleted = 1
 

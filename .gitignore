@@ -4,3 +4,4 @@ cache/
 app/core/install
 web.config
 upload/
+*.bak

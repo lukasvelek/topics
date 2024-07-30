@@ -42,7 +42,22 @@ class HomePresenter extends AUserPresenter {
             }
         }
 
-        $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessages);
+        $permaFlashMessagesCode = '<div class="row">
+                <div class="col-md-1 col-lg-1"></div>
+
+                <div class="col-md col-lg">
+                    ' . implode('', $permaFlashMessages) . '
+                </div>
+
+                <div class="col-md-1 col-lg-1"></div>
+            </div>
+            <br>';
+
+        if(empty($permaFlashMessages)) {
+            $permaFlashMessagesCode = '';
+        }
+
+        $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessagesCode);
 
         $arb = new AjaxRequestBuilder();
         $arb->setURL(['page' => 'UserModule:Home', 'action' => 'likePost'])

@@ -142,7 +142,7 @@ class PostLister {
                     $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
                     $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topicTitle . '</a>';
     
-                    $code = '<div class="row" id="post-' . $post->getId() . '">';
+                    $code = '<div class="row" id="post-id-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
                     
                     $code .= '<div class="row">';
@@ -193,7 +193,7 @@ class PostLister {
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
                     $code .= '</div></div>';
                     $code .= '</div></div>';
-                    $code .= '<br><br>';
+                    $code .= '<br>';
     
                     $codeArr[] = $code;
                 }

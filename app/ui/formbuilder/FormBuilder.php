@@ -138,8 +138,12 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
-    public function addSubmit(string $text = 'Submit', bool $disabled = false) {
+    public function addSubmit(string $text = 'Submit', bool $disabled = false, bool $center = false) {
         $sb = new SubmitButton($text, $disabled);
+
+        if($center) {
+            $sb->setCenter($center);
+        }
 
         $this->addElement('btn_submit', $sb);
 

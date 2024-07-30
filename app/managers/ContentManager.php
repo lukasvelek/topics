@@ -4,10 +4,8 @@ namespace App\Managers;
 
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
-use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\UserActionEntity;
-use App\Helpers\ArrayHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Logger\Logger;
 use App\Repositories\PostCommentRepository;
@@ -157,6 +155,7 @@ class ContentManager extends AManager {
 
         $code = '<div>';
         $i = 0;
+        $codeArray = [];
         foreach($orderedActionsComplete as $oal) {
             if($i == $limit) {
                 break;
@@ -199,10 +198,10 @@ class ContentManager extends AManager {
                     break;
             }
 
-            $code .= '<p><span style="color: rgb(100, 100, 100)">' . $date . '</span> ' . $text . '</p>';
+            $codeArray[] = '<div id="user-action-history-' . $i . '"><p><span style="color: rgb(100, 100, 100)">' . $date . '</span> ' . $text . '</p></div>';
             $i++;
         }
-        $code .= '</div>';
+        $code .= implode('<br>', $codeArray) . '</div>';
 
         return $code;
     }

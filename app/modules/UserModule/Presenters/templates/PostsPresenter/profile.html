@@ -1,56 +1,76 @@
 <div class="row">
-    <div class="col-md">
+    <div class="col-md col-lg">
+        <br>
+        
         <div class="row">
-            <div class="col-md" id="page-title">
+            <div class="col-md-3 col-lg-4"></div>
+
+            <div class="col-md col-lg" id="post-title-section">
                 $POST_TITLE$
             </div>
+
+            <div class="col-md-3 col-lg-4"></div>
         </div>
 
-        <div class="row">
-            <div class="col-md-2"></div>
+        <br>
 
-            <div class="col-md">
+        <div class="row">
+            <div class="col-lg col-md-1"></div>
+
+            <div class="col-md-10 col-lg-8">
                 <div class="row">
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
         
-                    <div class="col-md">
+                    <div class="col-md" id="post-text">
                         $POST_TEXT$
                     </div>
         
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
                 </div>
-        
-                <hr>
+
+                <br>
+
+                <div class="row">
+                    <div class="col-md-2 col-lg-2"></div>
+
+                    <div class="col-md col-lg" id="post-data-section">
+                        $POST_DATA$
+                    </div>
+
+                    <div class="col-md-2 col-lg-2"></div>
+                </div>
+
+                <br>
 
                 $POST_IMAGES$
 
                 <div class="row">
-                    <div class="col-md-2"></div>
+                    <div class="col-md-2 col-lg-2"></div>
                     
-                    <div class="col-md" id="form">
-                        $NEW_COMMENT_FORM$
+                    <div class="col-md col-lg" id="form">
+                        <div id="post-comment-form">
+                            $NEW_COMMENT_FORM$
+                        </div>
                     </div>
 
-                    <div class="col-md-2"></div>
+                    <div class="col-md-2 col-lg-2"></div>
                 </div>
-                
-                <hr id="new-comment-form-hr">
+
+                <br>
         
                 <div class="row">
-                    <div class="col-md-1"></div>
+                    <div class="col-md-2"></div>
         
                     <div class="col-md" id="center">
                         <span id="post-comments"></span>
                         <span id="post-comments-load-more-link"></span>
                     </div>
         
-                    <div class="col-md-1"></div>
+                    <div class="col-md-2"></div>
                 </div>
             </div>
 
-            <div class="col-md-2">
-                $POST_DATA$
-            </div>
+            <div class="col-md col-lg"></div>
         </div>
     </div>
 </div>
