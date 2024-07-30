@@ -104,21 +104,21 @@ class TopicsPresenter extends AUserPresenter {
         $reportLink = '';
 
         if(!$topic->isDeleted() && $app->actionAuthorizator->canReportTopic($app->currentUser->getId(), $topicId)) {
-            $reportLink = '<a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a>';
+            $reportLink = '<div class="col-md col-lg"><a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a></div>';
         }
 
         $deleteLink = '';
 
         if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId()) && !$topic->isDeleted()) {
-            $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p>';
+            $deleteLink = '<div class="col-md col-lg"><p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
         } else if($topic->isDeleted()) {
-            $deleteLink = '<p class="post-data">Topic deleted</p>';
+            $deleteLink = '<div class="col-md col-lg"><p class="post-data">Topic deleted</p></div>';
         }
 
         $roleManagementLink = '';
 
         if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId()) && !$topic->isDeleted()) {
-            $roleManagementLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a>';
+            $roleManagementLink = '<div class="col-md col-lg"><p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a></div>';
         }
 
         $tags = $topic->getTags();
@@ -148,24 +148,40 @@ class TopicsPresenter extends AUserPresenter {
 
         $inviteManagementLink = '';
         if($topic->isPrivate() && $app->actionAuthorizator->canManageTopicInvites($app->currentUser->getId(), $topicId)) {
-            $inviteManagementLink = '<p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p>';
+            $inviteManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $privacyManagementLink = '';
         if($app->actionAuthorizator->canManageTopicPrivacy($app->currentUser->getId(), $topicId)) {
-            $privacyManagementLink = '<p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p>';
+            $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $code = '
-            <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
-            <p class="post-data">Topic started on: ' . DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateCreated()) . '</p>
-            <p class="post-data">Posts: ' . $postCount . '</p>
-            <p class="post-data">Tags: ' . $tagCode . '</p>
-            <p class="post-data">' . $reportLink . '</p>
-            ' . $deleteLink . '
-            ' . $roleManagementLink . '
-            ' . $inviteManagementLink . '
-            ' . $privacyManagementLink . '
+            <div>
+                <div class="row">
+                    <div class="col-md col-lg">
+                        <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">Posts: ' . $postCount . '</p>                        
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md col-lg">
+                        <p class="post-data">Tags: ' . $tagCode . '</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    ' . $reportLink . '
+                    ' . $deleteLink . '
+                    ' . $roleManagementLink . '
+                    ' . $inviteManagementLink . '
+                    ' . $privacyManagementLink . '
+                </div>
+            </div>
         ';
 
         $this->saveToPresenterCache('topicData', $code);
@@ -199,9 +215,9 @@ class TopicsPresenter extends AUserPresenter {
         $this->saveToPresenterCache('links', implode('&nbsp;', $links));
 
         if(!empty($links)) {
-            $this->saveToPresenterCache('links_hr', '<hr>');
+            $this->saveToPresenterCache('links_br', '<br>');
         } else {
-            $this->saveToPresenterCache('links_hr', '');
+            $this->saveToPresenterCache('links_br', '');
         }
     }
 
@@ -436,14 +452,14 @@ class TopicsPresenter extends AUserPresenter {
         $topicName = $this->loadFromPresenterCache('topicName');
         $topicDescription = $this->loadFromPresenterCache('topicDescription');
         $links = $this->loadFromPresenterCache('links');
-        $linksHr = $this->loadFromPresenterCache('links_hr');
+        $linksBr = $this->loadFromPresenterCache('links_br');
 
         $this->template->topic_title = $topicName;
         $this->template->topic_description = $topicDescription;
         $this->template->latest_posts = $posts;
         $this->template->topic_data = $topicData;
         $this->template->links = $links;
-        $this->template->links_hr = $linksHr;
+        $this->template->links_br = $linksBr;
     }
 
     public function handleNewPostForm() {
@@ -716,33 +732,43 @@ class TopicsPresenter extends AUserPresenter {
         $code = [];
 
         if(!empty($topicIdsUserIsMemberOf)) {
+            $first = true;
+            $tmpCode = '';
+            
             foreach($topicIdsUserIsMemberOf as $topicId) {
                 try {
                     $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
                 } catch(AException $e) {
                     continue;
                 }
-    
-                $code[] = '
-                    <div class="row">
-                        <div class="col-md">
-                            <a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>
-                        </div>
-                    </div>
-                    <hr>
-                ';
+
+                if($first) {
+                    $tmpCode = '<div class="row"><div class="col-md col-lg" id="topic-followed-section">';
+                    $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
+                    $tmpCode .= '</div><div class="col-md-1 col-lg-1"></div>';
+
+                    $first = false;
+                } else {
+                    $tmpCode .= '<div class="col-md col-lg" id="topic-followed-section">';
+                    $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
+                    $tmpCode .= '</div></div>';
+
+                    $code[] = $tmpCode;
+
+                    $first = true;
+                }
             }
         } else {
             $code[] = '
                 <div class="row">
-                    <div class="col-md">
+                    <div class="col-md col-lg" id="topic-followed-section">
                         <p class="post-text" id="center">You are not following any topics.</p>
                     </div>
                 </div>
             ';
         }
 
-        $this->saveToPresenterCache('topics', implode('', $code));
+        $this->saveToPresenterCache('topics', implode('<br>', $code));
     }
 
     public function renderFollowed() {

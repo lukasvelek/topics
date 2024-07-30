@@ -142,12 +142,33 @@ class PostsPresenter extends AUserPresenter {
 
         $postData = '
             <div>
-                <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
-                <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
-                <p class="post-data">Author: ' . $authorLink . '</p>
-                <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
-                <p class="post-data">' . $reportLink . '</p>
-                ' . $deleteLink . '
+                <div class="row">
+                    <div class="col-md-2 col-lg-3">
+                        <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">Posted on: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">Author: ' . $authorLink . '</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md col-lg">
+                        <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">' . $reportLink . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        ' . $deleteLink . '
+                    </div>
+                </div>
             </div>
         ';
 
@@ -173,16 +194,16 @@ class PostsPresenter extends AUserPresenter {
         $newImageUploadLink = LinkBuilder::createSimpleLink('Upload image', $this->createURL('uploadImageForm', ['postId' => $postId]), 'post-data-link');
 
         $newImageUploadSection = '<div class="row">
-                <div class="col-md-3"></div>
+                <div class="col-md-2 col-lg-2"></div>
 
-                <div class="col-md">
+                <div class="col-md" id="post-upload-image-section">
                     ' . $newImageUploadLink . '
                 </div>
 
-                <div class="col-md-3"></div>
+                <div class="col-md-2 col-lg-2"></div>
             </div>
 
-            <hr>';
+            <br>';
 
         if(!$app->actionAuthorizator->canUploadFileForPost($app->currentUser->getId(), $post)) {
             $newImageUploadSection = '';
@@ -218,14 +239,14 @@ class PostsPresenter extends AUserPresenter {
                 ' . $newImageUploadSection . '
 
                 <div class="row">
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
             
-                    <div class="col-md">' . $imagesCode . '</div>
+                    <div class="col-md col-lg" id="post-images-section">' . $imagesCode . '</div>
             
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
                 </div>
 
-                <hr>
+                <br>
             ';
         }
 
@@ -311,7 +332,7 @@ class PostsPresenter extends AUserPresenter {
             ->addSubmit('Post comment')
         ;
 
-        $this->ajaxSendResponse(['form' => $fb->render()]);
+        $this->ajaxSendResponse(['form' => '<div id="post-comment-form">' . $fb->render() . '</div>']);
     }
 
     public function actionLikePostComment() {

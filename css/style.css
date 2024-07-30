@@ -123,6 +123,44 @@ div[class^="fm-"], div[class*="fm-"] {
     top: 1%;
 
     width: 98%;
+
+    z-index: 9999;
+}
+
+#navbar input[type=text] {
+    border: 0;
+
+    border-radius: 10px;
+    
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#navbar input[type=text]:focus {
+    border: 0;
+}
+
+#navbar button {
+    border: 0;
+
+    background-color: rgba(0, 0, 0, 0.75);
+
+    color: white;
+
+    border-radius: 10px;
+
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+
+    transition: background-color 0.25s;
+}
+
+#navbar button:hover {
+    background-color: rgb(50, 50, 50);
 }
 
 .navbar-link {
@@ -396,12 +434,6 @@ div [id*="post-comment-id-"] {
 
     padding-top: 5px;
     padding-bottom: 5px;
-
-    margin: -5px;
-}
-
-#form {
-    margin: -5px;
 }
 
 .post-comment-text {
@@ -435,16 +467,13 @@ div [id*="post-comment-id-"] {
     accent-color: black;
 }
 
-#post-text {
+#post-text, #topic-text {
     background-color: rgba(255, 255, 255, 0.75);
 
     border-radius: 10px;
 
     padding-top: 10px;
     padding-bottom: 10px;
-
-    margin: 5px;
-    margin-bottom: -5px;
 }
 
 div [id*="notification-id-"] {
@@ -473,10 +502,45 @@ div [id*="user-action-history-"] {
     margin-top: 60px;
 }
 
+@media screen and (max-width: 1000px) {
+    #page-content {
+        margin-top: 100px;
+    }
+}
+
 #notification-links button {
     width: 250px;
 }
 
 #notification-links {
+    text-align: center;
+}
+
+#post-data-section, #post-upload-image-section, #post-images-section, #topic-data-section, #post-title-section {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border-radius: 10px;
+    border: 0;
+
+    padding: 10px;
+}
+
+#post-comment-form {
+    margin-left: -12px;
+    margin-right: -12px;
+}
+
+#topic-links, #topic-title-section, #topic-followed-section {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+}
+
+#topic-title-section, #post-title-section {
+    font-size: 27px;
+
     text-align: center;
 }
