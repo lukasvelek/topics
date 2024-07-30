@@ -335,6 +335,33 @@ class PostCommentRepository extends ARepository {
 
         return $comments;
     }
+
+    public function getPostIdsWithMostCommentsInLast24Hrs(int $limit) {
+        $dateLimit = new DateTime();
+        $dateLimit->modify('-1d');
+        $dateLimit = $dateLimit->getResult();
+        
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(commentId) AS cnt', 'postId'])
+            ->from('post_comments')
+            ->where('dateCreated >= ?', [$dateLimit])
+            ->groupBy('postId')
+            ->orderBy('cnt', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $data = [];
+        while($row = $qb->fetchAssoc()) {
+            $data[$row['postId']] = $row['cnt'];
+        }
+
+        return $data;
+    }
 }
 
 ?>

@@ -424,6 +424,33 @@ class PostRepository extends ARepository {
 
         return $posts;
     }
+
+    public function getTopicIdsWithMostPostsInLast24Hrs(int $limit) {
+        $dateLimit = new DateTime();
+        $dateLimit->modify('-1d');
+        $dateLimit = $dateLimit->getResult();
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt', 'topicId'])
+            ->from('posts')
+            ->where('dateCreated >= ?', [$dateLimit])
+            ->groupBy('topicId')
+            ->orderBy('cnt', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $data = [];
+        while($row = $qb->fetchAssoc()) {
+            $data[$row['topicId']] = $row['cnt'];
+        }
+
+        return $data;
+    }
 }
 
 ?>
