@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Core\DatabaseConnection;
 use App\Core\HashManager;
+use App\Entities\UserFollowEntity;
 use App\Logger\Logger;
 use App\Repositories\ARepository;
 
@@ -72,6 +73,38 @@ class UserFollowingRepository extends ARepository {
         } else {
             return false;
         }
+    }
+
+    public function getFollowersForUser(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_following')
+            ->where('userId = ?', [$userId])
+            ->execute();
+
+        $follows = [];
+        while($row = $qb->fetchAssoc()) {
+            $follows[] = UserFollowEntity::createEntityFromDbRow($row);
+        }
+
+        return $follows;
+    }
+
+    public function getFollowsForUser(int $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_following')
+            ->where('authorId = ?', [$userId])
+            ->execute();
+
+        $follows = [];
+        while($row = $qb->fetchAssoc()) {
+            $follows[] = UserFollowEntity::createEntityFromDbRow($row);
+        }
+
+        return $follows;
     }
 }
 

@@ -32,11 +32,27 @@ class UsersPresenter extends AUserPresenter {
 
         /** ACTION HISTORY */
         $actionHistory = null;
-        $app->logger->stopwatch(function() use (&$actionHistory, $app) {
-            $actionHistory = $app->contentManager->getUserActionHistory($app->currentUser->getId(), 10);
+        $app->logger->stopwatch(function() use (&$actionHistory, $app, $userId) {
+            $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
         }, 'App\\Managers\\ContentManager::getUserActionHistory');
 
         $this->saveToPresenterCache('actionHistory', $actionHistory);
+        
+        $followerCount = $app->userFollowingManager->getFollowerCount($userId);
+        $this->saveToPresenterCache('followerCount', $followerCount);
+
+        $followingCount = $app->userFollowingManager->getFollowingCount($userId);
+        $this->saveToPresenterCache('followingCount', $followingCount);
+
+        $followLink = '';
+
+        if($app->userFollowingManager->canFollowUser($app->currentUser->getId(), $userId)) {
+            $followLink = LinkBuilder::createSimpleLink('Follow', $this->createURL('followUser', ['userId' => $userId]), 'post-data-link');
+        } else {
+            $followLink = LinkBuilder::createSimpleLink('Unfollow', $this->createURL('unfollowUser', ['userId' => $userId]), 'post-data-link');
+        }
+
+        $this->saveToPresenterCache('followLink', $followLink);
     }
 
     public function renderProfile() {
@@ -44,12 +60,62 @@ class UsersPresenter extends AUserPresenter {
         $postCount = $this->loadFromPresenterCache('postCount');
         $reportLink = $this->loadFromPresenterCache('reportLink');
         $actionHistory = $this->loadFromPresenterCache('actionHistory');
+        $followerCount = $this->loadFromPresenterCache('followerCount');
+        $followingCount = $this->loadFromPresenterCache('followingCount');
+        $followLink = $this->loadFromPresenterCache('followLink');
 
         $this->template->username = $user->getUsername();
         $this->template->post_count = $postCount;
         $this->template->first_login_date = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated());
         $this->template->report_link = $reportLink;
         $this->template->action_history = $actionHistory;
+        $this->template->followers_count = $followerCount;
+        $this->template->following_count = $followingCount;
+        $this->template->follow_link = $followLink;
+    }
+
+    public function handleFollowUser() {
+        global $app;
+
+        $userId = $this->httpGet('userId', true);
+
+        try {
+            $app->userFollowingRepository->beginTransaction();
+
+            $app->userFollowingManager->followUser($app->currentUser->getId(), $userId);
+
+            $app->userFollowingRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('User followed.', 'success');
+        } catch(AException $e) {
+            $app->userFollowingRepository->rollback();
+
+            $this->flashMessage('Could not follow user. Reason: '. $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('profile', ['userId' => $userId]));
+    }
+
+    public function handleUnfollowUser() {
+        global $app;
+
+        $userId = $this->httpGet('userId', true);
+
+        try {
+            $app->userFollowingRepository->beginTransaction();
+
+            $app->userFollowingManager->unfollowUser($app->currentUser->getId(), $userId);
+
+            $app->userFollowingRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('User unfollowed.', 'success');
+        } catch(AException $e) {
+            $app->userFollowingRepository->rollback();
+
+            $this->flashMessage('Could not unfollow user. Reason: '. $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('profile', ['userId' => $userId]));
     }
 
     public function handleReportUser(?FormResponse $fr = null) {

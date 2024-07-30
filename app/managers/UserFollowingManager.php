@@ -46,6 +46,18 @@ class UserFollowingManager extends AManager {
             throw $e;
         }
     }
+
+    public function canFollowUser(int $authorId, int $userId) {
+        return !$this->userFollowingRepository->checkFollow($authorId, $userId);
+    }
+
+    public function getFollowerCount(int $userId) {
+        return count($this->userFollowingRepository->getFollowersForUser($userId));
+    }
+
+    public function getFollowingCount(int $userId) {
+        return count($this->userFollowingRepository->getFollowsForUser($userId));
+    }
 }
 
 ?>
