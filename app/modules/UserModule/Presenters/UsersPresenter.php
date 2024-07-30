@@ -46,13 +46,29 @@ class UsersPresenter extends AUserPresenter {
 
         $followLink = '';
 
-        if($app->userFollowingManager->canFollowUser($app->currentUser->getId(), $userId)) {
-            $followLink = LinkBuilder::createSimpleLink('Follow', $this->createURL('followUser', ['userId' => $userId]), 'post-data-link');
-        } else {
-            $followLink = LinkBuilder::createSimpleLink('Unfollow', $this->createURL('unfollowUser', ['userId' => $userId]), 'post-data-link');
+        if($app->currentUser->getId() != $userId) {
+            if($app->userFollowingManager->canFollowUser($app->currentUser->getId(), $userId)) {
+                $followLink = LinkBuilder::createSimpleLink('Follow', $this->createURL('followUser', ['userId' => $userId]), 'post-data-link');
+            } else {
+                $followLink = LinkBuilder::createSimpleLink('Unfollow', $this->createURL('unfollowUser', ['userId' => $userId]), 'post-data-link');
+            }
         }
 
         $this->saveToPresenterCache('followLink', $followLink);
+
+        $manageFollowersLink = 'Followers';
+        if($app->currentUser->getId() == $userId) {
+            $manageFollowersLink = LinkBuilder::createSimpleLinkObject('Followers', $this->createURL('manageFollowers'), 'post-data-link');
+            $manageFollowersLink->setTitle('Manage followers');
+        }
+        $this->saveToPresenterCache('manageFollowersLink', $manageFollowersLink);
+
+        $manageFollowingLink = 'Following';
+        if($app->currentUser->getId() == $userId) {
+            $manageFollowingLink = LinkBuilder::createSimpleLinkObject('Following', $this->createURL('manageFollowing'), 'post-data-link');
+            $manageFollowingLink->setTitle('Manage followings');
+        }
+        $this->saveToPresenterCache('manageFollowingLink', $manageFollowingLink);
     }
 
     public function renderProfile() {
@@ -63,6 +79,8 @@ class UsersPresenter extends AUserPresenter {
         $followerCount = $this->loadFromPresenterCache('followerCount');
         $followingCount = $this->loadFromPresenterCache('followingCount');
         $followLink = $this->loadFromPresenterCache('followLink');
+        $manageFollowersLink = $this->loadFromPresenterCache('manageFollowersLink');
+        $manageFollowingLink = $this->loadFromPresenterCache('manageFollowingLink');
 
         $this->template->username = $user->getUsername();
         $this->template->post_count = $postCount;
@@ -72,6 +90,8 @@ class UsersPresenter extends AUserPresenter {
         $this->template->followers_count = $followerCount;
         $this->template->following_count = $followingCount;
         $this->template->follow_link = $followLink;
+        $this->template->manage_followers_link = $manageFollowersLink;
+        $this->template->manage_following_link = $manageFollowingLink;
     }
 
     public function handleFollowUser() {
