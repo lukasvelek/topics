@@ -556,13 +556,15 @@ div [id*="user-action-history-"] {
     margin-left: 25px;
 }
 
-#feedback-title-section, #manage-title-section {
+#feedback-title-section, #manage-title-section, #user-title-section {
     background-color: rgba(255, 255, 255, 0.75);
 
     border: 0;
     border-radius: 10px;
 
     padding: 10px;
+
+    margin-top: 10px;
 
     font-size: 27px;
 

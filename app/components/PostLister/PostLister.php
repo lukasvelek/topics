@@ -193,7 +193,7 @@ class PostLister {
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
                     $code .= '</div></div>';
                     $code .= '</div></div>';
-                    $code .= '<br><br>';
+                    $code .= '<br>';
     
                     $codeArr[] = $code;
                 }
