@@ -14,6 +14,7 @@ use App\Managers\FileUploadManager;
 use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
+use App\Managers\UserFollowingManager;
 use App\Managers\UserProsecutionManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
@@ -33,6 +34,7 @@ use App\Repositories\TopicRepository;
 use App\Repositories\TransactionLogRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
+use App\Repository\UserFollowingRepository;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -74,6 +76,7 @@ class Application {
     public NotificationRepository $notificationRepository;
     public FileUploadRepository $fileUploadRepository;
     public TransactionLogRepository $transactionLogRepository;
+    public UserFollowingRepository $userFollowingRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -82,6 +85,7 @@ class Application {
     public TopicManager $topicManager;
     public NotificationManager $notificationManager;
     public FileUploadManager $fileUploadManager;
+    public UserFollowingManager $userFollowingManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -126,6 +130,7 @@ class Application {
         $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
         $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
         $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
+        $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -134,6 +139,7 @@ class Application {
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
+        $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
