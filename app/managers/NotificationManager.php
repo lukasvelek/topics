@@ -221,6 +221,24 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
+    public function createNewUserFollowerNotification(int $userId, LinkBuilder $userLink) {
+        $type = Notifications::NEW_USER_FOLLOWER;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createNotificationId();
+
+        [$userLink] = $this->processURL($id, [$userLink]);
+        
+        $message = $this->prepareMessage($type, ['$USER_LINK$' => $userLink]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$USER_LINK$' => $userLink];
+            $this->logger->info('Creatign notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
     private function prepareMessage(int $type, array $data) {
         $message = Notifications::getTextByKey($type);
 

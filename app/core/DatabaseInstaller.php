@@ -222,6 +222,12 @@ class DatabaseInstaller {
                 'methodName' => 'VARCHAR(256) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_following' => [
+                'followId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'authorId' => 'INT(32) NOT NULL',
+                'userId' => 'INT(32) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

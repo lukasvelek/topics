@@ -48,7 +48,7 @@ body {
     width: 90%;
     
     margin-left: 5%;
-    margin-top: 15px;
+    margin-top: 5%;
 }
 
 .fm-info {
@@ -403,7 +403,7 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     height: 36px;
 }
 
-#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button {
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button, #followers-list-load-more-link button, #follows-list-load-more-link button {
     background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
@@ -414,9 +414,15 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     border-radius: 10px;
 }
 
-#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover {
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover, #followers-list-load-more-link button:hover, #follows-list-load-more-link button:hover {
     background-color: rgb(50, 50, 50);
     border: 1px solid rgb(50, 50, 50);
+}
+
+#followers-list-load-more-link button, #follows-list-load-more-link button {
+    width: 150px;
+
+    padding: 5px;
 }
 
 #post-comment-form textarea {
@@ -569,4 +575,29 @@ div [id*="user-action-history-"] {
     font-size: 27px;
 
     text-align: center;
+}
+
+#user-list {
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px;
+
+    text-align: center;
+}
+
+.user-list-link {
+    color: black;
+
+    text-decoration: none;
+
+    font-size: 18px;
+
+    transition: color 0.25s;
+}
+
+.user-list-link:hover {
+    color: rgb(100, 100, 100);
 }
