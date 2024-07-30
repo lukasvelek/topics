@@ -2,6 +2,7 @@
 
 namespace App\Managers;
 
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\UserFollowException;
 use App\Logger\Logger;
@@ -11,12 +12,14 @@ use App\Repository\UserFollowingRepository;
 class UserFollowingManager extends AManager {
     private UserRepository $userRepository;
     private UserFollowingRepository $userFollowingRepository;
+    private NotificationManager $notificationManager;
 
-    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository) {
+    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository, NotificationManager $notificationManager) {
         parent::__construct($logger);
 
         $this->userRepository = $userRepository;
         $this->userFollowingRepository = $userFollowingRepository;
+        $this->notificationManager = $notificationManager;
     }
 
     public function followUser(int $authorId, int $userId) {
@@ -28,6 +31,10 @@ class UserFollowingManager extends AManager {
             if(!$this->userFollowingRepository->followUser($authorId, $userId)) {
                 throw new UserFollowException('Could not follow user ' . $userId . '. Reason: Database exception.');
             }
+
+            $userLink = UserEntity::createUserProfileLink($this->userRepository->getUserById($userId), true);
+
+            $this->notificationManager->createNewUserFollowerNotification($userId, $userLink);
         } catch(AException $e) {
             throw $e;
         }
