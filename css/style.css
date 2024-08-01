@@ -522,7 +522,7 @@ div [id*="user-action-history-"] {
     text-align: center;
 }
 
-#post-data-section, #post-upload-image-section, #post-images-section, #topic-data-section, #post-title-section {
+#post-data-section, #post-upload-image-section, #post-images-section, #topic-data-section, #post-title-section, #user-links-section {
     background-color: rgba(255, 255, 255, 0.75);
 
     border-radius: 10px;

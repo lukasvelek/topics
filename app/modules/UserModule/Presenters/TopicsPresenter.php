@@ -808,11 +808,113 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $this->saveToPresenterCache('topics', implode('', $code));
+
+        $trendingLinks = [
+            LinkBuilder::createSimpleLink('Discover', $this->createURL('discover'), 'post-data-link'),
+            LinkBuilder::createSimpleLink('Trending', $this->createURL('trending'), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('trendingLinks', implode('&nbsp;', $trendingLinks));
     }
 
     public function renderDiscover() {
         $topics = $this->loadFromPresenterCache('topics');
+        $trendingLinks = $this->loadFromPresenterCache('trendingLinks');
+
         $this->template->topics = $topics;
+        $this->template->trending_links = $trendingLinks;
+    }
+
+    public function handleTrending() {
+        $trendingLinks = [
+            LinkBuilder::createSimpleLink('Discover', $this->createURL('discover'), 'post-data-link'),
+            LinkBuilder::createSimpleLink('Trending', $this->createURL('trending'), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('trendingLinks', implode('&nbsp;', $trendingLinks));
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getTrendingTopicsList')
+            ->setFunctionName('getTrendingTopicsList')
+            ->updateHTMLElement('trending-topics-list', 'list')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getTrendingTopicsList()');
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getTrendingPostsList')
+            ->setFunctionName('getTrendingPostsList')
+            ->updateHTMLElement('trending-posts-list', 'list')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getTrendingPostsList()');
+    }
+
+    public function renderTrending() {
+        $trendingLinks = $this->loadFromPresenterCache('trendingLinks');
+
+        $this->template->trending_links = $trendingLinks;
+    }
+
+    public function actionGetTrendingTopicsList() {
+        global $app;
+
+        $limit = 5;
+
+        // topics with most new posts in 24 hrs
+        $data = $app->postRepository->getTopicIdsWithMostPostsInLast24Hrs($limit); // topicId => cnt
+
+        $codeArray = [];
+        foreach($data as $topicId => $cnt) {
+            $topic = $app->topicRepository->getTopicById($topicId);
+            $link = TopicEntity::createTopicProfileLink($topic);
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        ' . $link . '
+                    </div>
+
+                    <div class="col-md">
+                        ' . $cnt . ' posts
+                    </div>
+                </div>';
+        }
+
+        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray)]);
+    }
+
+    public function actionGetTrendingPostsList() {
+        global $app;
+
+        $limit = 5;
+
+        $data = $app->postCommentRepository->getPostIdsWithMostCommentsInLast24Hrs($limit);
+
+        $codeArray = [];
+        foreach($data as $postId => $cnt) {
+            $post = $app->postRepository->getPostById($postId);
+
+            $link = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+            
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        ' . $link . '
+                    </div>
+
+                    <div class="col-md">
+                        ' . $cnt . ' comments
+                    </div>
+                </div>';
+        }
+
+        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray)]);
     }
 
     public function handleReportForm(?FormResponse $fr = null) {

@@ -18,6 +18,10 @@ class TextArea extends AElement {
             $this->required = null;
         }
     }
+
+    public function setPlaceholder(string $text) {
+        $this->placeholder = $text;
+    }
 }
 
 ?>
