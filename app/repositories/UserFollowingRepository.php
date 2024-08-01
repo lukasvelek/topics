@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repository;
+namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Core\HashManager;

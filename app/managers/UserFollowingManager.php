@@ -6,8 +6,8 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\UserFollowException;
 use App\Logger\Logger;
+use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserRepository;
-use App\Repository\UserFollowingRepository;
 
 class UserFollowingManager extends AManager {
     private UserRepository $userRepository;

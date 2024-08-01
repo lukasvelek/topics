@@ -228,6 +228,13 @@ class DatabaseInstaller {
                 'authorId' => 'INT(32) NOT NULL',
                 'userId' => 'INT(32) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'mail_queue' => [
+                'mailId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'recipient' => 'VARCHAR(256) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'content' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

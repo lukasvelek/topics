@@ -32,9 +32,9 @@ use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\TransactionLogRepository;
+use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
-use App\Repository\UserFollowingRepository;
 
 /**
  * Application class that contains all objects and useful functions.
