@@ -28,4 +28,10 @@ $cfg['FULL_DELETE'] = false; // true if content is deleted fully or false if it 
 
 $cfg['PHP_DIR_FULLPATH'] = ''; // path to the php directory
 
+$cfg['MAIL_SERVER'] = ''; // mail server address
+$cfg['MAIL_SERVER_PORT'] = 465; // mail server port
+$cfg['MAIL_USERNAME'] = ''; // mail server username login
+$cfg['MAIL_PASSWORD'] = ''; // mail server password login
+$cfg['MAIL_EMAIL'] = ''; // mail server email
+
 ?>
