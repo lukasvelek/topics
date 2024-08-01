@@ -14,6 +14,7 @@ use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -93,6 +94,12 @@ class PostsPresenter extends AUserPresenter {
             ->addTextArea('text', 'Comment:', null, true)
             ->addSubmit('Post comment', false, true)
         ;
+
+        $fb->updateElement('text', function(TextArea $ta) {
+            $ta->setPlaceholder('Your comment...');
+
+            return $ta;
+        });
 
         $this->saveToPresenterCache('form', $fb);
 
@@ -331,6 +338,12 @@ class PostsPresenter extends AUserPresenter {
             ->addTextArea('text', 'Comment:', null, true)
             ->addSubmit('Post comment')
         ;
+
+        $fb->updateElement('text', function(TextArea $ta) {
+            $ta->setPlaceholder('Your comment...');
+
+            return $ta;
+        });
 
         $this->ajaxSendResponse(['form' => '<div id="post-comment-form">' . $fb->render() . '</div>']);
     }
