@@ -245,6 +245,13 @@ class DatabaseInstaller {
                 'isActive' => 'INT(2) NOT NULL DEFAULT 1',
                 'dateExpire' => 'DATETIME NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_forgotten_password_links' => [
+                'linkId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'INT(32) NOT NULL',
+                'isActive' => 'INT(2) NOT NULL DEFAULT 1',
+                'dateExpire' => 'DATETIME NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

@@ -202,6 +202,27 @@ class UserRepository extends ARepository {
 
         return $users;
     }
+
+    public function insertNewForgottenPasswordEntry(string $requestId, int $userId, string $dateExpire) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('user_forgotten_password_links', ['requestId', 'userId', 'dateExpire'])
+            ->values([$requestId, $userId, $dateExpire])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getForgottenPasswordRequestById(string $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_forgotten_password_links')
+            ->where('requestId = ?', [$id])
+            ->execute();
+
+        return $qb->fetch();
+    }
 }
 
 ?>
