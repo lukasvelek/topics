@@ -358,14 +358,19 @@ class DatabaseInstaller {
             'service_user'
         ];
 
+        $canLoginArray = [
+            'admin'
+        ];
+
         $i = 0;
         foreach($users as $username => $password) {
             $password = password_hash($password, PASSWORD_BCRYPT);
 
             $isAdmin = in_array($username, $admins) ? '1' : '0';
+            $canLogin = in_array($username, $canLoginArray) ? '1' : '0';
 
             $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`, `canLogin`)
-                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', 1
+                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', ' . $canLogin . '
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);
