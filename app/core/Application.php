@@ -16,6 +16,7 @@ use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserFollowingManager;
+use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
 use App\Managers\UserRegistrationManager;
 use App\Modules\ModuleManager;
@@ -94,6 +95,7 @@ class Application {
     public UserFollowingManager $userFollowingManager;
     public MailManager $mailManager;
     public UserRegistrationManager $userRegistrationManager;
+    public UserManager $userManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -152,6 +154,7 @@ class Application {
         $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager, $this->mailManager, $this->userRepository);
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
         $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager);
+        $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

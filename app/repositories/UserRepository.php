@@ -13,7 +13,7 @@ class UserRepository extends ARepository {
         parent::__construct($conn, $logger);
     }
 
-    public function getUserById(int $id) {
+    public function getUserById(int $id): UserEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -80,7 +80,7 @@ class UserRepository extends ARepository {
         return $loginHash;
     }
 
-    public function getUserByUsername(string $username) {
+    public function getUserByUsername(string $username): UserEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['userId'])
@@ -203,11 +203,11 @@ class UserRepository extends ARepository {
         return $users;
     }
 
-    public function insertNewForgottenPasswordEntry(string $requestId, int $userId, string $dateExpire) {
+    public function insertNewForgottenPasswordEntry(string $linkId, int $userId, string $dateExpire) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('user_forgotten_password_links', ['requestId', 'userId', 'dateExpire'])
-            ->values([$requestId, $userId, $dateExpire])
+        $qb ->insert('user_forgotten_password_links', ['linkId', 'userId', 'dateExpire'])
+            ->values([$linkId, $userId, $dateExpire])
             ->execute();
 
         return $qb->fetchBool();
@@ -218,7 +218,7 @@ class UserRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('user_forgotten_password_links')
-            ->where('requestId = ?', [$id])
+            ->where('linkId = ?', [$id])
             ->execute();
 
         return $qb->fetch();

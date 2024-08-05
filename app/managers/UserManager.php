@@ -19,12 +19,16 @@ class UserManager extends AManager {
         $this->mailManager = $mailManager;
     }
 
+    public function getUserByUsername(string $username) {
+        return $this->userRepository->getUserByUsername($username);
+    }
+
     public function getUserById(int $userId) {
         return $this->userRepository->getUserById($userId);
     }
 
     public function createNewForgottenPassword(int $userId) {
-        $requestId = $this->createNewForgottenPasswordRequestId();
+        $linkId = $this->createNewForgottenPasswordRequestId();
 
         // disable user
         $this->disableUser($userId, $userId);
@@ -34,14 +38,14 @@ class UserManager extends AManager {
         $dateExpire->modify('+1d');
         $dateExpire = $dateExpire->getResult();
         
-        if(!$this->userRepository->insertNewForgottenPasswordEntry($requestId, $userId, $dateExpire)) {
+        if(!$this->userRepository->insertNewForgottenPasswordEntry($linkId, $userId, $dateExpire)) {
             throw new GeneralException('Could not insert new forgotten password entry.');
         }
         
         // send email
         $user = $this->getUserById($userId);
 
-        $link = '<a href="' . $this->mailManager->cfg['APP_URL_BASE'] . '?page=AnonymModule:ForgottenPassword&action=form&requestId=' . $requestId . '">here</a>';
+        $link = '<a href="' . $this->mailManager->cfg['APP_URL_BASE'] . '?page=AnonymModule:ForgottenPassword&action=changePasswordForm&linkId=' . $linkId . '">here</a>';
 
         if(!$this->mailManager->createNewForgottenPassword($user, $link)) {
             throw new GeneralException('Could not create an email notification.');
