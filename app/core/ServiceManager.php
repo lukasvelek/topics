@@ -32,7 +32,7 @@ class ServiceManager {
     }
 
     public function startService(string $serviceTitle) {
-        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => null, 'status' => SystemServiceStatus::RUNNING])) {
+        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => NULL, 'status' => SystemServiceStatus::RUNNING])) {
             throw new ServiceException('Could not update service status.');
         }
     }
