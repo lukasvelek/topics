@@ -235,12 +235,14 @@ class DatabaseInstaller {
                 'recipient' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'content' => 'TEXT NOT NULL',
+                'isSent' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'user_registration_links' => [
                 'registrationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'userId' => 'INT(32) NOT NULL',
                 'link' => 'VARCHAR(256) NOT NULL',
+                'isActive' => 'INT(2) NOT NULL DEFAULT 1',
                 'dateExpire' => 'DATETIME NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]

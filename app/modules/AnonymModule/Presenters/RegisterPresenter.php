@@ -20,21 +20,24 @@ class RegisterPresenter extends APresenter {
 
         if($fr !== null) {
             $username = $fr->username;
-            $password = $fr->password;
+            $password = HashManager::hashPassword($fr->password);
             $email = $fr->email;
 
+            $error = 0;
             try {
                 $app->userRepository->beginTransaction();
 
                 if(!$app->userAuth->checkUser($username)) {
                     throw new UserRegistrationException('User with username \'' . $username . '\' already exists.');
+                    $error = 1;
                 }
 
                 if(!$app->userAuth->checkUserByEmail($email)) {
                     throw new UserRegistrationException('User with email \'' . $email . '\' already exists.');
+                    $error = 1;
                 }
 
-                $app->userRepository->createNewUser($username, HashManager::hashPassword($password), $email, false);
+                $app->userRegistrationManager->registerUser($username, $password, $email);
 
                 $app->userRepository->commit(null, __METHOD__);
 
@@ -43,7 +46,16 @@ class RegisterPresenter extends APresenter {
             } catch(AException|Exception $e) {
                 $app->userRepository->rollback();
                 
-                $this->flashMessage('Your registration could not be finished. Reason: ' . $e->getMessage(), 'error');
+                if($error == 0) {
+                    $this->flashMessage('User with these credentials exists.', 'error');
+                } else {
+                    if($e instanceof AException) {
+                        $this->flashMessage('Your account could not be created. Please try again or contact support with this error ID: #' . $e->getHash() . ' for further assistance.', 'error');
+                    } else {
+                        $this->flashMessage('Your account could not be created. Please try again or contact support for further assistance.', 'error');
+                    }
+                }
+                
                 $this->redirect();
             }
         } else {
