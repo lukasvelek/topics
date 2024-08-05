@@ -40,7 +40,8 @@ class DatabaseInstaller {
                 'loginHash' => 'VARCHAR(256) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'email' => 'VARCHAR(256) NULL',
-                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0'
+                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0',
+                'canLogin' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'topics' => [
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -235,6 +236,13 @@ class DatabaseInstaller {
                 'title' => 'VARCHAR(256) NOT NULL',
                 'content' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_registration_links' => [
+                'registrationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'INT(32) NOT NULL',
+                'link' => 'VARCHAR(256) NOT NULL',
+                'dateExpire' => 'DATETIME NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
@@ -354,8 +362,8 @@ class DatabaseInstaller {
 
             $isAdmin = in_array($username, $admins) ? '1' : '0';
 
-            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`)
-                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . '
+            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`, `canLogin`)
+                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', 1
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);
