@@ -11,6 +11,7 @@ use App\Exceptions\ModuleDoesNotExistException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
 use App\Managers\FileUploadManager;
+use App\Managers\MailManager;
 use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
@@ -35,6 +36,7 @@ use App\Repositories\TransactionLogRepository;
 use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRepository;
+use App\Rpeositories\MailRepository;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -77,6 +79,7 @@ class Application {
     public FileUploadRepository $fileUploadRepository;
     public TransactionLogRepository $transactionLogRepository;
     public UserFollowingRepository $userFollowingRepository;
+    public MailRepository $mailRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -86,6 +89,7 @@ class Application {
     public NotificationManager $notificationManager;
     public FileUploadManager $fileUploadManager;
     public UserFollowingManager $userFollowingManager;
+    public MailManager $mailManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -131,6 +135,7 @@ class Application {
         $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
         $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
         $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
+        $this->mailRepository = new MailRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -140,6 +145,7 @@ class Application {
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
         $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository, $this->notificationManager);
+        $this->mailManager = new MailManager($this->logger, $this->mailRepository, $this->userRepository, $this->cfg);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

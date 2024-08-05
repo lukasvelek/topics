@@ -7,9 +7,9 @@ $cfg['SQL_LOG_LEVEL'] = 0; // 0 - off, 1 - on
 $cfg['LOG_STOPWATCH'] = 0; // 0 - off, 1 - on
 $cfg['SQL_SEPARATE_LOGGING'] = 0; // 0 - off, 1 - on
 
-$cfg['LOG_DIR'] = '';
-$cfg['CACHE_DIR'] = '';
-$cfg['UPLOAD_DIR'] = '';
+$cfg['LOG_DIR'] = ''; // directory where log files will be saved
+$cfg['CACHE_DIR'] = ''; // directory where cache files will be saved
+$cfg['UPLOAD_DIR'] = ''; // directory where uploaded files will be saved
 
 $cfg['ENABLE_CACHING'] = true; // true if caching is enabled or false if not
 
@@ -22,7 +22,7 @@ $cfg['DB_USER'] = ''; // database user
 $cfg['DB_PASS'] = ''; // database user password
 $cfg['DB_NAME'] = ''; // database name
 
-$cfg['GRID_SIZE'] = 20; // grid row count
+$cfg['GRID_SIZE'] = 20; // grid row count, must be greater than 1
 
 $cfg['FULL_DELETE'] = false; // true if content is deleted fully or false if it just has isDeleted = 1
 
