@@ -462,7 +462,7 @@ class DatabaseInstaller {
             'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
-            'MailService' => 'MailService.php'
+            'Mail' => 'MailService.php'
         ];
 
         foreach($services as $title => $path) {
