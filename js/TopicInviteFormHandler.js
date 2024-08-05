@@ -1,4 +1,5 @@
 $("#userSelect").attr('disabled', true);
+$("#formSubmit").attr('disabled', true);
 
 function searchUser() {
     const username = $("#username").val();
@@ -17,6 +18,7 @@ function searchUser() {
         if(obj.empty == false) {
             $("#userSelect").html(obj.users);
             $("#userSelect").removeAttr('disabled');
+            $("#formSubmit").removeAttr('disabled');
         } else {
             alert("No users found.");
         }

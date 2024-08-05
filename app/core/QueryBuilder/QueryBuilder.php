@@ -762,6 +762,8 @@ class QueryBuilder
         foreach($this->queryData['values'] as $key => $value) {
             if($value == 'NULL' || $value == 'current_timestamp()') {
                 $valArray[] = $key . ' = ' . $value;
+            } else if($value == null) {
+                $valArray[] = $key . ' = NULL';
             } else {
                 $valArray[] = $key . ' = \'' . $value . '\'';
             }
