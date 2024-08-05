@@ -34,4 +34,6 @@ $cfg['MAIL_USERNAME'] = ''; // mail server username login
 $cfg['MAIL_PASSWORD'] = ''; // mail server password login
 $cfg['MAIL_EMAIL'] = ''; // mail server email
 
+$cfg['ID_SERVICE_USER'] = 1; // service user ID
+
 ?>

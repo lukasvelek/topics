@@ -70,8 +70,11 @@ class MailService extends AService {
             if(!empty($delete)) {
                 foreach($delete as $id) {
                     try {
+                        $this->mailManager->mailRepository->beginTransaction();
                         $this->mailManager->deleteEmailEntry($id);
+                        $this->mailManager->mailRepository->commit($this->mailManager->cfg['ID_SERVICE_USER'], __METHOD__);
                     } catch(AException|Exception $e) {
+                        $this->mailManager->mailRepository->rollback();
                         $this->logError('Could not delete entry #' . $id . '. Reason: ' . $e->getMessage());
                     }
                 }

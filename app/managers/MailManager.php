@@ -7,6 +7,7 @@ use App\Core\HashManager;
 use App\Entities\EmailEntity;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
+use App\Exceptions\GeneralException;
 use App\Exceptions\MailSendException;
 use App\Logger\Logger;
 use App\Repositories\UserRepository;
@@ -15,9 +16,9 @@ use Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
 class MailManager extends AManager {
-    private MailRepository $mailRepository;
+    public MailRepository $mailRepository;
     private UserRepository $userRepository;
-    private array $cfg;
+    public array $cfg;
 
     public function __construct(Logger $logger, MailRepository $mailRepository, UserRepository $userRepository, array $cfg) {
         parent::__construct($logger);
@@ -36,6 +37,10 @@ class MailManager extends AManager {
 
         foreach($data as $key => $value) {
             $content = str_replace($key, $value, $content);
+        }
+
+        if($recipient->getEmail() === null) {
+            throw new GeneralException('Email recipient has not email address defined.');
         }
 
         return $this->mailRepository->createEntry($id, $recipient->getEmail(), $title, $content);

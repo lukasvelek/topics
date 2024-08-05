@@ -339,11 +339,13 @@ class DatabaseInstaller {
         $this->logger->info('Creating users.', __METHOD__);
 
         $users = [
-            'admin' => 'admin'
+            'admin' => 'admin',
+            'service_user' => 'service_user'
         ];
 
         $admins = [
-            'admin'
+            'admin',
+            'service_user'
         ];
 
         $i = 0;
