@@ -50,8 +50,12 @@ class MailManager extends AManager {
         return HashManager::createHash(32, false);
     }
 
+    private function getBaseURL() {
+        return $this->cfg['APP_URL_BASE'];
+    }
+
     public function createNewTopicInvite(UserEntity $recipient, TopicEntity $topic) {
-        $link = '<a class="post-data-link" href="localhost/topics/?page=UserModule:TopicInvites&action=list">here</a>';
+        $link = '<a class="post-data-link" href="' . $this->getBaseURL() . '?page=UserModule:TopicInvites&action=list">here</a>';
 
         $data = [
             '$LINK$' => $link,

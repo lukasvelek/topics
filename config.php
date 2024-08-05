@@ -36,4 +36,6 @@ $cfg['MAIL_EMAIL'] = ''; // mail server email
 
 $cfg['ID_SERVICE_USER'] = 1; // service user ID
 
+$cfg['APP_URL_BASE'] = ''; // base URL of application - e.g. "topics.com" or "localhost"
+
 ?>
