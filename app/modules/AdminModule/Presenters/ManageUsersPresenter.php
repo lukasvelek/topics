@@ -9,6 +9,7 @@ use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -120,7 +121,9 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userRepository->beginTransaction();
 
-                $app->userRepository->updateUser($userId, ['isAdmin' => '0']);
+                if(!$app->userRepository->updateUser($userId, ['isAdmin' => '0'])) {
+                    throw new GeneralException('User could not be updated.');
+                }
 
                 $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
@@ -175,7 +178,9 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userRepository->beginTransaction();
 
-                $app->userRepository->updateUser($userId, ['isAdmin' => '1']);
+                if(!$app->userRepository->updateUser($userId, ['isAdmin' => '1'])) {
+                    throw new GeneralException('User could not be updated.');
+                }
 
                 $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 

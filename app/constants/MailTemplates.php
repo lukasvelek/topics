@@ -25,7 +25,7 @@ class MailTemplates {
                     'New registration confirmation - Topics',
                     "Dear \$USER_NAME$," . self::newLine($html) . "
                     you have created a registration and it must be confirmed. " . self::newLine($html) . "
-                    Please click \$LINK$ here to confirm registration." . self::newLine($html, 2) . "
+                    Please click \$LINK$ to confirm registration." . self::newLine($html, 2) . "
                     Topics team"
                 ];
 

@@ -52,6 +52,50 @@ class UserRegistrationManager extends AManager {
     private function createRegistrationId() {
         return HashManager::createHash(32, false);
     }
+
+    public function confirmUserRegistration(string $registrationId) {
+        $row = $this->urr->getRegistrationById($registrationId);
+
+        $userId = $row['userId'];
+
+        $dateExpire = $row['dateExpire'];
+
+        if(strtotime($dateExpire) < time()) {
+            throw new UserRegistrationException('This confirmation link has expired.');
+        }
+
+        if($row['isActive'] == '0') {
+            throw new UserRegistrationException('This confirmation link has been used and is not active');
+        }
+
+        if(!$this->ur->updateUser($userId, ['canLogin' => '1'])) {
+            throw new UserRegistrationException('User could not be updated.');
+        }
+
+        if(!$this->urr->deactivateRegistration($registrationId)) {
+            throw new UserRegistrationException('Confirmation link could not be deactivated.');
+        }
+    }
+
+    public function recreateNewUserRegistration(string $oldRegistrationId) {
+        $row = $this->urr->getRegistrationById($oldRegistrationId);
+
+        $registrationId = $this->createRegistrationId();
+
+        $link = '<a href="' . $this->mm->cfg['APP_URL_BASE'] . '?page=AnonymModule:Register&action=confirm&registrationId=' . $registrationId  . '">here</a>';
+
+        $dateExpire = new DateTime();
+        $dateExpire->modify('+1d');
+        $dateExpire = $dateExpire->getResult();
+
+        if(!$this->urr->deactivateRegistration($oldRegistrationId)) {
+            throw new UserRegistrationException('Old confirmation link could not be deactivated.');
+        }
+        
+        if(!$this->urr->insertNewConfirmationEntry($registrationId, $row['userId'], $link, $dateExpire)) {
+            throw new UserRegistrationException('Could not create new confirmation entry for user #' . $row['userId'] . '.');
+        }
+    }
 }
 
 ?>
