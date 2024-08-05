@@ -3,6 +3,7 @@
 namespace App\Rpeositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\EmailEntity;
 use App\Logger\Logger;
 use App\Repositories\ARepository;
 
@@ -19,6 +20,29 @@ class MailRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function getAllEntriesLimited(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('mail_queue');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = EmailEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
     }
 }
 

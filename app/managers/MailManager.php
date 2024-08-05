@@ -87,6 +87,10 @@ class MailManager extends AManager {
 
         return $mail;
     }
+
+    public function getAllUnsentEmails(int $limit, int $offset) {
+        return $this->mailRepository->getAllEntriesLimited($limit, $offset);
+    }
 }
 
 ?>
