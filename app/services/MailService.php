@@ -10,7 +10,6 @@ use Exception;
 
 class MailService extends AService {
     private const MAIL_BATCH_LIMIT = 20;
-    private const STOP_ON_SEND_EXCEPTION = false;
 
     private MailManager $mailManager;
     
@@ -34,7 +33,6 @@ class MailService extends AService {
 
     private function innerRun() {
         // Service executes all commands here
-
         $run = true;
 
         $offset = 0;
@@ -59,11 +57,6 @@ class MailService extends AService {
                     $delete[] = $entry->getId();
                 } catch(AException $e) {
                     $this->logError('Could not send email. Reason: ' . $e->getMessage());
-
-                    if(self::STOP_ON_SEND_EXCEPTION) {
-                        $run = false;
-                        break 2;
-                    }
                 }
             }
             

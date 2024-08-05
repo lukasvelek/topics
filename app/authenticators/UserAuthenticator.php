@@ -40,6 +40,10 @@ class UserAuthenticator {
             throw new GeneralException('You have entered bad credentials.');
         }
 
+        if(!$user->canLogin()) {
+            throw new GeneralException('You have not confirmed your registration.');
+        }
+
         $lastProsecution = $this->userProsecutionRepository->getLastProsecutionForUserId($user->getId());
 
         if($lastProsecution !== null) {

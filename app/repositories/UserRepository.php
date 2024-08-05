@@ -127,7 +127,7 @@ class UserRepository extends ARepository {
             ->where('userId = ?', [$id])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getUsersByIdBulk(array $ids, bool $idAsKey = false) {

@@ -40,7 +40,8 @@ class DatabaseInstaller {
                 'loginHash' => 'VARCHAR(256) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'email' => 'VARCHAR(256) NULL',
-                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0'
+                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0',
+                'canLogin' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'topics' => [
                 'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
@@ -234,6 +235,15 @@ class DatabaseInstaller {
                 'recipient' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'content' => 'TEXT NOT NULL',
+                'isSent' => 'INT(2) NOT NULL DEFAULT 0',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_registration_links' => [
+                'registrationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'INT(32) NOT NULL',
+                'link' => 'VARCHAR(256) NOT NULL',
+                'isActive' => 'INT(2) NOT NULL DEFAULT 1',
+                'dateExpire' => 'DATETIME NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
@@ -348,14 +358,19 @@ class DatabaseInstaller {
             'service_user'
         ];
 
+        $canLoginArray = [
+            'admin'
+        ];
+
         $i = 0;
         foreach($users as $username => $password) {
             $password = password_hash($password, PASSWORD_BCRYPT);
 
             $isAdmin = in_array($username, $admins) ? '1' : '0';
+            $canLogin = in_array($username, $canLoginArray) ? '1' : '0';
 
-            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`)
-                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . '
+            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`, `canLogin`)
+                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', ' . $canLogin . '
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);
@@ -462,7 +477,8 @@ class DatabaseInstaller {
             'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
-            'Mail' => 'MailService.php'
+            'Mail' => 'MailService.php',
+            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemovingService.php'
         ];
 
         foreach($services as $title => $path) {

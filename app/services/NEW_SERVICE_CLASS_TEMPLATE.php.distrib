@@ -25,7 +25,7 @@ class SERVICE_NAME extends AService {
     }
 
     private function innerRun() {
-        // Service executes all commands here   
+        // Service executes all commands here
     }
 }
 

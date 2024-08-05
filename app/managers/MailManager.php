@@ -27,6 +27,31 @@ class MailManager extends AManager {
         $this->userRepository = $userRepository;
         $this->cfg = $cfg;
     }
+
+    /** EMAIL DEFINITION */
+
+    public function createNewUserRegistration(UserEntity $recipient, string $link) {
+        $data = [
+            '$USER_NAME$' => $recipient->getUsername(),
+            '$LINK$' => $link
+        ];
+
+        return $this->createEmailEntry($recipient->getId(), MailTemplates::REGISTRATION_CONFIRMATION, $data);
+    }
+
+    public function createNewTopicInvite(UserEntity $recipient, TopicEntity $topic) {
+        $link = '<a class="post-data-link" href="' . $this->getBaseURL() . '?page=UserModule:TopicInvites&action=list">here</a>';
+
+        $data = [
+            '$LINK$' => $link,
+            '$TOPIC_TITLE$' => $topic->getTitle(),
+            '$USER_NAME$' => $recipient->getUsername()
+        ];
+
+        return $this->createEmailEntry($recipient->getId(), MailTemplates::NEW_TOPIC_INVITE, $data);
+    }
+
+    /** END OF EMAIL DEFINITION */
     
     private function createEmailEntry(int $recipientId, int $mailTemplate, array $data) {
         $id = $this->createMailId();
@@ -52,18 +77,6 @@ class MailManager extends AManager {
 
     private function getBaseURL() {
         return $this->cfg['APP_URL_BASE'];
-    }
-
-    public function createNewTopicInvite(UserEntity $recipient, TopicEntity $topic) {
-        $link = '<a class="post-data-link" href="' . $this->getBaseURL() . '?page=UserModule:TopicInvites&action=list">here</a>';
-
-        $data = [
-            '$LINK$' => $link,
-            '$TOPIC_TITLE$' => $topic->getTitle(),
-            '$USER_NAME$' => $recipient->getUsername()
-        ];
-
-        return $this->createEmailEntry($recipient->getId(), MailTemplates::NEW_TOPIC_INVITE, $data);
     }
 
     public function sendEmail(EmailEntity $ee) {
