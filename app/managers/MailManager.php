@@ -91,6 +91,10 @@ class MailManager extends AManager {
     public function getAllUnsentEmails(int $limit, int $offset) {
         return $this->mailRepository->getAllEntriesLimited($limit, $offset);
     }
+
+    public function deleteEmailEntry(string $emailId) {
+        return $this->mailRepository->deleteEntry($emailId);
+    }
 }
 
 ?>

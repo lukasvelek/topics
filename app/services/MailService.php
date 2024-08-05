@@ -39,7 +39,7 @@ class MailService extends AService {
 
         $offset = 0;
         while($run) {
-            $this->logInfo('Loading email batch #' . (($offset + 1) / self::MAIL_BATCH_LIMIT) . '.');
+            $this->logInfo('Loading email batch #' . (($offset / self::MAIL_BATCH_LIMIT) + 1) . '.');
 
             $entries = $this->mailManager->getAllUnsentEmails(self::MAIL_BATCH_LIMIT, $offset);
 
@@ -51,16 +51,28 @@ class MailService extends AService {
                 $this->logInfo('Found ' . count($entries) . ' emails in queue.');
             }
 
+            $delete = [];
             foreach($entries as $entry) {
                 try {
                     $this->logInfo('Sending email with entry #' . $entry->getId() . '.');
                     $this->mailManager->sendEmail($entry);
+                    $delete[] = $entry->getId();
                 } catch(AException $e) {
                     $this->logError('Could not send email. Reason: ' . $e->getMessage());
 
                     if(self::STOP_ON_SEND_EXCEPTION) {
                         $run = false;
                         break 2;
+                    }
+                }
+            }
+            
+            if(!empty($delete)) {
+                foreach($delete as $id) {
+                    try {
+                        $this->mailManager->deleteEmailEntry($id);
+                    } catch(AException|Exception $e) {
+                        $this->logError('Could not delete entry #' . $id . '. Reason: ' . $e->getMessage());
                     }
                 }
             }

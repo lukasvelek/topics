@@ -13,8 +13,10 @@ use App\Logger\Logger;
 use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\UserRepository;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
+use Exception;
 
 class TopicMembershipManager extends AManager {
     private const CACHE_NAMESPACE = 'topicMemberships';
@@ -23,14 +25,24 @@ class TopicMembershipManager extends AManager {
     private TopicMembershipRepository $topicMembershipRepository;
     private TopicInviteRepository $topicInviteRepository;
     private NotificationManager $notificationManager;
+    private MailManager $mailManager;
+    private UserRepository $userRepository;
 
-    public function __construct(TopicRepository $topicRepository, TopicMembershipRepository $topicMembershipRepository, Logger $logger, TopicInviteRepository $topicInviteRepository, NotificationManager $notificationManager) {
+    public function __construct(TopicRepository $topicRepository,
+                                TopicMembershipRepository $topicMembershipRepository,
+                                Logger $logger,
+                                TopicInviteRepository $topicInviteRepository,
+                                NotificationManager $notificationManager,
+                                MailManager $mailManager,
+                                UserRepository $userRepository) {
         parent::__construct($logger);
 
         $this->topicMembershipRepository = $topicMembershipRepository;
         $this->topicRepository = $topicRepository;
         $this->topicInviteRepository = $topicInviteRepository;
         $this->notificationManager = $notificationManager;
+        $this->mailManager = $mailManager;
+        $this->userRepository = $userRepository;
     }
 
     public function followTopic(int $topicId, int $userId,) {
@@ -160,24 +172,22 @@ class TopicMembershipManager extends AManager {
         $now->modify('+7d');
         $dateValid = $now->getResult();
 
-        $this->topicRepository->beginTransaction();
-
-        if(!$this->topicInviteRepository->createInvite($topicId, $userId, $dateValid)) {
-            $this->topicRepository->rollback();
-            throw new GeneralException('Database error.');
-        }
-
-        $topic = $this->topicRepository->getTopicById($topicId);
-        $link = TopicEntity::createTopicProfileLink($topic, true);
-
         try {
+            if(!$this->topicInviteRepository->createInvite($topicId, $userId, $dateValid)) {
+                throw new GeneralException('Database error');
+            }
+
+            $topic = $this->topicRepository->getTopicById($topicId);
+            $link = TopicEntity::createTopicProfileLink($topic, true);
+
             $this->notificationManager->createNewTopicInviteNotification($userId, $link);
-        } catch(AException $e) {
-            $this->topicRepository->rollback();
-            throw new GeneralException('Could not create a notification.');
+
+            $recipient = $this->userRepository->getUserById($userId);
+
+            $this->mailManager->createNewTopicInvite($recipient, $topic);
+        } catch(AException|Exception $e) {
+            throw $e;
         }
-        
-        $this->topicRepository->commit($callingUserId, __METHOD__);
     }
 
     public function checkUserInviteExists(int $topicId, int $userId) {

@@ -141,11 +141,11 @@ class Application {
 
         $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
         $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
-        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
-        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
         $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository, $this->notificationManager);
         $this->mailManager = new MailManager($this->logger, $this->mailRepository, $this->userRepository, $this->cfg);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager, $this->mailManager, $this->userRepository);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

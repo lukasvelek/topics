@@ -89,7 +89,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             $date = new DateTime();
             $date->modify('-2d');
             
-            if(strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
+            if($service->getStatus() == SystemServiceStatus::NOT_RUNNING && strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
                 $gb->addOnRowRender($service->getId(), function(Row $row) {
                     $row->setBackgroundColor('orange');
                     $row->setDescription('This service has not run in 2 days or more.');
