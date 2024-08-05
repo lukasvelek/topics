@@ -41,6 +41,42 @@ class UserRegistrationRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getInactiveOrExpiredRegistrations(int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['registrationId'])
+            ->from('user_registration_links')
+            ->where('isActive = 0')
+            ->orWhere('dateExpire < current_timestamp()');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['registrationId'];
+        }
+
+        return $ids;
+    }
+
+    public function deleteRegistration(string $registrationId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('user_registration_links')
+            ->where('registrationId = ?', [$registrationId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>
