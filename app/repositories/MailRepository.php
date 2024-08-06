@@ -26,7 +26,8 @@ class MailRepository extends ARepository {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
-            ->from('mail_queue');
+            ->from('mail_queue')
+            ->where('isSent = 0');
 
         if($limit > 0) {
             $qb->limit($limit);
@@ -50,6 +51,17 @@ class MailRepository extends ARepository {
 
         $qb ->delete()
             ->from('mail_queue')
+            ->where('mailId = ?', [$id])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function updateEntry(string $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('mail_queue')
+            ->set($data)
             ->where('mailId = ?', [$id])
             ->execute();
 

@@ -124,7 +124,11 @@ class MailManager extends AManager {
     }
 
     public function deleteEmailEntry(string $emailId) {
-        return $this->mailRepository->deleteEntry($emailId);
+        $data = [
+            'isSent' => '1'
+        ];
+
+        return $this->mailRepository->updateEntry($emailId, $data);
     }
 }
 
