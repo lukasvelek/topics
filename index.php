@@ -7,6 +7,7 @@ use App\Exceptions\AException;
 use App\Exceptions\ApplicationInitializationException;
 
 require_once('app/app_loader.php');
+require_once('config.local.php');
 
 try {
     $app = new Application();

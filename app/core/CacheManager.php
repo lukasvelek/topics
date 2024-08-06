@@ -6,9 +6,9 @@ use App\Core\Datetypes\DateTime;
 use App\Logger\Logger;
 
 class CacheManager {
-    private ?Logger $logger;
+    private Logger $logger;
 
-    public function __construct(?Logger $logger) {
+    public function __construct(Logger $logger) {
         $this->logger = $logger;
     }
 
@@ -41,8 +41,9 @@ class CacheManager {
     }
 
     private function createPath(string $namespace) {
-        global $app;
-        return $app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\';
+        global $cfg;
+        
+        return $cfg['APP_REAL_DIR'] . $cfg['CACHE_DIR'] . $namespace . '\\';
     }
 
     private function generateFilename(string $namespace) {

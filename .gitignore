@@ -5,3 +5,4 @@ app/core/install
 web.config
 upload/
 *.bak
+app_loader2.php

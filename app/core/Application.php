@@ -105,8 +105,7 @@ class Application {
      * The Application constructor. It creates objects of all used classes.
      */
     public function __construct() {
-        require_once('config.local.php');
-
+        global $cfg;
         $this->cfg = $cfg;
 
         $this->modules = [];
