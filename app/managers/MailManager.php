@@ -30,6 +30,15 @@ class MailManager extends AManager {
 
     /** EMAIL DEFINITION */
 
+    public function createNewForgottenPassword(UserEntity $recipient, string $link) {
+        $data = [
+            '$USER_NAME$' => $recipient->getUsername(),
+            '$LINK$' => $link
+        ];
+
+        return $this->createEmailEntry($recipient->getId(), MailTemplates::FORGOTTEN_PASSWORD, $data);
+    }
+
     public function createNewUserRegistration(UserEntity $recipient, string $link) {
         $data = [
             '$USER_NAME$' => $recipient->getUsername(),
@@ -115,7 +124,11 @@ class MailManager extends AManager {
     }
 
     public function deleteEmailEntry(string $emailId) {
-        return $this->mailRepository->deleteEntry($emailId);
+        $data = [
+            'isSent' => '1'
+        ];
+
+        return $this->mailRepository->updateEntry($emailId, $data);
     }
 }
 

@@ -41,7 +41,7 @@ class UserAuthenticator {
         }
 
         if(!$user->canLogin()) {
-            throw new GeneralException('You have not confirmed your registration.');
+            throw new GeneralException('Your account is disabled. Maybe you have request resetting your password or haven\'t confirmed your registration?');
         }
 
         $lastProsecution = $this->userProsecutionRepository->getLastProsecutionForUserId($user->getId());
