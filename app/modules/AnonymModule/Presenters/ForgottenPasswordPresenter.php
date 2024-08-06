@@ -7,6 +7,7 @@ use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 use Exception;
 
 class ForgottenPasswordPresenter extends AAnonymPresenter {
@@ -46,13 +47,19 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
                 ->addSubmit('Submit');
     
             $this->saveToPresenterCache('form', $fb);
+
+            $link = LinkBuilder::createSimpleLink('Login', ['page' => 'AnonymModule:Login', 'action' => 'loginForm'], 'post-data-link');
+
+            $this->saveToPresenterCache('link', $link);
         }
     }
 
     public function renderForm() {
         $form = $this->loadFromPresenterCache('form');
+        $link = $this->loadFromPresenterCache('link');
 
         $this->template->form = $form;
+        $this->template->link = $link;
     }
 
     public function handleChangePasswordForm(?FormResponse $fr = null) {
