@@ -223,6 +223,17 @@ class UserRepository extends ARepository {
 
         return $qb->fetch();
     }
+
+    public function updateRequest(string $id, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('user_forgotten_password_links')
+            ->set($data)
+            ->where('linkId = ?', [$id])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>

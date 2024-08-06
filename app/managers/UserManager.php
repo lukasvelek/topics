@@ -2,21 +2,31 @@
 
 namespace App\Managers;
 
+use App\Constants\AdministratorGroups;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
+use App\Exceptions\EntityUpdateException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
+use App\Repositories\GroupRepository;
 use App\Repositories\UserRepository;
 
 class UserManager extends AManager {
     private UserRepository $userRepository;
     private MailManager $mailManager;
+    private GroupRepository $groupRepository;
 
-    public function __construct(Logger $logger, UserRepository $userRepository, MailManager $mailManager) {
+    public function __construct(
+        Logger $logger,
+        UserRepository $userRepository,
+        MailManager $mailManager,
+        GroupRepository $groupRepository
+    ) {
         parent::__construct($logger);
 
         $this->userRepository = $userRepository;
         $this->mailManager = $mailManager;
+        $this->groupRepository = $groupRepository;
     }
 
     public function getUserByUsername(string $username) {
@@ -70,6 +80,44 @@ class UserManager extends AManager {
 
     private function createNewForgottenPasswordRequestId() {
         return HashManager::createHash(32, false);
+    }
+
+    public function checkForgottenPasswordRequest(string $linkId) {
+        $row = $this->userRepository->getForgottenPasswordRequestById($linkId);
+
+        if($row['isActive'] == 0) {
+            return false;
+        }
+
+        if(strtotime($row['dateExpire']) < time()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function processForgottenPasswordRequestPasswordChange(string $linkId, string $hashedPassword) {
+        // update password
+        // activate user
+        // deactive link
+        
+        $request = $this->userRepository->getForgottenPasswordRequestById($linkId);
+        $userId = $request['userId'];
+
+        $data = [
+            'password' => $hashedPassword,
+            'canLogin' => '1'
+        ];
+        if(!$this->userRepository->updateUser($userId, $data)) {
+            throw new EntityUpdateException('Could not update user #' . $userId . ' with data [' . implode(', ', $data) . '].');
+        }
+
+        $rdata = [
+            'isActive' => '0'
+        ];
+        if(!$this->userRepository->updateRequest($linkId, $rdata)) {
+            throw new EntityUpdateException('Could not update request #' . $linkId . ' with data [' . implode(',', $rdata) . '].');
+        }
     }
 }
 
