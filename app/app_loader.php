@@ -110,7 +110,7 @@ function requireFiles(array $files) {
 $files = getContainer();
 
 if(empty($files)) {
-    getFilesInFolderRecursively(__DIR__, $files, ['ajax\\'], ['app_loader.php'], ['html', 'distrib']);
+    getFilesInFolderRecursively(__DIR__, $files, [], ['app_loader.php'], ['html', 'distrib', 'bak']);
     sortFilesByPriority($files);
     createContainer($files);
 }
