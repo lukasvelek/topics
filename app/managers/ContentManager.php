@@ -27,7 +27,7 @@ class ContentManager extends AManager {
 
     private bool $fullDelete;
 
-    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $fullDelete, Logger $logger, TopicMembershipManager $topicMembershipManager, TopicPollRepository $topicPollRepository) {
+    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $full_delete, Logger $logger, TopicMembershipManager $topicMembershipManager, TopicPollRepository $topicPollRepository) {
         parent::__construct($logger);
         
         $this->topicRepository = $topicRepository;
@@ -36,7 +36,7 @@ class ContentManager extends AManager {
         $this->topicMembershipManager = $topicMembershipManager;
         $this->topicPollRepository = $topicPollRepository;
 
-        $this->fullDelete = $fullDelete;
+        $this->fullDelete = $full_delete;
     }
 
     public function deleteTopic(int $topicId, bool $deleteCache = true) {
