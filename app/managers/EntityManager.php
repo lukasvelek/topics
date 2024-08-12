@@ -19,11 +19,14 @@ class EntityManager extends AManager {
     public const POSTS = 'posts';
     public const TOPICS = 'topics';
     public const TOPIC_POLLS = 'topic_polls';
-    public const TRANSACTIONS = 'transactions';
+    public const TRANSACTIONS = 'transaction_log';
     public const REPORTS = 'reports';
     public const USER_FOLLOWS = 'user_following';
     public const ADMIN_DASHBOARD_WIDGETS_GRAPH_DATA = 'admin_dashboard_widgets_graph_data';
-    public const SUGGESTIONS = 'suggestions';
+    public const SUGGESTIONS = 'user_suggestions';
+    public const SUGGESTION_COMMENTS = 'user_suggestion_comments';
+    public const BANNED_WORDS = 'banned_words';
+    public const USER_PROSECUTIONS = 'user_prosecutions';
 
     private ContentRepository $cr;
 
@@ -72,7 +75,10 @@ class EntityManager extends AManager {
             self::REPORTS => 'reportId',
             self::USER_FOLLOWS => 'followId',
             self::ADMIN_DASHBOARD_WIDGETS_GRAPH_DATA => 'dataId',
-            self::SUGGESTIONS => 'suggestionId'
+            self::SUGGESTIONS => 'suggestionId',
+            self::SUGGESTION_COMMENTS => 'commentId',
+            self::BANNED_WORDS => 'wordId',
+            self::USER_PROSECUTIONS => 'prosecutionId'
         };
     }
 }

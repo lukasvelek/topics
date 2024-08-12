@@ -7,6 +7,7 @@ use App\Core\DatabaseConnection;
 use App\Entities\UserProsecutionEntity;
 use App\Entities\UserProsecutionHistoryEntryEntity;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 
 class UserProsecutionRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -14,8 +15,10 @@ class UserProsecutionRepository extends ARepository {
     }
 
     public function createNewProsecution(string $userId, int $type, string $reason, ?string $startDate = null, ?string $endDate = null) {
-        $keys = ['userId', 'type', 'reason'];
-        $values = [$userId, $type, $reason];
+        $prosecutionId = $this->createEntityId(EntityManager::USER_PROSECUTIONS);
+
+        $keys = ['userId', 'type', 'reason', 'prosecutionId'];
+        $values = [$userId, $type, $reason, $prosecutionId];
 
         if($type != UserProsecutionType::PERMA_BAN) {
             $keys[] = 'startDate';

@@ -39,11 +39,11 @@ class ContentRegulationRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function createNewBannedWord(string $word, string $authorId) {
+    public function createNewBannedWord(string $wordId, string $word, string $authorId) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('banned_words', ['word', 'authorId'])
-            ->values([$word, $authorId])
+        $qb ->insert('banned_words', ['wordId', 'word', 'authorId'])
+            ->values([$wordId, $word, $authorId])
             ->execute();
 
         return $qb->fetch();

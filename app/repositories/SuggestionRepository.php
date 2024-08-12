@@ -180,11 +180,11 @@ class SuggestionRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function createNewComment(string $userId, string $suggestionId, string $text, bool $adminOnly = false) {
+    public function createNewComment(string $commentId, string $userId, string $suggestionId, string $text, bool $adminOnly = false) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('user_suggestion_comments', ['userId', 'suggestionId', 'commentText', 'adminOnly'])
-            ->values([$userId, $suggestionId, $text, ($adminOnly ? '1' : '0')])
+        $qb ->insert('user_suggestion_comments', ['commentId', 'userId', 'suggestionId', 'commentText', 'adminOnly'])
+            ->values([$commentId, $userId, $suggestionId, $text, ($adminOnly ? '1' : '0')])
             ->execute();
 
         return $qb->fetch();
