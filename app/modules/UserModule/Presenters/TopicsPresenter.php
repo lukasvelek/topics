@@ -512,10 +512,14 @@ class TopicsPresenter extends AUserPresenter {
             ->addTextArea('text', 'Text:', null, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
             ->addFileInput('image', 'Image:')
-            ->addDatetime('dateAvailable', 'Available from:', $now, true)
-            ->addSubmit('Post')
-            ->setCanHaveFiles()
-        ;
+            ->addDatetime('dateAvailable', 'Available from:', $now, true);
+        
+        if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
+            $fb->addCheckbox('suggestable', 'Can be suggested?', true);
+        }
+
+        $fb ->addSubmit('Post')
+            ->setCanHaveFiles();
 
         $this->saveToPresenterCache('form', $fb);
     }
@@ -539,13 +543,14 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
         $dateAvailable = $fr->dateAvailable;
+        $suggestable = isset($fr->suggestable);
 
         try {
             $app->topicRepository->beginTransaction();
 
             $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
             
-            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable);
+            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
 
             if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
                 $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
