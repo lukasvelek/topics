@@ -3,12 +3,12 @@
 namespace App\Entities;
 
 class BannedWordEntity implements ICreatableFromRow {
-    private int $id;
-    private int $authorId;
+    private string $id;
+    private string $authorId;
     private string $text;
     private string $dateCreated;
 
-    public function __construct(int $id, int $authorId, string $text, string $dateCreated) {
+    public function __construct(string $id, string $authorId, string $text, string $dateCreated) {
         $this->id = $id;
         $this->authorId = $authorId;
         $this->text = $text;

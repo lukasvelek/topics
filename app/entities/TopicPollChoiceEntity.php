@@ -3,13 +3,13 @@
 namespace App\Entities;
 
 class TopicPollChoiceEntity implements ICreatableFromRow {
-    private int $id;
-    private int $pollId;
-    private int $userId;
+    private string $id;
+    private string $pollId;
+    private string $userId;
     private int $choice;
     private string $dateCreated;
 
-    public function __construct(int $id, int $pollId, int $userId, int $choice, string $dateCreated) {
+    public function __construct(string $id, string $pollId, string $userId, int $choice, string $dateCreated) {
         $this->id = $id;
         $this->pollId = $pollId;
         $this->userId = $userId;

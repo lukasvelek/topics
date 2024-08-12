@@ -3,13 +3,13 @@
 namespace App\Entities;
 
 class UserProsecutionHistoryEntryEntity implements ICreatableFromRow {
-    private int $id;
-    private int $prosecutionId;
-    private int $userId;
+    private string $id;
+    private string $prosecutionId;
+    private string $userId;
     private string $text;
     private string $dateCreated;
 
-    public function __construct(int $id, int $prosecutionId, int $userId, string $text, string $dateCreated) {
+    public function __construct(string $id, string $prosecutionId, string $userId, string $text, string $dateCreated) {
         $this->id = $id;
         $this->userId = $userId;
         $this->prosecutionId = $prosecutionId;

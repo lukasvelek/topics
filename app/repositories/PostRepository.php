@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostEntity;
@@ -14,7 +13,7 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
+    public function getLatestPostsForTopicId(string $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -37,7 +36,7 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function getLatestMostLikedPostsForTopicId(int $topicId, int $count = 5) {
+    public function getLatestMostLikedPostsForTopicId(string $topicId, int $count = 5) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -85,7 +84,7 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function unlikePost(int $userId, int $postId) {
+    public function unlikePost(string $userId, string $postId) {
         $result = false;
 
         // check
@@ -119,7 +118,7 @@ class PostRepository extends ARepository {
         return true;
     }
 
-    public function likePost(int $userId, int $postId) {
+    public function likePost(string $userId, string $postId) {
         $result = false;
         
         // check
@@ -151,7 +150,7 @@ class PostRepository extends ARepository {
         return true;
     }
 
-    public function checkLike(int $userId, int $postId) {
+    public function checkLike(string $userId, string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
@@ -169,7 +168,7 @@ class PostRepository extends ARepository {
         return false;
     }
 
-    public function bulkCheckLikes(int $userId, array $postIds) {
+    public function bulkCheckLikes(string $userId, array $postIds) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
@@ -186,7 +185,7 @@ class PostRepository extends ARepository {
         return $results;
     }
 
-    public function getLikes(int $postId) {
+    public function getLikes(string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['likes'])
@@ -197,7 +196,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('likes');
     }
 
-    public function getPostIdsForTopicId(int $topicId) {
+    public function getPostIdsForTopicId(string $topicId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
@@ -214,7 +213,7 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function getPostCountForTopicId(int $topicId, bool $deletedOnly) {
+    public function getPostCountForTopicId(string $topicId, bool $deletedOnly) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(postId) AS cnt'])
@@ -230,17 +229,17 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function createNewPost(int $topicId, int $authorId, string $title, string $text, string $tag) {
+    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('posts', ['topicId', 'authorId', 'title', 'description', 'tag'])
-            ->values([$topicId, $authorId, $title, $text, $tag])
+        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag'])
+            ->values([$postId, $topicId, $authorId, $title, $text, $tag])
             ->execute();
 
         return $qb->fetch();
     }
 
-    public function getPostById(int $postId): PostEntity|null {
+    public function getPostById(string $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -258,7 +257,7 @@ class PostRepository extends ARepository {
         return $entity;
     }
 
-    public function getPostCountForUserId(int $userId) {
+    public function getPostCountForUserId(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(postId) AS cnt'])
@@ -270,7 +269,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function updatePost(int $postId, array $data) {
+    public function updatePost(string $postId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('posts')
@@ -292,7 +291,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function deletePost(int $postId, bool $hide = true) {
+    public function deletePost(string $postId, bool $hide = true) {
         if($hide) {
             $date = new DateTime();
             return $this->updatePost($postId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
@@ -371,7 +370,7 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
-    public function getLikeCount(int $postId) {
+    public function getLikeCount(string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(likeId) AS cnt'])
@@ -382,7 +381,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function getLastCreatedPostInTopicByUserId(int $topicId, int $userId) {
+    public function getLastCreatedPostInTopicByUserId(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -407,7 +406,7 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
-    public function getPostsCreatedByUser(int $userId, string $maxDate) {
+    public function getPostsCreatedByUser(string $userId, string $maxDate) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

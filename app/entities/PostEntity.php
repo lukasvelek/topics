@@ -3,9 +3,9 @@
 namespace App\Entities;
 
 class PostEntity implements ICreatableFromRow {
-    private int $postId;
-    private int $topicId;
-    private int $authorId;
+    private string $postId;
+    private string $topicId;
+    private string $authorId;
     private string $title;
     private string $text;
     private string $dateCreated;
@@ -14,7 +14,7 @@ class PostEntity implements ICreatableFromRow {
     private ?string $dateDeleted;
     private string $tag;
 
-    public function __construct(int $postId, int $topicId, int $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag) {
+    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag) {
         $this->postId = $postId;
         $this->topicId = $topicId;
         $this->authorId = $authorId;

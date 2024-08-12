@@ -32,7 +32,7 @@ class TopicManager extends AManager {
         $this->com = $com;
     }
 
-    public function getTopicById(int $topicId, int $userId) {
+    public function getTopicById(string $topicId, string $userId) {
         $topic = $this->tr->getTopicById($topicId);
 
         if($topic === null) {
@@ -44,11 +44,11 @@ class TopicManager extends AManager {
         return $topic;
     }
 
-    private function isUserMember(int $topicId, int $userId) {
+    private function isUserMember(string $topicId, string $userId) {
         return $this->tmm->checkFollow($topicId, $userId);
     }
 
-    private function checkPrivacy(TopicEntity $topic, int $userId) {
+    private function checkPrivacy(TopicEntity $topic, string $userId) {
         if($topic->isPrivate() && !$topic->isVisible()) {
             if(!$this->isUserMember($topic->getId(), $userId)) {
                 if(!$this->va->canViewPrivateTopic($userId)) {
@@ -58,7 +58,7 @@ class TopicManager extends AManager {
         }
     }
 
-    public function getTopicsByIdArray(array $topicIds, int $userId) {
+    public function getTopicsByIdArray(array $topicIds, string $userId) {
         $topics = [];
 
         foreach($topicIds as $topicId) {
@@ -72,7 +72,7 @@ class TopicManager extends AManager {
         return $topics;
     }
 
-    public function getTopicsNotInIdArray(array $topicIds, int $userId) {
+    public function getTopicsNotInIdArray(array $topicIds, string $userId) {
         $topics = $this->tr->getTopicsExceptFor($topicIds);
 
         $returnableTopics = [];
@@ -90,7 +90,7 @@ class TopicManager extends AManager {
         return $returnableTopics;
     }
 
-    public function checkTopicsVisibility(array $topics, int $userId) {
+    public function checkTopicsVisibility(array $topics, string $userId) {
         $okTopics = [];
 
         foreach($topics as $topic) {
@@ -106,11 +106,11 @@ class TopicManager extends AManager {
         return $okTopics;
     }
 
-    public function isUserOwner(int $topicId, int $userId) {
+    public function isUserOwner(string $topicId, string $userId) {
         return ($this->tmm->getFollowRole($topicId, $userId) == TopicMemberRole::OWNER);
     }
 
-    public function deleteTopic(int $topicId, int $userId) {
+    public function deleteTopic(string $topicId, string $userId) {
         $this->com->deleteTopic($topicId);
 
         $members = $this->tmm->getTopicMembers($topicId, 0, 0, false);
@@ -122,7 +122,7 @@ class TopicManager extends AManager {
         }
     }
 
-    public function updateTopicPrivacy(int $userId, int $topicId, bool $isPrivate, bool $isVisible) {
+    public function updateTopicPrivacy(string $userId, string $topicId, bool $isPrivate, bool $isVisible) {
         if($this->tmm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER) {
             throw new GeneralException('You are not authorized to change these settings.');
         }

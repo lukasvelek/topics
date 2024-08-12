@@ -40,7 +40,7 @@ abstract class ARepository {
         return $this->conn->rollback();
     }
 
-    public function commit(?int $userId, string $method) {
+    public function commit(?string $userId, string $method) {
         $sql = '';
         if(!$this->logTransaction($userId, $method, $sql)) {
             $this->rollback();
@@ -70,7 +70,7 @@ abstract class ARepository {
         return $result;
     }
 
-    public function tryCommit(int $userId, string $method) {
+    public function tryCommit(string $userId, string $method) {
         $result = $this->commit($userId, $method);
 
         if($result === false) {
@@ -102,14 +102,14 @@ abstract class ARepository {
         }
     }
 
-    private function logTransaction(?int $userId, string $method, string &$sql) {
+    private function logTransaction(?string $userId, string $method, string &$sql) {
         $qb = $this->qb(__METHOD__);
 
         if($userId === null) {
             $userId = -1;
         }
 
-        $transactionId = HashManager::createHash(64, false);
+        $transactionId = HashManager::createEntityId();
 
         $method = str_replace('\\', '\\\\', $method);
 

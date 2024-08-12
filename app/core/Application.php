@@ -41,7 +41,6 @@ use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
-use Exception;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -180,11 +179,11 @@ class Application {
     /**
      * Used for old AJAX functions. It has become deprecated when AJAX functionality was implemented into presenters.
      * 
-     * @param int $currentUserId Current user's ID
+     * @param string $currentUserId Current user's ID
      * 
      * @deprecated
      */
-    public function ajaxRun(int $currentUserId) {
+    public function ajaxRun(string $currentUserId) {
         $this->currentUser = $this->userRepository->getUserById($currentUserId);
     }
     

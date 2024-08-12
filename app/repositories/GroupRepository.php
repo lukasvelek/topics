@@ -13,7 +13,7 @@ class GroupRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function isUserMemberOfGroup(int $userId, int $groupId) {
+    public function isUserMemberOfGroup(string $userId, string $groupId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -53,7 +53,7 @@ class GroupRepository extends ARepository {
         return $groups;
     }
 
-    public function getGroupMembersCount(int $groupId) {
+    public function getGroupMembersCount(string $groupId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(membershipId) AS cnt'])
@@ -64,7 +64,7 @@ class GroupRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function getGroupMembersForGrid(int $groupId, int $limit, int $offset) {
+    public function getGroupMembersForGrid(string $groupId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -83,7 +83,7 @@ class GroupRepository extends ARepository {
         return $members;
     }
 
-    public function getGroupById(int $groupId) {
+    public function getGroupById(string $groupId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -99,7 +99,7 @@ class GroupRepository extends ARepository {
         return $entity;
     }
 
-    public function getGroupMemberUserIds(int $groupId) {
+    public function getGroupMemberUserIds(string $groupId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['userId'])
@@ -115,7 +115,7 @@ class GroupRepository extends ARepository {
         return $ids;
     }
 
-    public function addGroupMember(int $groupId, int $userId) {
+    public function addGroupMember(string $groupId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('group_membership', ['groupId', 'userId'])
@@ -125,7 +125,7 @@ class GroupRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function removeGroupMember(int $groupId, int $userId) {
+    public function removeGroupMember(string $groupId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()

@@ -13,7 +13,7 @@ class UserProsecutionRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createNewProsecution(int $userId, int $type, string $reason, ?string $startDate = null, ?string $endDate = null) {
+    public function createNewProsecution(string $userId, int $type, string $reason, ?string $startDate = null, ?string $endDate = null) {
         $keys = ['userId', 'type', 'reason'];
         $values = [$userId, $type, $reason];
 
@@ -34,7 +34,7 @@ class UserProsecutionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getLastProsecutionForUserId(int $userId) {
+    public function getLastProsecutionForUserId(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -118,7 +118,7 @@ class UserProsecutionRepository extends ARepository {
         return $prosecutions;
     }
 
-    public function createNewUserProsecutionHistoryEntry(int $prosecutionId, int $userId, string $text) {
+    public function createNewUserProsecutionHistoryEntry(string $prosecutionId, string $userId, string $text) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_prosecutions_history', ['prosecutionId', 'userId', 'commentText'])
@@ -128,7 +128,7 @@ class UserProsecutionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function updateProsecution(int $prosecutionId, array $data) {
+    public function updateProsecution(string $prosecutionId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('user_prosecutions')
@@ -139,7 +139,7 @@ class UserProsecutionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getProsecutionById(int $prosecutionId) {
+    public function getProsecutionById(string $prosecutionId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

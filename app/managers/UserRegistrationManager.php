@@ -26,7 +26,9 @@ class UserRegistrationManager extends AManager {
      * password must be hashed already
      */
     public function registerUser(string $username, string $password, string $email) {
-        if(!$this->ur->createNewUser($username, $password, $email, false)) {
+        $userId = HashManager::createEntityId();
+
+        if(!$this->ur->createNewUser($userId, $username, $password, $email, false)) {
             throw new UserRegistrationException('Could not create new user entry.');
         }
 
@@ -50,7 +52,7 @@ class UserRegistrationManager extends AManager {
     }
 
     private function createRegistrationId() {
-        return HashManager::createHash(32, false);
+        return HashManager::createEntityId();
     }
 
     public function confirmUserRegistration(string $registrationId) {

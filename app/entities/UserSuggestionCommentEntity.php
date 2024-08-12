@@ -3,15 +3,15 @@
 namespace App\Entities;
 
 class UserSuggestionCommentEntity implements ICreatableFromRow {
-    private int $id;
-    private int $suggestionId;
-    private int $userId;
+    private string $id;
+    private string $suggestionId;
+    private string $userId;
     private string $text;
     private bool $adminOnly;
     private string $dateCreated;
     private bool $statusChange;
 
-    public function __construct(int $id, int $suggestionId, int $userId, string $text, bool $adminOnly, string $dateCreated, bool $statusChange) {
+    public function __construct(string $id, string $suggestionId, string $userId, string $text, bool $adminOnly, string $dateCreated, bool $statusChange) {
         $this->id = $id;
         $this->suggestionId = $suggestionId;
         $this->userId = $userId;

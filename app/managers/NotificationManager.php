@@ -21,7 +21,7 @@ class NotificationManager extends AManager {
         $this->nr = $nr;
     }
 
-    public function createNewCommentDeleteDueToReportNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
+    public function createNewCommentDeleteDueToReportNotification(string $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
         $type = Notifications::COMMENT_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
@@ -39,7 +39,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewPostDeleteDueToReportNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
+    public function createNewPostDeleteDueToReportNotification(string $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
         $type = Notifications::POST_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
@@ -57,7 +57,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewTopicDeleteDueToReportNotification(int $userId, LinkBuilder $topicLink, LinkBuilder $userLink, string $reason) {
+    public function createNewTopicDeleteDueToReportNotification(string $userId, LinkBuilder $topicLink, LinkBuilder $userLink, string $reason) {
         $type = Notifications::TOPIC_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
@@ -75,7 +75,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewCommentDeletedNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
+    public function createNewCommentDeletedNotification(string $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
         $type = Notifications::COMMENT_DELETE;
         $title = Notifications::getTitleByKey($type);
 
@@ -93,7 +93,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewPostDeletedNotification(int $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
+    public function createNewPostDeletedNotification(string $userId, LinkBuilder $postLink, LinkBuilder $userLink) {
         $type = Notifications::POST_DELETE;
         $title = Notifications::getTitleByKey($type);
 
@@ -111,7 +111,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewTopicDeletedNotification(int $userId, LinkBuilder $topicLink, LinkBuilder $userLink) {
+    public function createNewTopicDeletedNotification(string $userId, LinkBuilder $topicLink, LinkBuilder $userLink) {
         $type = Notifications::TOPIC_DELETE;
         $title = Notifications::getTitleByKey($type);
 
@@ -129,7 +129,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewCommentLikeNotification(int $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
+    public function createNewCommentLikeNotification(string $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
         $type = Notifications::NEW_COMMENT_LIKE;
         $title = Notifications::getTitleByKey($type);
         
@@ -147,7 +147,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewPostLikeNotification(int $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
+    public function createNewPostLikeNotification(string $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
         $type = Notifications::NEW_POST_LIKE;
         $title = Notifications::getTitleByKey($type);
 
@@ -165,7 +165,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewPostCommentNotification(int $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
+    public function createNewPostCommentNotification(string $userId, LinkBuilder $postLink, LinkBuilder $authorLink) {
         $type = Notifications::NEW_POST_COMMENT;
         $title = Notifications::getTitleByKey($type);
 
@@ -183,7 +183,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewTopicInviteNotification(int $userId, LinkBuilder $topicLink) {
+    public function createNewTopicInviteNotification(string $userId, LinkBuilder $topicLink) {
         $type = Notifications::NEW_TOPIC_INVITE;
         $title = Notifications::getTitleByKey($type);
 
@@ -203,7 +203,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewTopicRoleChangedNotification(int $userId, LinkBuilder $topicLink, string $oldRole, string $newRole) {
+    public function createNewTopicRoleChangedNotification(string $userId, LinkBuilder $topicLink, string $oldRole, string $newRole) {
         $type = Notifications::TOPIC_ROLE_CHANGE;
         $title = Notifications::getTitleByKey($type);
 
@@ -221,7 +221,7 @@ class NotificationManager extends AManager {
         $this->createNotification($id, $userId, $type, $title, $message);
     }
 
-    public function createNewUserFollowerNotification(int $userId, LinkBuilder $userLink) {
+    public function createNewUserFollowerNotification(string $userId, LinkBuilder $userLink) {
         $type = Notifications::NEW_USER_FOLLOWER;
         $title = Notifications::getTitleByKey($type);
 
@@ -252,7 +252,7 @@ class NotificationManager extends AManager {
         return str_replace($keys, $values, $message);
     }
 
-    private function createNotification(string $notificationId, int $userId, int $type, string $title, string $message) {
+    private function createNotification(string $notificationId, string $userId, int $type, string $title, string $message) {
         $result = $this->nr->createNotification($notificationId, $userId, $type, $title, $message);
 
         if($result !== TRUE) {
@@ -273,10 +273,10 @@ class NotificationManager extends AManager {
     }
 
     private function createNotificationId() {
-        return HashManager::createHash(16, false);
+        return HashManager::createEntityId();
     }
 
-    public function getUnseenNotificationsForUser(int $userId) {
+    public function getUnseenNotificationsForUser(string $userId) {
         return $this->nr->getNotificationsForUser($userId);
     }
 

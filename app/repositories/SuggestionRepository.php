@@ -15,7 +15,7 @@ class SuggestionRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createNewSuggestion(int $userId, string $title, string $description, string $category) {
+    public function createNewSuggestion(string $userId, string $title, string $description, string $category) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_suggestions', ['userId', 'title', 'description', 'category'])
@@ -119,7 +119,7 @@ class SuggestionRepository extends ARepository {
         return $suggestions;
     }
 
-    public function getOpenSuggestionsForListFilterAuthor(int $userId, int $limit, int $offset) {
+    public function getOpenSuggestionsForListFilterAuthor(string $userId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -149,7 +149,7 @@ class SuggestionRepository extends ARepository {
         return UserSuggestionEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function getCommentsForSuggestion(int $id, int $limit, int $offset) {
+    public function getCommentsForSuggestion(string $id, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -169,7 +169,7 @@ class SuggestionRepository extends ARepository {
         return $comments;
     }
 
-    public function getCommentCountForSuggestion(int $id) {
+    public function getCommentCountForSuggestion(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
@@ -180,7 +180,7 @@ class SuggestionRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function createNewComment(int $userId, int $suggestionId, string $text, bool $adminOnly = false) {
+    public function createNewComment(string $userId, string $suggestionId, string $text, bool $adminOnly = false) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_suggestion_comments', ['userId', 'suggestionId', 'commentText', 'adminOnly'])
@@ -190,7 +190,7 @@ class SuggestionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function updateSuggestion(int $suggestionId, int $userId, array $values, UserEntity $user) {
+    public function updateSuggestion(string $suggestionId, string $userId, array $values, UserEntity $user) {
         $this->commentSuggestionUpdates($suggestionId, $userId, $values, $user);
 
         $qb = $this->qb(__METHOD__);
@@ -203,7 +203,7 @@ class SuggestionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    private function commentSuggestionUpdates(int $suggestionId, int $userId, array $values, UserEntity $user) {
+    private function commentSuggestionUpdates(string $suggestionId, string $userId, array $values, UserEntity $user) {
         $suggestion = $this->getSuggestionById($suggestionId);
 
         $updates = [];
@@ -234,7 +234,7 @@ class SuggestionRepository extends ARepository {
         }
     }
 
-    public function updateComment(int $id, array $values) {
+    public function updateComment(string $id, array $values) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('user_suggestion_comments')
@@ -245,7 +245,7 @@ class SuggestionRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function deleteComment(int $id) {
+    public function deleteComment(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()

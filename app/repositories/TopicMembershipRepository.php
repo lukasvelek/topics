@@ -12,17 +12,17 @@ class TopicMembershipRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function addMemberToTopic(int $topicId, int $userId, int $role) {
+    public function addMemberToTopic(string $membershipId, string $topicId, string $userId, int $role) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_membership', ['topicId', 'userId', 'role'])
-            ->values([$topicId, $userId, $role])
+        $qb ->insert('topic_membership', ['membershipId', 'topicId', 'userId', 'role'])
+            ->values([$membershipId, $topicId, $userId, $role])
             ->execute();
 
         return $qb->fetchBool();
     }
 
-    public function removeMemberFromTopic(int $topicId, int $userId) {
+    public function removeMemberFromTopic(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -34,7 +34,7 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function updateMemberRole(int $topicId, int $userId, int $role) {
+    public function updateMemberRole(string $topicId, string $userId, int $role) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topic_membership')
@@ -46,7 +46,7 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function checkIsMember(int $topicId, int $userId) {
+    public function checkIsMember(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['membershipId'])
@@ -58,7 +58,7 @@ class TopicMembershipRepository extends ARepository {
         return ($qb->fetch('membershipId') !== null);
     }
 
-    public function getUserRoleInTopic(int $topicId, int $userId) {
+    public function getUserRoleInTopic(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['role'])
@@ -70,7 +70,7 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetch('role');
     }
 
-    public function getTopicMembersForGrid(int $topicId, int $limit, int $offset, bool $orderByRoleDesc) {
+    public function getTopicMembersForGrid(string $topicId, int $limit, int $offset, bool $orderByRoleDesc) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -92,7 +92,7 @@ class TopicMembershipRepository extends ARepository {
         return $entities;
     }
 
-    public function getMembershipForUserInTopic(int $userId, int $topicId) {
+    public function getMembershipForUserInTopic(string $userId, string $topicId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -104,7 +104,7 @@ class TopicMembershipRepository extends ARepository {
         return TopicMemberEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function getUserMembershipsInTopics(int $userId) {
+    public function getUserMembershipsInTopics(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['topicId'])
@@ -120,7 +120,7 @@ class TopicMembershipRepository extends ARepository {
         return $topicIds;
     }
 
-    public function getTopicMemberCount(int $topicId) {
+    public function getTopicMemberCount(string $topicId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(userId) AS cnt'])
@@ -131,7 +131,7 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function getTopicOwner(int $topicId) {
+    public function getTopicOwner(string $topicId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['userId'])
@@ -143,7 +143,7 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetch('userId');
     }
 
-    public function getTopicIdsForOwner(int $userId) {
+    public function getTopicIdsForOwner(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['topicId'])

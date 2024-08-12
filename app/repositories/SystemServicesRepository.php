@@ -27,7 +27,7 @@ class SystemServicesRepository extends ARepository {
         return $entities;
     }
 
-    public function getServiceById(int $id) {
+    public function getServiceById(string $id) {
         $qb = $this->qb(__METHOD__);
         
         $qb ->select(['*'])
@@ -49,7 +49,7 @@ class SystemServicesRepository extends ARepository {
         return SystemServiceEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function updateService(int $serviceId, array $data) {
+    public function updateService(string $serviceId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('system_services')

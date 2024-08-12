@@ -62,7 +62,7 @@ class MailManager extends AManager {
 
     /** END OF EMAIL DEFINITION */
     
-    private function createEmailEntry(int $recipientId, int $mailTemplate, array $data) {
+    private function createEmailEntry(string $recipientId, int $mailTemplate, array $data) {
         $id = $this->createMailId();
 
         $recipient = $this->userRepository->getUserById($recipientId);
@@ -81,7 +81,7 @@ class MailManager extends AManager {
     }
 
     private function createMailId() {
-        return HashManager::createHash(32, false);
+        return HashManager::createEntityId();
     }
 
     private function getBaseURL() {

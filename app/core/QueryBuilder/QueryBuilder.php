@@ -109,6 +109,10 @@ class QueryBuilder
 
         $i = 0;
         foreach($values as $value) {
+            if(is_string($value) && !is_numeric($value)) {
+                $value = '\'' . $value . '\'';
+            }
+
             if(($i + 1) == count($values)) {
                 $code .= $value . ')';
             } else {

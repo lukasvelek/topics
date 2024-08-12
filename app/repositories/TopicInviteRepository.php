@@ -12,7 +12,7 @@ class TopicInviteRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getInvitesForGrid(int $topicId, bool $validOnly, int $limit, int $offset) {
+    public function getInvitesForGrid(string $topicId, bool $validOnly, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -38,7 +38,7 @@ class TopicInviteRepository extends ARepository {
         return $invites;
     }
 
-    public function createInvite(int $topicId, int $userId, string $dateValid) {
+    public function createInvite(string $topicId, string $userId, string $dateValid) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('topic_invites', ['topicId', 'userId', 'dateValid'])
@@ -48,7 +48,7 @@ class TopicInviteRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getInviteForTopicAndUser(int $topicId, int $userId) {
+    public function getInviteForTopicAndUser(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $now = new DateTime();
@@ -64,7 +64,7 @@ class TopicInviteRepository extends ARepository {
         return TopicInviteEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function deleteInvite(int $topicId, int $userId) {
+    public function deleteInvite(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -76,7 +76,7 @@ class TopicInviteRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getInvitesForUserForGrid(int $userId, int $limit, int $offset, bool $validOnly = true) {
+    public function getInvitesForUserForGrid(string $userId, int $limit, int $offset, bool $validOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -102,7 +102,7 @@ class TopicInviteRepository extends ARepository {
         return $invites;
     }
 
-    public function getAllTopicsInUserInvites(int $userId, bool $validOnly = true) {
+    public function getAllTopicsInUserInvites(string $userId, bool $validOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['topicId'])

@@ -4,13 +4,13 @@ namespace App\Entities;
 
 class PostImageFileEntity implements ICreatableFromRow {
     private string $id;
-    private int $userId;
-    private int $postId;
+    private string $userId;
+    private string $postId;
     private string $filename;
     private string $filepath;
     private string $dateCreated;
 
-    public function __construct(string $id, int $userId, int $postId, string $filename, string $filepath, string $dateCreated) {
+    public function __construct(string $id, string $userId, string $postId, string $filename, string $filepath, string $dateCreated) {
         $this->id = $id;
         $this->userId = $userId;
         $this->postId = $postId;

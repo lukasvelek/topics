@@ -39,7 +39,7 @@ class ContentManager extends AManager {
         $this->fullDelete = $full_delete;
     }
 
-    public function deleteTopic(int $topicId, bool $deleteCache = true) {
+    public function deleteTopic(string $topicId, bool $deleteCache = true) {
         $posts = $this->postRepository->getLatestPostsForTopicId($topicId, 0);
 
         foreach($posts as $post) {
@@ -52,7 +52,7 @@ class ContentManager extends AManager {
         $this->afterDelete(self::T_POST, $deleteCache);
     }
 
-    public function deletePost(int $postId, bool $deleteCache = true) {
+    public function deletePost(string $postId, bool $deleteCache = true) {
         $comments = $this->postCommentRepository->getCommentsForPostId($postId);
 
         foreach($comments as $comment) {
@@ -64,7 +64,7 @@ class ContentManager extends AManager {
         $this->afterDelete(self::T_POST, $deleteCache);
     }
 
-    public function deleteComment(int $commentId, bool $deleteCache = true) {
+    public function deleteComment(string $commentId, bool $deleteCache = true) {
         $this->postCommentRepository->deleteComment($commentId, $this->isHide());
 
         $this->afterDelete(self::T_COMMENT, $deleteCache);
@@ -91,11 +91,11 @@ class ContentManager extends AManager {
         }
     }
 
-    public function updateTopic(int $topicId, array $data) {
+    public function updateTopic(string $topicId, array $data) {
         return $this->topicRepository->updateTopic($topicId, $data);
     }
 
-    public function getUserActionHistory(int $userId, int $limit = 10) {
+    public function getUserActionHistory(string $userId, int $limit = 10) {
         $maxDate = new DateTime();
         $maxDate->modify('-7d');
         $maxDate = $maxDate->getResult();

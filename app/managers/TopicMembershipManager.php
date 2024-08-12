@@ -5,6 +5,7 @@ namespace App\Managers;
 use App\Constants\TopicMemberRole;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -45,19 +46,21 @@ class TopicMembershipManager extends AManager {
         $this->userRepository = $userRepository;
     }
 
-    public function followTopic(int $topicId, int $userId,) {
+    public function followTopic(string $topicId, string $userId,) {
         if($this->checkFollow($topicId, $userId)) {
             throw new GeneralException('User already follows the topic.');
         }
 
-        if(!$this->topicMembershipRepository->addMemberToTopic($topicId, $userId, TopicMemberRole::MEMBER)) {
+        $membershipId = HashManager::createEntityId();
+
+        if(!$this->topicMembershipRepository->addMemberToTopic($membershipId, $topicId, $userId, TopicMemberRole::MEMBER)) {
             throw new GeneralException('Could not add member to the topic.');
         }
 
         $this->invalidateMembershipCache();
     }
 
-    public function unfollowTopic(int $topicId, int $userId) {
+    public function unfollowTopic(string $topicId, string $userId) {
         if(!$this->checkFollow($topicId, $userId)) {
             throw new GeneralException('User does not follow the topic.');
         }
@@ -69,7 +72,7 @@ class TopicMembershipManager extends AManager {
         $this->invalidateMembershipCache();
     }
 
-    public function checkFollow(int $topicId, int $userId) {
+    public function checkFollow(string $topicId, string $userId) {
         $membership = $this->loadMembershipDataFromCache($topicId, $userId);
 
         if($membership === null) {
@@ -79,7 +82,7 @@ class TopicMembershipManager extends AManager {
         return true;
     }
 
-    public function getFollowRole(int $topicId, int $userId) {
+    public function getFollowRole(string $topicId, string $userId) {
         if(!$this->checkFollow($topicId, $userId)) {
             return null;
         }
@@ -93,11 +96,11 @@ class TopicMembershipManager extends AManager {
         }
     }
 
-    public function getTopicMembers(int $topicId, int $limit, int $offset, bool $orderByRoleDesc = true) {
+    public function getTopicMembers(string $topicId, int $limit, int $offset, bool $orderByRoleDesc = true) {
         return $this->topicMembershipRepository->getTopicMembersForGrid($topicId, $limit, $offset, $orderByRoleDesc);
     }
 
-    public function changeRole(int $topicId, int $userId, int $callingUserId, int $newRole) {
+    public function changeRole(string $topicId, string $userId, string $callingUserId, int $newRole) {
         if(!$this->checkFollow($topicId, $userId)) {
             throw new GeneralException('The selected user is not a member of this topic.');
         }
@@ -118,7 +121,7 @@ class TopicMembershipManager extends AManager {
         $this->invalidateMembershipCache();
     }
 
-    public function createUserProfileLinkWithRole(UserEntity $user, int $topicId, string $namePrefix = '', string $class = 'post-data-link') {
+    public function createUserProfileLinkWithRole(UserEntity $user, string $topicId, string $namePrefix = '', string $class = 'post-data-link') {
         $role = $this->getFollowRole($topicId, $user->getId());
 
         if($role === null) {
@@ -134,7 +137,7 @@ class TopicMembershipManager extends AManager {
         return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $class);
     }
 
-    private function loadMembershipDataFromCache(int $topicId, int $userId) {
+    private function loadMembershipDataFromCache(string $topicId, string $userId) {
         $key = $topicId . '_' . $userId;
 
         $cm = new CacheManager($this->logger);
@@ -149,21 +152,21 @@ class TopicMembershipManager extends AManager {
         $cm->invalidateCache(self::CACHE_NAMESPACE);
     }
 
-    public function getUserMembershipsInTopics(int $userId) {
+    public function getUserMembershipsInTopics(string $userId) {
         return $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
     }
 
-    public function getTopicMemberCount(int $topicId) {
+    public function getTopicMemberCount(string $topicId) {
         return $this->topicMembershipRepository->getTopicMemberCount($topicId);
     }
 
-    public function getTopicIdsUserIsNotMemberOf(int $userId) {
+    public function getTopicIdsUserIsNotMemberOf(string $userId) {
         $memberships = $this->topicMembershipRepository->getUserMembershipsInTopics($userId);
 
         return $memberships;
     }
 
-    public function inviteUser(int $topicId, int $userId, int $callingUserId) {
+    public function inviteUser(string $topicId, string $userId, string $callingUserId) {
         if($this->checkUserInviteExists($topicId, $userId) !== null) {
             throw new GeneralException('This user has already been invited.');
         }
@@ -190,17 +193,17 @@ class TopicMembershipManager extends AManager {
         }
     }
 
-    public function checkUserInviteExists(int $topicId, int $userId) {
+    public function checkUserInviteExists(string $topicId, string $userId) {
         $invite = $this->topicInviteRepository->getInviteForTopicAndUser($topicId, $userId);
 
         return $invite;
     }
 
-    public function getInvitesForTopic(int $topicId) {
+    public function getInvitesForTopic(string $topicId) {
         return $this->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0);
     }
 
-    public function removeInvite(int $topicId, int $userId) {
+    public function removeInvite(string $topicId, string $userId) {
         if($this->checkUserInviteExists($topicId, $userId) === null) {
             throw new GeneralException('This user has not been invited yet.');
         }
@@ -210,20 +213,20 @@ class TopicMembershipManager extends AManager {
         }
     }
 
-    public function acceptInvite(int $topicId, int $userId) {
+    public function acceptInvite(string $topicId, string $userId) {
         $this->removeInvite($topicId, $userId);
         $this->followTopic($topicId, $userId);
     }
 
-    public function rejectInvite(int $topicId, int $userId) {
+    public function rejectInvite(string $topicId, string $userId) {
         $this->removeInvite($topicId, $userId);
     }
 
-    public function getTopicOwnerId(int $topicId) {
+    public function getTopicOwnerId(string $topicId) {
         return $this->topicMembershipRepository->getTopicOwner($topicId);
     }
 
-    public function isTopicFollowable(int $topicId) {
+    public function isTopicFollowable(string $topicId) {
         $topic = $this->topicRepository->getTopicById($topicId);
 
         if($topic->isDeleted()) {
@@ -241,7 +244,7 @@ class TopicMembershipManager extends AManager {
         return true;
     }
 
-    public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(int $userId) {
+    public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(string $userId) {
         $topicIds = $this->topicMembershipRepository->getTopicIdsForOwner($userId);
 
         $qb = $this->topicRepository->composeQueryForTopics();

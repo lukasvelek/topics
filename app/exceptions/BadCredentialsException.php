@@ -5,7 +5,7 @@ namespace App\Exceptions;
 use Throwable;
 
 class BadCredentialsException extends AException {
-    public function __construct(?int $userId, ?string $username, string $processName = 'authentication', ?Throwable $previous = null) {
+    public function __construct(?string $userId, ?string $username, string $processName = 'authentication', ?Throwable $previous = null) {
         $userInfo = '';
 
         if($userId === null && $username === null) {

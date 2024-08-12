@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\UserEntity;
 use App\Logger\Logger;
@@ -13,7 +12,7 @@ class UserRepository extends ARepository {
         parent::__construct($conn, $logger);
     }
 
-    public function getUserById(int $id): UserEntity|null {
+    public function getUserById(string $id): UserEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -53,7 +52,7 @@ class UserRepository extends ARepository {
         return $qb;
     }
 
-    public function saveLoginHash(int $userId, string $hash) {
+    public function saveLoginHash(string $userId, string $hash) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('users')
@@ -64,7 +63,7 @@ class UserRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getLoginHashForUserId(int $userId) {
+    public function getLoginHashForUserId(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['loginHash'])
@@ -119,7 +118,7 @@ class UserRepository extends ARepository {
         return $this->createUsersArrayFromQb($qb);
     }
 
-    public function updateUser(int $id, array $data) {
+    public function updateUser(string $id, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('users')
@@ -176,11 +175,11 @@ class UserRepository extends ARepository {
         return $this->createUsersArrayFromQb($qb);
     }
 
-    public function createNewUser(string $username, string $password, ?string $email, bool $isAdmin) {
+    public function createNewUser(string $id, string $username, string $password, ?string $email, bool $isAdmin) {
         $qb = $this->qb(__METHOD__);
 
-        $keys = ['username', 'password', 'isAdmin'];
-        $values = [$username, $password, $isAdmin];
+        $keys = ['userId', 'username', 'password', 'isAdmin'];
+        $values = [$id, $username, $password, $isAdmin];
 
         if($email !== null) {
             $keys[] = 'email';
@@ -203,7 +202,7 @@ class UserRepository extends ARepository {
         return $users;
     }
 
-    public function insertNewForgottenPasswordEntry(string $linkId, int $userId, string $dateExpire) {
+    public function insertNewForgottenPasswordEntry(string $linkId, string $userId, string $dateExpire) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_forgotten_password_links', ['linkId', 'userId', 'dateExpire'])

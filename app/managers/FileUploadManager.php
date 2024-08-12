@@ -28,10 +28,10 @@ class FileUploadManager extends AManager {
     }
 
     private function createUploadId() {
-        return HashManager::createHash(16, false);
+        return HashManager::createEntityId();
     }
 
-    private function createPostImageFileUploadPath(int $userId, int $postId, int $topicId, string $filename, string $extension, string $uploadId) {
+    private function createPostImageFileUploadPath(string $userId, string $postId, string $topicId, string $filename, string $extension, string $uploadId) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['UPLOAD_DIR'] . 'topic_' . $topicId . '\\post_' . $postId . '\\user_' . $userId . '\\upload_' . $uploadId . '\\';
 
         FileManager::createFolder($path, true);
@@ -45,7 +45,7 @@ class FileUploadManager extends AManager {
         return $path . $filename . '.' . $extension;
     }
 
-    public function uploadPostImage(int $userId, int $postId, int $topicId, string $filename, string $filepath, array $fileData) {
+    public function uploadPostImage(string $userId, string $postId, string $topicId, string $filename, string $filepath, array $fileData) {
         if(!getimagesize($filepath)) {
             throw new FileUploadException('Uploaded file is not an image.');
         }
@@ -102,7 +102,7 @@ class FileUploadManager extends AManager {
         return '/' . $src;
     }
 
-    public function deleteUploadedFile(PostImageFileEntity $pife, int $userId, bool $checkForFileExistance = false) {
+    public function deleteUploadedFile(PostImageFileEntity $pife, string $userId, bool $checkForFileExistance = false) {
         if(!$this->aa->canDeleteFileUpload($userId, $pife)) {
             throw new FileUploadDeleteException('The post the file is related to, still exists and has not been deleted yet.');
         }

@@ -4,11 +4,11 @@ namespace App\Entities;
 
 class UserFollowEntity implements ICreatableFromRow {
     private string $id;
-    private int $authorId;
-    private int $userId;
+    private string $authorId;
+    private string $userId;
     private string $dateCreated;
 
-    public function __construct(string $id, int $authorId, int $userId, string $dateCreated) {
+    public function __construct(string $id, string $authorId, string $userId, string $dateCreated) {
         $this->id = $id;
         $this->authorId = $authorId;
         $this->userId = $userId;

@@ -32,20 +32,20 @@ abstract class AAuthorizator {
         return new ExpressionBuilder();
     }
 
-    protected function isUserMemberOfGroup(int $userId, int $groupId) {
+    protected function isUserMemberOfGroup(string $userId, string $groupId) {
         $cm = new CacheManager($this->logger);
         return $cm->loadCache('group_' . $groupId . '_' . $userId, function() use ($userId, $groupId) {
             return $this->groupRepository->isUserMemberOfGroup($userId, $groupId);
         }, 'groupMemberships', __METHOD__);
     }
 
-    protected function isUserAdmin(int $userId) {
+    protected function isUserAdmin(string $userId) {
         $user = $this->userRepository->getUserById($userId);
 
         return $user->isAdmin();
     }
 
-    protected function isUserSuperAdministrator(int $userId) {
+    protected function isUserSuperAdministrator(string $userId) {
         return $this->isUserMemberOfGroup($userId, AdministratorGroups::G_SUPERADMINISTRATOR);
     }
 }
