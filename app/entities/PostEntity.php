@@ -13,8 +13,9 @@ class PostEntity implements ICreatableFromRow {
     private bool $isDeleted;
     private ?string $dateDeleted;
     private string $tag;
+    private string $dateAvailable;
 
-    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag) {
+    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag, string $dateAvailable) {
         $this->postId = $postId;
         $this->topicId = $topicId;
         $this->authorId = $authorId;
@@ -25,6 +26,7 @@ class PostEntity implements ICreatableFromRow {
         $this->isDeleted = $isDeleted;
         $this->dateDeleted = $dateDeleted;
         $this->tag = $tag;
+        $this->dateAvailable = $dateAvailable;
     }
 
     public function getId() {
@@ -75,11 +77,15 @@ class PostEntity implements ICreatableFromRow {
         return $this->tag;
     }
 
+    public function getDateAvailable() {
+        return $this->dateAvailable;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag']);
+        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag'], $row['dateAvailable']);
     }
 }
 

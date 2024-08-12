@@ -65,7 +65,8 @@ class DatabaseInstaller {
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
-                'tag' => 'VARCHAR(256) NOT NULL'
+                'tag' => 'VARCHAR(256) NOT NULL',
+                'dateAvailable' => 'DATETIME NOT NULL'
             ],
             'post_likes' => [
                 'postId' => 'VARCHAR(256) NOT NULL',

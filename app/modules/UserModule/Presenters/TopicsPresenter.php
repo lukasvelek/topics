@@ -10,6 +10,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
+use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
@@ -21,6 +22,8 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
 use Exception;
@@ -215,7 +218,11 @@ class TopicsPresenter extends AUserPresenter {
             array_unshift($links, LinkBuilder::createSimpleLink('Create a post', ['page' => 'UserModule:Topics', 'action' => 'newPostForm', 'topicId' => $topicId], 'post-data-link'));
         }
 
-        $this->saveToPresenterCache('links', implode('&nbsp;', $links));
+        if($app->actionAuthorizator->canManageTopicPosts($app->currentUser->getId(), $topic)) {
+            $links[] = LinkBuilder::createSimpleLink('Post list', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link');
+        }
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         if(!empty($links)) {
             $this->saveToPresenterCache('links_br', '<br>');
@@ -496,11 +503,16 @@ class TopicsPresenter extends AUserPresenter {
 
         $fb = new FormBuilder();
 
+        $now = new DateTime();
+        $now->format('Y-m-d H:i');
+        $now = $now->getResult();
+
         $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
             ->addTextInput('title', 'Title:', null, true)
             ->addTextArea('text', 'Text:', null, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
             ->addFileInput('image', 'Image:')
+            ->addDatetime('dateAvailable', 'Available from:', $now, true)
             ->addSubmit('Post')
             ->setCanHaveFiles()
         ;
@@ -526,13 +538,14 @@ class TopicsPresenter extends AUserPresenter {
         $tag = $fr->tag;
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
+        $dateAvailable = $fr->dateAvailable;
 
         try {
             $app->topicRepository->beginTransaction();
 
             $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
             
-            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag);
+            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable);
 
             if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
                 $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
@@ -1289,6 +1302,92 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+    }
+
+    public function handleListPosts() {
+        $topicId = $this->httpGet('topicId', true);
+        $filter = $this->httpGet('filter') ?? 'null';
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setMethod()
+            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId', 'filter' => '_filter'])
+            ->setAction($this, 'getPostGrid')
+            ->setFunctionName('getPostGrid')
+            ->setFunctionArguments(['_page', '_topicId', '_filter'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getPostGrid(0, \'' . $topicId .'\', \'' . $filter . '\')');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
+            LinkBuilder::createSimpleLink('All', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link'),
+            LinkBuilder::createSimpleLink('Scheduled', $this->createURL('listPosts', ['topicId' => $topicId, 'filter' => 'scheduled']), 'post-data-link')
+        ];
+
+        $links = implode('&nbsp;&nbsp;', $links);
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderListPosts() {
+        $links = $this->loadFromPresenterCache('links');
+
+        $this->template->links = $links;
+    }
+
+    public function actionGetPostGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $filter = $this->httpGet('filter');
+
+        $page = $this->httpGet('gridPage');
+        $gridSize = $app->getGridSize();
+        $offset = $page * $gridSize;
+
+        if($filter == 'scheduled') {
+            $posts = $app->postRepository->getScheduledPostsForTopicForGrid($topicId, $gridSize, $offset);
+            $totalCount = count($app->postRepository->getScheduledPostsForTopicForGrid($topicId, 0, 0));
+        } else {
+            $posts = $app->postRepository->getPostsForTopicForGrid($topicId, $gridSize, $offset);
+            $totalCount = count($app->postRepository->getPostsForTopicForGrid($topicId, 0, 0));
+        }
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $gb = new GridBuilder();
+        $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created']);
+        $gb->addDataSource($posts);
+        $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
+            return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
+        });
+        $gb->addOnColumnRender('author', function(Cell $cell, PostEntity $post) use ($app) {
+            $user = $app->userRepository->getUserById($post->getAuthorId());
+
+            $link = UserEntity::createUserProfileLink($user, true);
+            $link->setClass('grid-link');
+
+            return $link->render();
+        });
+        $gb->addOnColumnRender('dateAvailable', function(Cell $cell, PostEntity $post) use ($filter) {
+            $date = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateAvailable());
+
+            $cell->setValue($date);
+
+            if(($post->getDateCreated() != $post->getDateAvailable()) && strtotime($post->getDateAvailable()) > time() && $filter != 'scheduled') { // if the post is scheduled and current filter does not limit posts to scheduled only
+                $cell->setTextColor('orange');
+            }
+            
+            return $cell;
+        });
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
+            return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
+        });
+        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
+
+        $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 }
 
