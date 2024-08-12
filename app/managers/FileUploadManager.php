@@ -4,7 +4,6 @@ namespace App\Managers;
 
 use App\Authorizators\ActionAuthorizator;
 use App\Core\FileManager;
-use App\Core\HashManager;
 use App\Entities\PostImageFileEntity;
 use App\Exceptions\FileUploadDeleteException;
 use App\Exceptions\FileUploadException;
@@ -19,16 +18,12 @@ class FileUploadManager extends AManager {
     private array $cfg;
     private ActionAuthorizator $aa;
 
-    public function __construct(Logger $logger, FileUploadRepository $fur, array $cfg, ActionAuthorizator $aa) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, FileUploadRepository $fur, array $cfg, ActionAuthorizator $aa, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->fur = $fur;
         $this->cfg = $cfg;
         $this->aa = $aa;
-    }
-
-    private function createUploadId() {
-        return HashManager::createEntityId();
     }
 
     private function createPostImageFileUploadPath(string $userId, string $postId, string $topicId, string $filename, string $extension, string $uploadId) {
@@ -50,7 +45,7 @@ class FileUploadManager extends AManager {
             throw new FileUploadException('Uploaded file is not an image.');
         }
 
-        $uploadId = $this->createUploadId();
+        $uploadId = $this->createId(EntityManager::POST_FILE_UPLOADS);
 
         if(self::LOG) {
             $this->logger->info('Created file upload ID: ' . $uploadId, __METHOD__);

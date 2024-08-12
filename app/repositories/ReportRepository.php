@@ -5,10 +5,9 @@ namespace App\Repositories;
 use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
 use App\Core\DatabaseConnection;
-use App\Core\HashManager;
 use App\Entities\ReportEntity;
 use App\Logger\Logger;
-use QueryBuilder\ExpressionBuilder;
+use App\Managers\EntityManager;
 
 class ReportRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
@@ -18,7 +17,7 @@ class ReportRepository extends ARepository {
     public function createNewReport(string $userId, string $entityId, int $entityType, int $category, string $description) {
         $qb = $this->qb(__METHOD__);
 
-        $reportId = HashManager::createEntityId();
+        $reportId = $this->createEntityId(EntityManager::REPORTS);
 
         $qb ->insert('reports', ['reportId', 'userId', 'entityId', 'entityType', 'category', 'description'])
             ->values([$reportId, $userId, $entityId, $entityType, $category, $description])

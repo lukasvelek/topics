@@ -16,8 +16,8 @@ class UserProsecutionManager extends AManager {
     private UserProsecutionRepository $userProsecutionRepository;
     private UserRepository $userRepository;
 
-    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository, Logger $logger) {
-        parent::__construct($logger);
+    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository, Logger $logger, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
         $this->userProsecutionRepository = $userProsecutionRepository;
         $this->userRepository = $userRepository;
     }

@@ -7,6 +7,7 @@ use App\Core\HashManager;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use Exception;
@@ -56,7 +57,8 @@ class AdminDashboardIndexingService extends AService {
     private function updateData(array $data) {
         $qb = $this->tr->getQb();
 
-        $dataId = HashManager::createEntityId();
+        //$dataId = HashManager::createEntityId();
+        $dataId = $this->tr->createEntityId(EntityManager::ADMIN_DASHBOARD_WIDGETS_GRAPH_DATA);
 
         $data = array_merge([$dataId], $data);
 

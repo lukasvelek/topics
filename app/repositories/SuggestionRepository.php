@@ -15,11 +15,11 @@ class SuggestionRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createNewSuggestion(string $userId, string $title, string $description, string $category) {
+    public function createNewSuggestion(string $suggestionId, string $userId, string $title, string $description, string $category) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('user_suggestions', ['userId', 'title', 'description', 'category'])
-            ->values([$userId, $title, $description, $category])
+        $qb ->insert('user_suggestions', ['suggestionId', 'userId', 'title', 'description', 'category'])
+            ->values([$suggestionId, $userId, $title, $description, $category])
             ->execute();
         
         return $qb->fetch();

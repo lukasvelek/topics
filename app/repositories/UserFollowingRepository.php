@@ -6,6 +6,7 @@ use App\Core\DatabaseConnection;
 use App\Core\HashManager;
 use App\Entities\UserFollowEntity;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use App\Repositories\ARepository;
 
 class UserFollowingRepository extends ARepository {
@@ -16,7 +17,7 @@ class UserFollowingRepository extends ARepository {
     public function followUser(string $authorId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
-        $followId = HashManager::createEntityId();
+        $followId = $this->createEntityId(EntityManager::USER_FOLLOWS);
 
         $qb ->insert('user_following', ['authorId', 'userId', 'followId'])
             ->values([$authorId, $userId, $followId])

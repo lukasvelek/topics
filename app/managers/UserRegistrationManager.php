@@ -14,8 +14,8 @@ class UserRegistrationManager extends AManager {
     private UserRepository $ur;
     private MailManager $mm;
     
-    public function __construct(Logger $logger, UserRegistrationRepository $urr, UserRepository $ur, MailManager $mm) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, UserRegistrationRepository $urr, UserRepository $ur, MailManager $mm, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->urr = $urr;
         $this->ur = $ur;
@@ -26,7 +26,7 @@ class UserRegistrationManager extends AManager {
      * password must be hashed already
      */
     public function registerUser(string $username, string $password, string $email) {
-        $userId = HashManager::createEntityId();
+        $userId = $this->createId(EntityManager::USERS);
 
         if(!$this->ur->createNewUser($userId, $username, $password, $email, false)) {
             throw new UserRegistrationException('Could not create new user entry.');
@@ -52,7 +52,7 @@ class UserRegistrationManager extends AManager {
     }
 
     private function createRegistrationId() {
-        return HashManager::createEntityId();
+        return $this->createId(EntityManager::USER_REGISTRATION);
     }
 
     public function confirmUserRegistration(string $registrationId) {

@@ -11,6 +11,7 @@ use App\Exceptions\AException;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
@@ -22,6 +23,7 @@ use App\Managers\UserProsecutionManager;
 use App\Managers\UserRegistrationManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\NotificationRepository;
@@ -85,6 +87,7 @@ class Application {
     public UserFollowingRepository $userFollowingRepository;
     public MailRepository $mailRepository;
     public UserRegistrationRepository $userRegistrationRepository;
+    public ContentRepository $contentRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -97,6 +100,7 @@ class Application {
     public MailManager $mailManager;
     public UserRegistrationManager $userRegistrationManager;
     public UserManager $userManager;
+    public EntityManager $entityManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -147,25 +151,27 @@ class Application {
         $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
         $this->mailRepository = new MailRepository($this->db, $this->logger);
         $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
+        $this->contentRepository = new ContentRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
-        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
-        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
+        $this->entityManager = new EntityManager($this->logger, $this->contentRepository);
+        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger, $this->entityManager);
+        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository, $this->entityManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
-        $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository, $this->notificationManager);
-        $this->mailManager = new MailManager($this->logger, $this->mailRepository, $this->userRepository, $this->cfg);
-        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager, $this->mailManager, $this->userRepository);
-        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository);
-        $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager);
-        $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository);
+        $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository, $this->notificationManager, $this->entityManager);
+        $this->mailManager = new MailManager($this->logger, $this->mailRepository, $this->userRepository, $this->cfg, $this->entityManager);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager, $this->mailManager, $this->userRepository, $this->entityManager);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository, $this->entityManager);
+        $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
+        $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager);
-        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager);
+        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;
 

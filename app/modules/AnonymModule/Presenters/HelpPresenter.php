@@ -4,6 +4,7 @@ namespace App\Modules\AnonymModule;
 
 use App\Constants\SuggestionCategory;
 use App\Exceptions\AException;
+use App\Managers\EntityManager;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
@@ -28,7 +29,9 @@ class HelpPresenter extends APresenter {
             try {
                 $app->suggestionRepository->beginTransaction();
 
-                $app->suggestionRepository->createNewSuggestion($user, $title, $text, $category);
+                $suggestionId = $app->entityManager->generateEntityId(EntityManager::SUGGESTIONS);
+
+                $app->suggestionRepository->createNewSuggestion($suggestionId, $user, $title, $text, $category);
 
                 $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
                 

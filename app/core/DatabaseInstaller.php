@@ -219,7 +219,7 @@ class DatabaseInstaller {
             'transaction_log' => [
                 'transactionId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'methodName' => 'VARCHAR(256) NOT NULL',
-                'userId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'user_following' => [

@@ -13,6 +13,7 @@ use App\Exceptions\AException;
 use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
@@ -555,7 +556,7 @@ class PostsPresenter extends AUserPresenter {
         try {
             $app->postCommentRepository->beginTransaction();
 
-            $commentId = HashManager::createEntityId();
+            $commentId = $app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
 
             $app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
 

@@ -22,8 +22,8 @@ class TopicManager extends AManager {
     private VisibilityAuthorizator $va;
     private ContentManager $com;
 
-    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
         
         $this->tr = $topicRepository;
         $this->tmm = $tmm;

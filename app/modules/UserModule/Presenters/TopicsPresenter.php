@@ -17,6 +17,7 @@ use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -529,7 +530,7 @@ class TopicsPresenter extends AUserPresenter {
         try {
             $app->topicRepository->beginTransaction();
 
-            $postId = HashManager::createEntityId();
+            $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
             
             $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag);
 
@@ -632,7 +633,7 @@ class TopicsPresenter extends AUserPresenter {
             try {
                 $app->topicRepository->beginTransaction();
 
-                $topicId = HashManager::createEntityId();
+                $topicId = $app->entityManager->generateEntityId(EntityManager::TOPICS);
 
                 $app->topicRepository->createNewTopic($topicId, $title, $description, $tags, $isPrivate, $rawTags);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
@@ -1062,7 +1063,7 @@ class TopicsPresenter extends AUserPresenter {
             $choices = $this->httpPost('choices');
             $dateValid = $this->httpPost('dateValid');
             $timeElapsed = $this->httpPost('timeElapsed');
-            $pollId = HashManager::createEntityId();
+            $pollId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLLS);
 
             $tmp = [];
             foreach(explode(',', $choices) as $choice) {
@@ -1167,8 +1168,10 @@ class TopicsPresenter extends AUserPresenter {
 
         try {
             $app->topicPollRepository->beginTransaction();
+            
+            $responseId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLL_RESPONSES);
 
-            $app->topicPollRepository->submitPoll($pollId, $app->currentUser->getId(), $choice);
+            $app->topicPollRepository->submitPoll($responseId, $pollId, $app->currentUser->getId(), $choice);
 
             $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
 

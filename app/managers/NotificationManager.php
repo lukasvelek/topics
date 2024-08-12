@@ -15,8 +15,8 @@ class NotificationManager extends AManager {
     
     private NotificationRepository $nr;
 
-    public function __construct(Logger $logger, NotificationRepository $nr) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, NotificationRepository $nr, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->nr = $nr;
     }
@@ -25,7 +25,7 @@ class NotificationManager extends AManager {
         $type = Notifications::COMMENT_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
 
@@ -43,7 +43,7 @@ class NotificationManager extends AManager {
         $type = Notifications::POST_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
 
@@ -61,7 +61,7 @@ class NotificationManager extends AManager {
         $type = Notifications::TOPIC_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$topicLink, $userLink] = $this->processURL($id, [$topicLink, $userLink]);
 
@@ -79,7 +79,7 @@ class NotificationManager extends AManager {
         $type = Notifications::COMMENT_DELETE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
 
@@ -97,7 +97,7 @@ class NotificationManager extends AManager {
         $type = Notifications::POST_DELETE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $userLink] = $this->processURL($id, [$postLink, $userLink]);
 
@@ -115,7 +115,7 @@ class NotificationManager extends AManager {
         $type = Notifications::TOPIC_DELETE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$topicLink, $userLink] = $this->processURL($id, [$topicLink, $userLink]);
 
@@ -133,7 +133,7 @@ class NotificationManager extends AManager {
         $type = Notifications::NEW_COMMENT_LIKE;
         $title = Notifications::getTitleByKey($type);
         
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $authorLink] = $this->processURL($id, [$postLink, $authorLink]);
         
@@ -151,7 +151,7 @@ class NotificationManager extends AManager {
         $type = Notifications::NEW_POST_LIKE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $authorLink] = $this->processURL($id, [$postLink, $authorLink]);
 
@@ -169,7 +169,7 @@ class NotificationManager extends AManager {
         $type = Notifications::NEW_POST_COMMENT;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$postLink, $authorLink] = $this->processURL($id, [$postLink, $authorLink]);
 
@@ -187,7 +187,7 @@ class NotificationManager extends AManager {
         $type = Notifications::NEW_TOPIC_INVITE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         $invitationsLink = LinkBuilder::createSimpleLinkObject('here', ['page' => 'UserModule:TopicInvites', 'action' => 'list'], 'post-data-link');
 
@@ -207,7 +207,7 @@ class NotificationManager extends AManager {
         $type = Notifications::TOPIC_ROLE_CHANGE;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$topicLink] = $this->processURL($id, [$topicLink]);
 
@@ -225,7 +225,7 @@ class NotificationManager extends AManager {
         $type = Notifications::NEW_USER_FOLLOWER;
         $title = Notifications::getTitleByKey($type);
 
-        $id = $this->createNotificationId();
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
 
         [$userLink] = $this->processURL($id, [$userLink]);
         
@@ -270,10 +270,6 @@ class NotificationManager extends AManager {
         }
 
         return $tmp;
-    }
-
-    private function createNotificationId() {
-        return HashManager::createEntityId();
     }
 
     public function getUnseenNotificationsForUser(string $userId) {

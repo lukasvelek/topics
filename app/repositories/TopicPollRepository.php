@@ -53,11 +53,11 @@ class TopicPollRepository extends ARepository {
         return $polls;
     }
 
-    public function submitPoll(string $pollId, string $userId, int $choice) {
+    public function submitPoll(string $responseId, string $pollId, string $userId, int $choice) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_polls_responses', ['pollId', 'userId', 'choice'])
-            ->values([$pollId, $userId, $choice])
+        $qb ->insert('topic_polls_responses', ['responseId', 'pollId', 'userId', 'choice'])
+            ->values([$responseId, $pollId, $userId, $choice])
             ->execute();
 
         return $qb->fetchBool();

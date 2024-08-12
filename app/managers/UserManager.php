@@ -20,9 +20,10 @@ class UserManager extends AManager {
         Logger $logger,
         UserRepository $userRepository,
         MailManager $mailManager,
-        GroupRepository $groupRepository
+        GroupRepository $groupRepository,
+        EntityManager $entityManager
     ) {
-        parent::__construct($logger);
+        parent::__construct($logger, $entityManager);
 
         $this->userRepository = $userRepository;
         $this->mailManager = $mailManager;
@@ -79,7 +80,8 @@ class UserManager extends AManager {
     }
 
     private function createNewForgottenPasswordRequestId() {
-        return HashManager::createEntityId();
+        //return HashManager::createEntityId();
+        return $this->createId(EntityManager::FORGOTTEN_PASSWORD);
     }
 
     public function checkForgottenPasswordRequest(string $linkId) {

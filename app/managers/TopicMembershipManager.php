@@ -35,8 +35,9 @@ class TopicMembershipManager extends AManager {
                                 TopicInviteRepository $topicInviteRepository,
                                 NotificationManager $notificationManager,
                                 MailManager $mailManager,
-                                UserRepository $userRepository) {
-        parent::__construct($logger);
+                                UserRepository $userRepository,
+                                EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->topicMembershipRepository = $topicMembershipRepository;
         $this->topicRepository = $topicRepository;
@@ -51,7 +52,7 @@ class TopicMembershipManager extends AManager {
             throw new GeneralException('User already follows the topic.');
         }
 
-        $membershipId = HashManager::createEntityId();
+        $membershipId = $this->createId(EntityManager::TOPIC_MEMBERSHIP);
 
         if(!$this->topicMembershipRepository->addMemberToTopic($membershipId, $topicId, $userId, TopicMemberRole::MEMBER)) {
             throw new GeneralException('Could not add member to the topic.');

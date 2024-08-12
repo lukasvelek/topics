@@ -14,8 +14,8 @@ class UserFollowingManager extends AManager {
     private UserFollowingRepository $userFollowingRepository;
     private NotificationManager $notificationManager;
 
-    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository, NotificationManager $notificationManager) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository, NotificationManager $notificationManager, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->userRepository = $userRepository;
         $this->userFollowingRepository = $userFollowingRepository;

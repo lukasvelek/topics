@@ -27,8 +27,8 @@ class ContentManager extends AManager {
 
     private bool $fullDelete;
 
-    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $full_delete, Logger $logger, TopicMembershipManager $topicMembershipManager, TopicPollRepository $topicPollRepository) {
-        parent::__construct($logger);
+    public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $full_delete, Logger $logger, TopicMembershipManager $topicMembershipManager, TopicPollRepository $topicPollRepository, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
         
         $this->topicRepository = $topicRepository;
         $this->postCommentRepository = $postCommentRepository;
