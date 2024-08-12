@@ -3,12 +3,12 @@
 namespace App\Entities;
 
 class TopicInviteEntity implements ICreatableFromRow {
-    private int $topicId;
-    private int $userId;
+    private string $topicId;
+    private string $userId;
     private string $dateCreated;
     private string $dateValid;
 
-    public function __construct(int $topicId, int $userId, string $dateCreated, string $dateValid) {
+    public function __construct(string $topicId, string $userId, string $dateCreated, string $dateValid) {
         $this->topicId = $topicId;
         $this->userId = $userId;
         $this->dateCreated = $dateCreated;

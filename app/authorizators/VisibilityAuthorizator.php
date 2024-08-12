@@ -13,15 +13,15 @@ class VisibilityAuthorizator extends AAuthorizator {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
     }
 
-    public function canViewDeletedPost(int $userId) {
+    public function canViewDeletedPost(string $userId) {
         return $this->commonContentManagement($userId);
     }
 
-    public function canViewDeletedTopic(int $userId) {
+    public function canViewDeletedTopic(string $userId) {
         return $this->commonContentManagement($userId);
     }
 
-    private function commonContentManagement(int $userId) {
+    private function commonContentManagement(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -35,7 +35,7 @@ class VisibilityAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canViewPrivateTopic(int $userId) {
+    public function canViewPrivateTopic(string $userId) {
         return $this->commonContentManagement($userId);
     }
 }

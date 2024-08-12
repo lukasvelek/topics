@@ -4,13 +4,13 @@ namespace App\Entities;
 
 class NotificationEntity implements ICreatableFromRow {
     private string $id;
-    private int $userId;
+    private string $userId;
     private string $title;
     private string $message;
     private string $dateCreated;
     private ?string $dateSeen;
 
-    public function __construct(string $id, int $userId, string $title, string $message, string $dateCreated, ?string $dateSeen) {
+    public function __construct(string $id, string $userId, string $title, string $message, string $dateCreated, ?string $dateSeen) {
         $this->id = $id;
         $this->userId = $userId;
         $this->title = $title;

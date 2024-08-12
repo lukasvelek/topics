@@ -6,12 +6,14 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\HashManager;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\FileUploadException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
@@ -53,7 +55,7 @@ class PostsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('loadCommentsForPost(' . $postId . ', 10, 0)');
+        $this->addScript('loadCommentsForPost(\'' . $postId . '\', 10, 0)');
 
         $arb = new AjaxRequestBuilder();
 
@@ -389,7 +391,7 @@ class PostsPresenter extends AUserPresenter {
             
         $likes = $app->postCommentRepository->getLikes($commentId);
         
-        $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+        $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $commentId .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
         $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
     }
@@ -432,8 +434,7 @@ class PostsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $commentCount) {
             $loadMoreLink = '';
         } else {
-            //$loadMoreLink = '<br><a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
-            $loadMoreLink = '<br><button type="button" id="formSubmit" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</button>';
+            $loadMoreLink = '<br><button type="button" id="formSubmit" onclick="loadCommentsForPost(\'' . $postId . '\', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</button>';
         }
 
         $c = '';
@@ -444,7 +445,7 @@ class PostsPresenter extends AUserPresenter {
         $this->ajaxSendResponse(['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
-    private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
+    private function createPostComment(string $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
         global $app;
 
         $post = $app->postRepository->getPostById($postId);
@@ -454,7 +455,7 @@ class PostsPresenter extends AUserPresenter {
 
         $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
-            $likeLink = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $comment->getId() .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
         } else {
             $likeLink = '';
         }
@@ -519,7 +520,7 @@ class PostsPresenter extends AUserPresenter {
                         <p class="post-comment-data">
                             ' . $reportForm . $deleteLink . '
                         </p>
-                        ' . ($post->isDeleted() ? '' : '<a class="post-comment-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
+                        ' . ($post->isDeleted() ? '' : '<a class="post-comment-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(\'' . $comment->getId() . '\', \'' . $postId . '\')">Add comment</a>') . '
                     </div>
                     <div class="row">
                         <div class="col-md-2"></div>
@@ -551,12 +552,13 @@ class PostsPresenter extends AUserPresenter {
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
         $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
-
         
         try {
             $app->postCommentRepository->beginTransaction();
 
-            $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
+            $commentId = $app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
+
+            $app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
 
             if($post->getAuthorId() != $authorId) {
                 $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);

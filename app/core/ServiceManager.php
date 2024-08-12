@@ -4,8 +4,14 @@ namespace App\Core;
 
 use App\Constants\SystemServiceStatus;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\ServiceException;
 use App\Repositories\SystemServicesRepository;
+use App\Services\AdminDashboardIndexingService;
+use App\Services\MailService;
+use App\Services\OldNotificationRemovingService;
+use App\Services\OldRegistrationConfirmationLinkRemovingService;
+use App\Services\PostLikeEqualizerService;
 use Exception;
 
 class ServiceManager {
@@ -25,7 +31,7 @@ class ServiceManager {
         $cmd = $phpExe . ' ' . $serviceFile;
 
         if(substr(php_uname(), 0, 7) == 'Windows') {
-            pclose(popen("start /B " . $cmd, "w"));
+            $status = pclose(popen("start /B " . $cmd, "w"));
         } else {
             exec($cmd . " > /dev/null &");
         }

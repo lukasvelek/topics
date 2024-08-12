@@ -13,11 +13,11 @@ class PollBuilder implements IRenderable {
     private string $title;
     private string $description;
     private array $handlerUrl;
-    private ?int $pollId;
+    private ?string $pollId;
     private ?int $userChoice;
-    private int $managerId;
-    private ?int $currentUserId;
-    private ?int $topicId;
+    private string $managerId;
+    private ?string $currentUserId;
+    private ?string $topicId;
     private ?string $timeNeededToElapse;
     private bool $canUserSeeAnalyticsAllTheTime;
     private ?string $userChoiceDate;
@@ -71,7 +71,7 @@ class PollBuilder implements IRenderable {
         return $this;
     }
 
-    public function setPollId(int $id) {
+    public function setPollId(string $id) {
         $this->pollId = $id;
 
         return $this;
@@ -93,19 +93,19 @@ class PollBuilder implements IRenderable {
         return $this;
     }
 
-    public function setCurrentUserId(int $userId) {
+    public function setCurrentUserId(string $userId) {
         $this->currentUserId = $userId;
 
         return $this;
     }
 
-    public function setManagerId(int $managerId) {
+    public function setManagerId(string $managerId) {
         $this->managerId = $managerId;
 
         return $this;
     }
 
-    public function setTopicId(int $topicId) {
+    public function setTopicId(string $topicId) {
         $this->topicId = $topicId;
 
         return $this;

@@ -3,12 +3,12 @@
 namespace App\Entities;
 
 class GroupMembershipEntity implements ICreatableFromRow {
-    private int $id;
-    private int $groupId;
-    private int $userId;
+    private string $id;
+    private string $groupId;
+    private string $userId;
     private string $dateCreated;
 
-    public function __construct(int $id, int $groupId, int $userId, string $dateCreated) {
+    public function __construct(string $id, int $groupId, int $userId, string $dateCreated) {
         $this->id = $id;
         $this->groupId = $groupId;
         $this->userId = $userId;

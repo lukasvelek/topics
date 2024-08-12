@@ -8,6 +8,7 @@ use App\Core\HashManager;
 use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use QueryBuilder\ExpressionBuilder;
 use QueryBuilder\QueryBuilder;
 
@@ -15,11 +16,14 @@ abstract class ARepository {
     private DatabaseConnection $conn;
     protected Logger $logger;
     protected CacheManager $cache;
+    private TransactionLogRepository $tlr;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
         $this->cache = new CacheManager($logger);
+
+        $this->tlr = new TransactionLogRepository($this->conn, $this->logger);
     }
 
     protected function qb(string $method = __METHOD__) {
@@ -40,7 +44,7 @@ abstract class ARepository {
         return $this->conn->rollback();
     }
 
-    public function commit(?int $userId, string $method) {
+    public function commit(?string $userId, string $method) {
         $sql = '';
         if(!$this->logTransaction($userId, $method, $sql)) {
             $this->rollback();
@@ -70,7 +74,7 @@ abstract class ARepository {
         return $result;
     }
 
-    public function tryCommit(int $userId, string $method) {
+    public function tryCommit(string $userId, string $method) {
         $result = $this->commit($userId, $method);
 
         if($result === false) {
@@ -102,24 +106,16 @@ abstract class ARepository {
         }
     }
 
-    private function logTransaction(?int $userId, string $method, string &$sql) {
-        $qb = $this->qb(__METHOD__);
+    private function logTransaction(?string $userId, string $method, string &$sql) {
+        $transactionId = $this->createEntityId(EntityManager::TRANSACTIONS);
 
-        if($userId === null) {
-            $userId = -1;
-        }
+        return $this->tlr->createNewEntry($transactionId, $userId, $method, $sql);
+    }
 
-        $transactionId = HashManager::createHash(64, false);
+    public function createEntityId(string $category) {
+        $em = new EntityManager($this->logger, new ContentRepository($this->conn, $this->logger));
 
-        $method = str_replace('\\', '\\\\', $method);
-
-        $qb ->insert('transaction_log', ['transactionId', 'userId', 'methodName'])
-            ->values([$transactionId, $userId, $method])
-            ->execute();
-
-        $sql = $qb->getSQL();
-        
-        return $qb->fetchBool();
+        return $em->generateEntityId($category);
     }
 }
 

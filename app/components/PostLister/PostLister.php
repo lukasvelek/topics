@@ -207,17 +207,17 @@ class PostLister {
         return $codeArr;
     }
 
-    private function createUserProfileLink(int $userId) {
+    private function createUserProfileLink(string $userId) {
         $user = $this->userRepository->getUserById($userId);
 
         return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
     }
 
-    public static function createLikeLink(int $postId, bool $liked) {
+    public static function createLikeLink(string $postId, bool $liked) {
         if($liked === true) {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', false)">Unlike</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $postId . '\', false)">Unlike</a>';
         } else {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', true)">Like</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $postId . '\', true)">Like</a>';
         }
     }
 }

@@ -20,8 +20,8 @@ class MailManager extends AManager {
     private UserRepository $userRepository;
     public array $cfg;
 
-    public function __construct(Logger $logger, MailRepository $mailRepository, UserRepository $userRepository, array $cfg) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, MailRepository $mailRepository, UserRepository $userRepository, array $cfg, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->mailRepository = $mailRepository;
         $this->userRepository = $userRepository;
@@ -62,8 +62,8 @@ class MailManager extends AManager {
 
     /** END OF EMAIL DEFINITION */
     
-    private function createEmailEntry(int $recipientId, int $mailTemplate, array $data) {
-        $id = $this->createMailId();
+    private function createEmailEntry(string $recipientId, int $mailTemplate, array $data) {
+        $id = $this->createId(EntityManager::EMAILS);
 
         $recipient = $this->userRepository->getUserById($recipientId);
 
@@ -78,10 +78,6 @@ class MailManager extends AManager {
         }
 
         return $this->mailRepository->createEntry($id, $recipient->getEmail(), $title, $content);
-    }
-
-    private function createMailId() {
-        return HashManager::createHash(32, false);
     }
 
     private function getBaseURL() {

@@ -3,17 +3,17 @@
 namespace App\Entities;
 
 class TopicPollEntity implements ICreatableFromRow {
-    private int $id;
+    private string $id;
     private string $title;
     private string $description;
-    private int $authorId;
-    private int $topicId;
+    private string $authorId;
+    private string $topicId;
     private array $choices;
     private string $dateCreated;
     private ?string $dateValid;
     private string $timeElapsedForNextVote;
 
-    public function __construct(int $id, string $title, string $description, int $authorId, int $topicId, array $choices, string $dateCreated, ?string $dateValid, string $timeElapsedForNextVote) {
+    public function __construct(string $id, string $title, string $description, string $authorId, string $topicId, array $choices, string $dateCreated, ?string $dateValid, string $timeElapsedForNextVote) {
         $this->id = $id;
         $this->title = $title;
         $this->description = $description;

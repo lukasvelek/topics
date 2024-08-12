@@ -6,6 +6,7 @@ use App\Core\DatabaseConnection;
 use App\Core\HashManager;
 use App\Entities\UserFollowEntity;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use App\Repositories\ARepository;
 
 class UserFollowingRepository extends ARepository {
@@ -13,10 +14,10 @@ class UserFollowingRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function followUser(int $authorId, int $userId) {
+    public function followUser(string $authorId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
-        $followId = HashManager::createHash(16, false);
+        $followId = $this->createEntityId(EntityManager::USER_FOLLOWS);
 
         $qb ->insert('user_following', ['authorId', 'userId', 'followId'])
             ->values([$authorId, $userId, $followId])
@@ -25,7 +26,7 @@ class UserFollowingRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function unfollowUser(int $authorId, int $userId) {
+    public function unfollowUser(string $authorId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -37,7 +38,7 @@ class UserFollowingRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function unfollowAllUsers(int $userId) {
+    public function unfollowAllUsers(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -48,7 +49,7 @@ class UserFollowingRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function removeAllFollowers(int $userId) {
+    public function removeAllFollowers(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()
@@ -59,7 +60,7 @@ class UserFollowingRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function checkFollow(int $authorId, int $userId) {
+    public function checkFollow(string $authorId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['followId'])
@@ -75,7 +76,7 @@ class UserFollowingRepository extends ARepository {
         }
     }
 
-    public function getFollowersForUser(int $userId) {
+    public function getFollowersForUser(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -91,7 +92,7 @@ class UserFollowingRepository extends ARepository {
         return $follows;
     }
 
-    public function getFollowersForUserWithOffset(int $userId, int $limit, int $offset) {
+    public function getFollowersForUserWithOffset(string $userId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -115,7 +116,7 @@ class UserFollowingRepository extends ARepository {
         return $follows;
     }
 
-    public function getFollowsForUser(int $userId) {
+    public function getFollowsForUser(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -131,7 +132,7 @@ class UserFollowingRepository extends ARepository {
         return $follows;
     }
 
-    public function getFollowsForUserWithOffset(int $userId, int $limit, int $offset) {
+    public function getFollowsForUserWithOffset(string $userId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

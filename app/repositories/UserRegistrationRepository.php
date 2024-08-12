@@ -10,7 +10,7 @@ class UserRegistrationRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function insertNewConfirmationEntry(string $registrationId, int $userId, string $link, string $dateExpire) {
+    public function insertNewConfirmationEntry(string $registrationId, string $userId, string $link, string $dateExpire) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('user_registration_links', ['registrationId', 'userId', 'link', 'dateExpire', 'isActive'])

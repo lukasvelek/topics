@@ -14,15 +14,15 @@ class UserFollowingManager extends AManager {
     private UserFollowingRepository $userFollowingRepository;
     private NotificationManager $notificationManager;
 
-    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository, NotificationManager $notificationManager) {
-        parent::__construct($logger);
+    public function __construct(Logger $logger, UserRepository $userRepository, UserFollowingRepository $userFollowingRepository, NotificationManager $notificationManager, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
 
         $this->userRepository = $userRepository;
         $this->userFollowingRepository = $userFollowingRepository;
         $this->notificationManager = $notificationManager;
     }
 
-    public function followUser(int $authorId, int $userId) {
+    public function followUser(string $authorId, string $userId) {
         try {
             if($this->userFollowingRepository->checkFollow($authorId, $userId)) {
                 throw new UserFollowException(sprintf('User %d already follows user %d.', $authorId, $userId));
@@ -40,7 +40,7 @@ class UserFollowingManager extends AManager {
         }
     }
 
-    public function unfollowUser(int $authorId, int $userId) {
+    public function unfollowUser(string $authorId, string $userId) {
         try {
             if(!$this->userFollowingRepository->checkFollow($authorId, $userId)) {
                 throw new UserFollowException(sprintf('User %d does not follow user %d.', $authorId, $userId));
@@ -54,7 +54,7 @@ class UserFollowingManager extends AManager {
         }
     }
 
-    public function canFollowUser(int $authorId, int $userId) {
+    public function canFollowUser(string $authorId, string $userId) {
         if($this->userFollowingRepository->checkFollow($authorId, $userId)) { // is following
             return false;
         }
@@ -62,19 +62,19 @@ class UserFollowingManager extends AManager {
         return true;
     }
 
-    public function getFollowerCount(int $userId) {
+    public function getFollowerCount(string $userId) {
         return count($this->userFollowingRepository->getFollowersForUser($userId));
     }
 
-    public function getFollowingCount(int $userId) {
+    public function getFollowingCount(string $userId) {
         return count($this->userFollowingRepository->getFollowsForUser($userId));
     }
 
-    public function getFollowersForUserWithOffset(int $userId, int $limit, int $offset) {
+    public function getFollowersForUserWithOffset(string $userId, int $limit, int $offset) {
         return $this->userFollowingRepository->getFollowersForUserWithOffset($userId, $limit, $offset);
     }
 
-    public function getFollowsForUserWithOffset(int $userId, int $limit, int $offset) {
+    public function getFollowsForUserWithOffset(string $userId, int $limit, int $offset) {
         return $this->userFollowingRepository->getFollowsForUserWithOffset($userId, $limit, $offset);
     }
 }

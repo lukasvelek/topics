@@ -27,7 +27,13 @@ class MailService extends AService {
 
             $this->serviceStop();
         } catch(AException|Exception $e) {
+            try {
+                $this->serviceStop();
+            } catch(AException|Exception $e2) {}
+            
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 

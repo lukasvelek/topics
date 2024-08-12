@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\BannedWordEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -87,7 +88,9 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             try {
                 $app->contentRegulationRepository->beginTransaction();
 
-                $app->contentRegulationRepository->createNewBannedWord($word, $app->currentUser->getId());
+                $wordId = $app->entityManager->generateEntityId(EntityManager::BANNED_WORDS);
+
+                $app->contentRegulationRepository->createNewBannedWord($wordId, $word, $app->currentUser->getId());
 
                 $app->contentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
 

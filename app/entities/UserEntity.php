@@ -5,14 +5,14 @@ namespace App\Entities;
 use App\UI\LinkBuilder;
 
 class UserEntity implements ICreatableFromRow {
-    private int $id;
+    private string $id;
     private string $username;
     private ?string $email;
     private string $dateCreated;
     private bool $isAdmin;
     private bool $canLogin;
 
-    public function __construct(int $id, string $username, ?string $email, string $dateCreated, bool $isAdmin, bool $canLogin) {
+    public function __construct(string $id, string $username, ?string $email, string $dateCreated, bool $isAdmin, bool $canLogin) {
         $this->id = $id;
         $this->username = $username;
         $this->email = $email;

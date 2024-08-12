@@ -45,7 +45,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUserRolesGrid(0, ' . $topicId . ')');
+        $this->addScript('getUserRolesGrid(0, \'' . $topicId . '\')');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
 

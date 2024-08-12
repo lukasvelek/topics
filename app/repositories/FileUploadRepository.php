@@ -12,7 +12,7 @@ class FileUploadRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createNewEntry(string $uploadId, string $filename, string $filepath, int $userId, int $postId) {
+    public function createNewEntry(string $uploadId, string $filename, string $filepath, string $userId, string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('post_file_uploads', ['uploadId', 'filename', 'filepath', 'userId', 'postId'])
@@ -22,7 +22,7 @@ class FileUploadRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getFilesForPost(int $postId) {
+    public function getFilesForPost(string $postId) {
         $qb = $this->composeQueryForFiles(__METHOD__);
 
         $qb ->where('postId = ?', [$postId])
@@ -92,7 +92,7 @@ class FileUploadRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getFilesForPostForGrid(int $postId, int $limit, int $offset) {
+    public function getFilesForPostForGrid(string $postId, int $limit, int $offset) {
         $qb = $this->composeQueryForFiles(__METHOD__);
         
         $qb->where('postId = ?', [$postId]);
@@ -109,7 +109,7 @@ class FileUploadRepository extends ARepository {
         return $this->createEntitiesFromQb($qb);
     }
 
-    public function getFilesForUserForGrid(int $userId, int $limit, int $offset) {
+    public function getFilesForUserForGrid(string $userId, int $limit, int $offset) {
         $qb = $this->composeQueryForFiles(__METHOD__);
         
         $qb->where('userId = ?', [$userId]);

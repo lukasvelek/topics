@@ -16,8 +16,8 @@ class UserProsecutionManager extends AManager {
     private UserProsecutionRepository $userProsecutionRepository;
     private UserRepository $userRepository;
 
-    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository, Logger $logger) {
-        parent::__construct($logger);
+    public function __construct(UserProsecutionRepository $userProsecutionRepository, UserRepository $userRepository, Logger $logger, EntityManager $entityManager) {
+        parent::__construct($logger, $entityManager);
         $this->userProsecutionRepository = $userProsecutionRepository;
         $this->userRepository = $userRepository;
     }
@@ -30,7 +30,7 @@ class UserProsecutionManager extends AManager {
         }
     }
 
-    private function commonRemoveBan(int $forUserId, int $byUserId, string $reason) {
+    private function commonRemoveBan(string $forUserId, string $byUserId, string $reason) {
         $this->beginTransaction();
 
         $date = new DateTime();
@@ -66,7 +66,7 @@ class UserProsecutionManager extends AManager {
         $this->commit($byUser->getId(), __METHOD__);
     }
 
-    public function warnUser(int $who, int $byWhom, string $reason) {
+    public function warnUser(string $who, string $byWhom, string $reason) {
         try {
             $date = new DateTime();
             $date2 = new DateTime();
@@ -77,7 +77,7 @@ class UserProsecutionManager extends AManager {
         }
     }
 
-    public function banUser(int $who, int $byWhom, string $reason, string $startDate, string $endDate) {
+    public function banUser(string $who, string $byWhom, string $reason, string $startDate, string $endDate) {
         try {
             $this->commonCreateProsecution($who, $byWhom, $reason, $startDate, $endDate, UserProsecutionType::BAN);
         } catch(AException $e) {
@@ -85,7 +85,7 @@ class UserProsecutionManager extends AManager {
         }
     }
 
-    public function permaBanUser(int $who, int $byWhom, string $reason) {
+    public function permaBanUser(string $who, string $byWhom, string $reason) {
         try {
             $this->commonCreateProsecution($who, $byWhom, $reason, null, null, UserProsecutionType::PERMA_BAN);
         } catch(AException $e) {
@@ -93,7 +93,7 @@ class UserProsecutionManager extends AManager {
         }
     }
 
-    private function commonCreateProsecution(int $forUserId, int $byUserId, string $reason, ?string $startDate, ?string $endDate, int $type, bool $invalidateCache = true) {
+    private function commonCreateProsecution(string $forUserId, string $byUserId, string $reason, ?string $startDate, ?string $endDate, int $type, bool $invalidateCache = true) {
         $this->beginTransaction();
 
         $result = $this->userProsecutionRepository->createNewProsecution($forUserId, $type, $reason, $startDate, $endDate);
@@ -163,7 +163,7 @@ class UserProsecutionManager extends AManager {
         return true;
     }
 
-    private function commit(int $userId, string $method) {
+    private function commit(string $userId, string $method) {
         try {
             $this->userRepository->tryCommit($userId, $method);
         } catch(AException $e) {

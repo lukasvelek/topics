@@ -28,7 +28,13 @@ class PostLikeEqualizerService extends AService {
 
             $this->serviceStop();
         } catch(AException|Exception $e) {
+            try {
+                $this->serviceStop();
+            } catch(AException|Exception $e2) {}
+            
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 
@@ -64,11 +70,11 @@ class PostLikeEqualizerService extends AService {
         return $this->pr->getPostsForGrid($limit, $offset);
     }
 
-    private function getPostLikes(int $postId) {
+    private function getPostLikes(string $postId) {
         return $this->pr->getLikeCount($postId);
     }
 
-    private function updateLikes(int $postId, int $likes) {
+    private function updateLikes(string $postId, int $likes) {
         $this->pr->updatePost($postId, ['likes' => $likes]);
     }
 

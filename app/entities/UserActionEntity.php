@@ -9,11 +9,11 @@ class UserActionEntity {
     public const TYPE_POLL = 4;
     public const TYPE_POLL_VOTE = 5;
 
-    private int $id;
+    private string $id;
     private int $type;
     private string $dateCreated;
 
-    public function __construct(int $id, int $type, string $dateCreated) {
+    public function __construct(string $id, int $type, string $dateCreated) {
         $this->id = $id;
         $this->type = $type;
         $this->dateCreated = $dateCreated;

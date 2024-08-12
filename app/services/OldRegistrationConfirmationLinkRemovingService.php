@@ -33,6 +33,8 @@ class OldRegistrationConfirmationLinkRemovingService extends AService {
             } catch(AException|Exception $e2) {}
 
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 

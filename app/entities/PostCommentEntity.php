@@ -3,17 +3,17 @@
 namespace App\Entities;
 
 class PostCommentEntity implements ICreatableFromRow {
-    private int $commentId;
-    private int $postId;
-    private int $authorId;
+    private string $commentId;
+    private string $postId;
+    private string $authorId;
     private string $text;
     private string $dateCreated;
     private int $likes;
-    private ?int $parentCommentId;
+    private ?string $parentCommentId;
     private bool $isDeleted;
     private ?string $dateDeleted;
 
-    public function __construct(int $commentId, int $postId, int $authorId, string $text, string $dateCreated, int $likes, ?int $parentCommentId, bool $isDeleted, ?string $dateDeleted) {
+    public function __construct(string $commentId, string $postId, string $authorId, string $text, string $dateCreated, int $likes, ?string $parentCommentId, bool $isDeleted, ?string $dateDeleted) {
         $this->commentId = $commentId;
         $this->postId = $postId;
         $this->authorId = $authorId;

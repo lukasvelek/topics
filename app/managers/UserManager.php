@@ -20,9 +20,10 @@ class UserManager extends AManager {
         Logger $logger,
         UserRepository $userRepository,
         MailManager $mailManager,
-        GroupRepository $groupRepository
+        GroupRepository $groupRepository,
+        EntityManager $entityManager
     ) {
-        parent::__construct($logger);
+        parent::__construct($logger, $entityManager);
 
         $this->userRepository = $userRepository;
         $this->mailManager = $mailManager;
@@ -33,11 +34,11 @@ class UserManager extends AManager {
         return $this->userRepository->getUserByUsername($username);
     }
 
-    public function getUserById(int $userId) {
+    public function getUserById(string $userId) {
         return $this->userRepository->getUserById($userId);
     }
 
-    public function createNewForgottenPassword(int $userId) {
+    public function createNewForgottenPassword(string $userId) {
         $linkId = $this->createNewForgottenPasswordRequestId();
 
         // disable user
@@ -62,7 +63,7 @@ class UserManager extends AManager {
         }
     }
 
-    public function disableUser(int $userId, int $callingUserId) {
+    public function disableUser(string $userId, string $callingUserId) {
         if(!$this->userRepository->updateUser($userId, ['canLogin' => '0'])) {
             throw new GeneralException('Could not disable user #' . $userId . '.');
         }
@@ -70,7 +71,7 @@ class UserManager extends AManager {
         $this->logger->warning(sprintf('User #%d disabled user #%d.', $callingUserId, $userId), __METHOD__);
     }
 
-    public function enableUser(int $userId, int $callingUserId) {
+    public function enableUser(string $userId, string $callingUserId) {
         if(!$this->userRepository->updateUser($userId, ['canLogin' => '1'])) {
             throw new GeneralException('Could not enable user #' . $userId . '.');
         }
@@ -79,7 +80,8 @@ class UserManager extends AManager {
     }
 
     private function createNewForgottenPasswordRequestId() {
-        return HashManager::createHash(32, false);
+        //return HashManager::createEntityId();
+        return $this->createId(EntityManager::FORGOTTEN_PASSWORD);
     }
 
     public function checkForgottenPasswordRequest(string $linkId) {

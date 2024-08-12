@@ -8,6 +8,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\UserSuggestionEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -437,7 +438,9 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         try {
             $app->suggestionRepository->beginTransaction();
 
-            $app->suggestionRepository->createNewComment($userId, $suggestionId, $text, $adminOnly);
+            $commentId = $app->entityManager->generateEntityId(EntityManager::SUGGESTION_COMMENTS);
+
+            $app->suggestionRepository->createNewComment($commentId, $userId, $suggestionId, $text, $adminOnly);
 
             $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
 

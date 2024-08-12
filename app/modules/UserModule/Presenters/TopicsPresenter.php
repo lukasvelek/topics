@@ -9,6 +9,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
@@ -16,6 +17,7 @@ use App\Exceptions\AException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -75,7 +77,7 @@ class TopicsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0, ' . $topicId . ')');
+        $this->addScript('loadPostsForTopic(' . $postLimit . ', 0, \'' . $topicId . '\')');
 
         $arb = new AjaxRequestBuilder();
         $arb->setURL(['page' => 'UserModule:Topics', 'action' => 'likePost'])
@@ -97,7 +99,8 @@ class TopicsPresenter extends AUserPresenter {
         $isMember = $app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId());
         $finalFollowLink = '';
 
-        if($app->topicMembershipManager->isTopicFollowable($topicId) || $isMember) {
+        $membership = $app->topicMembershipManager->getFollowRole($topicId, $app->currentUser->getId());
+        if($membership != TopicMemberRole::OWNER && ($app->topicMembershipManager->isTopicFollowable($topicId) || $isMember)) {
             $finalFollowLink = ($isMember ? $unFollowLink : $followLink);
         }
 
@@ -344,7 +347,7 @@ class TopicsPresenter extends AUserPresenter {
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
             $liked = in_array($post->getId(), $likedArray);
-            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(' . $post->getId() . ', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
@@ -440,7 +443,7 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', ' . $topicId . ')" href="#">Load more</a>';
+            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" href="#">Load more</a>';
         }
 
         $this->ajaxSendResponse(['posts' => implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
@@ -526,8 +529,10 @@ class TopicsPresenter extends AUserPresenter {
 
         try {
             $app->topicRepository->beginTransaction();
+
+            $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
             
-            $app->postRepository->createNewPost($topicId, $userId, $title, $text, $tag);
+            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag);
 
             if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
                 $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
@@ -628,8 +633,9 @@ class TopicsPresenter extends AUserPresenter {
             try {
                 $app->topicRepository->beginTransaction();
 
-                $app->topicRepository->createNewTopic($title, $description, $tags, $isPrivate, $rawTags);
-                $topicId = $app->topicRepository->getLastTopicIdForTitle($title);
+                $topicId = $app->entityManager->generateEntityId(EntityManager::TOPICS);
+
+                $app->topicRepository->createNewTopic($topicId, $title, $description, $tags, $isPrivate, $rawTags);
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
 
@@ -742,21 +748,27 @@ class TopicsPresenter extends AUserPresenter {
                     continue;
                 }
 
-                if($first) {
+                if(count($topicIdsUserIsMemberOf) > 1) {
+                    if($first) {
+                        $tmpCode = '<div class="row"><div class="col-md col-lg" id="topic-followed-section">';
+                        $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
+                        $tmpCode .= '</div><div class="col-md-1 col-lg-1"></div>';
+    
+                        $first = false;
+                    } else {
+                        $tmpCode .= '<div class="col-md col-lg" id="topic-followed-section">';
+                        $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
+                        $tmpCode .= '</div></div>';
+    
+                        $first = true;
+                    }
+                } else {
                     $tmpCode = '<div class="row"><div class="col-md col-lg" id="topic-followed-section">';
                     $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
-                    $tmpCode .= '</div><div class="col-md-1 col-lg-1"></div>';
-
-                    $first = false;
-                } else {
-                    $tmpCode .= '<div class="col-md col-lg" id="topic-followed-section">';
-                    $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
                     $tmpCode .= '</div></div>';
-
-                    $code[] = $tmpCode;
-
-                    $first = true;
                 }
+
+                $code[] = $tmpCode;
             }
         } else {
             $code[] = '
@@ -1051,6 +1063,7 @@ class TopicsPresenter extends AUserPresenter {
             $choices = $this->httpPost('choices');
             $dateValid = $this->httpPost('dateValid');
             $timeElapsed = $this->httpPost('timeElapsed');
+            $pollId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLLS);
 
             $tmp = [];
             foreach(explode(',', $choices) as $choice) {
@@ -1069,7 +1082,7 @@ class TopicsPresenter extends AUserPresenter {
             try {
                 $app->topicPollRepository->beginTransaction();
 
-                $app->topicPollRepository->createPoll($title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
+                $app->topicPollRepository->createPoll($pollId, $title, $description, $app->currentUser->getId(), $topicId, $choices, $dateValid, $timeElapsed);
 
                 $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -1155,8 +1168,10 @@ class TopicsPresenter extends AUserPresenter {
 
         try {
             $app->topicPollRepository->beginTransaction();
+            
+            $responseId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLL_RESPONSES);
 
-            $app->topicPollRepository->submitPoll($pollId, $app->currentUser->getId(), $choice);
+            $app->topicPollRepository->submitPoll($responseId, $pollId, $app->currentUser->getId(), $choice);
 
             $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -1200,7 +1215,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $this->addScript('createWidgets(' . $pollId . ');');
+        $this->addScript('createWidgets(\'' . $pollId . '\');');
     }
 
     public function renderPollAnalytics() {

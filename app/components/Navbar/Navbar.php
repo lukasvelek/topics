@@ -12,9 +12,9 @@ class Navbar implements IRenderable {
     private bool $hideSearchBar;
     private bool $hasCustomLinks;
     private NotificationManager $notificationManager;
-    private ?int $currentUserId;
+    private ?string $currentUserId;
 
-    public function __construct(NotificationManager $notificationManager, ?int $currentUserId = null) {
+    public function __construct(NotificationManager $notificationManager, ?string $currentUserId = null) {
         $this->links = [];
         $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template.html'));
         $this->hideSearchBar = false;
@@ -97,7 +97,7 @@ class Navbar implements IRenderable {
 
         $code = '
             <input type="text" name="searchQuery" id="searchQuery" placeholder="Search..."' . $query . '>
-            <button type="button" style="' /*. 'border: 1px solid black;'*/ . '" onclick="doSearch(' . $app->currentUser->getId() . ')" id="searchQueryButton">Search</button>
+            <button type="button" style="' /*. 'border: 1px solid black;'*/ . '" onclick="doSearch(\'' . $app->currentUser->getId() . '\')" id="searchQueryButton">Search</button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';
 

@@ -3,14 +3,14 @@
 namespace App\Entities;
 
 class UserProsecutionEntity implements ICreatableFromRow {
-    private int $id;
-    private int $userId;
+    private string $id;
+    private string $userId;
     private int $type;
     private string $reason;
     private ?string $startDate;
     private ?string $endDate;
 
-    public function __construct(int $id, int $userId, int $type, string $reason, ?string $startDate, ?string $endDate) {
+    public function __construct(string $id, string $userId, int $type, string $reason, ?string $startDate, ?string $endDate) {
         $this->id = $id;
         $this->userId = $userId;
         $this->type = $type;
