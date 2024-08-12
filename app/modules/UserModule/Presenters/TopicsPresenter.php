@@ -1363,8 +1363,19 @@ class TopicsPresenter extends AUserPresenter {
         $lastPage = ceil($totalCount / $gridSize);
 
         $gb = new GridBuilder();
-        $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created']);
+        $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
+        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) {
+            if($post->isSuggestable()) {
+                $cell->setTextColor('green');
+                $cell->setValue('Yes');
+            } else {
+                $cell->setTextColor('red');
+                $cell->setValue('No');
+            }
+
+            return $cell;
+        });
         $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
             return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
         });
