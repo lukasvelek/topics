@@ -7,6 +7,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Entities\PostEntity;
 use App\Entities\PostImageFileEntity;
+use App\Entities\TopicEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\Managers\TopicMembershipManager;
@@ -208,6 +209,14 @@ class ActionAuthorizator extends AAuthorizator {
 
     public function canUploadFileForPost(string $userId, PostEntity $post) {
         if($post->getAuthorId() != $userId) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canManageTopicPosts(string $userId, TopicEntity $topic) {
+        if((($this->tpm->getFollowRole($topic->getId(), $userId)) < TopicMemberRole::MANAGER) && !$this->commonContentManagement($userId)) {
             return false;
         }
 

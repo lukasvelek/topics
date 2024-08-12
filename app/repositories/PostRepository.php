@@ -19,6 +19,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC');
 
         if($deletedOnly) {
@@ -43,6 +44,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -67,6 +69,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -203,6 +206,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->execute();
 
         $posts = [];
@@ -229,11 +233,11 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag) {
+    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag, string $dateAvailable) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag'])
-            ->values([$postId, $topicId, $authorId, $title, $text, $tag])
+        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable'])
+            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable])
             ->execute();
 
         return $qb->fetch();
@@ -370,6 +374,41 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
+    public function getPostsForTopicForGrid(string $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0')
+            ->andWhere('topicId = ?', [$topicId])
+            ->orderBy('dateCreated');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getScheduledPostsForTopicForGrid(string $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $now = DateTime::now();
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0')
+            ->andWhere('((dateAvailable <> dateCreated) AND dateAvailable > ?)', [$now])
+            ->andWhere('topicId = ?', [$topicId])
+            ->orderBy('dateCreated');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
     public function getLikeCount(string $postId) {
         $qb = $this->qb(__METHOD__);
 
@@ -388,6 +427,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('authorId = ?', [$userId])
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC')
             ->limit(1)
             ->execute();

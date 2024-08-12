@@ -149,6 +149,16 @@ class PostsPresenter extends AUserPresenter {
 
         [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 
+        $postedOn = $post->getDateCreated();
+        $postedOnText = 'Posted on';
+        
+        if($post->getDateAvailable() != $post->getDateCreated()) {
+            $postedOn = $post->getDateAvailable();
+            $postedOnText = 'Scheduled for';
+        }
+
+        $postedOn = DateTimeFormatHelper::formatDateToUserFriendly($postedOn);
+
         $postData = '
             <div>
                 <div class="row">
@@ -157,7 +167,7 @@ class PostsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md col-lg">
-                        <p class="post-data">Posted on: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                        <p class="post-data">' . $postedOnText . ': ' . $postedOn . '</p>
                     </div>
 
                     <div class="col-md col-lg">
