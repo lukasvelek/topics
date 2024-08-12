@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
@@ -31,7 +32,13 @@ class AdminDashboardIndexingService extends AService {
 
             $this->serviceStop();
         } catch(AException|Exception $e) {
+            try {
+                $this->serviceStop();
+            } catch(AException|Exception $e2) {}
+            
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 
@@ -49,7 +56,11 @@ class AdminDashboardIndexingService extends AService {
     private function updateData(array $data) {
         $qb = $this->tr->getQb();
 
-        $qb ->insert('admin_dashboard_widgets_graph_data', ['mostActiveTopics', 'mostActivePosts', 'mostActiveUsers'])
+        $dataId = HashManager::createEntityId();
+
+        $data = array_merge([$dataId], $data);
+
+        $qb ->insert('admin_dashboard_widgets_graph_data', ['dataId', 'mostActiveTopics', 'mostActivePosts', 'mostActiveUsers'])
             ->values($data)
             ->execute();
     }

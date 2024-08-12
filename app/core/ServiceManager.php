@@ -4,8 +4,14 @@ namespace App\Core;
 
 use App\Constants\SystemServiceStatus;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\ServiceException;
 use App\Repositories\SystemServicesRepository;
+use App\Services\AdminDashboardIndexingService;
+use App\Services\MailService;
+use App\Services\OldNotificationRemovingService;
+use App\Services\OldRegistrationConfirmationLinkRemovingService;
+use App\Services\PostLikeEqualizerService;
 use Exception;
 
 class ServiceManager {
@@ -17,6 +23,41 @@ class ServiceManager {
         $this->ssr = $ssr;
     }
 
+    public function runServiceSync(string $serviceName) {
+        global $app;
+
+        try {
+            switch($serviceName) {
+                case 'PostLikeEqualizer':
+                    $ple = new PostLikeEqualizerService($app->logger, $this, $app->postRepository);
+                    $ple->run();
+                    break;
+
+                case 'AdminDashboardIndexing':
+                    $adi = new AdminDashboardIndexingService($app->logger, $this, $app->topicRepository, $app->postRepository);
+                    $adi->run();
+                    break;
+                
+                case 'Mail':
+                    $ms = new MailService($app->logger, $this, $app->mailManager);
+                    $ms->run();
+                    break;
+
+                case 'OldRegistrationConfirmationLinkRemoving':
+                    $x = new OldRegistrationConfirmationLinkRemovingService($app->logger, $this, $app->userRegistrationRepository);
+                    $x->run();
+                    break;
+
+                case 'OldNotificationRemoving':
+                    $x = new OldNotificationRemovingService($app->logger, $this, $app->notificationManager);
+                    $x->run();
+                    break;
+            }
+        } catch(Exception $e) {
+            throw new GeneralException($e->getMessage(), $e);
+        }
+    }
+
     public function runService(string $scriptPath) {
         $phpExe = $this->cfg['PHP_DIR_FULLPATH'] . 'php.exe';
 
@@ -25,7 +66,7 @@ class ServiceManager {
         $cmd = $phpExe . ' ' . $serviceFile;
 
         if(substr(php_uname(), 0, 7) == 'Windows') {
-            pclose(popen("start /B " . $cmd, "w"));
+            $status = pclose(popen("start /B " . $cmd, "w"));
         } else {
             exec($cmd . " > /dev/null &");
         }

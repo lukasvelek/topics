@@ -373,7 +373,7 @@ class PostRepository extends ARepository {
     public function getLikeCount(string $postId) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['COUNT(likeId) AS cnt'])
+        $qb ->select(['COUNT(userId) AS cnt'])
             ->from('post_likes')
             ->where('postId = ?', [$postId])
             ->execute();

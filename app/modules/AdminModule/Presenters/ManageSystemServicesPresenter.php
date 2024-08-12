@@ -6,6 +6,7 @@ use App\Constants\SystemServiceStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
 use App\Entities\SystemServiceEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
@@ -107,7 +108,19 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $serviceId = $this->httpGet('serviceId', true);
         $service = $app->systemServicesRepository->getServiceById($serviceId);
 
-        $app->serviceManager->runService($service->getScriptPath());
+        $this->flashMessage($service->getScriptPath(), 'error');
+
+        $async = true;
+
+        if($async) {
+            $app->serviceManager->runService($service->getScriptPath());  
+        } else {
+            try{
+                $app->serviceManager->runServiceSync($service->getTitle());
+            } catch(AException $e) {
+                $this->flashMessage($e->getMessage(), 'error');
+            }
+        }
         
         $this->flashMessage('Service started.', 'success');
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);
