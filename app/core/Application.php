@@ -7,6 +7,7 @@ use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
@@ -40,6 +41,7 @@ use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
+use Exception;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -119,7 +121,11 @@ class Application {
 
         $this->logger = new Logger($this->cfg);
         $this->logger->info('Logger initialized.', __METHOD__);
-        $this->db = new DatabaseConnection($this->cfg);
+        try {
+            $this->db = new DatabaseConnection($this->cfg);
+        } catch(AException $e) {
+            throw $e;
+        }
         $this->logger->info('Database connection established', __METHOD__);
         
         $this->userRepository = new UserRepository($this->db, $this->logger);
@@ -223,7 +229,6 @@ class Application {
         } else {
             $url = $this->composeURL($urlParams);
         }
-
 
         header('Location: ' . $url);
         exit;
