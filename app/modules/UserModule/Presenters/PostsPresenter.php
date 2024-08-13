@@ -11,6 +11,7 @@ use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\FileUploadException;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
@@ -770,6 +771,12 @@ class PostsPresenter extends AUserPresenter {
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
             try {
+                if($fr->postTitle != $post->getTitle()) {
+                    throw new GeneralException('Post titles do not match.');
+                }
+
+                $app->userAuth->authUser($fr->getHashedPassword($fr->userPassword));
+
                 $app->postRepository->beginTransaction();
 
                 $app->contentManager->deletePost($postId);
@@ -790,6 +797,8 @@ class PostsPresenter extends AUserPresenter {
             $fb = new FormBuilder();
             
             $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deletePost', 'isSubmit' => '1', 'postId' => $postId])
+                ->addTextInput('postTitle', 'Post title:', null, true)
+                ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete post')
                 ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
             ;
