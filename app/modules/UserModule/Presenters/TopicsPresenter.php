@@ -1060,17 +1060,18 @@ class TopicsPresenter extends AUserPresenter {
         if($this->httpGet('isSubmit') == '1') {
             try {
                 $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
-            } catch(AException $e) {
-                $this->flashMessage('Could not delete this topic. Reason: ' . $e->getMessage(), 'error');
-                $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
-            }
 
-            $topicLink = TopicEntity::createTopicProfileLink($topic, true);
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+                if($topic->getTitle() != $fr->topicTitle) {
+                    throw new GeneralException('Topic titles do not match.');
+                }
 
-            $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
-            
-            try {
+                $app->userAuth->authUser($fr->getHashedPassword('userPassword'));
+
+                $topicLink = TopicEntity::createTopicProfileLink($topic, true);
+                $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+
+                $topicOwnerId = $app->topicMembershipManager->getTopicOwnerId($topicId);
+
                 $app->topicRepository->beginTransaction();
 
                 $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
@@ -1079,11 +1080,11 @@ class TopicsPresenter extends AUserPresenter {
 
                 $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
-                $this->flashMessage('Topic #' . $topicId . ' has been deleted.', 'success');
-            } catch(Exception $e) {
+                $this->flashMessage('Topic has been deleted.', 'success');
+            } catch(AException|Exception $e) {
                 $app->topicRepository->rollback();
 
-                $this->flashMessage('Topic #' . $topicId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+                $this->flashMessage('Could not delete topic. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['action' => 'profile', 'topicId' => $topicId]);
@@ -1091,6 +1092,8 @@ class TopicsPresenter extends AUserPresenter {
             $fb = new FormBuilder();
             
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'deleteTopic', 'isSubmit' => '1', 'topicId' => $topicId])
+                ->addTextInput('topicTitle', 'Topic title:', null, true)
+                ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete topic')
                 ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';')
             ;

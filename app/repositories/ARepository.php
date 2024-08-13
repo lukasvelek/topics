@@ -35,23 +35,32 @@ abstract class ARepository {
     }
 
     public function beginTransaction() {
-        $this->logger->warning('Transaction begun.', __METHOD__);
-        return $this->conn->beginTransaction();
+        $result = $this->conn->beginTransaction();
+        if($result) {
+            $this->logger->warning('Transaction begun.', __METHOD__);
+        }
+        return $result;
     }
 
     public function rollback() {
-        $this->logger->warning('Transaction rolled back.', __METHOD__);
-        return $this->conn->rollback();
+        $result = $this->conn->rollback();
+        if($result) {
+            $this->logger->warning('Transaction rolled back.', __METHOD__);
+        }
+        return $result;
     }
 
     public function commit(?string $userId, string $method) {
-        $sql = '';
-        if(!$this->logTransaction($userId, $method, $sql)) {
-            $this->rollback();
-            throw new DatabaseExecutionException('Could not log transcation. Rolling back.', $sql);
+        $result = $this->conn->commit();
+        if($result) {
+            $sql = '';
+            if(!$this->logTransaction($userId, $method, $sql)) {
+                $this->rollback();
+                throw new DatabaseExecutionException('Could not log transcation. Rolling back.', $sql);
+            }
+            $this->logger->warning('Transaction commited.', __METHOD__);
         }
-        $this->logger->warning('Transaction commited.', __METHOD__);
-        return $this->conn->commit();
+        return $result;
     }
 
     public function tryBeginTransaction() {
