@@ -428,7 +428,7 @@ class PostsPresenter extends AUserPresenter {
 
         $likedComments = $app->postCommentRepository->getLikedCommentsForUser($app->currentUser->getId(), $commentIds);
 
-        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId);
+        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId, true);
 
         $code = [];
 

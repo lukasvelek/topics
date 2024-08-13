@@ -299,14 +299,19 @@ class PostCommentRepository extends ARepository {
         return $result;
     }
 
-    public function getCommentsThatHaveAParent(string $postId) {
+    public function getCommentsThatHaveAParent(string $postId, bool $orderByDate = false) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
-            ->andWhere('parentCommentId IS NOT NULL')
-            ->execute();
+            ->andWhere('parentCommentId IS NOT NULL');
+
+        if($orderByDate) {
+            $qb->orderBy('dateCreated', 'DESC');
+        }
+
+        $qb->execute();
 
         $comments = [];
         while($row = $qb->fetchAssoc()) {
