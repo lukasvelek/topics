@@ -365,7 +365,7 @@ class DatabaseInstaller {
             'user_prosecutions' => [
                 'userId'
             ],
-            'user_prosecution_history' => [
+            'user_prosecutions_history' => [
                 'prosecutionId',
                 'userId'
             ],
