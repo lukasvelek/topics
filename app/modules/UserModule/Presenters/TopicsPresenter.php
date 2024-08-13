@@ -1365,16 +1365,16 @@ class TopicsPresenter extends AUserPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
-        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) {
+        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page) {
             if($post->isSuggestable()) {
-                $cell->setTextColor('green');
-                $cell->setValue('Yes');
+                $link = LinkBuilder::createSimpleLinkObject('Yes', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'disableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
+                $link->setStyle('color: green');
             } else {
-                $cell->setTextColor('red');
-                $cell->setValue('No');
+                $link = LinkBuilder::createSimpleLinkObject('No', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'enableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
+                $link->setStyle('color: red');
             }
 
-            return $cell;
+            return $link->render();
         });
         $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
             return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
@@ -1401,9 +1401,39 @@ class TopicsPresenter extends AUserPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
             return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
         });
+        $gb->addAction(function(PostEntity $post) {
+            
+        });
+
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
+    }
+
+    public function handleUpdatePost() {
+        global $app;
+
+        $postId = $this->httpGet('postId');
+        $do = $this->httpGet('do');
+        $returnGridPage = $this->httpGet('returnGridPage');
+        $topicId = $this->httpGet('topicId');
+
+        $cm = new CacheManager($app->logger);
+
+        switch($do) {
+            case 'disableSuggestion':
+                $app->postRepository->updatePost($postId, ['isSuggestable' => '0']);
+                $cm->invalidateCache('posts');
+                break;
+
+            case 'enableSuggestion':
+                $app->postRepository->updatePost($postId, ['isSuggestable' => '1']);
+                $cm->invalidateCache('posts');
+                break;
+        }
+
+        $this->flashMessage('Post suggestion ' . (($do == 'enableSuggestion') ? 'enabled' : 'disabled') . '.', 'success');
+        $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
     }
 }
 
