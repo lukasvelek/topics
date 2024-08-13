@@ -218,7 +218,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getPollGrid(0, ' . $topicId . ');');
+        $this->addScript('getPollGrid(0, \'' . $topicId . '\');');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')

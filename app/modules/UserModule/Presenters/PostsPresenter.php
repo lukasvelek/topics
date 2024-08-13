@@ -678,8 +678,6 @@ class PostsPresenter extends AUserPresenter {
 
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
         } else {
-            $this->saveToPresenterCache('comment', $comment);
-
             $categories = ReportCategory::getArray();
             $categoryArray = [];
             foreach($categories as $k => $v) {
@@ -707,11 +705,9 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function renderReportComment() {
-        $comment = $this->loadFromPresenterCache('comment');
         $form = $this->loadFromPresenterCache('form');
         $links = $this->loadFromPresenterCache('links');
 
-        $this->template->comment_id = $comment->getId();
         $this->template->form = $form;
         $this->template->links = $links;
     }
