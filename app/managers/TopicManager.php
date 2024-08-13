@@ -135,6 +135,48 @@ class TopicManager extends AManager {
             throw $e;
         }
     }
+
+    public function pinPost(string $callingUserId, string $topicId, string $postId) {
+        if($this->tmm->getFollowRole($topicId, $callingUserId) < TopicMemberRole::COMMUNITY_HELPER) {
+            throw new GeneralException('You are not authorized to pin posts.');
+        }
+
+        if($this->isPostPinned($topicId, $postId)) {
+            throw new GeneralException('Post is already pinned.');
+        }
+
+        try {
+            $this->com->pinPost($topicId, $postId);
+        } catch(AException $e) {
+            throw $e;
+        }
+
+        return true;
+    }
+
+    public function unpinPost(string $callingUserId, string $topicId, string $postId) {
+        if($this->tmm->getFollowRole($topicId, $callingUserId) < TopicMemberRole::COMMUNITY_HELPER) {
+            throw new GeneralException('You are not authorized to pin posts.');
+        }
+
+        if(!$this->isPostPinned($topicId, $postId)) {
+            throw new GeneralException('Post is not pinned.');
+        }
+
+        try {
+            $this->com->pinPost($topicId, $postId, false);
+        } catch(AException $e) {
+            throw $e;
+        }
+
+        return true;
+    }
+
+    public function isPostPinned(string $topicId, string $postId) {
+        $pinnedPostIds = $this->tr->getPinnedPostIdsForTopicId($topicId);
+
+        return in_array($postId, $pinnedPostIds);
+    }
 }
 
 ?>

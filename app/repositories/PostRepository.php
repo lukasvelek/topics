@@ -45,6 +45,7 @@ class PostRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
             ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -70,6 +71,7 @@ class PostRepository extends ARepository {
             ->where($qb->getColumnInValues('topicId', $topicIds))
             ->andWhere('isDeleted = 0')
             ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -233,11 +235,11 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag, string $dateAvailable) {
+    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag, string $dateAvailable, bool $suggestable) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable'])
-            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable])
+        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable', 'isSuggestable'])
+            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable, $suggestable])
             ->execute();
 
         return $qb->fetch();
@@ -281,7 +283,7 @@ class PostRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getPostCount() {
@@ -489,6 +491,28 @@ class PostRepository extends ARepository {
         }
 
         return $data;
+    }
+
+    public function createNewPostPin(string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('topic_post_pins', ['topicId', 'postId'])
+            ->values([$topicId, $postId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function removePostPin(string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('topic_post_pins')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 

@@ -66,7 +66,8 @@ class DatabaseInstaller {
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
                 'tag' => 'VARCHAR(256) NOT NULL',
-                'dateAvailable' => 'DATETIME NOT NULL'
+                'dateAvailable' => 'DATETIME NOT NULL',
+                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1'
             ],
             'post_likes' => [
                 'postId' => 'VARCHAR(256) NOT NULL',
@@ -250,6 +251,12 @@ class DatabaseInstaller {
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'isActive' => 'INT(2) NOT NULL DEFAULT 1',
                 'dateExpire' => 'DATETIME NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_post_pins' => [
+                'pinId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];

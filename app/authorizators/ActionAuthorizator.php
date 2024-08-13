@@ -222,6 +222,14 @@ class ActionAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canSetPostSuggestability(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>
