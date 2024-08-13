@@ -493,11 +493,11 @@ class PostRepository extends ARepository {
         return $data;
     }
 
-    public function createNewPostPin(string $topicId, string $postId) {
+    public function createNewPostPin(string $pinId, string $topicId, string $postId) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_post_pins', ['topicId', 'postId'])
-            ->values([$topicId, $postId])
+        $qb ->insert('topic_post_pins', ['pinId', 'topicId', 'postId'])
+            ->values([$pinId, $topicId, $postId])
             ->execute();
 
         return $qb->fetchBool();

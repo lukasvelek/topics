@@ -215,7 +215,8 @@ class ContentManager extends AManager {
         $result = true;
         $data = [];
         if($pin) {
-            $result = $this->postRepository->createNewPostPin($topicId, $postId);
+            $pinId = $this->postRepository->createEntityId(EntityManager::TOPIC_POST_PINS);
+            $result = $this->postRepository->createNewPostPin($pinId, $topicId, $postId);
             $data = ['isSuggestable' => '0'];
         } else {
             $result = $this->postRepository->removePostPin($topicId, $postId);

@@ -288,43 +288,96 @@ class DatabaseInstaller {
         $this->logger->info('Creating indexes.', __METHOD__);
 
         $indexes = [
-            'topic_polls_responses' => [
-                'pollId'
+            'banned_words' => [
+                'word'
+            ],
+            'banned_words' => [
+                'authorId'
+            ],
+            'group_membership' => [
+                'userId'
+            ],
+            'notifications' => [
+                'userId'
+            ],
+            'posts' => [
+                'topicId',
+                'dateAvailable',
+                'isDeleted',
+                'isSuggestable'
+            ],
+            'post_comments' => [
+                'postId',
+                'isDeleted',
+                'parentCommentId'
+            ],
+            'post_comment_likes' => [
+                'commentId',
+                'userId'
+            ],
+            'post_file_uploads' => [
+                'postId'
+            ],
+            'post_likes' => [
+                'postId',
+                'userId'
+            ],
+            'reports' => [
+                'status'
+            ],
+            'topics' => [
+                'title',
+                'description'
+            ],
+            'topics' => [
+                'isDeleted'
+            ],
+            'topic_invites' => [
+                'userId',
+                'dateValid'
+            ],
+            'topic_membership' => [
+                'topicId',
+                'userId'
+            ],
+            'topic_polls' => [
+                'topicId',
+                'dateValid'
             ],
             'topic_polls_responses' => [
                 'pollId',
                 'userId',
                 'dateCreated'
             ],
-            'topic_polls' => [
+            'topic_post_pins' => [
                 'topicId'
             ],
-            'topic_polls' => [
-                'topicId',
-                'dateValid'
+            'transaction_log' => [
+                'dateCreated'
             ],
-            'posts' => [
-                'topicId',
-                'isDeleted'
+            'user_following' => [
+                'authorId',
+                'userId'
             ],
-            'post_comment_likes' => [
-                'userId',
-                'commentId'
+            'user_forgotten_password_links' => [
+                'userId'
             ],
             'user_prosecutions' => [
                 'userId'
             ],
-            'post_likes' => [
-                'postId'
+            'user_prosecution_history' => [
+                'prosecutionId',
+                'userId'
             ],
-            'post_comments' => [
-                'postId',
-                'isDeleted'
+            'user_registration_links' => [
+                'userId'
             ],
-            'post_comments' => [
-                'postId',
-                'parentCommentId',
-                'isDeleted'
+            'user_suggestions' => [
+                'userId'
+            ],
+            'user_suggestion_comments' => [
+                'suggestionId',
+                'userId'
             ]
         ];
 
