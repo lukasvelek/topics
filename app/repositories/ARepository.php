@@ -51,8 +51,9 @@ abstract class ARepository {
     }
 
     public function commit(?string $userId, string $method) {
-        $result = $this->conn->rollback();
+        $result = $this->conn->commit();
         if($result) {
+            $sql = '';
             if(!$this->logTransaction($userId, $method, $sql)) {
                 $this->rollback();
                 throw new DatabaseExecutionException('Could not log transcation. Rolling back.', $sql);
