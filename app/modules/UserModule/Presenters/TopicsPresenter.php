@@ -543,8 +543,11 @@ class TopicsPresenter extends AUserPresenter {
             ->addTextInput('title', 'Title:', null, true)
             ->addTextArea('text', 'Text:', null, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
-            ->addFileInput('image', 'Image:')
-            ->addDatetime('dateAvailable', 'Available from:', $now, true);
+            ->addFileInput('image', 'Image:');
+
+        if($app->actionAuthorizator->canSchedulePosts($app->currentUser->getId(), $topicId)) {
+            $fb->addDatetime('dateAvailable', 'Available from:', $now, true);
+        }
         
         if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
             $fb->addCheckbox('suggestable', 'Can be suggested?', true);
