@@ -252,6 +252,12 @@ class DatabaseInstaller {
                 'isActive' => 'INT(2) NOT NULL DEFAULT 1',
                 'dateExpire' => 'DATETIME NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_post_pins' => [
+                'pinId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

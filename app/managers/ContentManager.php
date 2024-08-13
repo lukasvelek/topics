@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserActionEntity;
+use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Logger\Logger;
 use App\Repositories\PostCommentRepository;
@@ -204,6 +205,30 @@ class ContentManager extends AManager {
         $code .= implode('<br>', $codeArray) . '</div>';
 
         return $code;
+    }
+
+    public function updatePost(string $postId, array $data) {
+        return $this->postRepository->updatePost($postId, $data);
+    }
+
+    public function pinPost(string $topicId, string $postId, bool $pin = true) {
+        $result = true;
+        $data = [];
+        if($pin) {
+            $result = $this->postRepository->createNewPostPin($topicId, $postId);
+            $data = ['isSuggestable' => '0'];
+        } else {
+            $result = $this->postRepository->removePostPin($topicId, $postId);
+            $data = ['isSuggestable' => '1'];
+        }
+
+        if(!$result) {
+            throw new GeneralException('Could not ' . ($pin ? 'pin' : 'unpin') . ' post.');
+        }
+
+        if(!$this->updatePost($postId, $data)) {
+            throw new GeneralException('Could not change suggestion of post.');
+        }
     }
 }
 

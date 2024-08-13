@@ -16,6 +16,8 @@ class PostEntity implements ICreatableFromRow {
     private string $dateAvailable;
     private bool $isSuggestable;
 
+    private bool $isPinned;
+
     public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag, string $dateAvailable, bool $isSuggestable) {
         $this->postId = $postId;
         $this->topicId = $topicId;
@@ -29,6 +31,8 @@ class PostEntity implements ICreatableFromRow {
         $this->tag = $tag;
         $this->dateAvailable = $dateAvailable;
         $this->isSuggestable = $isSuggestable;
+        
+        $this->isPinned = false;
     }
 
     public function getId() {
@@ -85,6 +89,14 @@ class PostEntity implements ICreatableFromRow {
 
     public function isSuggestable() {
         return $this->isSuggestable;
+    }
+
+    public function isPinned() {
+        return $this->isPinned;
+    }
+
+    public function setIsPinned(bool $isPinned = true) {
+        $this->isPinned = $isPinned;
     }
 
     public static function createEntityFromDbRow(mixed $row) {

@@ -225,6 +225,23 @@ class TopicRepository extends ARepository {
 
         return $this->createTopicsArrayFromQb($qb);
     }
+
+    public function getPinnedPostIdsForTopicId(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['postId'])
+            ->from('topic_post_pins')
+            ->where('topicId = ?', [$topicId])
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['postId'];
+        }
+
+        return $ids;
+    }
 }
 
 ?>

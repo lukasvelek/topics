@@ -15,6 +15,7 @@ use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
@@ -288,6 +289,31 @@ class TopicsPresenter extends AUserPresenter {
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
+        $pinnedPosts = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
+
+        $i = 0;
+        $r = 0;
+        foreach($posts as $post) {
+            if(in_array($post->getId(), $pinnedPosts)) {
+                unset($posts[$i]);
+                $r++;
+            }
+
+            $i++;
+        }
+
+        $postCount -= $r;
+
+        $pinnedPostObjects = [];
+        foreach($pinnedPosts as $pp) {
+            $post = $app->postRepository->getPostById($pp);
+            $post->setIsPinned();
+
+            $pinnedPostObjects[] = $post;
+        }
+
+        $posts = array_merge($pinnedPostObjects, $posts);
+
         $polls = $app->topicPollRepository->getActivePollBuilderEntitiesForTopic($topicId);
 
         $userRole = $app->topicMembershipManager->getFollowRole($topicId, $app->currentUser->getId());
@@ -389,6 +415,12 @@ class TopicsPresenter extends AUserPresenter {
                 }
             }
 
+            $pinnedCode = '<div class="col-md-2"></div>';
+
+            if($post->isPinned()) {
+                $pinnedCode = '<div class="col-md-2" id="right">&#128204;</div>';
+            }
+
             $tmp = '
                 <div class="row" id="post-id-' . $post->getId() . '">
                     <div class="col-md">
@@ -401,7 +433,7 @@ class TopicsPresenter extends AUserPresenter {
                                 <p class="post-title">' . $postLink . '</p>
                             </div>
 
-                            <div class="col-md-2"></div>
+                            ' . $pinnedCode . '
                         </div>
 
                         <div class="row">' . $imageCode . '</div>
@@ -1365,16 +1397,33 @@ class TopicsPresenter extends AUserPresenter {
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
-        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page) {
-            if($post->isSuggestable()) {
-                $link = LinkBuilder::createSimpleLinkObject('Yes', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'disableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                $link->setStyle('color: green');
+        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $app) {
+            $isPinned = $app->topicManager->isPostPinned($post->getTopicId(), $post->getId());
+
+            if($isPinned) {
+                if($post->isSuggestable()) {
+                    $cell->setTextColor('green');
+                    $cell->setValue('Yes');
+                } else {
+                    $cell->setTextColor('red');
+                    $cell->setValue('No');
+                }
+
+                $cell->setTitle('To change this value, the post must not be pinned.');
             } else {
-                $link = LinkBuilder::createSimpleLinkObject('No', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'enableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                $link->setStyle('color: red');
+                if($post->isSuggestable()) {
+                    $link = LinkBuilder::createSimpleLinkObject('Yes', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'disableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
+                    $link->setStyle('color: green');
+                } else {
+                    $link = LinkBuilder::createSimpleLinkObject('No', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'enableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
+                    $link->setStyle('color: red');
+                }
+
+                $cell->setValue($link->render());
             }
 
-            return $link->render();
+
+            return $cell;
         });
         $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
             return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
@@ -1401,8 +1450,12 @@ class TopicsPresenter extends AUserPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
             return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
         });
-        $gb->addAction(function(PostEntity $post) {
-            
+        $gb->addAction(function(PostEntity $post) use ($app, $page) {
+            if($app->topicManager->isPostPinned($post->getTopicId(), $post->getId())) {
+                return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
+            } else {
+                return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
+            }
         });
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
@@ -1420,19 +1473,44 @@ class TopicsPresenter extends AUserPresenter {
 
         $cm = new CacheManager($app->logger);
 
-        switch($do) {
-            case 'disableSuggestion':
-                $app->postRepository->updatePost($postId, ['isSuggestable' => '0']);
-                $cm->invalidateCache('posts');
-                break;
+        $text = '';
+        try {
+            switch($do) {
+                case 'disableSuggestion':
+                    $app->postRepository->updatePost($postId, ['isSuggestable' => '0']);
+                    $cm->invalidateCache('posts');
+                    $text = 'Post suggestion disabled.';
+                    break;
+    
+                case 'enableSuggestion':
+                    $app->postRepository->updatePost($postId, ['isSuggestable' => '1']);
+                    $cm->invalidateCache('posts');
+                    $text = 'Post suggestion enabled.';
+                    break;
 
-            case 'enableSuggestion':
-                $app->postRepository->updatePost($postId, ['isSuggestable' => '1']);
-                $cm->invalidateCache('posts');
-                break;
+                default:
+                    throw new GeneralException('Undefined action.');
+                    break;
+
+                case 'pin':
+                    $app->topicManager->pinPost($app->currentUser->getId(), $topicId, $postId);
+                    $text = 'Post pinned.';
+                    break;
+
+                case 'unpin':
+                    $app->topicManager->unpinPost($app->currentUser->getId(), $topicId, $postId);
+                    $text = 'Post unpinned';
+                    break;
+
+                case 'unpin':
+                    break;
+            }
+
+            $this->flashMessage($text, 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not update post. Reason: ' . $e->getMessage(), 'error');
         }
 
-        $this->flashMessage('Post suggestion ' . (($do == 'enableSuggestion') ? 'enabled' : 'disabled') . '.', 'success');
         $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
     }
 }

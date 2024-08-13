@@ -283,7 +283,7 @@ class PostRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getPostCount() {
@@ -491,6 +491,28 @@ class PostRepository extends ARepository {
         }
 
         return $data;
+    }
+
+    public function createNewPostPin(string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('topic_post_pins', ['topicId', 'postId'])
+            ->values([$topicId, $postId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function removePostPin(string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('topic_post_pins')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 
