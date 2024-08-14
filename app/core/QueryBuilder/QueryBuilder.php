@@ -870,14 +870,14 @@ class QueryBuilder
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
-            $tsStart = /*time();*/ microtime();
+            $tsStart = microtime();
             $result = $this->conn->query($sql, $params);
-            $tsEnd = /*time();*/ microtime();
+            $tsEnd = microtime();
             return $result;
         };
-
+        
         $result = $q($sql, $params);
-
+        
         $diff = (float)$tsEnd - (float)$tsStart;
 
         $this->log($diff);

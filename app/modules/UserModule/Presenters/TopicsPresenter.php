@@ -1400,11 +1400,13 @@ class TopicsPresenter extends AUserPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
+        $pinnedPostIds = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
+
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
-        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $app) {
-            $isPinned = $app->topicManager->isPostPinned($post->getTopicId(), $post->getId());
+        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
+            $isPinned = in_array($post->getId(), $pinnedPostIds);
 
             if($isPinned) {
                 if($post->isSuggestable()) {
@@ -1456,8 +1458,8 @@ class TopicsPresenter extends AUserPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
             return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
         });
-        $gb->addAction(function(PostEntity $post) use ($app, $page) {
-            if($app->topicManager->isPostPinned($post->getTopicId(), $post->getId())) {
+        $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page) {
+            if(in_array($post->getId(), $pinnedPostIds)) {
                 return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
             } else {
                 return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
