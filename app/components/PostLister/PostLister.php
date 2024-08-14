@@ -182,7 +182,6 @@ class PostLister {
                     $code .= '</div>';
                     $code .= '<hr>';
 
-                    //$images = $this->fur->getFilesForPost($post->getId());
                     $images = $getImagesForPost($post->getId());
 
                     if(!empty($images)) {

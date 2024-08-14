@@ -371,6 +371,20 @@ class TopicsPresenter extends AUserPresenter {
 
         $likedArray = $app->postRepository->bulkCheckLikes($app->currentUser->getId(), $postIds);
 
+        $postImages = $app->fileUploadRepository->getBulkFilesForPost($postIds);
+
+        $getPostImages = function (string $postId) use ($postImages) {
+            $images = [];
+
+            foreach($postImages as $pi) {
+                if($pi->getPostId() == $postId) {
+                    $images[] = $pi;
+                }
+            }
+
+            return $images;
+        };
+
         $postCode = [];
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
@@ -389,7 +403,7 @@ class TopicsPresenter extends AUserPresenter {
 
             $imageCode = '';
 
-            $images = $app->fileUploadRepository->getFilesForPost($post->getId());
+            $images = $getPostImages($post->getId());
 
             if(!empty($images)) {
                 $imageJson = [];
