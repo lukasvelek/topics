@@ -44,8 +44,6 @@ class Logger implements ILoggerCallable {
 
         $diff = time() - $time;
 
-        $diff = $diff / 1000;
-
         $this->log($method, 'Time taken: ' . $diff . ' seconds', self::LOG_STOPWATCH);
 
         return $result;
