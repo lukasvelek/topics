@@ -32,7 +32,7 @@ abstract class AAuthorizator {
         return new ExpressionBuilder();
     }
 
-    protected function isUserMemberOfGroup(string $userId, string $groupId) {
+    protected function isUserMemberOfGroup(string $userId, int $groupId): bool {
         $cm = new CacheManager($this->logger);
         return $cm->loadCache('group_' . $groupId . '_' . $userId, function() use ($userId, $groupId) {
             return $this->groupRepository->isUserMemberOfGroup($userId, $groupId);

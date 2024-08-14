@@ -388,7 +388,12 @@ class TopicsPresenter extends AUserPresenter {
         $postCode = [];
         foreach($posts as $post) {
             $author = $app->userRepository->getUserById($post->getAuthorId());
-            $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
+
+            if($author !== null) {
+                $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
+            } else {
+                $userProfileLink = '-';
+            }
     
             $title = $bwh->checkText($post->getTitle());
     
@@ -809,6 +814,7 @@ class TopicsPresenter extends AUserPresenter {
             $first = true;
             $tmpCode = '';
             
+            $i = 0;
             foreach($topicIdsUserIsMemberOf as $topicId) {
                 try {
                     $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
@@ -824,11 +830,15 @@ class TopicsPresenter extends AUserPresenter {
     
                         $first = false;
                     } else {
-                        $tmpCode .= '<div class="col-md col-lg" id="topic-followed-section">';
+                        $tmpCode = '<div class="col-md col-lg" id="topic-followed-section">';
                         $tmpCode .= '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topicId . '">' . $topic->getTitle() . '</a>';
                         $tmpCode .= '</div></div>';
     
                         $first = true;
+                    }
+
+                    if(($i + 1) == count($topicIdsUserIsMemberOf) && !$first) {
+                        $tmpCode .= '<div class="col-md col-lg"></div></div>';
                     }
                 } else {
                     $tmpCode = '<div class="row"><div class="col-md col-lg" id="topic-followed-section">';
@@ -837,6 +847,7 @@ class TopicsPresenter extends AUserPresenter {
                 }
 
                 $code[] = $tmpCode;
+                $i++;
             }
         } else {
             $code[] = '

@@ -11,10 +11,26 @@ $app = new Application();
 
 $max = 100000;
 
+$topicIds = [
+    'iLvwWPmRwMkGLvH4zTuX2lEjpUtb1sSx',
+    'uD0Gqleml3oFGMaaoWHfodOpB0SJyjQu',
+    'Lm5n461TYqPNt1ZeQpL0sauzxPhwsf3p',
+    'jw1CpYaweEZ5CO2ENML5OWwSLjZvOHhx',
+    'ctS48IuyLXVWHP2pC0SzPqw9Hj6Hw8DA',
+    'ndN6gLnBGIrz9nHsJ8SltyXfff48EZ3o',
+    'q7h0UmU5uHePfGSOcUPQglF4GzG9PLqD'
+];
+
 for($i = 0; $i < $max; $i++) {
     $postId = $app->postRepository->createEntityId(EntityManager::POSTS);
 
-    $app->postRepository->createNewPost($postId, 'vYyotq2PLH9drHs4gUITnAPbIOJRCC7G', 'VkIhLJADwN09stwsO7Bm1CkkCuMhi0lL', 'test_' . $i, 'description', 'discussion', DateTime::now(), true);
+    if(count($topicIds) > 1) {
+        $r = rand(0, count($topicIds) - 1);
+    } else {
+        $r = 0;
+    }
+
+    $app->postRepository->createNewPost($postId, $topicIds[$r], 'TibfFG80ZMrBsEiYdDCUyUm6wYVQSbfp', 'test_' . $i, 'description', 'discussion', DateTime::now(), true);
 }
 
 ?>
