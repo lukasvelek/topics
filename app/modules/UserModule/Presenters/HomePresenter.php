@@ -21,7 +21,7 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
         $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 10);
+        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
 
         $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository, $app->fileUploadRepository, $app->fileUploadManager);
 

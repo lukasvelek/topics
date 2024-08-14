@@ -76,6 +76,7 @@ class TopicsPresenter extends AUserPresenter {
             ->setHeader(['limit' => '_limit', 'offset' => '_offset', 'topicId' => '_topicId'])
             ->setFunctionName('loadPostsForTopic')
             ->setFunctionArguments(['_limit', '_offset', '_topicId'])
+            ->addCustomWhenDoneCode('if(_offset == 0) { $("#latest-posts").html(""); }')
             ->updateHTMLElement('latest-posts', 'posts', true)
             ->updateHTMLElement('load-more-link', 'loadMoreLink')
         ;
@@ -482,7 +483,7 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" href="#">Load more</a>';
+            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
         }
 
         $this->ajaxSendResponse(['posts' => implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);

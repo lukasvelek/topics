@@ -17,6 +17,7 @@ class PostLister {
     private array $topics;
     private bool $topicLinkHidden;
     private ?UserEntity $currentUser;
+    private int $limit;
     
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
@@ -39,6 +40,11 @@ class PostLister {
         $this->topicLinkHidden = false;
 
         $this->currentUser = null;
+        $this->limit = 10;
+    }
+
+    public function setLimit(int $limit) {
+        $this->limit = $limit;
     }
 
     public function setCurrentUser(UserEntity $user) {
@@ -110,7 +116,31 @@ class PostLister {
 
             $likedArray = $this->postRepository->bulkCheckLikes($this->currentUser->getId(), $postIds);
 
+            $postIds = [];
             foreach($this->posts as $post) {
+                $postIds[] = $post->getId();
+            }
+
+            $postImages = $this->fur->getBulkFilesForPost($postIds);
+
+            $getImagesForPost = function (string $postId) use ($postImages) {
+                $images = [];
+
+                foreach($postImages as $pi) {
+                    if($pi->getPostId() == $postId) {
+                        $images[] = $pi;
+                    }
+                }
+
+                return $images;
+            };
+
+            $x = 0;
+            foreach($this->posts as $post) {
+                if($x >= $this->limit) {
+                    break;
+                }
+
                 $liked = in_array($post->getId(), $likedArray);
                 $likeLink = self::createLikeLink($post->getId(), $liked);
                 
@@ -152,7 +182,8 @@ class PostLister {
                     $code .= '</div>';
                     $code .= '<hr>';
 
-                    $images = $this->fur->getFilesForPost($post->getId());
+                    //$images = $this->fur->getFilesForPost($post->getId());
+                    $images = $getImagesForPost($post->getId());
 
                     if(!empty($images)) {
                         $imageJson = [];
@@ -197,6 +228,8 @@ class PostLister {
     
                     $codeArr[] = $code;
                 }
+
+                $x++;
             }
         } else {
             $codeArr[] = '<p class="post-text">No posts found!</p>';

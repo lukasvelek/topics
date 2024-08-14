@@ -22,6 +22,15 @@ class FileUploadRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function getBulkFilesForPost(array $postIds) {
+        $qb = $this->composeQueryForFiles(__METHOD__);
+
+        $qb ->where($qb->getColumnInValues('postId', $postIds))
+            ->execute();
+
+        return $this->createEntitiesFromQb($qb);
+    }
+
     public function getFilesForPost(string $postId) {
         $qb = $this->composeQueryForFiles(__METHOD__);
 
