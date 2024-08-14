@@ -422,6 +422,22 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
+    public function getBulkLikeCount(array $postIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(userId) AS cnt', 'postId'])
+            ->from('post_likes')
+            ->where($qb->getColumnInValues('postId', $postIds))
+            ->execute();
+
+        $result = [];
+        while($row = $qb->fetchAssoc()) {
+            $result[$row['postId']] = $row['cnt'];
+        }
+        
+        return $result;
+    }
+
     public function getLastCreatedPostInTopicByUserId(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 

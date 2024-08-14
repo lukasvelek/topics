@@ -10,7 +10,7 @@ use App\Repositories\PostRepository;
 use Exception;
 
 class PostLikeEqualizerService extends AService {
-    private const POST_BATCH_SIZE = 100;
+    private const POST_BATCH_SIZE = 1000;
 
     private PostRepository $pr;
 
@@ -47,8 +47,15 @@ class PostLikeEqualizerService extends AService {
         while($posts = $this->getPosts(self::POST_BATCH_SIZE, (self::POST_BATCH_SIZE * $offset))) {
             $this->logInfo(sprintf('Processing batch #%d with %d posts.', ($offset + 1), count($posts)));
 
+            $postIds = [];
             foreach($posts as $post) {
-                $likes = $this->getPostLikes($post->getId());
+                $postIds[] = $post->getId();
+            }
+
+            $likesArray = $this->getPostLikes($postIds);
+
+            foreach($posts as $post) {
+                $likes = $likesArray[$post->getId()];
 
                 if($post->getLikes() > $likes) {
                     $this->logInfo(sprintf('Post #%d has like mismatch. Likes in the `posts` table: %d and likes in the `post_likes` table: %d.', $post->getId(), $post->getLikes(), $likes));
@@ -70,8 +77,8 @@ class PostLikeEqualizerService extends AService {
         return $this->pr->getPostsForGrid($limit, $offset);
     }
 
-    private function getPostLikes(string $postId) {
-        return $this->pr->getLikeCount($postId);
+    private function getPostLikes(array $postIds) {
+        return $this->pr->getBulkLikeCount($postIds);
     }
 
     private function updateLikes(string $postId, int $likes) {

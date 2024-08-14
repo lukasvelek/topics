@@ -26,15 +26,6 @@ for($i = 0; $i < $max; $i++) {
 
     if(count($topicIds) > 1) {
         $r = rand(0, count($topicIds) - 1);
-        $r2 = rand((-count($topicIds)), count($topicIds) - 1);
-
-        if(($r + $r2) >= (count($topicIds) - 1)) {
-            $r = count($topicIds) - 1;
-        } else if(($r + $r2) < 0) {
-            $r = 0;
-        } else {
-            $r = $r + $r2;
-        }
     } else {
         $r = 0;
     }
