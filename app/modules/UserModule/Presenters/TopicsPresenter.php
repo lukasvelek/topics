@@ -9,7 +9,6 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
-use App\Core\HashManager;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
@@ -78,7 +77,7 @@ class TopicsPresenter extends AUserPresenter {
             ->setFunctionArguments(['_limit', '_offset', '_topicId'])
             ->addCustomWhenDoneCode('if(_offset == 0) { $("#latest-posts").html(""); }')
             ->updateHTMLElement('latest-posts', 'posts', true)
-            ->updateHTMLElement('load-more-link', 'loadMoreLink')
+            ->updateHTMLElement('posts-load-more-link', 'loadMoreLink')
         ;
 
         $this->addScript($arb->build());
@@ -140,8 +139,6 @@ class TopicsPresenter extends AUserPresenter {
 
                 $tagCode .= '<br>';
             }
-
-            //$tagCode .= $tag;
 
             if($tag instanceof IRenderable) {
                 $tagCode .= $tag->render();
@@ -471,7 +468,7 @@ class TopicsPresenter extends AUserPresenter {
                         <div class="row">
                             <div class="col-md">
                                 <p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>
-                                 | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
+                                 | Author: ' . $userProfileLink . ' | <span title="' . $post->getDateCreated() . '">Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</span></p>
                             </div>
                         </div>
                     </div>
@@ -502,10 +499,17 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
+            //$loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
+            $loadMoreLink = '<button type="button" id="formSubmit" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</button>';
         }
 
-        $this->ajaxSendResponse(['posts' => implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
+        $code = implode('<br>', $code);
+
+        if($offset >= 0) {
+            $code .= '<br>';
+        }
+
+        $this->ajaxSendResponse(['posts' => $code, 'loadMoreLink' => $loadMoreLink]);
     }
 
     public function renderProfile() {
