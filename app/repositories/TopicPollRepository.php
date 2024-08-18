@@ -198,14 +198,19 @@ class TopicPollRepository extends ARepository {
         return $polls;
     }
 
-    public function getPollCreatedByUserOrderedByDateDesc(string $userId) {
+    public function getPollCreatedByUserOrderedByDateDesc(string $userId, int $limit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('topic_polls')
             ->where('authorId = ?', [$userId])
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
 
         $polls = [];
         while($row = $qb->fetchAssoc()) {
@@ -215,14 +220,19 @@ class TopicPollRepository extends ARepository {
         return $polls;
     }
 
-    public function getPollResponsesForUserOrderedByDateDesc(string $userId) {
+    public function getPollResponsesForUserOrderedByDateDesc(string $userId, int $limit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('topic_polls_responses')
             ->where('userId = ?', [$userId])
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
 
         $choices = [];
         while($row = $qb->fetchAssoc()) {

@@ -245,13 +245,18 @@ class TopicMembershipManager extends AManager {
         return true;
     }
 
-    public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(string $userId) {
+    public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(string $userId, int $limit) {
         $topicIds = $this->topicMembershipRepository->getTopicIdsForOwner($userId);
 
         $qb = $this->topicRepository->composeQueryForTopics();
         $qb ->where($qb->getColumnInValues('topicId', $topicIds))
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
 
         $topics = [];
         while($row = $qb->fetchAssoc()) {

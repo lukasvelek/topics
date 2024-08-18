@@ -464,15 +464,20 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
-    public function getPostsCreatedByUser(string $userId, string $maxDate) {
+    public function getPostsCreatedByUser(string $userId, string $maxDate, int $limit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('posts')
             ->where('authorId = ?', [$userId])
             ->andWhere('dateCreated >= ?', [$maxDate])
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
 
         $posts = [];
         while($row = $qb->fetchAssoc()) {

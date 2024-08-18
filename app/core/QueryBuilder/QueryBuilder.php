@@ -870,9 +870,9 @@ class QueryBuilder
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
-            $tsStart = /*microtime();*/ time();
+            $tsStart = time();
             $result = $this->conn->query($sql, $params);
-            $tsEnd = /*microtime();*/ time();
+            $tsEnd = time();
             return $result;
         };
         

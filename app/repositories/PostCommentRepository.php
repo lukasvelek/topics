@@ -321,14 +321,20 @@ class PostCommentRepository extends ARepository {
         return $comments;
     }
 
-    public function getCommentsForUser(string $userId, string $maxDate) {
+    public function getCommentsForUser(string $userId, string $maxDate, int $limit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('authorId = ?', [$userId])
             ->andWhere('dateCreated >= ?', [$maxDate])
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
 
         $comments = [];
         while($row = $qb->fetchAssoc()) {

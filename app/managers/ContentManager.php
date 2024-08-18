@@ -100,38 +100,40 @@ class ContentManager extends AManager {
         $maxDate = new DateTime();
         $maxDate->modify('-7d');
         $maxDate = $maxDate->getResult();
+
+        $dbLimit = 10;
         
         $actions = [];
         
-        $posts = $this->postRepository->getPostsCreatedByUser($userId, $maxDate);
+        $posts = $this->postRepository->getPostsCreatedByUser($userId, $maxDate, $dbLimit);
         if(!empty($posts)) {
             foreach($posts as $post) {
                 $actions[] = new UserActionEntity($post->getId(), UserActionEntity::TYPE_POST, $post->getDateCreated());
             }
         }
 
-        $postComments = $this->postCommentRepository->getCommentsForUser($userId, $maxDate);
+        $postComments = $this->postCommentRepository->getCommentsForUser($userId, $maxDate, $dbLimit);
         if(!empty($postComments)) {
             foreach($postComments as $pc) {
                 $actions[] = new UserActionEntity($pc->getId(), UserActionEntity::TYPE_POST_COMMENT, $pc->getDateCreated());
             }
         }
 
-        $topics = $this->topicMembershipManager->getTopicsWhereUserIsOwnerOrderByTopicDateCreated($userId);
+        $topics = $this->topicMembershipManager->getTopicsWhereUserIsOwnerOrderByTopicDateCreated($userId, $dbLimit);
         if(!empty($topics)) {
             foreach($topics as $t) {
                 $actions[] = new UserActionEntity($t->getId(), UserActionEntity::TYPE_TOPIC, $t->getDateCreated());
             }
         }
 
-        $polls = $this->topicPollRepository->getPollCreatedByUserOrderedByDateDesc($userId);
+        $polls = $this->topicPollRepository->getPollCreatedByUserOrderedByDateDesc($userId, $dbLimit);
         if(!empty($polls)) {
             foreach($polls as $p) {
                 $actions[] = new UserActionEntity($p->getId(), UserActionEntity::TYPE_POLL, $p->getDateCreated());
             }
         }
 
-        $pollVotes = $this->topicPollRepository->getPollResponsesForUserOrderedByDateDesc($userId);
+        $pollVotes = $this->topicPollRepository->getPollResponsesForUserOrderedByDateDesc($userId, $dbLimit);
         if(!empty($pollVotes)) {
             foreach($pollVotes as $pv) {
                 $actions[] = new UserActionEntity($pv->getId(), UserActionEntity::TYPE_POLL_VOTE, $pv->getDateCreated());

@@ -32,12 +32,12 @@ class UsersPresenter extends AUserPresenter {
         $this->saveToPresenterCache('reportLink', $reportLink);
 
         /** ACTION HISTORY */
-        $actionHistory = null;
-        $app->logger->stopwatch(function() use (&$actionHistory, $app, $userId) {
+        //$actionHistory = null;
+        /*$app->logger->stopwatch(function() use (&$actionHistory, $app, $userId) {
             $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
-        }, 'App\\Managers\\ContentManager::getUserActionHistory');
+        }, 'App\\Managers\\ContentManager::getUserActionHistory');*/
 
-        $this->saveToPresenterCache('actionHistory', $actionHistory);
+        //$this->saveToPresenterCache('actionHistory', $actionHistory);
         
         $followerCount = $app->userFollowingManager->getFollowerCount($userId);
         $this->saveToPresenterCache('followerCount', $followerCount);
@@ -70,13 +70,25 @@ class UsersPresenter extends AUserPresenter {
             $manageFollowingLink->setTitle('Manage followings');
         }
         $this->saveToPresenterCache('manageFollowingLink', $manageFollowingLink);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'loadUserActionHistory')
+            ->setHeader(['userId' => '_userId'])
+            ->setFunctionName('loadUserActionHistory')
+            ->setFunctionArguments(['_userId'])
+            ->updateHTMLElement('action-history', 'actionHistory')
+        ;
+
+        $this->addScript($arb->build());
+        $this->addScript('loadUserActionHistory("' . $userId . '")');
     }
 
     public function renderProfile() {
         $user = $this->loadFromPresenterCache('user');
         $postCount = $this->loadFromPresenterCache('postCount');
         $reportLink = $this->loadFromPresenterCache('reportLink');
-        $actionHistory = $this->loadFromPresenterCache('actionHistory');
         $followerCount = $this->loadFromPresenterCache('followerCount');
         $followingCount = $this->loadFromPresenterCache('followingCount');
         $followLink = $this->loadFromPresenterCache('followLink');
@@ -87,12 +99,21 @@ class UsersPresenter extends AUserPresenter {
         $this->template->post_count = $postCount;
         $this->template->first_login_date = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated());
         $this->template->report_link = $reportLink;
-        $this->template->action_history = $actionHistory;
         $this->template->followers_count = $followerCount;
         $this->template->following_count = $followingCount;
         $this->template->follow_link = $followLink;
         $this->template->manage_followers_link = $manageFollowersLink;
         $this->template->manage_following_link = $manageFollowingLink;
+    }
+
+    public function actionLoadUserActionHistory() {
+        global $app;
+
+        $userId = $this->httpGet('userId');
+
+        $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
+
+        $this->ajaxSendResponse(['actionHistory' => $actionHistory]);
     }
 
     public function handleManageFollowers() {
