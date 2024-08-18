@@ -56,7 +56,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $lastPage = ceil($count / $gridSize);
 
         $gb = new GridBuilder();
-        $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'status' => 'Status']);
+        $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'runTime' => 'Time run', 'status' => 'Status']);
         $gb->addDataSource($services);
         $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {
             $cell->setValue(SystemServiceStatus::toString($sse->getStatus()));
@@ -74,6 +74,18 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         });
         $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
+        });
+        $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
+            if(($sse->getStatus() == SystemServiceStatus::RUNNING) || ($sse->getDateStarted() === null) || ($sse->getDateEnded() === null)) {
+                return '-';
+            } else {
+                $end = strtotime($sse->getDateEnded());
+                $start = strtotime($sse->getDateStarted());
+
+                $diff = $end - $start;
+
+                return $diff . ' s';
+            }
         });
         $gb->addAction(function(SystemServiceEntity $sse) {
             $text = '-';
