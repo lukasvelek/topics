@@ -16,6 +16,10 @@ class DateTimeFormatHelper {
         $date->format($format);
         return $date->getResult();
     }
+
+    public static function formatSecondsToUserFriendly() {
+        
+    }
 }
 
 ?>
