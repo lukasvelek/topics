@@ -58,7 +58,7 @@ class PostLikeEqualizerService extends AService {
                 $likes = $likesArray[$post->getId()];
 
                 if($post->getLikes() > $likes) {
-                    $this->logInfo(sprintf('Post #%d has like mismatch. Likes in the `posts` table: %d and likes in the `post_likes` table: %d.', $post->getId(), $post->getLikes(), $likes));
+                    $this->logInfo(sprintf('Post #%s has like mismatch. Likes in the `posts` table: %d and likes in the `post_likes` table: %d.', $post->getId(), $post->getLikes(), $likes));
                     $this->updateLikes($post->getId(), $likes);
                 }
             }
@@ -82,7 +82,8 @@ class PostLikeEqualizerService extends AService {
     }
 
     private function updateLikes(string $postId, int $likes) {
-        $this->pr->updatePost($postId, ['likes' => $likes]);
+        $this->logger->info('Updating post #' . $postId . '. Setting likes to ' . $likes . '.', __METHOD__);
+        return $this->pr->updatePost($postId, ['likes' => $likes]);
     }
 
     private function invalidateCache() {
