@@ -18,6 +18,11 @@ class NotificationsPresenter extends AUserPresenter {
             ->setMethod()
             ->setFunctionName('getNotificationsList')
             ->updateHTMLElement('notifications', 'notifications')
+            ->addCustomWhenDoneCode('
+                if(obj.isEmpty == 1) {
+                    $("#notification-links").html("");
+                }
+            ')
             ->disableLoadingAnimation()
         ;
 
@@ -55,7 +60,6 @@ class NotificationsPresenter extends AUserPresenter {
 
         $this->addScript($arb);
 
-        //$closeAllLink = LinkBuilder::createJSOnclickLink('Close all', 'closeAllNotifications()', 'post-data-link');
         $closeAllLink = '<button type="button" id="formSubmit" onclick="closeAllNotifications()">Close all</button>';
 
         $links = [
@@ -73,6 +77,8 @@ class NotificationsPresenter extends AUserPresenter {
 
     public function actionGetNotificationsList() {
         global $app;
+
+        $isEmpty = false;
 
         $notifications = $app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId());
 
@@ -98,10 +104,11 @@ class NotificationsPresenter extends AUserPresenter {
         }
 
         if(empty($notifications)) {
+            $isEmpty = true;
             $listCode = '<div style="text-align: center">No notifications found</div>';
         }
 
-        $this->ajaxSendResponse(['notifications' => $listCode]);
+        $this->ajaxSendResponse(['notifications' => $listCode, 'isEmpty' => $isEmpty]);
     }
 
     public function actionClose() {

@@ -435,7 +435,7 @@ class TopicsPresenter extends AUserPresenter {
             $pinnedCode = '<div class="col-md-2"></div>';
 
             if($post->isPinned()) {
-                $pinnedCode = '<div class="col-md-2" id="right">&#128204;</div>';
+                $pinnedCode = '<div class="col-md-2" id="right" title="Post is pinned">&#128204;</div>';
             }
 
             $tmp = '
@@ -1432,6 +1432,8 @@ class TopicsPresenter extends AUserPresenter {
 
         $pinnedPostIds = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
 
+        $canPinMore = count($pinnedPostIds) < $app->cfg['MAX_TOPIC_POST_PINS'];
+
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
@@ -1488,11 +1490,15 @@ class TopicsPresenter extends AUserPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
             return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
         });
-        $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page) {
+        $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page, $canPinMore) {
             if(in_array($post->getId(), $pinnedPostIds)) {
                 return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
             } else {
-                return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
+                if($canPinMore) {
+                    return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
+                } else {
+                    return '<span title="You have pinned the maximum number of posts">-</span>';
+                }
             }
         });
 

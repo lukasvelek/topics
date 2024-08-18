@@ -38,4 +38,6 @@ $cfg['ID_SERVICE_USER'] = 1; // service user ID
 
 $cfg['APP_URL_BASE'] = ''; // base URL of application - e.g. "topics.com" or "localhost"
 
+$cfg['MAX_TOPIC_POST_PINS'] = 5; // maximum of topic post pins
+
 ?>
