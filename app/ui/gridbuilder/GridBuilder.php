@@ -465,7 +465,7 @@ class GridBuilder {
 
     public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
         $code = '<div class="row">';
-        $code .= '<div class="col-md"><div class="row"><div class="col-md-4">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div></div></div>';
+        $code .= '<div class="col-md">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div>';
         $code .= '<div class="col-md" id="right">' . $this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
         $code .= '</div>';
 

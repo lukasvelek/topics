@@ -397,7 +397,7 @@ class TopicsPresenter extends AUserPresenter {
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
             $liked = in_array($post->getId(), $likedArray);
-            $likeLink = '<a class="post-like" style="cursor: pointer" href="#post-' . $post->getId() . '-link" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100));
     
