@@ -146,7 +146,7 @@ class DatabaseInstaller {
             ],
             'group_membership' => [
                 'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
-                'groupId' => 'VARCHAR(256) NOT NULL',
+                'groupId' => 'INT(32) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
@@ -196,7 +196,7 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_invites' => [
-                'topicId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NOT NULL'
