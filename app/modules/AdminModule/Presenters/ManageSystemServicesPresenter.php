@@ -84,7 +84,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
 
                 $diff = $end - $start;
 
-                return $diff . ' s';
+                $text = '';
+                try {
+                    $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+                } catch(AException $e) {
+                    $text = '-';
+                }
+
+                return $text;
             }
         });
         $gb->addAction(function(SystemServiceEntity $sse) {

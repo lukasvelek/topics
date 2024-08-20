@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Core\Datetypes\DateTime;
+use App\Core\Datetypes\TimeTaken;
 
 class DateTimeFormatHelper {
     public const EUROPEAN_FORMAT = 'd.m.Y H:i';
@@ -17,8 +18,10 @@ class DateTimeFormatHelper {
         return $date->getResult();
     }
 
-    public static function formatSecondsToUserFriendly() {
-        
+    public static function formatSecondsToUserFriendly(int $seconds) {
+        $tt = TimeTaken::createFromSeconds($seconds);
+
+        return $tt->toString();
     }
 }
 
