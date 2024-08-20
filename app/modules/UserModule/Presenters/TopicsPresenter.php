@@ -287,30 +287,32 @@ class TopicsPresenter extends AUserPresenter {
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
-        $pinnedPosts = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
+        if($offset == 0) {
+            $pinnedPosts = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
 
-        $i = 0;
-        $r = 0;
-        foreach($posts as $post) {
-            if(in_array($post->getId(), $pinnedPosts)) {
-                unset($posts[$i]);
-                $r++;
+            $i = 0;
+            $r = 0;
+            foreach($posts as $post) {
+                if(in_array($post->getId(), $pinnedPosts)) {
+                    unset($posts[$i]);
+                    $r++;
+                }
+
+                $i++;
             }
 
-            $i++;
+            $postCount -= $r;
+            
+            $pinnedPostObjects = [];
+            foreach($pinnedPosts as $pp) {
+                $post = $app->postRepository->getPostById($pp);
+                $post->setIsPinned();
+
+                $pinnedPostObjects[] = $post;
+            }
+
+            $posts = array_merge($pinnedPostObjects, $posts);
         }
-
-        $postCount -= $r;
-
-        $pinnedPostObjects = [];
-        foreach($pinnedPosts as $pp) {
-            $post = $app->postRepository->getPostById($pp);
-            $post->setIsPinned();
-
-            $pinnedPostObjects[] = $post;
-        }
-
-        $posts = array_merge($pinnedPostObjects, $posts);
 
         $polls = $app->topicPollRepository->getActivePollBuilderEntitiesForTopic($topicId);
 
