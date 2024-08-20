@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Core\Datetypes\DateTime;
-use App\Core\HashManager;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
@@ -14,6 +13,8 @@ use Exception;
 
 class AdminDashboardIndexingService extends AService {
     private const AGE = '-1d';
+
+    private const LOG = false;
 
     private TopicRepository $tr;
     private PostRepository $pr;
@@ -57,7 +58,6 @@ class AdminDashboardIndexingService extends AService {
     private function updateData(array $data) {
         $qb = $this->tr->getQb();
 
-        //$dataId = HashManager::createEntityId();
         $dataId = $this->tr->createEntityId(EntityManager::ADMIN_DASHBOARD_WIDGETS_GRAPH_DATA);
 
         $data = array_merge([$dataId], $data);
@@ -87,7 +87,15 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT topicId, COUNT(postId) AS cnt FROM posts WHERE dateCreated >= '$age' GROUP BY topicId ORDER BY cnt DESC";
 
+        if(self::LOG) {
+            $this->logInfo('Processing SQL: ' . $sql);
+        }
+
         $result = $this->tr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row) {
@@ -107,7 +115,13 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT postId, COUNT(commentId) AS cnt FROM post_comments WHERE dateCreated >= '$age' GROUP BY postId ORDER BY cnt DESC";
 
+        $this->logInfo('Processing SQL: ' . $sql);
+
         $result = $this->pr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row) {
@@ -127,7 +141,13 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT authorId, COUNT(commentId) AS cnt FROM post_comments WHERE dateCreated >= '$age' GROUP BY authorId ORDER BY cnt DESC";
 
+        $this->logInfo('Processing SQL: ' . $sql);
+
         $result = $this->pr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row){

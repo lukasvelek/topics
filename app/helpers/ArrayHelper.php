@@ -19,6 +19,19 @@ class ArrayHelper {
 
         return implode($separator, $values);
     }
+
+    public static function checkArrayKeysExistInArray(array $keys, array $arrayToCheck) {
+        $ok = true;
+
+        foreach($keys as $key) {
+            if(!array_key_exists($key, $arrayToCheck)) {
+                $ok = false;
+                break;
+            }
+        }
+
+        return $ok;
+    }
 }
 
 ?>
