@@ -13,7 +13,7 @@ class SidebarAuthorizator extends AAuthorizator {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
     }
 
-    public function canManageUsers(int $userId) {
+    public function canManageUsers(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -25,7 +25,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageUserProsecutions(int $userId) {
+    public function canManageUserProsecutions(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -37,7 +37,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageSystemStatus(int $userId) {
+    public function canManageSystemStatus(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -49,7 +49,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageSuggestions(int $userId) {
+    public function canManageSuggestions(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -61,7 +61,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageReports(int $userId) {
+    public function canManageReports(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -73,7 +73,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageDeletedContent(int $userId) {
+    public function canManageDeletedContent(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -85,7 +85,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageBannedWords(int $userId) {
+    public function canManageBannedWords(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -97,7 +97,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageSystemCaching(int $userId) {
+    public function canManageSystemCaching(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -109,7 +109,7 @@ class SidebarAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManagePostFileUploads(int $userId) {
+    public function canManagePostFileUploads(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -119,6 +119,10 @@ class SidebarAuthorizator extends AAuthorizator {
         }
 
         return true;
+    }
+
+    public function canManageTransactions(string $userId) {
+        return $this->canManageSystemCaching($userId);
     }
 }
 

@@ -5,18 +5,20 @@ namespace App\Entities;
 use App\UI\LinkBuilder;
 
 class UserEntity implements ICreatableFromRow {
-    private int $id;
+    private string $id;
     private string $username;
     private ?string $email;
     private string $dateCreated;
     private bool $isAdmin;
+    private bool $canLogin;
 
-    public function __construct(int $id, string $username, ?string $email, string $dateCreated, bool $isAdmin) {
+    public function __construct(string $id, string $username, ?string $email, string $dateCreated, bool $isAdmin, bool $canLogin) {
         $this->id = $id;
         $this->username = $username;
         $this->email = $email;
         $this->dateCreated = $dateCreated;
         $this->isAdmin = $isAdmin;
+        $this->canLogin = $canLogin;
     }
 
     public function getId() {
@@ -73,11 +75,15 @@ class UserEntity implements ICreatableFromRow {
         return $this->isAdmin;
     }
 
+    public function canLogin() {
+        return $this->canLogin;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin']);
+        return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin'], $row['canLogin']);
     }
 
     public static function createUserProfileLink(UserEntity $user, bool $object = false) {

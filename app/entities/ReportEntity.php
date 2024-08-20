@@ -3,9 +3,9 @@
 namespace App\Entities;
 
 class ReportEntity implements ICreatableFromRow {
-    private int $id;
-    private int $userId;
-    private int $entityId;
+    private string $id;
+    private string $userId;
+    private string $entityId;
     private int $entityType;
     private int $category;
     private string $description;
@@ -13,7 +13,7 @@ class ReportEntity implements ICreatableFromRow {
     private ?string $statusComment;
     private string $dateCreated;
 
-    public function __construct(int $id, int $userId, int $entityId, int $entityType, int $category, string $description, int $status, ?string $statusComment, string $dateCreated) {
+    public function __construct(string $id, string $userId, string $entityId, int $entityType, int $category, string $description, int $status, ?string $statusComment, string $dateCreated) {
         $this->id = $id;
         $this->userId = $userId;
         $this->category = $category;

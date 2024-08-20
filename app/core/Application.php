@@ -7,16 +7,23 @@ use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
+use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
+use App\Managers\MailManager;
 use App\Managers\NotificationManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
+use App\Managers\UserFollowingManager;
+use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
+use App\Managers\UserRegistrationManager;
 use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
+use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\NotificationRepository;
@@ -30,8 +37,12 @@ use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\TransactionLogRepository;
+use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserProsecutionRepository;
+use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
+use App\Rpeositories\MailRepository;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -72,6 +83,11 @@ class Application {
     public TopicInviteRepository $topicInviteRepository;
     public NotificationRepository $notificationRepository;
     public FileUploadRepository $fileUploadRepository;
+    public TransactionLogRepository $transactionLogRepository;
+    public UserFollowingRepository $userFollowingRepository;
+    public MailRepository $mailRepository;
+    public UserRegistrationRepository $userRegistrationRepository;
+    public ContentRepository $contentRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -80,6 +96,11 @@ class Application {
     public TopicManager $topicManager;
     public NotificationManager $notificationManager;
     public FileUploadManager $fileUploadManager;
+    public UserFollowingManager $userFollowingManager;
+    public MailManager $mailManager;
+    public UserRegistrationManager $userRegistrationManager;
+    public UserManager $userManager;
+    public EntityManager $entityManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -89,8 +110,7 @@ class Application {
      * The Application constructor. It creates objects of all used classes.
      */
     public function __construct() {
-        require_once('config.local.php');
-
+        global $cfg;
         $this->cfg = $cfg;
 
         $this->modules = [];
@@ -104,7 +124,11 @@ class Application {
 
         $this->logger = new Logger($this->cfg);
         $this->logger->info('Logger initialized.', __METHOD__);
-        $this->db = new DatabaseConnection($this->cfg);
+        try {
+            $this->db = new DatabaseConnection($this->cfg);
+        } catch(AException $e) {
+            throw $e;
+        }
         $this->logger->info('Database connection established', __METHOD__);
         
         $this->userRepository = new UserRepository($this->db, $this->logger);
@@ -123,21 +147,31 @@ class Application {
         $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
         $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
         $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
+        $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
+        $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
+        $this->mailRepository = new MailRepository($this->db, $this->logger);
+        $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
+        $this->contentRepository = new ContentRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
-        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger);
-        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger);
-        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository);
-        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager);
+        $this->entityManager = new EntityManager($this->logger, $this->contentRepository);
+        $this->userProsecutionManager = new UserProsecutionManager($this->userProsecutionRepository, $this->userRepository, $this->logger, $this->entityManager);
+        $this->notificationManager = new NotificationManager($this->logger, $this->notificationRepository, $this->entityManager);
         $this->serviceManager = new ServiceManager($this->cfg, $this->systemServicesRepository);
+        $this->userFollowingManager = new UserFollowingManager($this->logger, $this->userRepository, $this->userFollowingRepository, $this->notificationManager, $this->entityManager);
+        $this->mailManager = new MailManager($this->logger, $this->mailRepository, $this->userRepository, $this->cfg, $this->entityManager);
+        $this->topicMembershipManager = new TopicMembershipManager($this->topicRepository, $this->topicMembershipRepository, $this->logger, $this->topicInviteRepository, $this->notificationManager, $this->mailManager, $this->userRepository, $this->entityManager);
+        $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository, $this->entityManager);
+        $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
+        $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager);
-        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager);
+        $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;
 
@@ -151,11 +185,11 @@ class Application {
     /**
      * Used for old AJAX functions. It has become deprecated when AJAX functionality was implemented into presenters.
      * 
-     * @param int $currentUserId Current user's ID
+     * @param string $currentUserId Current user's ID
      * 
      * @deprecated
      */
-    public function ajaxRun(int $currentUserId) {
+    public function ajaxRun(string $currentUserId) {
         $this->currentUser = $this->userRepository->getUserById($currentUserId);
     }
     
@@ -200,7 +234,6 @@ class Application {
         } else {
             $url = $this->composeURL($urlParams);
         }
-
 
         header('Location: ' . $url);
         exit;
@@ -306,6 +339,15 @@ class Application {
         }
 
         return $gridSize;
+    }
+
+    /**
+     * Returns true if this is the development version
+     * 
+     * @return bool True if this is development version or false if not
+     */
+    public function getIsDev() {
+        return $this->cfg['IS_DEV'];
     }
 }
 

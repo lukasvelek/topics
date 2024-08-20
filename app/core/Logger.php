@@ -44,8 +44,6 @@ class Logger implements ILoggerCallable {
 
         $diff = time() - $time;
 
-        $diff = $diff / 1000;
-
         $this->log($method, 'Time taken: ' . $diff . ' seconds', self::LOG_STOPWATCH);
 
         return $result;
@@ -95,10 +93,10 @@ class Logger implements ILoggerCallable {
 
     public function logSQL(string $method, string $text, float $msTaken) {
         $date = new DateTime();
-        $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' ms] ' . $method . '(): ' . $text;
+        $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . (int)($msTaken) . ' s] ' . $method . '(): ' . $text;
 
         if($this->separateSQLLogging && $this->sqlLogLevel >= 1) {
-            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' ms] ' . $method . '(): ' . $text;
+            $newText = '[' . $date . '] [' . strtoupper(self::LOG_SQL) . '] [' . $msTaken . ' s] ' . $method . '(): ' . $text;
 
             $oldSpecialFilename = $this->specialFilename;
             $this->specialFilename = 'sql_log';

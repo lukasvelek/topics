@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Core\Datetypes\DateTime;
+use App\Exceptions\AException;
 use App\Exceptions\DatabaseConnectionException;
 use App\Logger\Logger;
 use Exception;
@@ -15,7 +16,12 @@ class DatabaseConnection implements IDbQueriable {
 
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
-        $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
+
+        try {
+            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
+        } catch(AException $e) {
+            throw $e;
+        }
     }
 
     public function query(string $sql, array $params = []) {

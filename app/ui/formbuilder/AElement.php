@@ -27,7 +27,7 @@ abstract class AElement implements IFormRenderable {
         $elements = [];
 
         foreach($this->__elements as $element) {
-            if(in_array($element, ['content', 'input', 'select', 'option', 'label', 'textarea', 'button'])) continue;
+            if(in_array($element, ['content', 'input', 'select', 'option', 'label', 'textarea', 'button', 'centered'])) continue;
 
             $value = $this->$element;
 
@@ -45,7 +45,13 @@ abstract class AElement implements IFormRenderable {
             $code .= $this->content . '</' . $this->__name . '>';
         }
 
-        return $code;
+        //return $code;
+
+        if(in_array('centered', $this->__elements)) {
+            return '<span id="form-centered">' . $code . '</span>';
+        } else {
+            return $code;
+        }
     }
 
     public function getName() {

@@ -166,11 +166,16 @@ class AjaxRequestBuilder {
         
         if(!empty($this->whenDoneOperations)) {
             $code[] = '.done(function(data){';
+            $code[] = 'try {';
             $code[] = 'const obj = JSON.parse(data);';
 
             foreach($this->whenDoneOperations as $wdo) {
                 $code[] = $wdo;
             }
+
+            $code[] = '} catch (error) {';
+            $code[] = 'alert("Could not load data");';
+            $code[] = '}';
 
             $code[] = '});';
         }

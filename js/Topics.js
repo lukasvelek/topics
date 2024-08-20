@@ -71,7 +71,7 @@ function changeImage(_postId, _id, _maxId) {
     const images = JSON.parse(json); // is an array, so values can be accessed using []
 
     if(_id > 0) {
-        $("#post-" + _postId + "-image-preview-left-button").html('<a href="#post-' + _postId + '" class="post-image-browser-link" onclick="changeImage(' + _postId + ', ' + (_id - 1) + ', ' + _maxId + ')">&larr;</a>');
+        $("#post-" + _postId + "-image-preview-left-button").html('<button class="post-image-browser-link" type="button" onclick="changeImage(' + _postId + ', ' + (_id - 1) + ', ' + _maxId + ')">&larr;</button>');
     } else {
         $("#post-" + _postId + "-image-preview-left-button").html('');
     }
@@ -79,7 +79,7 @@ function changeImage(_postId, _id, _maxId) {
     if(_maxId == _id) {
         $("#post-" + _postId + "-image-preview-right-button").html('');
     } else {
-        $("#post-" + _postId + "-image-preview-right-button").html('<a href="#post-' + _postId + '" class="post-image-browser-link" onclick="changeImage(' + _postId + ', ' + (_id + 1) + ', ' + _maxId + ')">&rarr;</a>');
+        $("#post-" + _postId + "-image-preview-right-button").html('<button class="post-image-browser-link" type="button" onclick="changeImage(' + _postId + ', ' + (_id + 1) + ', ' + _maxId + ')">&rarr;</button>');
     }
 
     const path = images[_id];

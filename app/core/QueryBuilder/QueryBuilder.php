@@ -109,6 +109,10 @@ class QueryBuilder
 
         $i = 0;
         foreach($values as $value) {
+            if(is_string($value) && !is_numeric($value)) {
+                $value = '\'' . $value . '\'';
+            }
+
             if(($i + 1) == count($values)) {
                 $code .= $value . ')';
             } else {
@@ -762,6 +766,8 @@ class QueryBuilder
         foreach($this->queryData['values'] as $key => $value) {
             if($value == 'NULL' || $value == 'current_timestamp()') {
                 $valArray[] = $key . ' = ' . $value;
+            } else if($value == null) {
+                $valArray[] = $key . ' = NULL';
             } else {
                 $valArray[] = $key . ' = \'' . $value . '\'';
             }
@@ -864,14 +870,14 @@ class QueryBuilder
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
-            $tsStart = /*time();*/ microtime();
+            $tsStart = time();
             $result = $this->conn->query($sql, $params);
-            $tsEnd = /*time();*/ microtime();
+            $tsEnd = time();
             return $result;
         };
-
+        
         $result = $q($sql, $params);
-
+        
         $diff = (float)$tsEnd - (float)$tsStart;
 
         $this->log($diff);

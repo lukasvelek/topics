@@ -3,14 +3,14 @@
 namespace App\Entities;
 
 class SystemServiceEntity implements ICreatableFromRow {
-    private int $id;
+    private string $id;
     private string $title;
     private string $scriptPath;
     private ?string $dateStarted;
     private ?string $dateEnded;
     private int $status;
 
-    public function __construct(int $id, string $title, string $scriptPath, ?string $dateStarted, ?string $dateEnded, int $status) {
+    public function __construct(string $id, string $title, string $scriptPath, ?string $dateStarted, ?string $dateEnded, int $status) {
         $this->id = $id;
         $this->title = $title;
         $this->scriptPath = $scriptPath;

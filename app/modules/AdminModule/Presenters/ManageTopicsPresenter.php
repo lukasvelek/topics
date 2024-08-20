@@ -3,7 +3,6 @@
 namespace App\Modules\AdminModule;
 
 use App\Constants\ReportCategory;
-use App\Core\CacheManager;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -42,20 +41,20 @@ class ManageTopicsPresenter extends AAdminPresenter {
 
             $topicOwner = $app->topicMembershipManager->getTopicOwnerId($topicId);
 
-            $app->topicRepository->beginTransaction();
-
+            
             try {
+                $app->topicRepository->beginTransaction();
                 $app->contentManager->deleteTopic($topicId);
 
                 $app->notificationManager->createNewTopicDeleteDueToReportNotification($topicOwner, $topicLink, $userLink, $reason);
 
-                $app->topicRepository->commit();
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Topic #' . $topicId . ' deleted with all its posts and comments.', 'success');
-            } catch(Exception $e) {
+            } catch(AException $e) {
                 $app->topicRepository->rollback();
 
-                $this->flashMessage('Topic #' . $topicId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+                $this->flashMessage('Could not delete topic. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);

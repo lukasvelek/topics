@@ -13,7 +13,7 @@ class GroupRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function isUserMemberOfGroup(int $userId, int $groupId) {
+    public function isUserMemberOfGroup(string $userId, int $groupId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -115,7 +115,7 @@ class GroupRepository extends ARepository {
         return $ids;
     }
 
-    public function addGroupMember(int $groupId, int $userId) {
+    public function addGroupMember(int $groupId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('group_membership', ['groupId', 'userId'])
@@ -125,7 +125,7 @@ class GroupRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function removeGroupMember(int $groupId, int $userId) {
+    public function removeGroupMember(int $groupId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->delete()

@@ -25,6 +25,10 @@ class HashManager {
     public static function hashPassword(string $password) {
         return password_hash($password, PASSWORD_BCRYPT);
     }
+
+    public static function createEntityId() {
+        return self::createHash(32, false);
+    }
 }
 
 ?>

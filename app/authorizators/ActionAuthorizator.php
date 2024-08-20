@@ -7,6 +7,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Entities\PostEntity;
 use App\Entities\PostImageFileEntity;
+use App\Entities\TopicEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
 use App\Managers\TopicMembershipManager;
@@ -25,7 +26,7 @@ class ActionAuthorizator extends AAuthorizator {
         $this->pr = $pr;
     }
 
-    public function canChangeUserTopicRole(int $topicId, int $callingUserId, int $userId) {
+    public function canChangeUserTopicRole(string $topicId, string $callingUserId, string $userId) {
         $callingRole = $this->tpm->getFollowRole($topicId, $callingUserId);
         $role = $this->tpm->getFollowRole($topicId, $userId);
 
@@ -48,7 +49,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageTopicRoles(int $topicId, int $userId) {
+    public function canManageTopicRoles(string $topicId, string $userId) {
         $role = $this->tpm->getFollowRole($topicId, $userId);
 
         if($role === null) {
@@ -62,15 +63,15 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canRemoveMemberFromGroup(int $userId) {
+    public function canRemoveMemberFromGroup(string $userId) {
         return $this->commonGroupManagement($userId);
     }
 
-    public function canAddMemberToGroup(int $userId) {
+    public function canAddMemberToGroup(string $userId) {
         return $this->commonGroupManagement($userId);
     }
 
-    public function canDeleteComment(int $userId, int $topicId) {
+    public function canDeleteComment(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -78,7 +79,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canDeletePost(int $userId, int $topicId) {
+    public function canDeletePost(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -86,11 +87,11 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canDeleteTopic(int $userId) {
+    public function canDeleteTopic(string $userId) {
         return $this->commonContentManagement($userId);
     }
 
-    private function commonContentManagement(int $userId) {
+    private function commonContentManagement(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -102,7 +103,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
     
-    private function commonGroupManagement(int $userId) {
+    private function commonGroupManagement(string $userId) {
         if(!$this->isUserAdmin($userId)) {
             return false;
         }
@@ -114,7 +115,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canReportPost(int $userId, int $topicId) {
+    public function canReportPost(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -122,11 +123,11 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canReportTopic(int $userId, int $topicId) {
+    public function canReportTopic(string $userId, string $topicId) {
         return $this->canReportPost($userId, $topicId);
     }
 
-    public function canCreateTopicPoll(int $userId, int $topicId) {
+    public function canCreateTopicPoll(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER)) {
             return false;
         }
@@ -134,7 +135,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canViewTopicPolls(int $userId, int $topicId) {
+    public function canViewTopicPolls(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -142,7 +143,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageTopicInvites(int $userId, int $topicId) {
+    public function canManageTopicInvites(string $userId, string $topicId) {
         if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) {
             return false;
         }
@@ -150,7 +151,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canCreatePost(int $userId, int $topicId) {
+    public function canCreatePost(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MEMBER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -158,7 +159,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canManageTopicPrivacy(int $userId, int $topicId) {
+    public function canManageTopicPrivacy(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER)) {
             return false;
         }
@@ -166,7 +167,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canSeePollAnalytics(int $userId, int $topicId, TopicPollEntity $tpe) {
+    public function canSeePollAnalytics(string $userId, string $topicId, TopicPollEntity $tpe) {
         if($tpe->getAuthorId() != $userId) {
             if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER)/* && (!$this->commonContentManagement($userId))*/) {
                 return false;
@@ -176,7 +177,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canDeactivePoll(int $userId, int $topicId, TopicPollEntity $tpe) {
+    public function canDeactivePoll(string $userId, string $topicId, TopicPollEntity $tpe) {
         if($tpe->getAuthorId() != $userId) {
             if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
                 return false;
@@ -186,7 +187,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canSeeAllTopicPolls(int $userId, int $topicId) {
+    public function canSeeAllTopicPolls(string $userId, string $topicId) {
         if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
             return false;
         }
@@ -194,7 +195,7 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
     
-    public function canDeleteFileUpload(int $userId, PostImageFileEntity $pife) {
+    public function canDeleteFileUpload(string $userId, PostImageFileEntity $pife) {
         $post = $this->pr->getPostById($pife->getPostId());
 
         if($post !== null) {
@@ -206,8 +207,32 @@ class ActionAuthorizator extends AAuthorizator {
         return true;
     }
 
-    public function canUploadFileForPost(int $userId, PostEntity $post) {
+    public function canUploadFileForPost(string $userId, PostEntity $post) {
         if($post->getAuthorId() != $userId) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canManageTopicPosts(string $userId, TopicEntity $topic) {
+        if((($this->tpm->getFollowRole($topic->getId(), $userId)) < TopicMemberRole::MANAGER) && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canSetPostSuggestability(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canSchedulePosts(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER && !$this->commonContentManagement($userId)) {
             return false;
         }
 

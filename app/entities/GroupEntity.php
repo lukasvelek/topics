@@ -3,11 +3,11 @@
 namespace App\Entities;
 
 class GroupEntity implements ICreatableFromRow {
-    private int $id;
+    private string $id;
     private string $title;
     private ?string $description;
 
-    public function __construct(int $id, string $title, string $description) {
+    public function __construct(string $id, string $title, string $description) {
         $this->id = $id;
         $this->title = $title;
         $this->description = $description;

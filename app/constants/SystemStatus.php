@@ -19,7 +19,7 @@ class SystemStatus {
 
     public static function getColorByCode(int $code) {
         return match($code) {
-            self::ONLINE => '#00bb00',
+            self::ONLINE => '#009900',
             self::OFFLINE => '#aaaaaa',
             self::MAINTENANCE => '#bb0000',
             self::ISSUES_REPORTED => '#ffa500'

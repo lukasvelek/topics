@@ -4,7 +4,6 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
-use App\Entities\TopicEntity;
 use App\Entities\TopicInviteEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
@@ -108,10 +107,16 @@ class TopicInvitesPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         try {
+            $app->topicRepository->beginTransaction();
+
             $app->topicMembershipManager->acceptInvite($topicId, $app->currentUser->getId());
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Invite accepted.', 'success');
         } catch(AException $e) {
+            $app->topicRepository->rollback();
+
             $this->flashMessage('Could not accept invite. Reason: ' . $e->getMessage(), 'error');
         }
 
@@ -124,10 +129,16 @@ class TopicInvitesPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         try {
+            $app->topicRepository->beginTransaction();
+
             $app->topicMembershipManager->rejectInvite($topicId, $app->currentUser->getId());
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Invite rejected.', 'success');
         } catch(AException $e) {
+            $app->topicRepository->rollback();
+
             $this->flashMessage('Could not reject invite. Reason: ' . $e->getMessage(), 'error');
         }
 
@@ -140,10 +151,16 @@ class TopicInvitesPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
 
         try {
+            $app->topicRepository->beginTransaction();
+
             $app->topicMembershipManager->removeInvite($topicId, $app->currentUser->getId());
+
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Invite deleted.', 'success');
         } catch(AException $e) {
+            $app->topicRepository->rollback();
+            
             $this->flashMessage('Could not delete invite. Reason: ' . $e->getMessage(), 'error');
         }
 

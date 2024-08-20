@@ -7,36 +7,38 @@ use App\Constants\ReportStatus;
 use App\Core\DatabaseConnection;
 use App\Entities\ReportEntity;
 use App\Logger\Logger;
-use QueryBuilder\ExpressionBuilder;
+use App\Managers\EntityManager;
 
 class ReportRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
     }
 
-    public function createNewReport(int $userId, int $entityId, int $entityType, int $category, string $description) {
+    public function createNewReport(string $userId, string $entityId, int $entityType, int $category, string $description) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('reports', ['userId', 'entityId', 'entityType', 'category', 'description'])
-            ->values([$userId, $entityId, $entityType, $category, $description])
+        $reportId = $this->createEntityId(EntityManager::REPORTS);
+
+        $qb ->insert('reports', ['reportId', 'userId', 'entityId', 'entityType', 'category', 'description'])
+            ->values([$reportId, $userId, $entityId, $entityType, $category, $description])
             ->execute();
 
         return $qb->fetch();
     }
 
-    public function createTopicReport(int $userId, int $topicId, int $category, string $description) {
+    public function createTopicReport(string $userId, string $topicId, int $category, string $description) {
         return $this->createNewReport($userId, $topicId, ReportEntityType::TOPIC, $category, $description);
     }
 
-    public function createPostReport(int $userId, int $postId, int $category, string $description) {
+    public function createPostReport(string $userId, string $postId, int $category, string $description) {
         return $this->createNewReport($userId, $postId, ReportEntityType::POST, $category, $description);
     }
 
-    public function createCommentReport(int $userId, int $commentId, int $category, string $description) {
+    public function createCommentReport(string $userId, string $commentId, int $category, string $description) {
         return $this->createNewReport($userId, $commentId, ReportEntityType::COMMENT, $category, $description);
     }
 
-    public function createUserReport(int $authorId, int $userId, int $category, string $description) {
+    public function createUserReport(string $authorId, string $userId, int $category, string $description) {
         return $this->createNewReport($authorId, $userId, ReportEntityType::USER, $category, $description);
     }
 
@@ -59,7 +61,7 @@ class ReportRepository extends ARepository {
         return $reports;
     }
 
-    public function getOpenReportsForListFilterUser(int $userId, int $limit, int $offset) {
+    public function getOpenReportsForListFilterUser(string $userId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -118,7 +120,7 @@ class ReportRepository extends ARepository {
         return $reports;
     }
 
-    public function getReportById(int $reportId) {
+    public function getReportById(string $reportId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -129,7 +131,7 @@ class ReportRepository extends ARepository {
         return ReportEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function updateReport(int $reportId, array $data) {
+    public function updateReport(string $reportId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('reports')
@@ -140,7 +142,7 @@ class ReportRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function updateRelevantReports(int $reportId, int $entityType, int $entityId, array $data) {
+    public function updateRelevantReports(string $reportId, int $entityType, string $entityId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('reports')
@@ -159,7 +161,7 @@ class ReportRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getRelevantReports(int $reportId) {
+    public function getRelevantReports(string $reportId) {
         $report = $this->getReportById($reportId);
 
         $qb = $this->qb(__METHOD__);
@@ -185,7 +187,7 @@ class ReportRepository extends ARepository {
         return $reports;
     }
 
-    public function getReportByCategory(int $entityId, string $entityType) {
+    public function getReportByCategory(string $entityId, string $entityType) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

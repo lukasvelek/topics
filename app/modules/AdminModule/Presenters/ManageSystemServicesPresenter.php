@@ -6,6 +6,7 @@ use App\Constants\SystemServiceStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
 use App\Entities\SystemServiceEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
@@ -55,7 +56,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $lastPage = ceil($count / $gridSize);
 
         $gb = new GridBuilder();
-        $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'status' => 'Status']);
+        $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'runTime' => 'Time run', 'status' => 'Status']);
         $gb->addDataSource($services);
         $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {
             $cell->setValue(SystemServiceStatus::toString($sse->getStatus()));
@@ -74,6 +75,43 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
         });
+        $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
+            $text = '-';
+            $color = 'black';
+            $title = '';
+
+            if($sse->getStatus() == SystemServiceStatus::RUNNING) {
+                if($sse->getDateStarted() !== null) {
+                    $end = time();
+                    $start = strtotime($sse->getDateStarted());
+
+                    $diff = $end - $start;
+
+                    try {
+                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+                        $color = 'orange';
+                        $title = 'As of now';
+                    } catch(AException $e) {}
+                }
+            } else {
+                if($sse->getDateStarted() !== null && $sse->getDateEnded() !== null) {
+                    $end = strtotime($sse->getDateEnded());
+                    $start = strtotime($sse->getDateStarted());
+
+                    $diff = $end - $start;
+
+                    try {
+                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+                    } catch(AException $e) {}
+                }
+            }
+
+            $cell->setTextColor($color);
+            $cell->setValue($text);
+            $cell->setTitle($title);
+
+            return $cell;
+        });
         $gb->addAction(function(SystemServiceEntity $sse) {
             $text = '-';
 
@@ -89,7 +127,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             $date = new DateTime();
             $date->modify('-2d');
             
-            if(strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
+            if($service->getStatus() == SystemServiceStatus::NOT_RUNNING && strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
                 $gb->addOnRowRender($service->getId(), function(Row $row) {
                     $row->setBackgroundColor('orange');
                     $row->setDescription('This service has not run in 2 days or more.');
@@ -107,7 +145,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $serviceId = $this->httpGet('serviceId', true);
         $service = $app->systemServicesRepository->getServiceById($serviceId);
 
-        $app->serviceManager->runService($service->getScriptPath());
+        $app->serviceManager->runService($service->getScriptPath());  
         
         $this->flashMessage('Service started.', 'success');
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);

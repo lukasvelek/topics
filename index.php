@@ -3,9 +3,11 @@
 session_start();
 
 use App\Core\Application;
+use App\Exceptions\AException;
 use App\Exceptions\ApplicationInitializationException;
 
 require_once('app/app_loader.php');
+require_once('config.local.php');
 
 try {
     $app = new Application();
@@ -20,8 +22,22 @@ if(!isset($_GET['page'])) {
 
 try {
     $app->run();
+} catch(AException $e) {
+    if($app->getIsDev()) {
+        echo($e->getExceptionHTML());
+    } else {
+        if($_GET['page'] != 'ErrorModule:E500') {
+            $app->redirect(['page' => 'ErrorModule:E500']);
+        }
+    }
 } catch(Exception $e) {
-    echo($e->__toString());
+    if($app->getIsDev()) {
+        echo($e->__toString());
+    } else {
+        if($_GET['page'] != 'ErrorModule:E500') {
+            $app->redirect(['page' => 'ErrorModule:E500']);
+        }
+    }
 }
 
 ?>

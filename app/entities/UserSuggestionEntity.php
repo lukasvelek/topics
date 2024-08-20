@@ -11,7 +11,7 @@ class UserSuggestionEntity implements ICreatableFromRow {
     private int $status;
     private string $dateCreated;
 
-    public function __construct(int $id, int $userId, string $title, string $text, string $category, int $status, string $dateCreated) {
+    public function __construct(string $id, string $userId, string $title, string $text, string $category, int $status, string $dateCreated) {
         $this->id = $id;
         $this->userId = $userId;
         $this->title = $title;

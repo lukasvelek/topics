@@ -11,7 +11,7 @@ class NotificationRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createNotification(string $notificationId, int $userId, int $type, string $title, string $message) {
+    public function createNotification(string $notificationId, string $userId, int $type, string $title, string $message) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->insert('notifications', ['notificationId', 'userId', 'type', 'title', 'message'])
@@ -21,7 +21,7 @@ class NotificationRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getNotificationsForUser(int $userId, bool $unseenOnly = true) {
+    public function getNotificationsForUser(string $userId, bool $unseenOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])

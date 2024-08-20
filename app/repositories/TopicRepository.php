@@ -2,12 +2,9 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
-use App\Entities\TopicMemberEntity;
-use App\Exceptions\CouldNotFetchLastEntityIdException;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
 
@@ -16,7 +13,7 @@ class TopicRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getTopicById(int $id) {
+    public function getTopicById(string $id): TopicEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -60,11 +57,11 @@ class TopicRepository extends ARepository {
         return $qb;
     }
 
-    public function createNewTopic(string $title, string $description, string $tags, bool $isPrivate, string $rawTags) {
+    public function createNewTopic(string $topicId, string $title, string $description, string $tags, bool $isPrivate, string $rawTags) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topics', ['title', 'description', 'tags', 'isPrivate', 'rawTags'])
-            ->values([$title, $description, $tags, $isPrivate, $rawTags])
+        $qb ->insert('topics', ['topicId', 'title', 'description', 'tags', 'isPrivate', 'rawTags'])
+            ->values([$topicId, $title, $description, $tags, $isPrivate, $rawTags])
             ->execute();
 
         return $qb->fetch();
@@ -84,7 +81,7 @@ class TopicRepository extends ARepository {
         return $qb->fetch('topicId');
     }
 
-    public function updateTopic(int $topicId, array $data) {
+    public function updateTopic(string $topicId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topics')
@@ -110,7 +107,7 @@ class TopicRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function deleteTopic(int $topicId, bool $hide = true) {
+    public function deleteTopic(string $topicId, bool $hide = true) {
         if($hide) {
             $date = new DateTime();
             return $this->updateTopic($topicId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
@@ -227,6 +224,23 @@ class TopicRepository extends ARepository {
             ->execute();
 
         return $this->createTopicsArrayFromQb($qb);
+    }
+
+    public function getPinnedPostIdsForTopicId(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['postId'])
+            ->from('topic_post_pins')
+            ->where('topicId = ?', [$topicId])
+            ->orderBy('dateCreated', 'DESC')
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['postId'];
+        }
+
+        return $ids;
     }
 }
 

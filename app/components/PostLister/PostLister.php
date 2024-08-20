@@ -17,6 +17,7 @@ class PostLister {
     private array $topics;
     private bool $topicLinkHidden;
     private ?UserEntity $currentUser;
+    private int $limit;
     
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
@@ -39,6 +40,11 @@ class PostLister {
         $this->topicLinkHidden = false;
 
         $this->currentUser = null;
+        $this->limit = 10;
+    }
+
+    public function setLimit(int $limit) {
+        $this->limit = $limit;
     }
 
     public function setCurrentUser(UserEntity $user) {
@@ -110,7 +116,31 @@ class PostLister {
 
             $likedArray = $this->postRepository->bulkCheckLikes($this->currentUser->getId(), $postIds);
 
+            $postIds = [];
             foreach($this->posts as $post) {
+                $postIds[] = $post->getId();
+            }
+
+            $postImages = $this->fur->getBulkFilesForPost($postIds);
+
+            $getImagesForPost = function (string $postId) use ($postImages) {
+                $images = [];
+
+                foreach($postImages as $pi) {
+                    if($pi->getPostId() == $postId) {
+                        $images[] = $pi;
+                    }
+                }
+
+                return $images;
+            };
+
+            $x = 0;
+            foreach($this->posts as $post) {
+                if($x >= $this->limit) {
+                    break;
+                }
+
                 $liked = in_array($post->getId(), $likedArray);
                 $likeLink = self::createLikeLink($post->getId(), $liked);
                 
@@ -118,6 +148,9 @@ class PostLister {
                     $topics = [];
     
                     foreach($this->topics as $topic) {
+                        if($topic === null) {
+                            continue;
+                        }
                         $topics[$topic->getId()] = $topic;
                     }
 
@@ -139,7 +172,7 @@ class PostLister {
                     $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
                     $topicLink = '<a class="post-title-link-smaller" href="?page=UserModule:Topics&action=profile&topicId=' . $post->getTopicId() . '">' . $topicTitle . '</a>';
     
-                    $code = '<div class="row" id="post-' . $post->getId() . '">';
+                    $code = '<div class="row" id="post-id-' . $post->getId() . '">';
                     $code .= '<div class="col-md">';
                     
                     $code .= '<div class="row">';
@@ -149,7 +182,7 @@ class PostLister {
                     $code .= '</div>';
                     $code .= '<hr>';
 
-                    $images = $this->fur->getFilesForPost($post->getId());
+                    $images = $getImagesForPost($post->getId());
 
                     if(!empty($images)) {
                         $imageJson = [];
@@ -172,7 +205,7 @@ class PostLister {
                         
                         // right button
                         if(count($images) > 1) {
-                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><a href="#post-' . $post->getId() . '" class="post-image-browser-link" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</a></span></div>';
+                            $imageCode .= '<div class="col-md-1"><span id="post-' . $post->getId() . '-image-preview-right-button"><button class="post-image-browser-link" type="button" onclick="changeImage(' . $post->getId() . ', 1, ' . (count($images) - 1) . ')">&rarr;</button></span></div>';
                         }
 
                         $imageCode .= '</div>';
@@ -190,10 +223,12 @@ class PostLister {
                     $code .= '<p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span> | Author: ' . $this->createUserProfileLink($post->getAuthorId()) . '</p>';
                     $code .= '</div></div>';
                     $code .= '</div></div>';
-                    $code .= '<br><br>';
+                    $code .= '<br>';
     
                     $codeArr[] = $code;
                 }
+
+                $x++;
             }
         } else {
             $codeArr[] = '<p class="post-text">No posts found!</p>';
@@ -204,17 +239,17 @@ class PostLister {
         return $codeArr;
     }
 
-    private function createUserProfileLink(int $userId) {
+    private function createUserProfileLink(string $userId) {
         $user = $this->userRepository->getUserById($userId);
 
         return '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $user->getId() . '">' . $user->getUsername() . '</a>';
     }
 
-    public static function createLikeLink(int $postId, bool $liked) {
+    public static function createLikeLink(string $postId, bool $liked) {
         if($liked === true) {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', false)">Unlike</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $postId . '\', false)">Unlike</a>';
         } else {
-            return '<a class="post-like" style="cursor: pointer" onclick="likePost(' . $postId . ', true)">Like</a>';
+            return '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $postId . '\', true)">Like</a>';
         }
     }
 }

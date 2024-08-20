@@ -2,6 +2,8 @@
 
 namespace App\UI\FormBuilder;
 
+use App\Core\HashManager;
+
 class FormResponse {
     private array $__keys;
 
@@ -30,6 +32,14 @@ class FormResponse {
 
     public function evalBool(mixed $value1, mixed $value2) {
         return $value1 == $value2;
+    }
+
+    public function getHashedPassword(string $name = 'password') {
+        if(isset($this->$name)) {
+            return HashManager::hashPassword($this->$name);
+        } else {
+            return null;
+        }
     }
 }
 

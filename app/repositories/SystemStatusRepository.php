@@ -26,7 +26,7 @@ class SystemStatusRepository extends ARepository {
         return $statuses;
     }
 
-    public function getSystemStatusById(int $id) {
+    public function getSystemStatusById(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -41,7 +41,7 @@ class SystemStatusRepository extends ARepository {
         }
     }
 
-    public function updateStatus(int $id, int $status, ?string $description) {
+    public function updateStatus(string $id, int $status, ?string $description) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('system_status')

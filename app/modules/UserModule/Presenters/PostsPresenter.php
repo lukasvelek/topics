@@ -6,15 +6,18 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\HashManager;
 use App\Entities\PostCommentEntity;
-use App\Entities\PostEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\FileUploadException;
+use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -53,7 +56,7 @@ class PostsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('loadCommentsForPost(' . $postId . ', 10, 0)');
+        $this->addScript('loadCommentsForPost(\'' . $postId . '\', 10, 0)');
 
         $arb = new AjaxRequestBuilder();
 
@@ -92,8 +95,14 @@ class PostsPresenter extends AUserPresenter {
 
         $fb ->setAction($newCommentFormUrl)
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment')
+            ->addSubmit('Post comment', false, true)
         ;
+
+        $fb->updateElement('text', function(TextArea $ta) {
+            $ta->setPlaceholder('Your comment...');
+
+            return $ta;
+        });
 
         $this->saveToPresenterCache('form', $fb);
 
@@ -141,14 +150,45 @@ class PostsPresenter extends AUserPresenter {
 
         [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 
+        $postedOn = $post->getDateCreated();
+        $postedOnText = 'Posted on';
+        
+        if($post->getDateAvailable() != $post->getDateCreated()) {
+            $postedOn = $post->getDateAvailable();
+            $postedOnText = 'Scheduled for';
+        }
+
+        $postedOn = DateTimeFormatHelper::formatDateToUserFriendly($postedOn);
+
         $postData = '
             <div>
-                <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
-                <p class="post-data">Date posted: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</p>
-                <p class="post-data">Author: ' . $authorLink . '</p>
-                <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
-                <p class="post-data">' . $reportLink . '</p>
-                ' . $deleteLink . '
+                <div class="row">
+                    <div class="col-md-2 col-lg-3">
+                        <p class="post-data">Likes: ' . $likes . '' . $finalLikeLink . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">' . $postedOnText . ': ' . $postedOn . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">Author: ' . $authorLink . '</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md col-lg">
+                        <p class="post-data">Tag: ' . PostTags::createTagText(PostTags::toString($post->getTag()), $tagColor, $tagBgColor, false) . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        <p class="post-data">' . $reportLink . '</p>
+                    </div>
+
+                    <div class="col-md col-lg">
+                        ' . $deleteLink . '
+                    </div>
+                </div>
             </div>
         ';
 
@@ -174,16 +214,16 @@ class PostsPresenter extends AUserPresenter {
         $newImageUploadLink = LinkBuilder::createSimpleLink('Upload image', $this->createURL('uploadImageForm', ['postId' => $postId]), 'post-data-link');
 
         $newImageUploadSection = '<div class="row">
-                <div class="col-md-3"></div>
+                <div class="col-md-2 col-lg-2"></div>
 
-                <div class="col-md">
+                <div class="col-md" id="post-upload-image-section">
                     ' . $newImageUploadLink . '
                 </div>
 
-                <div class="col-md-3"></div>
+                <div class="col-md-2 col-lg-2"></div>
             </div>
 
-            <hr>';
+            <br>';
 
         if(!$app->actionAuthorizator->canUploadFileForPost($app->currentUser->getId(), $post)) {
             $newImageUploadSection = '';
@@ -219,14 +259,14 @@ class PostsPresenter extends AUserPresenter {
                 ' . $newImageUploadSection . '
 
                 <div class="row">
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
             
-                    <div class="col-md">' . $imagesCode . '</div>
+                    <div class="col-md col-lg" id="post-images-section">' . $imagesCode . '</div>
             
-                    <div class="col-md-3"></div>
+                    <div class="col-md-2 col-lg-2"></div>
                 </div>
 
-                <hr>
+                <br>
             ';
         }
 
@@ -281,16 +321,17 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
-        $app->topicRepository->beginTransaction();
-
+        
         try {
+            $app->topicRepository->beginTransaction();
+            
             if(isset($_FILES['image']['name'])) {
                 $app->fileUploadManager->uploadPostImage($app->currentUser->getId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
             } else {
                 throw new FileUploadException('No file selected.');
             }
 
-            $app->topicRepository->commit();
+            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
             $this->flashMessage('Image uploaded.', 'success');
         } catch(Exception $e) {
             $app->topicRepository->rollback();
@@ -311,7 +352,13 @@ class PostsPresenter extends AUserPresenter {
             ->addSubmit('Post comment')
         ;
 
-        $this->ajaxSendResponse(['form' => $fb->render()]);
+        $fb->updateElement('text', function(TextArea $ta) {
+            $ta->setPlaceholder('Your comment...');
+
+            return $ta;
+        });
+
+        $this->ajaxSendResponse(['form' => '<div id="post-comment-form">' . $fb->render() . '</div>']);
     }
 
     public function actionLikePostComment() {
@@ -330,9 +377,9 @@ class PostsPresenter extends AUserPresenter {
 
         $liked = false;
         
-        $app->postCommentRepository->beginTransaction();
-
         try {
+            $app->postCommentRepository->beginTransaction();
+
             if($toLike == 'true') {
                 $app->postCommentRepository->likeComment($userId, $commentId);
                 $liked = true;
@@ -344,18 +391,18 @@ class PostsPresenter extends AUserPresenter {
                 $app->postCommentRepository->unlikeComment($userId, $commentId);
             }
 
-            $app->postCommentRepository->commit();
+            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
             $app->postCommentRepository->rollback();
             
-            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '.', 'error');
+            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
             
             $liked = false;
         }
             
         $likes = $app->postCommentRepository->getLikes($commentId);
         
-        $link = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $commentId .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+        $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $commentId .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
         $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
     }
@@ -381,7 +428,7 @@ class PostsPresenter extends AUserPresenter {
 
         $likedComments = $app->postCommentRepository->getLikedCommentsForUser($app->currentUser->getId(), $commentIds);
 
-        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId);
+        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId, true);
 
         $code = [];
 
@@ -398,23 +445,28 @@ class PostsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $commentCount) {
             $loadMoreLink = '';
         } else {
-            $loadMoreLink = '<a class="post-data-link" style="cursor: pointer" onclick="loadCommentsForPost(' . $postId . ', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</a>';
+            $loadMoreLink = '<br><button type="button" id="formSubmit" onclick="loadCommentsForPost(\'' . $postId . '\', ' . $limit . ', ' . ($offset + $limit) . ')">Load more</button>';
         }
 
-        $this->ajaxSendResponse(['comments' => implode('<hr>', $code), 'loadMoreLink' => $loadMoreLink]);
+        $c = '';
+        if($offset > 0) {
+            $c = '<br>';
+        }
+
+        $this->ajaxSendResponse(['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
     }
 
-    private function createPostComment(int $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
+    private function createPostComment(string $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
         global $app;
 
         $post = $app->postRepository->getPostById($postId);
 
         $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
+        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId(), '', 'post-comment-link');
 
         $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
-            $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePostComment(' . $comment->getId() .', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
+            $likeLink = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $comment->getId() .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
         } else {
             $likeLink = '';
         }
@@ -430,14 +482,14 @@ class PostsPresenter extends AUserPresenter {
         }
 
         if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $post->getTopicId())) {
-            $reportForm = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
+            $reportForm = '<a class="post-comment-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
         } else {
             $reportForm = '';
         }
         $deleteLink = '';
         
         if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
-            $deleteLink = ' | <a class="post-data-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
+            $deleteLink = ' | <a class="post-comment-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
         $text = $bwh->checkText($comment->getText());
@@ -468,15 +520,18 @@ class PostsPresenter extends AUserPresenter {
         $text = preg_replace($pattern, $replacement, $text);
 
         $code = '
-            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-' . $comment->getId() . '">
+            <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-id-' . $comment->getId() . '">
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 <div class="col-md">
                     <div>
-                        <p class="post-text">' . $text . '</p>
-                        <p class="post-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '' . $reportForm . $deleteLink . '
+                        <p class="post-comment-text">' . $text . '</p>
+                        <p class="post-comment-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
+                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
                         </p>
-                        ' . ($post->isDeleted() ? '' : '<a class="post-data-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(' . $comment->getId() . ', ' . $postId . ')">Add comment</a>') . '
+                        <p class="post-comment-data">
+                            ' . $reportForm . $deleteLink . '
+                        </p>
+                        ' . ($post->isDeleted() ? '' : '<a class="post-comment-link" id="post-comment-' . $comment->getId() . '-add-comment-link" style="cursor: pointer" onclick="createNewCommentForm(\'' . $comment->getId() . '\', \'' . $postId . '\')">Add comment</a>') . '
                     </div>
                     <div class="row">
                         <div class="col-md-2"></div>
@@ -491,7 +546,6 @@ class PostsPresenter extends AUserPresenter {
                     ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 </div>
             </div>
-            <br>
         ';
 
         return $code;
@@ -509,23 +563,25 @@ class PostsPresenter extends AUserPresenter {
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
         $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
-
-        $app->postCommentRepository->beginTransaction();
         
         try {
-            $app->postCommentRepository->createNewComment($postId, $authorId, $text, $parentCommentId);
+            $app->postCommentRepository->beginTransaction();
+
+            $commentId = $app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
+
+            $app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
 
             if($post->getAuthorId() != $authorId) {
                 $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
             }
 
-            $app->postCommentRepository->commit();
+            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
 
             $this->flashMessage('Comment posted.', 'success');
         } catch (AException $e) {
             $app->postCommentRepository->rollback();
 
-            $this->flashMessage('Comment could not be created. Error: ' . $e->getMessage(), 'error');
+            $this->flashMessage('Comment could not be created. Reason: ' . $e->getMessage(), 'error');
         }
         
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
@@ -541,9 +597,20 @@ class PostsPresenter extends AUserPresenter {
             $description = $fr->description;
             $userId = $app->currentUser->getId();
 
-            $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Post reported.', 'success');
+                $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('Post could not be reported. Reason: ' . $e->getMessage());
+            }
+
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
         } else {
             $post = $app->postRepository->getPostById($postId);
@@ -596,13 +663,22 @@ class PostsPresenter extends AUserPresenter {
             $description = $fr->description;
             $userId = $app->currentUser->getId();
 
-            $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+            try {
+                $app->reportRepository->beginTransaction();
 
-            $this->flashMessage('Comment reported.', 'success');
+                $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+
+                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Comment reported.', 'success');
+            } catch(AException $e) {
+                $app->reportRepository->rollback();
+
+                $this->flashMessage('Comment could not be reported. Reason: ' . $e->getMessage(), __METHOD__);
+            }
+
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
         } else {
-            $this->saveToPresenterCache('comment', $comment);
-
             $categories = ReportCategory::getArray();
             $categoryArray = [];
             foreach($categories as $k => $v) {
@@ -630,11 +706,9 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function renderReportComment() {
-        $comment = $this->loadFromPresenterCache('comment');
         $form = $this->loadFromPresenterCache('form');
         $links = $this->loadFromPresenterCache('links');
 
-        $this->template->comment_id = $comment->getId();
         $this->template->form = $form;
         $this->template->links = $links;
     }
@@ -650,15 +724,15 @@ class PostsPresenter extends AUserPresenter {
             $comment = $app->postCommentRepository->getCommentById($commentId);
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
-
-            $app->postRepository->beginTransaction();
-
+            
             try {
+                $app->postRepository->beginTransaction();
+                
                 $app->contentManager->deleteComment($commentId);
 
                 $app->notificationManager->createNewCommentDeletedNotification($comment->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
             } catch(Exception $e) {
@@ -696,14 +770,20 @@ class PostsPresenter extends AUserPresenter {
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
 
-            $app->postRepository->beginTransaction();
-
             try {
+                if($fr->postTitle != $post->getTitle()) {
+                    throw new GeneralException('Post titles do not match.');
+                }
+
+                $app->userAuth->authUser($fr->getHashedPassword($fr->userPassword));
+
+                $app->postRepository->beginTransaction();
+
                 $app->contentManager->deletePost($postId);
 
                 $app->notificationManager->createNewPostDeletedNotification($post->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit();
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
 
                 $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
             } catch(Exception $e) {
@@ -717,6 +797,8 @@ class PostsPresenter extends AUserPresenter {
             $fb = new FormBuilder();
             
             $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deletePost', 'isSubmit' => '1', 'postId' => $postId])
+                ->addTextInput('postTitle', 'Post title:', null, true)
+                ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete post')
                 ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
             ;
@@ -739,9 +821,9 @@ class PostsPresenter extends AUserPresenter {
 
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
         
-        $app->postRepository->beginTransaction();
-
         try {
+            $app->postRepository->beginTransaction();
+            
             $app->postRepository->likePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
@@ -752,7 +834,7 @@ class PostsPresenter extends AUserPresenter {
             $cm = new CacheManager($app->logger);
             $cm->invalidateCache('posts');
 
-            $app->postRepository->commit();
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
             $app->postRepository->rollback();
             $this->flashMessage('Could not like post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
@@ -767,12 +849,21 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId', true);
         $post = $app->postRepository->getPostById($postId);
 
-        $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
-        $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
+        try {
+            $app->postRepository->beginTransaction();
 
-        $cm = new CacheManager($app->logger);
+            $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
+            $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
 
-        $cm->invalidateCache('posts');
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+            
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+
+            $this->flashMessage('Could not unlike post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
+        }
 
         $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
     }

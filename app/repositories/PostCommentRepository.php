@@ -12,7 +12,7 @@ class PostCommentRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getCommentsForPostId(int $postId, int $limit = 0, int $offset = 0) {
+    public function getCommentsForPostId(string $postId, int $limit = 0, int $offset = 0) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -32,7 +32,7 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function getLatestCommentsForPostId(int $postId, int $limit = 0, int $offset = 0, bool $deletedOnly = true) {
+    public function getLatestCommentsForPostId(string $postId, int $limit = 0, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -57,11 +57,11 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function createNewComment(int $postId, int $authorId, string $text, ?int $parentCommentId = null) {
+    public function createNewComment(string $commentId, string $postId, string $authorId, string $text, ?string $parentCommentId = null) {
         $qb = $this->qb(__METHOD__);
 
-        $keys = ['postId', 'authorId', 'commentText'];
-        $values = [$postId, $authorId, $text];
+        $keys = ['commentId', 'postId', 'authorId', 'commentText'];
+        $values = [$commentId, $postId, $authorId, $text];
 
         if($parentCommentId !== null) {
             $keys[] = 'parentCommentId';
@@ -75,7 +75,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getCommentCountForPostId(int $postId, bool $deletedOnly = true) {
+    public function getCommentCountForPostId(string $postId, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
@@ -92,7 +92,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function checkLike(int $userId, int $commentId) {
+    public function checkLike(string $userId, string $commentId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['commentId'])
@@ -110,7 +110,7 @@ class PostCommentRepository extends ARepository {
         return false;
     }
 
-    public function getLikes(int $commentId) {
+    public function getLikes(string $commentId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['likes'])
@@ -121,7 +121,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch('likes');
     }
 
-    public function likeComment(int $userId, int $commentId) {
+    public function likeComment(string $userId, string $commentId) {
         $result = false;
         
         // check
@@ -153,7 +153,7 @@ class PostCommentRepository extends ARepository {
         return true;
     }
 
-    public function unlikeComment(int $userId, int $commentId) {
+    public function unlikeComment(string $userId, string $commentId) {
         $result = false;
         
         // check
@@ -189,7 +189,7 @@ class PostCommentRepository extends ARepository {
         return true;
     }
 
-    public function getLatestCommentsForCommentId(int $postId, int $commentId) {
+    public function getLatestCommentsForCommentId(string $postId, string $commentId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -208,7 +208,7 @@ class PostCommentRepository extends ARepository {
         return $entities;
     }
 
-    public function getCommentById(int $id) {
+    public function getCommentById(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -219,7 +219,7 @@ class PostCommentRepository extends ARepository {
         return PostCommentEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function updateComment(int $id, array $data) {
+    public function updateComment(string $id, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('post_comments')
@@ -230,7 +230,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function deleteComment(int $commentId, bool $hide = true) {
+    public function deleteComment(string $commentId, bool $hide = true) {
         if($hide) {
             $date = new DateTime();
             return $this->updateComment($commentId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
@@ -282,7 +282,7 @@ class PostCommentRepository extends ARepository {
         return $qb;
     }
 
-    public function getLikedCommentsForUser(int $userId, array $commentIds) {
+    public function getLikedCommentsForUser(string $userId, array $commentIds) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['commentId'])
@@ -299,14 +299,19 @@ class PostCommentRepository extends ARepository {
         return $result;
     }
 
-    public function getCommentsThatHaveAParent(int $postId) {
+    public function getCommentsThatHaveAParent(string $postId, bool $orderByDate = false) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_comments')
             ->where('postId = ?', [$postId])
-            ->andWhere('parentCommentId IS NOT NULL')
-            ->execute();
+            ->andWhere('parentCommentId IS NOT NULL');
+
+        if($orderByDate) {
+            $qb->orderBy('dateCreated', 'DESC');
+        }
+
+        $qb->execute();
 
         $comments = [];
         while($row = $qb->fetchAssoc()) {
@@ -314,6 +319,59 @@ class PostCommentRepository extends ARepository {
         }
 
         return $comments;
+    }
+
+    public function getCommentsForUser(string $userId, string $maxDate, int $limit) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_comments')
+            ->where('authorId = ?', [$userId])
+            ->andWhere('dateCreated >= ?', [$maxDate])
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $comments = [];
+        while($row = $qb->fetchAssoc()) {
+            if($row === null) {
+                continue;
+            }
+            $comments[] = PostCommentEntity::createEntityFromDbRow($row);
+        }
+
+        return $comments;
+    }
+
+    public function getPostIdsWithMostCommentsInLast24Hrs(int $limit) {
+        $dateLimit = new DateTime();
+        $dateLimit->modify('-1d');
+        $dateLimit = $dateLimit->getResult();
+        
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(commentId) AS cnt', 'postId'])
+            ->from('post_comments')
+            ->where('dateCreated >= ?', [$dateLimit])
+            ->groupBy('postId')
+            ->orderBy('cnt', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $data = [];
+        while($row = $qb->fetchAssoc()) {
+            $data[$row['postId']] = $row['cnt'];
+        }
+
+        return $data;
     }
 }
 

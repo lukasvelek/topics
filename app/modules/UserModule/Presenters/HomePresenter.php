@@ -6,6 +6,7 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Exceptions\AException;
 
 class HomePresenter extends AUserPresenter {
     public function __construct() {
@@ -20,7 +21,7 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
         $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 10);
+        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
 
         $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository, $app->fileUploadRepository, $app->fileUploadManager);
 
@@ -41,7 +42,22 @@ class HomePresenter extends AUserPresenter {
             }
         }
 
-        $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessages);
+        $permaFlashMessagesCode = '<div class="row">
+                <div class="col-md-1 col-lg-1"></div>
+
+                <div class="col-md col-lg">
+                    ' . implode('', $permaFlashMessages) . '
+                </div>
+
+                <div class="col-md-1 col-lg-1"></div>
+            </div>
+            <br>';
+
+        if(empty($permaFlashMessages)) {
+            $permaFlashMessagesCode = '';
+        }
+
+        $this->saveToPresenterCache('permaFlashMessages', $permaFlashMessagesCode);
 
         $arb = new AjaxRequestBuilder();
         $arb->setURL(['page' => 'UserModule:Home', 'action' => 'likePost'])
@@ -72,15 +88,25 @@ class HomePresenter extends AUserPresenter {
         $toLike = $this->httpGet('toLike');
 
         $link = PostLister::createLikeLink($postId, ($toLike == 'true'));
-        if($toLike == 'true') {
-            $app->postRepository->likePost($userId, $postId);
-        } else {
-            $app->postRepository->unlikePost($userId, $postId);
+
+        try {
+            $app->postRepository->beginTransaction();
+
+            if($toLike == 'true') {
+                $app->postRepository->likePost($userId, $postId);
+            } else {
+                $app->postRepository->unlikePost($userId, $postId);
+            }
+
+            $cm = new CacheManager($app->logger);
+            $cm->invalidateCache('posts');
+
+            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->postRepository->rollback();
+
+            $this->flashMessage('Could not like post. Reason: ' . $e->getMessage(), 'error');
         }
-
-        $cm = new CacheManager($app->logger);
-
-        $cm->invalidateCache('posts');
 
         $post = $app->postRepository->getPostById($postId);
 

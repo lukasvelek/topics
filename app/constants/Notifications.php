@@ -15,6 +15,7 @@ class Notifications {
     public const TOPIC_DELETE_DUE_TO_REPORT = 10;
     public const TOPIC_DELETE = 11;
     public const TOPIC_ROLE_CHANGE = 12;
+    public const NEW_USER_FOLLOWER = 13;
 
     public static function getTitleByKey(int $key) {
         return match($key) {
@@ -29,7 +30,8 @@ class Notifications {
             self::POST_DELETE_DUE_TO_REPORT => 'Post deleted due to being reported',
             self::COMMENT_DELETE_DUE_TO_REPORT => 'Comment deleted due to being reported',
             self::TOPIC_DELETE_DUE_TO_REPORT => 'Topic deleted due to being reported',
-            self::TOPIC_ROLE_CHANGE => 'Topic role changed'
+            self::TOPIC_ROLE_CHANGE => 'Topic role changed',
+            self::NEW_USER_FOLLOWER => 'New follower'
         };
     }
 
@@ -46,7 +48,8 @@ class Notifications {
             self::TOPIC_DELETE_DUE_TO_REPORT => 'Your topic $TOPIC_LINK$ has been reported and then deleted for reason: "$DELETE_REASON$" by user $USER_LINK$.',
             self::POST_DELETE_DUE_TO_REPORT => 'Your post $POST_LINK$ has been reported and then deleted for reason: "$DELETE_REASON$" by user $USER_LINK$.',
             self::COMMENT_DELETE_DUE_TO_REPORT => 'Your comment on post $POST_LINK$ has been reported and then deleted for reason: "$DELETE_REASON$" by user $USER_LINK$.',
-            self::TOPIC_ROLE_CHANGE => 'Your role in topic $TOPIC_LINK$ has changed from $OLD_ROLE$ to $NEW_ROLE$.'
+            self::TOPIC_ROLE_CHANGE => 'Your role in topic $TOPIC_LINK$ has changed from $OLD_ROLE$ to $NEW_ROLE$.',
+            self::NEW_USER_FOLLOWER => 'User $USER_LINK$ started following you.'
         };
     }
 }

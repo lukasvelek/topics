@@ -4,8 +4,11 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
+use App\Core\HashManager;
+use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use QueryBuilder\ExpressionBuilder;
 use QueryBuilder\QueryBuilder;
 
@@ -13,11 +16,14 @@ abstract class ARepository {
     private DatabaseConnection $conn;
     protected Logger $logger;
     protected CacheManager $cache;
+    private TransactionLogRepository $tlr;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
         $this->cache = new CacheManager($logger);
+
+        $this->tlr = new TransactionLogRepository($this->conn, $this->logger);
     }
 
     protected function qb(string $method = __METHOD__) {
@@ -29,18 +35,32 @@ abstract class ARepository {
     }
 
     public function beginTransaction() {
-        $this->logger->warning('Transaction begun.', __METHOD__);
-        return $this->conn->beginTransaction();
+        $result = $this->conn->beginTransaction();
+        if($result) {
+            $this->logger->warning('Transaction begun.', __METHOD__);
+        }
+        return $result;
     }
 
     public function rollback() {
-        $this->logger->warning('Transaction rolled back.', __METHOD__);
-        return $this->conn->rollback();
+        $result = $this->conn->rollback();
+        if($result) {
+            $this->logger->warning('Transaction rolled back.', __METHOD__);
+        }
+        return $result;
     }
 
-    public function commit() {
-        $this->logger->warning('Transaction commited.', __METHOD__);
-        return $this->conn->commit();
+    public function commit(?string $userId, string $method) {
+        $result = $this->conn->commit();
+        if($result) {
+            $sql = '';
+            if(!$this->logTransaction($userId, $method, $sql)) {
+                $this->rollback();
+                throw new DatabaseExecutionException('Could not log transcation. Rolling back.', $sql);
+            }
+            $this->logger->warning('Transaction commited.', __METHOD__);
+        }
+        return $result;
     }
 
     public function tryBeginTransaction() {
@@ -63,8 +83,8 @@ abstract class ARepository {
         return $result;
     }
 
-    public function tryCommit() {
-        $result = $this->commit();
+    public function tryCommit(string $userId, string $method) {
+        $result = $this->commit($userId, $method);
 
         if($result === false) {
             throw new GeneralException('Could not commit database transaction');
@@ -93,6 +113,18 @@ abstract class ARepository {
         if($offset > 0) {
             $qb->offset($offset);
         }
+    }
+
+    private function logTransaction(?string $userId, string $method, string &$sql) {
+        $transactionId = $this->createEntityId(EntityManager::TRANSACTIONS);
+
+        return $this->tlr->createNewEntry($transactionId, $userId, $method, $sql);
+    }
+
+    public function createEntityId(string $category) {
+        $em = new EntityManager($this->logger, new ContentRepository($this->conn, $this->logger));
+
+        return $em->generateEntityId($category);
     }
 }
 

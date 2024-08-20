@@ -124,13 +124,20 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             $user = $app->userRepository->getUserById($prosecution->getUserId());
 
             try {
+                $app->userProsecutionRepository->beginTransaction();
+
                 $app->userProsecutionManager->removeBan($prosecution->getUserId(), $app->currentUser->getId(), $reason);
+
+                $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+                
+                $this->flashMessage('Removed ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . ').');
             } catch(AException $e) {
+                $app->userProsecutionRepository->rollback();
+                
                 $this->flashMessage('Could not remove ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . '). Reason: ' . $e->getMessage(), 'error');
                 $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
             }
 
-            $this->flashMessage('Removed ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . ').');
             $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
         } else {
             $fb = new FormBuilder();

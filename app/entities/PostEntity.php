@@ -3,9 +3,9 @@
 namespace App\Entities;
 
 class PostEntity implements ICreatableFromRow {
-    private int $postId;
-    private int $topicId;
-    private int $authorId;
+    private string $postId;
+    private string $topicId;
+    private string $authorId;
     private string $title;
     private string $text;
     private string $dateCreated;
@@ -13,8 +13,12 @@ class PostEntity implements ICreatableFromRow {
     private bool $isDeleted;
     private ?string $dateDeleted;
     private string $tag;
+    private string $dateAvailable;
+    private bool $isSuggestable;
 
-    public function __construct(int $postId, int $topicId, int $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag) {
+    private bool $isPinned;
+
+    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag, string $dateAvailable, bool $isSuggestable) {
         $this->postId = $postId;
         $this->topicId = $topicId;
         $this->authorId = $authorId;
@@ -25,6 +29,10 @@ class PostEntity implements ICreatableFromRow {
         $this->isDeleted = $isDeleted;
         $this->dateDeleted = $dateDeleted;
         $this->tag = $tag;
+        $this->dateAvailable = $dateAvailable;
+        $this->isSuggestable = $isSuggestable;
+        
+        $this->isPinned = false;
     }
 
     public function getId() {
@@ -75,11 +83,27 @@ class PostEntity implements ICreatableFromRow {
         return $this->tag;
     }
 
+    public function getDateAvailable() {
+        return $this->dateAvailable;
+    }
+
+    public function isSuggestable() {
+        return $this->isSuggestable;
+    }
+
+    public function isPinned() {
+        return $this->isPinned;
+    }
+
+    public function setIsPinned(bool $isPinned = true) {
+        $this->isPinned = $isPinned;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag']);
+        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag'], $row['dateAvailable'], $row['isSuggestable']);
     }
 }
 

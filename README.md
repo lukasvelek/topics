@@ -1,8 +1,5 @@
 # Topics
-Topics is a website that allows its users to discuss different topics based on their interest. It is still in development but it contains most of the core functionalities.
-
-## Warning
-Topics is currently being developed and thus has no user registration page. It is only because we need to maintain the amount of users that are allowed in. Users can be created manually only.
+Topics is a website that allows people to chat about different topics. Each topic can have its own managers, community helpers and VIP users.
 
 ## Current abilities
     - Topic management
@@ -13,9 +10,12 @@ Topics is currently being developed and thus has no user registration page. It i
     - Polls
     - System services
     - Dashboard widgets, charts
+    - Word filtering
+    - User mentioning
+    - Images in posts
 
 ## Current version
-    - v1.1 (7/5/2024)
+    - v1.2 (8/1/2024)
 
 ## Future plans
-    - Design update
+    - Videos in posts

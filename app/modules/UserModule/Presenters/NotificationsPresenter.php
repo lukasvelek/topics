@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Exceptions\AException;
 use App\UI\LinkBuilder;
 
 class NotificationsPresenter extends AUserPresenter {
@@ -17,6 +18,11 @@ class NotificationsPresenter extends AUserPresenter {
             ->setMethod()
             ->setFunctionName('getNotificationsList')
             ->updateHTMLElement('notifications', 'notifications')
+            ->addCustomWhenDoneCode('
+                if(obj.isEmpty == 1) {
+                    $("#notification-links").html("");
+                }
+            ')
             ->disableLoadingAnimation()
         ;
 
@@ -30,8 +36,8 @@ class NotificationsPresenter extends AUserPresenter {
             ->setHeader(['notificationId' => '_notificationId'])
             ->setFunctionName('closeNotification')
             ->setFunctionArguments(['_notificationId'])
-            ->hideHTMLElementRaw('"#notification-" + _notificationId')
-            ->hideHTMLElementRaw('"#notification-" + _notificationId + "-hr"')
+            ->hideHTMLElementRaw('"#notification-id-" + _notificationId')
+            ->hideHTMLElementRaw('"#notification-id-" + _notificationId + "-br"')
             ->addCustomWhenDoneCode('
                 if(obj.empty == "1") {
                     $("#notifications").html(obj.text);
@@ -54,7 +60,7 @@ class NotificationsPresenter extends AUserPresenter {
 
         $this->addScript($arb);
 
-        $closeAllLink = LinkBuilder::createJSOnclickLink('Close all', 'closeAllNotifications()', 'post-data-link');
+        $closeAllLink = '<button type="button" id="formSubmit" onclick="closeAllNotifications()">Close all</button>';
 
         $links = [
             $closeAllLink
@@ -72,6 +78,8 @@ class NotificationsPresenter extends AUserPresenter {
     public function actionGetNotificationsList() {
         global $app;
 
+        $isEmpty = false;
+
         $notifications = $app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId());
 
         $listCode = '';
@@ -79,7 +87,7 @@ class NotificationsPresenter extends AUserPresenter {
             $closeLink = '<a class="post-data-link" href="#" onclick="closeNotification(\'' . $notification->getId() . '\')">x</a>';
 
             $code = '
-            <div class="row" id="notification-' . $notification->getId() . '">
+            <div class="row" id="notification-id-' . $notification->getId() . '">
                 <div class="col-md" id="notification-' . $notification->getId() . '-data">
                     <p class="post-text">' . $notification->getTitle() . '</p>
                     <p class="post-data">' . $notification->getMessage() . '</p>
@@ -89,17 +97,18 @@ class NotificationsPresenter extends AUserPresenter {
                     ' . $closeLink . '
                 </div>
             </div>
-            <hr id="notification-' . $notification->getId() . '-hr">
+            <br id="notification-' . $notification->getId() . '-br">
             ';
 
             $listCode .= $code;
         }
 
         if(empty($notifications)) {
+            $isEmpty = true;
             $listCode = '<div style="text-align: center">No notifications found</div>';
         }
 
-        $this->ajaxSendResponse(['notifications' => $listCode]);
+        $this->ajaxSendResponse(['notifications' => $listCode, 'isEmpty' => $isEmpty]);
     }
 
     public function actionClose() {
@@ -107,7 +116,18 @@ class NotificationsPresenter extends AUserPresenter {
 
         $notificationId = $this->httpGet('notificationId', true);
 
-        $app->notificationManager->setNotificationAsSeen($notificationId);
+        try {
+            $app->notificationRepository->beginTransaction();
+            
+            $app->notificationManager->setNotificationAsSeen($notificationId);
+
+            $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->notificationRepository->rollback();
+
+            $this->flashMessage('Could not close notification. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect();
+        }
 
         $cnt = count($app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId()));
 
@@ -128,8 +148,17 @@ class NotificationsPresenter extends AUserPresenter {
 
         $notifications = $app->notificationManager->getUnseenNotificationsForUser($app->currentUser->getId());
 
-        foreach($notifications as $notification) {
-            $app->notificationManager->setNotificationAsSeen($notification->getId());
+        try {
+            $app->notificationRepository->beginTransaction();
+
+            foreach($notifications as $notification) {
+                $app->notificationManager->setNotificationAsSeen($notification->getId());
+            }
+
+            $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+        } catch(AException $e) {
+            $app->notificationRepository->rollback();
+            $this->flashMessage('Could not close notifications. Reason: ' . $e->getMessage(), 'error');
         }
 
         $this->ajaxSendResponse(['text' => '<div style="text-align: center">No notifications found</div>']);

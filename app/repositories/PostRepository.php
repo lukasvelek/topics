@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostEntity;
@@ -14,12 +13,13 @@ class PostRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function getLatestPostsForTopicId(int $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
+    public function getLatestPostsForTopicId(string $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC');
 
         if($deletedOnly) {
@@ -37,13 +37,15 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function getLatestMostLikedPostsForTopicId(int $topicId, int $count = 5) {
+    public function getLatestMostLikedPostsForTopicId(string $topicId, int $count = 5) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -68,6 +70,8 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
 
@@ -85,7 +89,7 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function unlikePost(int $userId, int $postId) {
+    public function unlikePost(string $userId, string $postId) {
         $result = false;
 
         // check
@@ -119,7 +123,7 @@ class PostRepository extends ARepository {
         return true;
     }
 
-    public function likePost(int $userId, int $postId) {
+    public function likePost(string $userId, string $postId) {
         $result = false;
         
         // check
@@ -151,7 +155,7 @@ class PostRepository extends ARepository {
         return true;
     }
 
-    public function checkLike(int $userId, int $postId) {
+    public function checkLike(string $userId, string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
@@ -169,7 +173,7 @@ class PostRepository extends ARepository {
         return false;
     }
 
-    public function bulkCheckLikes(int $userId, array $postIds) {
+    public function bulkCheckLikes(string $userId, array $postIds) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
@@ -186,7 +190,7 @@ class PostRepository extends ARepository {
         return $results;
     }
 
-    public function getLikes(int $postId) {
+    public function getLikes(string $postId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['likes'])
@@ -197,13 +201,14 @@ class PostRepository extends ARepository {
         return $qb->fetch('likes');
     }
 
-    public function getPostIdsForTopicId(int $topicId) {
+    public function getPostIdsForTopicId(string $topicId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['postId'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->execute();
 
         $posts = [];
@@ -214,7 +219,7 @@ class PostRepository extends ARepository {
         return $posts;
     }
 
-    public function getPostCountForTopicId(int $topicId, bool $deletedOnly) {
+    public function getPostCountForTopicId(string $topicId, bool $deletedOnly) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(postId) AS cnt'])
@@ -230,17 +235,17 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function createNewPost(int $topicId, int $authorId, string $title, string $text, string $tag) {
+    public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag, string $dateAvailable, bool $suggestable) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('posts', ['topicId', 'authorId', 'title', 'description', 'tag'])
-            ->values([$topicId, $authorId, $title, $text, $tag])
+        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable', 'isSuggestable'])
+            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable, $suggestable])
             ->execute();
 
         return $qb->fetch();
     }
 
-    public function getPostById(int $postId): PostEntity|null {
+    public function getPostById(string $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -258,7 +263,7 @@ class PostRepository extends ARepository {
         return $entity;
     }
 
-    public function getPostCountForUserId(int $userId) {
+    public function getPostCountForUserId(string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(postId) AS cnt'])
@@ -270,7 +275,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function updatePost(int $postId, array $data) {
+    public function updatePost(string $postId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('posts')
@@ -278,7 +283,7 @@ class PostRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getPostCount() {
@@ -292,7 +297,7 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt') ?? 0;
     }
 
-    public function deletePost(int $postId, bool $hide = true) {
+    public function deletePost(string $postId, bool $hide = true) {
         if($hide) {
             $date = new DateTime();
             return $this->updatePost($postId, ['isDeleted' => '1', 'dateDeleted' => $date->getResult()]);
@@ -371,10 +376,45 @@ class PostRepository extends ARepository {
         return $this->createPostsArrayFromQb($qb);
     }
 
-    public function getLikeCount(int $postId) {
+    public function getPostsForTopicForGrid(string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->select(['COUNT(likeId) AS cnt'])
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0')
+            ->andWhere('topicId = ?', [$topicId])
+            ->orderBy('dateCreated');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getScheduledPostsForTopicForGrid(string $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $now = DateTime::now();
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0')
+            ->andWhere('((dateAvailable <> dateCreated) AND dateAvailable > ?)', [$now])
+            ->andWhere('topicId = ?', [$topicId])
+            ->orderBy('dateCreated');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getLikeCount(string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(userId) AS cnt'])
             ->from('post_likes')
             ->where('postId = ?', [$postId])
             ->execute();
@@ -382,13 +422,30 @@ class PostRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
-    public function getLastCreatedPostInTopicByUserId(int $topicId, int $userId) {
+    public function getBulkLikeCount(array $postIds) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(userId) AS cnt', 'postId'])
+            ->from('post_likes')
+            ->where($qb->getColumnInValues('postId', $postIds))
+            ->execute();
+
+        $result = [];
+        while($row = $qb->fetchAssoc()) {
+            $result[$row['postId']] = $row['cnt'];
+        }
+        
+        return $result;
+    }
+
+    public function getLastCreatedPostInTopicByUserId(string $topicId, string $userId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('authorId = ?', [$userId])
+            ->andWhere('dateAvailable < ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC')
             ->limit(1)
             ->execute();
@@ -405,6 +462,78 @@ class PostRepository extends ARepository {
             ->execute();
         
         return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function getPostsCreatedByUser(string $userId, string $maxDate, int $limit) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('authorId = ?', [$userId])
+            ->andWhere('dateCreated >= ?', [$maxDate])
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $posts = [];
+        while($row = $qb->fetchAssoc()) {
+            $posts[] = PostEntity::createEntityFromDbRow($row);
+        }
+
+        return $posts;
+    }
+
+    public function getTopicIdsWithMostPostsInLast24Hrs(int $limit) {
+        $dateLimit = new DateTime();
+        $dateLimit->modify('-1d');
+        $dateLimit = $dateLimit->getResult();
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['COUNT(postId) AS cnt', 'topicId'])
+            ->from('posts')
+            ->where('dateCreated >= ?', [$dateLimit])
+            ->groupBy('topicId')
+            ->orderBy('cnt', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $data = [];
+        while($row = $qb->fetchAssoc()) {
+            $data[$row['topicId']] = $row['cnt'];
+        }
+
+        return $data;
+    }
+
+    public function createNewPostPin(string $pinId, string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('topic_post_pins', ['pinId', 'topicId', 'postId'])
+            ->values([$pinId, $topicId, $postId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function removePostPin(string $topicId, string $postId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('topic_post_pins')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('postId = ?', [$postId])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 

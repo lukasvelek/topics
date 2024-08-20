@@ -5,7 +5,7 @@ namespace App\Entities;
 use App\UI\LinkBuilder;
 
 class TopicEntity implements ICreatableFromRow {
-    private int $topicId;
+    private string $topicId;
     private string $title;
     private string $description;
     private string $dateCreated;
@@ -16,7 +16,7 @@ class TopicEntity implements ICreatableFromRow {
     private bool $visible;
     private array $rawTags;
 
-    public function __construct(int $topicId, string $title, string $description, string $dateCreated, bool $isDeleted, ?string $dateDeleted, array $tags, bool $private, bool $visible, array $rawTags) {
+    public function __construct(string $topicId, string $title, string $description, string $dateCreated, bool $isDeleted, ?string $dateDeleted, array $tags, bool $private, bool $visible, array $rawTags) {
         $this->topicId = $topicId;
         $this->title = $title;
         $this->description = $description;

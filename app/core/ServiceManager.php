@@ -3,8 +3,16 @@
 namespace App\Core;
 
 use App\Constants\SystemServiceStatus;
+use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\ServiceException;
 use App\Repositories\SystemServicesRepository;
+use App\Services\AdminDashboardIndexingService;
+use App\Services\MailService;
+use App\Services\OldNotificationRemovingService;
+use App\Services\OldRegistrationConfirmationLinkRemovingService;
+use App\Services\PostLikeEqualizerService;
+use Exception;
 
 class ServiceManager {
     private array $cfg;
@@ -23,7 +31,7 @@ class ServiceManager {
         $cmd = $phpExe . ' ' . $serviceFile;
 
         if(substr(php_uname(), 0, 7) == 'Windows') {
-            pclose(popen("start /B " . $cmd, "w"));
+            $status = pclose(popen("start /B " . $cmd, "w"));
         } else {
             exec($cmd . " > /dev/null &");
         }
@@ -32,13 +40,25 @@ class ServiceManager {
     }
 
     public function startService(string $serviceTitle) {
-        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => null, 'status' => SystemServiceStatus::RUNNING])) {
+        try {
+            $serviceId = $this->getServiceId($serviceTitle);
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
+
+        if(!$this->ssr->updateService($serviceId, ['dateStarted' => date('Y-m-d H:i:s'), 'dateEnded' => NULL, 'status' => SystemServiceStatus::RUNNING])) {
             throw new ServiceException('Could not update service status.');
         }
     }
 
     public function stopService(string $serviceTitle) {
-        if(!$this->ssr->updateService($this->getServiceId($serviceTitle), ['dateEnded' => date('Y-m-d H:i:s'), 'status' => SystemServiceStatus::NOT_RUNNING])) {
+        try {
+            $serviceId = $this->getServiceId($serviceTitle);
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
+
+        if(!$this->ssr->updateService($serviceId, ['dateEnded' => date('Y-m-d H:i:s'), 'status' => SystemServiceStatus::NOT_RUNNING])) {
             throw new ServiceException('Could not update service status.');
         }
     }

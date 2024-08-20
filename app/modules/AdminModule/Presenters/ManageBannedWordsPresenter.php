@@ -4,7 +4,9 @@ namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Entities\BannedWordEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -83,9 +85,22 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $word = $fr->word;
 
-            $app->contentRegulationRepository->createNewBannedWord($word, $app->currentUser->getId());
+            try {
+                $app->contentRegulationRepository->beginTransaction();
 
-            $this->flashMessage('Word banned.', 'success');
+                $wordId = $app->entityManager->generateEntityId(EntityManager::BANNED_WORDS);
+
+                $app->contentRegulationRepository->createNewBannedWord($wordId, $word, $app->currentUser->getId());
+
+                $app->contentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Word banned.', 'success');
+            } catch(AException $e) {
+                $app->contentRegulationRepository->rollback();
+
+                $this->flashMessage('Could not ban word. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:ManageBannedWords', 'action' => 'list']);
         } else {
             $fb = new FormBuilder();
@@ -117,9 +132,20 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
 
         $wordId = $this->httpGet('wordId', true);
 
-        $app->contentRegulationRepository->deleteBannedWord($wordId);
+        try {
+            $app->contentRegulationRepository->beginTransaction();
 
-        $this->flashMessage('Word unbanned.', 'success');
+            $app->contentRegulationRepository->deleteBannedWord($wordId);
+
+            $app->contentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Word unbanned.', 'success');
+        } catch(AException $e) {
+            $app->contentRegulationRepository->rollback();
+
+            $this->flashMessage('Could not unban word. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'AdminModule:ManageBannedWords', 'action' => 'list']);
     }
 }

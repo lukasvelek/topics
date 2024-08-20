@@ -6,12 +6,15 @@ use App\Core\Datetypes\DateTime;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
+use App\Managers\EntityManager;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;
 use Exception;
 
 class AdminDashboardIndexingService extends AService {
     private const AGE = '-1d';
+
+    private const LOG = false;
 
     private TopicRepository $tr;
     private PostRepository $pr;
@@ -31,7 +34,13 @@ class AdminDashboardIndexingService extends AService {
 
             $this->serviceStop();
         } catch(AException|Exception $e) {
+            try {
+                $this->serviceStop();
+            } catch(AException|Exception $e2) {}
+            
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 
@@ -49,7 +58,11 @@ class AdminDashboardIndexingService extends AService {
     private function updateData(array $data) {
         $qb = $this->tr->getQb();
 
-        $qb ->insert('admin_dashboard_widgets_graph_data', ['mostActiveTopics', 'mostActivePosts', 'mostActiveUsers'])
+        $dataId = $this->tr->createEntityId(EntityManager::ADMIN_DASHBOARD_WIDGETS_GRAPH_DATA);
+
+        $data = array_merge([$dataId], $data);
+
+        $qb ->insert('admin_dashboard_widgets_graph_data', ['dataId', 'mostActiveTopics', 'mostActivePosts', 'mostActiveUsers'])
             ->values($data)
             ->execute();
     }
@@ -74,7 +87,15 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT topicId, COUNT(postId) AS cnt FROM posts WHERE dateCreated >= '$age' GROUP BY topicId ORDER BY cnt DESC";
 
+        if(self::LOG) {
+            $this->logInfo('Processing SQL: ' . $sql);
+        }
+
         $result = $this->tr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row) {
@@ -94,7 +115,13 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT postId, COUNT(commentId) AS cnt FROM post_comments WHERE dateCreated >= '$age' GROUP BY postId ORDER BY cnt DESC";
 
+        $this->logInfo('Processing SQL: ' . $sql);
+
         $result = $this->pr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row) {
@@ -114,7 +141,13 @@ class AdminDashboardIndexingService extends AService {
 
         $sql = "SELECT authorId, COUNT(commentId) AS cnt FROM post_comments WHERE dateCreated >= '$age' GROUP BY authorId ORDER BY cnt DESC";
 
+        $this->logInfo('Processing SQL: ' . $sql);
+
         $result = $this->pr->sql($sql);
+
+        if(self::LOG) {
+            $this->logInfo('Result is: ' . var_export($result, true));
+        }
 
         $data = [];
         foreach($result as $row){

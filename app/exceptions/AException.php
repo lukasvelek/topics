@@ -10,21 +10,26 @@ use Exception;
 use Throwable;
 
 abstract class AException extends Exception {
+    private string $hash;
+    private string $html;
+
     protected function __construct(string $name, string $message, ?Throwable $previous = null, bool $createFile = true) {
-        parent::__construct($message, 9999, $previous);
+        $this->hash = HashManager::createHash(8, false);
+        
+        parent::__construct($message . ' [#' . $this->hash . ']', 9999, $previous);
+
+        $this->html = $this->createHTML($name, $message);
 
         if($createFile && FileManager::folderExists('logs\\')) {
             $this->createExceptionFile($name, $message);
         }
     }
 
-    private function createExceptionFile(string $name, string $message) {
-        global $app;
+    public function getHash() {
+        return $this->hash;
+    }
 
-        if($app === null) {
-            return;
-        }
-
+    private function createHTML(string $name, string $message) {
         $templateContent = FileManager::loadFile(__DIR__ . '\\templates\\common.html');
         $to = new TemplateObject($templateContent);
 
@@ -64,16 +69,26 @@ abstract class AException extends Exception {
         $to->callstack = $callstack;
 
         $to->render();
-        $content = $to->getRenderedContent();
+        return $to->getRenderedContent();
+    }
 
-        $hash = HashManager::createHash(8, false);
+    public function getExceptionHTML() {
+        return $this->html;
+    }
+
+    private function createExceptionFile(string $name, string $message) {
+        global $app;
+
+        if($app === null) {
+            return;
+        }
 
         $date = new DateTime();
         $date->format('Y-m-d_H-i-s');
 
-        $filePath = 'exception_' . $date . '_' . $hash . '.html';
+        $filePath = 'exception_' . $date . '_' . $this->hash . '.html';
 
-        FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $content);
+        FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $this->html);
     }
 }
 

@@ -6,6 +6,7 @@ use App\Exceptions\AException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class LoginPresenter extends APresenter {
     public function __construct() {
@@ -33,20 +34,30 @@ class LoginPresenter extends APresenter {
                 $this->flashMessage($e->getMessage(), 'error');
                 $this->redirect();
             }
+        } else {
+            $fb = new FormBuilder();
+        
+            $fb ->setAction(['page' => 'AnonymModule:Login', 'action' => 'loginForm', 'isSubmit' => 'true'])
+                ->addTextInput('username', 'Username:', null, true)
+                ->addPassword('password', 'Password:', null, true)
+                ->addSubmit('Log in')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+
+            $forgottenPasswordLink = LinkBuilder::createSimpleLink('Forgotten password', ['page' => 'AnonymModule:ForgottenPassword', 'action' => 'form'], 'post-data-link');
+
+            $this->saveToPresenterCache('forgottenPasswordLink', $forgottenPasswordLink);
         }
     }
 
     public function renderLoginForm() {
-        $fb = new FormBuilder();
-        
-        $fb ->setAction(['page' => 'AnonymModule:Login', 'action' => 'loginForm', 'isSubmit' => 'true'])
-            ->addTextInput('username', 'Username:', null, true)
-            ->addPassword('password', 'Password:', null, true)
-            ->addSubmit('Log in')
-        ;
+        $form = $this->loadFromPresenterCache('form');
+        $forgottenPasswordLink = $this->loadFromPresenterCache('forgottenPasswordLink');
 
-        $this->template->form = $fb;
+        $this->template->form = $form;
         $this->template->title = 'Login';
+        $this->template->forgotten_password_link = $forgottenPasswordLink;
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\Modules\AnonymModule;
 
 use App\Constants\SuggestionCategory;
 use App\Exceptions\AException;
+use App\Managers\EntityManager;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
@@ -26,13 +27,21 @@ class HelpPresenter extends APresenter {
             $user = $fr->user;
 
             try {
-                $app->suggestionRepository->createNewSuggestion($user, $title, $text, $category);
+                $app->suggestionRepository->beginTransaction();
+
+                $suggestionId = $app->entityManager->generateEntityId(EntityManager::SUGGESTIONS);
+
+                $app->suggestionRepository->createNewSuggestion($suggestionId, $user, $title, $text, $category);
+
+                $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+                
+                $app->flashMessage('Suggestion created. Thank you :)', 'success');
             } catch(AException $e) {
+                $app->suggestionRepository->rollback();
+
                 $app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
-                $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
             }
 
-            $app->flashMessage('Suggestion created. Thank you :)', 'success');
             $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
         } else {
             try {

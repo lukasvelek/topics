@@ -54,7 +54,7 @@ class SearchPresenter extends AUserPresenter {
 
         $createLink = LinkBuilder::createSimpleLink('create', ['page' => 'UserModule:Topics', 'action' => 'form', 'title' => $query], 'post-data-link');
 
-        $topicResult = 'No topics found. But you can ' . $createLink . ' one!';
+        $topicResult = 'No topics found. But you can <u>' . $createLink . '</u> one!';
 
         if(!empty($topicArray)) {
             $topicResult = implode('<br>', $topicArray);

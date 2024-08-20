@@ -14,9 +14,9 @@ class TopicPollRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createPoll(string $title, string $description, int $authorId, int $topicId, string $choices, ?string $dateValid, string $timeElapsed) {
-        $keys = ['title', 'description', 'authorId', 'topicId', 'choices', 'timeElapsedForNextVote'];
-        $values = [$title, $description, $authorId, $topicId, $choices, $timeElapsed];
+    public function createPoll(string $pollId, string $title, string $description, string $authorId, string $topicId, string $choices, ?string $dateValid, string $timeElapsed) {
+        $keys = ['pollId', 'title', 'description', 'authorId', 'topicId', 'choices', 'timeElapsedForNextVote'];
+        $values = [$pollId, $title, $description, $authorId, $topicId, $choices, $timeElapsed];
 
         if($dateValid !== null) {
             $keys[] = 'dateValid';
@@ -32,7 +32,7 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getActivePollBuilderEntitiesForTopic(int $topicId) {
+    public function getActivePollBuilderEntitiesForTopic(string $topicId) {
         $now = new DateTime();
         $now = $now->getResult();
 
@@ -53,17 +53,17 @@ class TopicPollRepository extends ARepository {
         return $polls;
     }
 
-    public function submitPoll(int $pollId, int $userId, int $choice) {
+    public function submitPoll(string $responseId, string $pollId, string $userId, int $choice) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_polls_responses', ['pollId', 'userId', 'choice'])
-            ->values([$pollId, $userId, $choice])
+        $qb ->insert('topic_polls_responses', ['responseId', 'pollId', 'userId', 'choice'])
+            ->values([$responseId, $pollId, $userId, $choice])
             ->execute();
 
         return $qb->fetchBool();
     }
 
-    public function getPollChoice(int $pollId, int $userId, ?string $dateLimit) {
+    public function getPollChoice(string $pollId, string $userId, ?string $dateLimit) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -80,7 +80,7 @@ class TopicPollRepository extends ARepository {
         return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function getPollRowById(int $pollId) {
+    public function getPollRowById(string $pollId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -91,7 +91,7 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchAll();
     }
 
-    public function getPollResponses(int $pollId) {
+    public function getPollResponses(string $pollId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['choice'])
@@ -107,7 +107,7 @@ class TopicPollRepository extends ARepository {
         return $choices;
     }
 
-    public function getPollResponsesGrouped(int $pollId) {
+    public function getPollResponsesGrouped(string $pollId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(responseId) AS cnt', 'choice'])
@@ -124,7 +124,7 @@ class TopicPollRepository extends ARepository {
         return $result;
     }
 
-    public function closePoll(int $pollId) {
+    public function closePoll(string $pollId) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topic_polls')
@@ -135,7 +135,7 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function openPoll(int $pollId, ?string $dateValid) {
+    public function openPoll(string $pollId, ?string $dateValid) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topic_polls')
@@ -146,7 +146,7 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getPollsForTopicForGrid(int $topicId, int $limit, int $offset) {
+    public function getPollsForTopicForGrid(string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -166,7 +166,7 @@ class TopicPollRepository extends ARepository {
         return $polls;
     }
 
-    public function getPollById(int $id) {
+    public function getPollById(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -177,7 +177,7 @@ class TopicPollRepository extends ARepository {
         return TopicPollEntity::createEntityFromDbRow($qb->fetch());
     }
 
-    public function getMyPollsForTopicForGrid(int $topicId, int $userId, int $limit, int $offset) {
+    public function getMyPollsForTopicForGrid(string $topicId, string $userId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
@@ -196,6 +196,61 @@ class TopicPollRepository extends ARepository {
         }
 
         return $polls;
+    }
+
+    public function getPollCreatedByUserOrderedByDateDesc(string $userId, int $limit) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('authorId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $polls = [];
+        while($row = $qb->fetchAssoc()) {
+            $polls[] = TopicPollEntity::createEntityFromDbRow($row);            
+        }
+    
+        return $polls;
+    }
+
+    public function getPollResponsesForUserOrderedByDateDesc(string $userId, int $limit) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls_responses')
+            ->where('userId = ?', [$userId])
+            ->orderBy('dateCreated', 'DESC');
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+
+        $qb->execute();
+
+        $choices = [];
+        while($row = $qb->fetchAssoc()) {
+            $choices[] = TopicPollChoiceEntity::createEntityFromDbRow($row);
+        }
+
+        return $choices;
+    }
+
+    public function getPollResponseById(string $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls_responses')
+            ->where('responseId = ?', [$id])
+            ->execute();
+
+        return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

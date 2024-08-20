@@ -6,7 +6,9 @@ use App\Constants\SuggestionCategory;
 use App\Constants\SuggestionStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\UserSuggestionEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -433,9 +435,22 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $adminOnly = true;
         }
 
-        $app->suggestionRepository->createNewComment($userId, $suggestionId, $text, $adminOnly);
+        try {
+            $app->suggestionRepository->beginTransaction();
 
-        $this->flashMessage('Comment posted.', 'success');
+            $commentId = $app->entityManager->generateEntityId(EntityManager::SUGGESTION_COMMENTS);
+
+            $app->suggestionRepository->createNewComment($commentId, $userId, $suggestionId, $text, $adminOnly);
+
+            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Comment posted.', 'success');
+        } catch(AException $e) {
+            $app->suggestionRepository->rollback();
+
+            $this->flashMessage('Could not create comment. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 
@@ -462,9 +477,20 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                 $values['status'] = $status;
             }
             
-            $app->suggestionRepository->updateSuggestion($suggestionId, $userId, $values, $user);
+            try {
+                $app->suggestionRepository->beginTransaction();
 
-            $this->flashMessage('Updated suggestion.', 'success');
+                $app->suggestionRepository->updateSuggestion($suggestionId, $userId, $values, $user);
+
+                $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Updated suggestion.', 'success');
+            } catch(AException $e) {
+                $app->suggestionRepository->rollback();
+
+                $this->flashMessage('Could not update suggestion. Reason: ' . $e->getMessage(), 'error');
+            }
+
             $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
         } else {
             $statuses = SuggestionStatus::getAll();
@@ -531,9 +557,20 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $hidden = $this->httpGet('hidden');
         $suggestionId = $this->httpGet('suggestionId');
 
-        $app->suggestionRepository->updateComment($commentId, ['adminOnly' => $hidden]);
+        try {
+            $app->suggestionRepository->beginTransaction();
 
-        $this->flashMessage('Comment ' . (($hidden == '1') ? 'hidden' : 'made public') . '.', 'success');
+            $app->suggestionRepository->updateComment($commentId, ['adminOnly' => $hidden]);
+
+            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Comment ' . (($hidden == '1') ? 'hidden' : 'made public') . '.', 'success');
+        } catch(AException $e) {
+            $app->suggestionRepository->rollback();
+
+            $this->flashMessage('Could not update comment. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 
@@ -543,9 +580,20 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $commentId = $this->httpGet('commentId');
         $suggestionId = $this->httpGet('suggestionId');
 
-        $app->suggestionRepository->deleteComment($commentId);
+        try {
+            $app->suggestionRepository->beginTransaction();
 
-        $this->flashMessage('Comment deleted.', 'success');
+            $app->suggestionRepository->deleteComment($commentId);
+
+            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Comment deleted.', 'success');
+        } catch(AException $e) {
+            $app->suggestionRepository->rollback();
+
+            $this->flashMessage('Could not delete comment. Reason: ' . $e->getMessage(), 'error');
+        }
+
         $this->redirect(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $suggestionId]);
     }
 }

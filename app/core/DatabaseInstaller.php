@@ -34,16 +34,17 @@ class DatabaseInstaller {
 
         $tables = [
             'users' => [
-                'userId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'userId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'username' => 'VARCHAR(256) NOT NULL',
                 'password' => 'VARCHAR(256) NOT NULL',
                 'loginHash' => 'VARCHAR(256) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'email' => 'VARCHAR(256) NULL',
-                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0'
+                'isAdmin' => 'INT(2) NOT NULL DEFAULT 0',
+                'canLogin' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'topics' => [
-                'topicId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'topicId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
@@ -55,48 +56,48 @@ class DatabaseInstaller {
                 'rawTags' => 'TEXT NOT NULL'
             ],
             'posts' => [
-                'postId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'topicId' => 'INT(32) NOT NULL',
-                'authorId' => 'INT(32) NOT NULL',
+                'postId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL',
-                'tag' => 'VARCHAR(256) NOT NULL'
+                'tag' => 'VARCHAR(256) NOT NULL',
+                'dateAvailable' => 'DATETIME NOT NULL',
+                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1'
             ],
             'post_likes' => [
-                'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'postId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL'
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL'
             ],
             'post_comments' => [
-                'commentId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'postId' => 'INT(32) NOT NULL',
-                'authorId' => 'INT(32) NOT NULL',
+                'commentId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'likes' => 'INT(32) NOT NULL DEFAULT 0',
-                'parentCommentId' => 'INT(32) NULL',
+                'parentCommentId' => 'VARCHAR(256) NULL',
                 'isDeleted' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateDeleted' => 'DATETIME NULL'
             ],
             'post_comment_likes' => [
-                'likeId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'commentId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL'
+                'commentId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL'
             ],
             'system_status' => [
-                'systemId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'systemId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'name' => 'VARCHAR(256) NOT NULL',
                 'status' => 'INT(4) NOT NULL',
                 'description' => 'TEXT NULL',
                 'dateUpdated' => 'DATETIME NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()'
             ],
             'user_suggestions' => [
-                'suggestionId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'userId' => 'INT(32) NOT NULL',
+                'suggestionId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'category' => 'VARCHAR(256) NOT NULL',
@@ -104,18 +105,18 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'user_suggestion_comments' => [
-                'commentId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'suggestionId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'commentId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'suggestionId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
                 'adminOnly' => 'INT(2) NOT NULL DEFAULT 0',
                 'statusChange' => 'INT(2) NOT NULL DEFAULT 0',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'reports' => [
-                'reportId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'userId' => 'INT(32) NOT NULL',
-                'entityId' => 'INT(32) NOT NULL',
+                'reportId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'entityId' => 'VARCHAR(256) NOT NULL',
                 'entityType' => 'INT(4) NOT NULL',
                 'category' => 'INT(4) NOT NULL',
                 'description' => 'TEXT NOT NULL',
@@ -124,45 +125,45 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'user_prosecutions' => [
-                'prosecutionId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'userId' => 'INT(32) NOT NULL',
+                'prosecutionId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'reason' => 'TEXT NOT NULL',
                 'type' => 'INT(4) NOT NULL',
                 'startDate' => 'DATETIME NULL DEFAULT current_timestamp()',
                 'endDate' => 'DATETIME NULL'
             ],
             'user_prosecutions_history' => [
-                'historyId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'prosecutionId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'historyId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'prosecutionId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'commentText' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'groups' => [
-                'groupId' => 'INT(32) NOT NULL',
+                'groupId' => 'INT(32) NOT NULL PRIMARY KEY',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL'
             ],
             'group_membership' => [
-                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'groupId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'groupId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'banned_words' => [
-                'wordId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'wordId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'word' => 'VARCHAR(256)',
-                'authorId' => 'INT(32) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_membership' => [
-                'membershipId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'userId' => 'INT(32) NOT NULL',
-                'topicId' => 'INT(32) NOT NULL',
+                'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'role' => 'INT(4) NOT NULL DEFAULT 1'
             ],
             'system_services' => [
-                'serviceId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'serviceId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'scriptPath' => 'VARCHAR(256) NOT NULL',
                 'dateStarted' => 'DATETIME NULL',
@@ -170,16 +171,16 @@ class DatabaseInstaller {
                 'status' => 'INT(4) NOT NULL DEFAULT 1'
             ],
             'admin_dashboard_widgets_graph_data' => [
-                'dataId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
+                'dataId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'mostActiveTopics' => 'TEXT NOT NULL',
                 'mostActivePosts' => 'TEXT NOT NULL',
                 'mostActiveUsers' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_polls' => [
-                'pollId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'topicId' => 'INT(32) NOT NULL',
-                'authorId' => 'INT(32) NOT NULL',
+                'pollId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'choices' => 'TEXT NOT NULL',
@@ -188,21 +189,21 @@ class DatabaseInstaller {
                 'timeElapsedForNextVote' => 'VARCHAR(256) NOT NULL'
             ],
             'topic_polls_responses' => [
-                'responseId' => 'INT(32) NOT NULL PRIMARY KEY AUTO_INCREMENT',
-                'pollId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'responseId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'pollId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'choice' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_invites' => [
-                'topicId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NOT NULL'
             ],
             'notifications' => [
-                'notificationId' => 'VARCHAR(256)',
-                'userId' => 'INT(32) NOT NULL',
+                'notificationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'type' => 'INT(4) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'message' => 'TEXT NOT NULL',
@@ -210,11 +211,52 @@ class DatabaseInstaller {
                 'dateSeen' => 'DATETIME NULL'
             ],
             'post_file_uploads' => [
-                'uploadId' => 'VARCHAR(256)',
-                'postId' => 'INT(32) NOT NULL',
-                'userId' => 'INT(32) NOT NULL',
+                'uploadId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
                 'filename' => 'VARCHAR(256) NOT NULL',
                 'filepath' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'transaction_log' => [
+                'transactionId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'methodName' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_following' => [
+                'followId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'mail_queue' => [
+                'mailId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'recipient' => 'VARCHAR(256) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'content' => 'TEXT NOT NULL',
+                'isSent' => 'INT(2) NOT NULL DEFAULT 0',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_registration_links' => [
+                'registrationId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'link' => 'VARCHAR(256) NOT NULL',
+                'isActive' => 'INT(2) NOT NULL DEFAULT 1',
+                'dateExpire' => 'DATETIME NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_forgotten_password_links' => [
+                'linkId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'isActive' => 'INT(2) NOT NULL DEFAULT 1',
+                'dateExpire' => 'DATETIME NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_post_pins' => [
+                'pinId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'postId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
@@ -246,43 +288,96 @@ class DatabaseInstaller {
         $this->logger->info('Creating indexes.', __METHOD__);
 
         $indexes = [
-            'topic_polls_responses' => [
-                'pollId'
+            'banned_words' => [
+                'word'
+            ],
+            'banned_words' => [
+                'authorId'
+            ],
+            'group_membership' => [
+                'userId'
+            ],
+            'notifications' => [
+                'userId'
+            ],
+            'posts' => [
+                'topicId',
+                'dateAvailable',
+                'isDeleted',
+                'isSuggestable'
+            ],
+            'post_comments' => [
+                'postId',
+                'isDeleted',
+                'parentCommentId'
+            ],
+            'post_comment_likes' => [
+                'commentId',
+                'userId'
+            ],
+            'post_file_uploads' => [
+                'postId'
+            ],
+            'post_likes' => [
+                'postId',
+                'userId'
+            ],
+            'reports' => [
+                'status'
+            ],
+            'topics' => [
+                'title',
+                'description'
+            ],
+            'topics' => [
+                'isDeleted'
+            ],
+            'topic_invites' => [
+                'userId',
+                'dateValid'
+            ],
+            'topic_membership' => [
+                'topicId',
+                'userId'
+            ],
+            'topic_polls' => [
+                'topicId',
+                'dateValid'
             ],
             'topic_polls_responses' => [
                 'pollId',
                 'userId',
                 'dateCreated'
             ],
-            'topic_polls' => [
+            'topic_post_pins' => [
                 'topicId'
             ],
-            'topic_polls' => [
-                'topicId',
-                'dateValid'
+            'transaction_log' => [
+                'dateCreated'
             ],
-            'posts' => [
-                'topicId',
-                'isDeleted'
+            'user_following' => [
+                'authorId',
+                'userId'
             ],
-            'post_comment_likes' => [
-                'userId',
-                'commentId'
+            'user_forgotten_password_links' => [
+                'userId'
             ],
             'user_prosecutions' => [
                 'userId'
             ],
-            'post_likes' => [
-                'postId'
+            'user_prosecutions_history' => [
+                'prosecutionId',
+                'userId'
             ],
-            'post_comments' => [
-                'postId',
-                'isDeleted'
+            'user_registration_links' => [
+                'userId'
             ],
-            'post_comments' => [
-                'postId',
-                'parentCommentId',
-                'isDeleted'
+            'user_suggestions' => [
+                'userId'
+            ],
+            'user_suggestion_comments' => [
+                'suggestionId',
+                'userId'
             ]
         ];
 
@@ -320,21 +415,29 @@ class DatabaseInstaller {
         $this->logger->info('Creating users.', __METHOD__);
 
         $users = [
-            'admin' => 'admin'
+            'admin' => 'admin',
+            'service_user' => 'service_user'
         ];
 
         $admins = [
+            'admin',
+            'service_user'
+        ];
+
+        $canLoginArray = [
             'admin'
         ];
 
         $i = 0;
         foreach($users as $username => $password) {
             $password = password_hash($password, PASSWORD_BCRYPT);
+            $userId = HashManager::createEntityId();
 
             $isAdmin = in_array($username, $admins) ? '1' : '0';
+            $canLogin = in_array($username, $canLoginArray) ? '1' : '0';
 
-            $sql = 'INSERT INTO users (`username`, `password`, `isAdmin`)
-                    SELECT \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . '
+            $sql = 'INSERT INTO users (`userId`, `username`, `password`, `isAdmin`, `canLogin`)
+                    SELECT \'' . $userId . '\', \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', ' . $canLogin . '
                     WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
 
             $this->db->query($sql);
@@ -354,8 +457,10 @@ class DatabaseInstaller {
 
         $i = 0;
         foreach($systems as $name => $status) {
-            $sql = 'INSERT INTO system_status (`name`, `status`)
-                    SELECT \'' . $name . '\', \'' . $status . '\'
+            $id = HashManager::createEntityId();
+
+            $sql = 'INSERT INTO system_status (`systemId`, `name`, `status`)
+                    SELECT \'' . $id . '\', \'' . $name . '\', \'' . $status . '\'
                     WHERE NOT EXISTS (SELECT 1 FROM system_status WHERE name = \'' . $name . '\')';
 
             $this->db->query($sql);
@@ -424,9 +529,11 @@ class DatabaseInstaller {
         ];
 
         foreach($groups as $groupId) {
-            $sql = "INSERT INTO group_membership (`userId`, `groupId`)
-                    SELECT '$userId', '$groupId'
-                    WHERE NOT EXISTS (SELECT 1 FROM group_membership WHERE userId = $userId AND groupId = $groupId)";
+            $membershipId = HashManager::createEntityId();
+
+            $sql = "INSERT INTO group_membership (`membershipId`, `userId`, `groupId`)
+                    SELECT '$membershipId', '$userId', '$groupId'
+                    WHERE NOT EXISTS (SELECT 1 FROM group_membership WHERE membershipId = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
 
             $this->db->query($sql);
         }
@@ -440,13 +547,17 @@ class DatabaseInstaller {
         $services = [
             'AdminDashboardIndexing' => 'AdminDashboardIndexing.php',
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
-            'OldNotificationRemoving' => 'OldNotificationRemoving.php'
+            'OldNotificationRemoving' => 'OldNotificationRemoving.php',
+            'Mail' => 'MailService.php',
+            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemovingService.php'
         ];
 
         foreach($services as $title => $path) {
-            $sql = "INSERT INTO system_services (`title`, `scriptPath`)
-                    SELECT '$title', '$path'
-                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE title = '$title' AND scriptPath = '$path')";
+            $id = HashManager::createEntityId();
+
+            $sql = "INSERT INTO system_services (`serviceId`, `title`, `scriptPath`)
+                    SELECT '$id', '$title', '$path'
+                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE serviceId = '$id' AND title = '$title' AND scriptPath = '$path')";
 
             $this->db->query($sql);
         }

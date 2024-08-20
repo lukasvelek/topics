@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Exceptions\AException;
 use App\Modules\APresenter;
 
 abstract class AUserPresenter extends APresenter {
@@ -17,7 +18,17 @@ abstract class AUserPresenter extends APresenter {
         global $app;
 
         if($this->httpGet('notificationId') !== null && $this->httpGet('removeNotification') == '1') {
-            $app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
+            try {
+                $app->notificationRepository->beginTransaction();
+
+                $app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
+
+                $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+            } catch(AException $e) {
+                $app->notificationRepository->rollback();
+                
+                $this->flashMessage('Could not set notification as seen. Reason: ' . $e->getMessage(), 'error');
+            }
         }
     }
 }

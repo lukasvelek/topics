@@ -10,7 +10,7 @@ use App\Repositories\PostRepository;
 use Exception;
 
 class PostLikeEqualizerService extends AService {
-    private const POST_BATCH_SIZE = 100;
+    private const POST_BATCH_SIZE = 1000;
 
     private PostRepository $pr;
 
@@ -28,7 +28,13 @@ class PostLikeEqualizerService extends AService {
 
             $this->serviceStop();
         } catch(AException|Exception $e) {
+            try {
+                $this->serviceStop();
+            } catch(AException|Exception $e2) {}
+            
             $this->logError($e->getMessage());
+            
+            throw $e;
         }
     }
 
@@ -41,11 +47,18 @@ class PostLikeEqualizerService extends AService {
         while($posts = $this->getPosts(self::POST_BATCH_SIZE, (self::POST_BATCH_SIZE * $offset))) {
             $this->logInfo(sprintf('Processing batch #%d with %d posts.', ($offset + 1), count($posts)));
 
+            $postIds = [];
             foreach($posts as $post) {
-                $likes = $this->getPostLikes($post->getId());
+                $postIds[] = $post->getId();
+            }
+
+            $likesArray = $this->getPostLikes($postIds);
+
+            foreach($posts as $post) {
+                $likes = $likesArray[$post->getId()];
 
                 if($post->getLikes() > $likes) {
-                    $this->logInfo(sprintf('Post #%d has like mismatch. Likes in the `posts` table: %d and likes in the `post_likes` table: %d.', $post->getId(), $post->getLikes(), $likes));
+                    $this->logInfo(sprintf('Post #%s has like mismatch. Likes in the `posts` table: %d and likes in the `post_likes` table: %d.', $post->getId(), $post->getLikes(), $likes));
                     $this->updateLikes($post->getId(), $likes);
                 }
             }
@@ -64,12 +77,13 @@ class PostLikeEqualizerService extends AService {
         return $this->pr->getPostsForGrid($limit, $offset);
     }
 
-    private function getPostLikes(int $postId) {
-        return $this->pr->getLikeCount($postId);
+    private function getPostLikes(array $postIds) {
+        return $this->pr->getBulkLikeCount($postIds);
     }
 
-    private function updateLikes(int $postId, int $likes) {
-        $this->pr->updatePost($postId, ['likes' => $likes]);
+    private function updateLikes(string $postId, int $likes) {
+        $this->logger->info('Updating post #' . $postId . '. Setting likes to ' . $likes . '.', __METHOD__);
+        return $this->pr->updatePost($postId, ['likes' => $likes]);
     }
 
     private function invalidateCache() {
