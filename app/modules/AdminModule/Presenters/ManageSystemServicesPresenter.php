@@ -76,23 +76,41 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
         });
         $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
-            if(($sse->getStatus() == SystemServiceStatus::RUNNING) || ($sse->getDateStarted() === null) || ($sse->getDateEnded() === null)) {
-                return '-';
-            } else {
-                $end = strtotime($sse->getDateEnded());
-                $start = strtotime($sse->getDateStarted());
+            $text = '-';
+            $color = 'black';
+            $title = '';
 
-                $diff = $end - $start;
+            if($sse->getStatus() == SystemServiceStatus::RUNNING) {
+                if($sse->getDateStarted() !== null) {
+                    $end = time();
+                    $start = strtotime($sse->getDateStarted());
 
-                $text = '';
-                try {
-                    $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
-                } catch(AException $e) {
-                    $text = '-';
+                    $diff = $end - $start;
+
+                    try {
+                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+                        $color = 'orange';
+                        $title = 'As of now';
+                    } catch(AException $e) {}
                 }
+            } else {
+                if($sse->getDateStarted() !== null && $sse->getDateEnded() !== null) {
+                    $end = strtotime($sse->getDateEnded());
+                    $start = strtotime($sse->getDateStarted());
 
-                return $text;
+                    $diff = $end - $start;
+
+                    try {
+                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+                    } catch(AException $e) {}
+                }
             }
+
+            $cell->setTextColor($color);
+            $cell->setValue($text);
+            $cell->setTitle($title);
+
+            return $cell;
         });
         $gb->addAction(function(SystemServiceEntity $sse) {
             $text = '-';
