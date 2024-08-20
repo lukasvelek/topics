@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Core\Datetypes\DateTime;
-use App\Core\HashManager;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
