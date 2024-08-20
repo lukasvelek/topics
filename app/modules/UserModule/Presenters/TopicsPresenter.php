@@ -287,7 +287,7 @@ class TopicsPresenter extends AUserPresenter {
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
         $postCount = $app->postRepository->getPostCountForTopicId($topicId, !$topic->isDeleted());
 
-        if($offset == 0) {
+        if(isset($offset) && $offset == 0) {
             $pinnedPosts = $app->topicRepository->getPinnedPostIdsForTopicId($topicId);
 
             $i = 0;
