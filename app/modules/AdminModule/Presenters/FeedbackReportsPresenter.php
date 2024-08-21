@@ -213,7 +213,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm;
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script>';
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [
