@@ -491,7 +491,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:FeedbackReports', 'action' => 'resolutionForm', 'isSubmit' => '1', 'reportId' => $reportId])
                 ->addTextArea('comment', 'Resolution comment:', null, true)
-                ->addSubmit('Close report')
+                ->addSubmit('Close report', false, true)
             ;
         
             $this->saveToPresenterCache('form', $fb);

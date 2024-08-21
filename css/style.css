@@ -403,7 +403,7 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     height: 36px;
 }
 
-#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button, #followers-list-load-more-link button, #follows-list-load-more-link button, #posts-load-more-link button {
+#post-comment-form #formSubmit, #poll-choice-form #formSubmit, #post-comments-load-more-link button, #notification-links button, #followers-list-load-more-link button, #follows-list-load-more-link button, #posts-load-more-link button, #form #formSubmit {
     background-color: rgba(0, 0, 0, 0.75);
 
     color: white;
@@ -414,7 +414,7 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     border-radius: 10px;
 }
 
-#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover, #followers-list-load-more-link button:hover, #follows-list-load-more-link button:hover, #posts-load-more-link button:hover {
+#post-comment-form #formSubmit:hover, #poll-choice-form #formSubmit:hover, #post-comments-load-more-link button:hover, #notification-links button:hover, #followers-list-load-more-link button:hover, #follows-list-load-more-link button:hover, #posts-load-more-link button:hover, #form #formSubmit:hover {
     background-color: rgb(50, 50, 50);
     border: 1px solid rgb(50, 50, 50);
 }
@@ -423,6 +423,12 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     width: 150px;
 
     padding: 5px;
+}
+
+#form #formSubmit {
+    width: 100%;
+
+    height: 40px;
 }
 
 #post-comment-form textarea {

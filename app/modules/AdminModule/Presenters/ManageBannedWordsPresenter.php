@@ -106,7 +106,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             $fb = new FormBuilder();
             $fb ->setAction(['page' => 'AdminModule:ManageBannedWords', 'action' => 'newForm', 'isSubmit' => '1'])
                 ->addTextInput('word', 'Word to ban:', null, true)
-                ->addSubmit('Add')
+                ->addSubmit('Add', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

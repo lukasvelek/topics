@@ -117,7 +117,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageSystemStatus', 'action' => 'form', 'isSubmit' => '1', 'systemId' => $systemId])
                 ->addSelect('status', 'Status:', $statusArray, true)
                 ->addTextArea('description', 'Description:', $system->getDescription())
-                ->addSubmit('Save')
+                ->addSubmit('Save', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

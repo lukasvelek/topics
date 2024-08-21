@@ -527,7 +527,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'editForm', 'isSubmit' => '1', 'suggestionId' => $suggestionId])
                 ->addSelect('status', 'Status:', $statusOptions, true)
                 ->addSelect('category', 'Category:', $categoryOptions, true)
-                ->addSubmit('Save')
+                ->addSubmit('Save', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

@@ -581,7 +581,7 @@ class TopicsPresenter extends AUserPresenter {
             $fb->addCheckbox('suggestable', 'Can be suggested?', true);
         }
 
-        $fb ->addSubmit('Post')
+        $fb ->addSubmit('Post', false, true)
             ->setCanHaveFiles();
 
         $this->saveToPresenterCache('form', $fb);
@@ -745,7 +745,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextInput('tags', 'Tags:', null, true)
                 ->addLabel('Individual tags must be separated by commas - e.g.: technology, art, scifi ...', 'lbl_tags_1')
                 ->addCheckbox('private', 'Is private?')
-                ->addSubmit('Create topic');
+                ->addSubmit('Create topic', false, true);
 
             $this->saveToPresenterCache('form', $fb);
         }
@@ -1063,7 +1063,7 @@ class TopicsPresenter extends AUserPresenter {
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'reportForm', 'isSubmit' => '1', 'topicId' => $topicId])
                 ->addSelect('category', 'Category:', $categoryArray, true)
                 ->addTextArea('description', 'Additional notes:', null, true)
-                ->addSubmit('Send')
+                ->addSubmit('Send', false, true)
                 ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -1129,7 +1129,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextInput('topicTitle', 'Topic title:', null, true)
                 ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete topic')
-                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -1196,7 +1196,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
                 ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
-                ->addSubmit('Create')
+                ->addSubmit('Create', false, true)
             ;
 
             $fb->updateElement('choices', function(AElement $element) {

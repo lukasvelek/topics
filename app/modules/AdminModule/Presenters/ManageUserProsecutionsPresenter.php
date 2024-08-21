@@ -146,7 +146,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
                 ->addTextArea('reason', 'Reason:', null, true)
                 ->addPassword('password', 'Password:', null, true)
                 ->addPassword('passwordCheck', 'Password again:', null, true)
-                ->addSubmit('Remove ban')
+                ->addSubmit('Remove ban', false, true)
                 ->addJSHandler('js/UserUnbanFormHandler.js')
             ;
 

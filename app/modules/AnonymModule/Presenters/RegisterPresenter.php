@@ -67,7 +67,7 @@ class RegisterPresenter extends APresenter {
                 ->addPassword('password', 'Password:', null, true)
                 ->addPassword('passwordCheck', 'Password again:', null, true)
                 ->addEmailInput('email', 'Email:', null, true)
-                ->addSubmit('Register')
+                ->addSubmit('Register', false, true)
                 ->addJSHandler('js/UserRegistrationFormHandler.js')
             ;
 

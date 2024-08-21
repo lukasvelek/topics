@@ -189,8 +189,9 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
-    public function addButton(string $text, string $onclickAction) {
+    public function addButton(string $text, string $onclickAction, string $id = '') {
         $b = new Button($text, $onclickAction);
+        $b->id = $id;
 
         $this->elements['btn_' . HashManager::createHash()] = $b;
 

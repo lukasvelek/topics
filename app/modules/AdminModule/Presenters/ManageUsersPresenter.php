@@ -10,6 +10,7 @@ use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -146,7 +147,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'unsetAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Unset user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'');
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'', 'formSubmit');
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -203,7 +204,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Set user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -247,7 +248,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId])
                 ->addTextArea('description', 'Reason:', null, true)
                 ->addSubmit('Warn user \'' . $user->getUsername() .  '\'')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -310,7 +311,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
                 ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;
 
@@ -342,7 +343,9 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userRepository->beginTransaction();
 
-                $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+                $userId = $app->userRepository->createEntityId(EntityManager::USERS);
+
+                $app->userRepository->createNewUser($userId, $username, $password, $email, $isAdmin);
 
                 $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -362,7 +365,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addEmailInput('email', 'Email:', null, false)
                 ->addPassword('password', 'Password:', null, true)
                 ->addCheckbox('isAdmin', 'Administrator?')
-                ->addSubmit('Create')
+                ->addSubmit('Create', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

@@ -183,7 +183,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
                 ->addTextInput('usernameSearch', 'Username:', null, true)
                 ->addButton('Search', 'searchUsers(' . $app->currentUser->getId() . ', ' . $groupId . ')')
                 ->addSelect('user', 'User:', [], true)
-                ->addSubmit('Add user')
+                ->addSubmit('Add user', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -277,7 +277,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'isSubmit' => '1', 'groupId' => $groupId, 'userId' => $userId])
                 ->addSubmit('Remove user \'' . $user->getUsername() . ' from group \'' . $group->getTitle() . '\'')
-                ->addButton('&larr; Go back', 'location.href = \'?page=AdminModule:ManageGroups&action=listMembers&groupId=' . $groupId . '\';')
+                ->addButton('&larr; Go back', 'location.href = \'?page=AdminModule:ManageGroups&action=listMembers&groupId=' . $groupId . '\';', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);

@@ -44,7 +44,7 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
     
             $fb ->setAction($this->createURL('form'))
                 ->addTextInput('username', 'Username:', null, true)
-                ->addSubmit('Submit');
+                ->addSubmit('Submit', false, true);
     
             $this->saveToPresenterCache('form', $fb);
 
@@ -96,7 +96,7 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
             $fb ->setAction($this->createURL('changePasswordForm', ['linkId' => $linkId]))
                 ->addPassword('password', 'Password:', null, true)
                 ->addPassword('passwordCheck', 'Password again:', null, true)
-                ->addSubmit('Save')
+                ->addSubmit('Save', false, true)
                 ->addJSHandler('js/UserRegistrationFormHandler.js')
             ;
 
