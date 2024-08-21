@@ -16,7 +16,7 @@ class TopicTagEntity implements IRenderable {
         $this->color = $color;
         $this->bgColor = $bgColor;
 
-        $this->tag = 'span';
+        $this->tag = 'div';
         $this->parameters = [];
     }
 
@@ -28,7 +28,9 @@ class TopicTagEntity implements IRenderable {
         $this->parameters[] = 'border: 1px solid ' . $this->color;
         $this->parameters[] = 'border-radius: 10px';
         $this->parameters[] = 'padding: 5px';
-        $this->parameters[] = 'margin-right: 5px';
+        $this->parameters[] = 'margin: 5px';
+        
+        $this->parameters[] = 'text-align: center';
 
         $this->parameters[] = 'color: ' . $this->color;
         $this->parameters[] = 'background-color: ' . $this->bgColor;
@@ -37,7 +39,7 @@ class TopicTagEntity implements IRenderable {
     public function render() {
         $this->init();
         
-        $code = '<' . $this->tag . ' style="' . implode('; ', $this->parameters) . '">';
+        $code = '<' . $this->tag . ' class="col-md" style="' . implode('; ', $this->parameters) . '">';
 
         $code .= $this->text;
 

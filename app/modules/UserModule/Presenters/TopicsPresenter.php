@@ -130,14 +130,16 @@ class TopicsPresenter extends AUserPresenter {
 
         $tags = $topic->getTags();
 
-        $tagCode = '<div style="line-height: 2.5em">';
+        $tagCode = '<div style="line-height: 2.5em" class="row">';
+
+        $max = ceil(count($tags) / 2);
 
         $i = 0;
         foreach($tags as $tag) {
-            if($i == 3) {
+            if($i == $max) {
                 $i = 0;
 
-                $tagCode .= '<br>';
+                $tagCode .= '</div><div style="line-height: 2.5em" class="row">';
             }
 
             if($tag instanceof IRenderable) {
