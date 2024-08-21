@@ -21,6 +21,14 @@ class GridHelper {
     /** AdminModule:Feedback* */
     public const GRID_SUGGESTIONS = 'gridSuggestions';
     public const GRID_REPORTS = 'gridReports';
+    /** UserModule:TopicInvites */
+    public const GRID_TOPIC_INVITES = 'gridTopicInvites';
+    /** UserModule:TopicManagement */
+    public const GRID_USER_TOPIC_ROLES = 'gridUserTopicRoles';
+    public const GRID_TOPIC_POLLS = 'gridTopicPolls';
+    public const GRID_TOPIC_INVITES_ALL = 'gridTopicInvitesAll';
+    /** UserModule:Topics */
+    public const GRID_TOPIC_POSTS = 'gridTopicPosts';
 
     private Logger $logger;
     private array $gridPageData;
@@ -34,23 +42,15 @@ class GridHelper {
     }
 
     public function getGridPage(string $gridName, int $gridPage, array $customParams = []) {
-        $page = $this->loadGridPage($gridName, $customParams);
+        $page = $this->loadGridPageData($gridName, $customParams);
 
         if($page != $gridPage && $gridPage > -1) {
             $page = $gridPage;
 
-            $this->saveGridPage($gridName, $page, $customParams);
+            $this->saveGridPageData($gridName, $page, $customParams);
         }
 
         return $page;
-    }
-
-    public function loadGridPage(string $gridName, array $customParams = []) {
-        return $this->loadGridPageData($gridName, $customParams);
-    }
-
-    public function saveGridPage(string $gridName, int $page, array $customParams = []) {
-        return $this->saveGridPageData($gridName, $page, $customParams);
     }
 
     private function loadGridPageData(string $gridName, array $customParams) {

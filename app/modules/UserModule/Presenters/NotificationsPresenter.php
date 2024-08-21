@@ -4,7 +4,6 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
-use App\UI\LinkBuilder;
 
 class NotificationsPresenter extends AUserPresenter {
     public function __construct() {

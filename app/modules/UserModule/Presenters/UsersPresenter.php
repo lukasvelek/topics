@@ -30,14 +30,6 @@ class UsersPresenter extends AUserPresenter {
         $reportLink = '<a class="post-data-link" href="?page=UserModule:Users&action=reportUser&userId=' . $userId . '">Report</a>';
 
         $this->saveToPresenterCache('reportLink', $reportLink);
-
-        /** ACTION HISTORY */
-        //$actionHistory = null;
-        /*$app->logger->stopwatch(function() use (&$actionHistory, $app, $userId) {
-            $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
-        }, 'App\\Managers\\ContentManager::getUserActionHistory');*/
-
-        //$this->saveToPresenterCache('actionHistory', $actionHistory);
         
         $followerCount = $app->userFollowingManager->getFollowerCount($userId);
         $this->saveToPresenterCache('followerCount', $followerCount);

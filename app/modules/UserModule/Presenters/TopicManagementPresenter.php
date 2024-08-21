@@ -10,6 +10,7 @@ use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -18,8 +19,14 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicManagementPresenter extends AUserPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleManageRoles() {
@@ -45,7 +52,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUserRolesGrid(0, \'' . $topicId . '\')');
+        $this->addScript('getUserRolesGrid(-1, \'' . $topicId . '\')');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
 
@@ -68,8 +75,10 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_TOPIC_ROLES, $gridPage, [$topicId]);
 
         $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
         $allMembersCount = count($app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
@@ -218,7 +227,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getPollGrid(0, \'' . $topicId . '\');');
+        $this->addScript('getPollGrid(-1, \'' . $topicId . '\');');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
@@ -237,9 +246,11 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
 
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POLLS, $gridPage, [$topicId]);
 
         if($app->actionAuthorizator->canSeeAllTopicPolls($app->currentUser->getId(), $topicId)) {
             $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
@@ -372,7 +383,7 @@ class TopicManagementPresenter extends AUserPresenter {
             ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(0, ' . $topicId . ')');
+        $this->addScript('getInvitesGrid(-1, ' . $topicId . ')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link') . '&nbsp;',
@@ -392,9 +403,11 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES_ALL, $gridPage, [$topicId]);
 
         $invites = $app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
         $inviteCount = count($app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
