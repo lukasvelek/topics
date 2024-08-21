@@ -211,21 +211,21 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
         switch($filter) {
             case 'topics':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
                 $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
                 break;
 
             case 'posts':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
                 break;
 
             case 'comments':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</b>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</b>&nbsp;';
                 break;
         }
 

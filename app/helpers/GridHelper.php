@@ -8,6 +8,7 @@ use App\Logger\Logger;
 class GridHelper {
     private const NAMESPACE = 'gridPageData';
 
+    /** AdminModule:Manage* */
     public const GRID_TRANSACTION_LOG = 'gridTransactionLog';
     public const GRID_USERS = 'gridUsers';
     public const GRID_USER_PROSECUTION_LOG = 'gridUserProsecutionLog';
@@ -17,6 +18,9 @@ class GridHelper {
     public const GRID_GROUPS = 'gridGroups';
     public const GRID_DELETED_CONTENT = 'gridDeletedContent';
     public const GRID_BANNED_WORDS = 'gridBannedWords';
+    /** AdminModule:Feedback* */
+    public const GRID_SUGGESTIONS = 'gridSuggestions';
+    public const GRID_REPORTS = 'gridReports';
 
     private Logger $logger;
     private array $gridPageData;

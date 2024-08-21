@@ -8,6 +8,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\UserSuggestionEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -17,6 +18,8 @@ use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class FeedbackSuggestionsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('FeedbackSuggestionsPresenter', 'Suggestions');
 
@@ -30,14 +33,18 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
         }
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function actionSuggestionsListGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_SUGGESTIONS, $gridPage, [$filterType]);
 
         $gridSize = $gridSize = $app->getGridSize();
 
@@ -78,7 +85,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('category', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
-            $a->onClick('getSuggestionsGrid(0, \'category\', \'' . $e->getCategory() . '\')')
+            $a->onClick('getSuggestionsGrid(-1, \'category\', \'' . $e->getCategory() . '\')')
                 ->text(SuggestionCategory::toString($e->getCategory()))
                 ->class('grid-link')
                 ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
@@ -90,7 +97,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('status', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
-            $a->onClick('getSuggestionsGrid(0, \'status\', \'' . $e->getStatus() . '\')')
+            $a->onClick('getSuggestionsGrid(-1, \'status\', \'' . $e->getStatus() . '\')')
                 ->text(SuggestionStatus::toString($e->getStatus()))
                 ->class('grid-link')
                 ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
@@ -104,7 +111,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             $a = HTML::a();
 
-            $a->onClick('getSuggestionsGrid(0, \'user\', \'' . $e->getUserId() . '\')')
+            $a->onClick('getSuggestionsGrid(-1, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
                 ->class('grid-link')
                 ->href('#')
