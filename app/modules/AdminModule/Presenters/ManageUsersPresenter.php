@@ -10,6 +10,7 @@ use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -18,6 +19,8 @@ use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
      
@@ -26,6 +29,8 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
 
         global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
 
         if(!$app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
             $this->flashMessage('You are not authorized to visit this section.');
@@ -36,9 +41,10 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function actionLoadUsersGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USERS, $gridPage);
 
         $userCount = $app->userRepository->getUsersCount();
         $lastPage = ceil($userCount / $gridSize);
@@ -89,7 +95,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUsers(0)');
+        $this->addScript('getUsers(-1)');
     }
 
     public function renderList() {

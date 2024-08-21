@@ -54,13 +54,11 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
 
         $arb->setURL($this->createURL('createGrid'))
             ->setMethod()
-            ->setHeader(['gridPage' => '_page'])
             ->setFunctionName('createGrid')
-            ->setFunctionArguments(['_page'])
             ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
-        $this->addScript('createGrid(0)');
+        $this->addScript('createGrid()');
     }
 
     public function renderList() {}

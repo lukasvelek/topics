@@ -8,7 +8,7 @@ class GroupMembershipEntity implements ICreatableFromRow {
     private string $userId;
     private string $dateCreated;
 
-    public function __construct(string $id, int $groupId, int $userId, string $dateCreated) {
+    public function __construct(string $id, int $groupId, string $userId, string $dateCreated) {
         $this->id = $id;
         $this->groupId = $groupId;
         $this->userId = $userId;

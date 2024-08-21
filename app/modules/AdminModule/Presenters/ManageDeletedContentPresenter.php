@@ -8,28 +8,37 @@ use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageDeletedContentPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageDeletedContentPresenter', 'Deleted content management');
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
     
     public function actionListGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $filter = $this->httpGet('gridFilter');
 
         $gridSize = $gridSize = $app->getGridSize();
         $lastPage = null;
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);
 
         $gb = new GridBuilder();
 
@@ -196,7 +205,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getDeletedContent(0, \'' . $filter . '\')');
+        $this->addScript('getDeletedContent(-1, \'' . $filter . '\')');
 
         $links = [];
 

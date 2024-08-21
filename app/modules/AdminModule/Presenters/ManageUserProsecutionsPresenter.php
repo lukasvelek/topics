@@ -8,6 +8,7 @@ use App\Entities\UserProsecutionEntity;
 use App\Entities\UserProsecutionHistoryEntryEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -15,6 +16,8 @@ use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageUserProsecutionsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageUserProsecutionsPresenter', 'Manage user prosecutions');
 
@@ -23,6 +26,8 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         });
 
         global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
 
         if(!$app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
             $this->flashMessage('You are not authorized to visit this section.');
@@ -33,9 +38,10 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     public function actionProsecutionGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_PROSECUTIONS, $gridPage);
 
         $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
         $lastPage = ceil($prosecutionCount / $gridSize);
@@ -89,7 +95,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             ->setHeader(['gridPage' => '_page']);
 
         $this->addScript($arb->build());
-        $this->addScript('getUserProsecutions(0)');
+        $this->addScript('getUserProsecutions(-1)');
 
         $links = [
             LinkBuilder::createSimpleLink('Prosecution log', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'logList'], 'post-data-link')
@@ -163,9 +169,10 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     public function actionProsecutionLogGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_PROSECUTION_LOG, $gridPage);
 
         $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
         $lastPage = ceil($historyEntriesCount / $gridSize);
@@ -198,7 +205,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getProsecutionLog(0)');
+        $this->addScript('getProsecutionLog(-1)');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], 'post-data-link')

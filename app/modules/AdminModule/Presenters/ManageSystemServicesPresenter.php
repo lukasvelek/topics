@@ -8,12 +8,15 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\SystemServiceEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\GridBuilder\Row;
 use App\UI\LinkBuilder;
 
 class ManageSystemServicesPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageSystemServicesPresenter', 'Manage system services');
 
@@ -22,6 +25,8 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         });
 
         global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
 
         if(!$app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
             $this->flashMessage('You are not authorized to visit this section.');
@@ -40,7 +45,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getServicesGrid(0)');
+        $this->addScript('getServicesGrid(-1)');
     }
 
     public function renderList() {}
@@ -48,8 +53,10 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     public function actionLoadServicesGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_SYSTEM_SERVICES, $gridPage);
 
         $services = $app->systemServicesRepository->getAllServices();
         $count = count($services);
