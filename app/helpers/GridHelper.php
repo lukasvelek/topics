@@ -29,6 +29,7 @@ class GridHelper {
     public const GRID_TOPIC_INVITES_ALL = 'gridTopicInvitesAll';
     /** UserModule:Topics */
     public const GRID_TOPIC_POSTS = 'gridTopicPosts';
+    public const GRID_TOPIC_POST_CONCEPTS = 'gridTopicPostConcepts';
 
     private Logger $logger;
     private array $gridPageData;

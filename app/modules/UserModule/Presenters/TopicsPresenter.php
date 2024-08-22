@@ -9,6 +9,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Entities\PostConceptEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
@@ -25,6 +26,7 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder\DefaultGridReducer;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
@@ -230,6 +232,8 @@ class TopicsPresenter extends AUserPresenter {
         if($app->actionAuthorizator->canManageTopicPosts($app->currentUser->getId(), $topic)) {
             $links[] = LinkBuilder::createSimpleLink('Post list', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link');
         }
+
+        $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
@@ -1606,6 +1610,74 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
+    }
+
+    public function handleListPostConcepts() {
+        $filter = $this->httpGet('filter');
+        $topicId = $this->httpGet('topicId');
+
+        $links = [];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getPostConceptsGrid')
+            ->setHeader(['gridPage' => '_page', 'filter' => '_filter', 'topicId' => '_topicId'])
+            ->setFunctionName('getPostConceptsGrid')
+            ->setFunctionArguments(['_page', '_filter', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getPostConceptsGrid(-1, \'' . $filter . '\', \'' . $topicId . '\')');
+    }
+
+    public function renderListPostConcepts() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetPostConceptsGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+        $filter = $this->httpGet('filter');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POST_CONCEPTS, $gridPage, [$filter]);
+
+        $gridSize = $app->getGridSize();
+
+        $postConcepts = [];
+        $totalCount = 0;
+
+        if($filter == 'my') {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, 0, 0));
+        } else {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid(null, $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid(null, $topicId, 0, 0));
+        }
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $grid = new GridBuilder();
+
+        $grid->addDataSource($postConcepts);
+        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created']);
+        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
+        });
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId()]), 'grid-link');
+        });
+
+        $reducer = $app->getGridReducer();
+        $reducer->applyReducer($grid);
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
     }
 }
 

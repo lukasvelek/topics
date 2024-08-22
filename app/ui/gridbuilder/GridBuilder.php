@@ -62,6 +62,10 @@ class GridBuilder {
         $this->idElement = 'gridbuilder-grid';
     }
 
+    public function getColumns() {
+        return $this->columns;
+    }
+
     public function setIdElement(string $idElement) {
         $this->idElement = $idElement;
     }

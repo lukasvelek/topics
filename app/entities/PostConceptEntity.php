@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class PostConceptEntity {
+class PostConceptEntity implements ICreatableFromRow {
     private string $conceptId;
     private string $authorId;
     private string $topicId;
@@ -39,6 +39,13 @@ class PostConceptEntity {
 
     public function getDateCreated() {
         return $this->dateCreated;
+    }
+
+    public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
+        return new self($row['conceptId'], $row['authorId'], $row['topicId'], $row['postData'], $row['dateCreated']);
     }
 }
 
