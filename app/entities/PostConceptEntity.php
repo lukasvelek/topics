@@ -8,13 +8,15 @@ class PostConceptEntity implements ICreatableFromRow {
     private string $topicId;
     private string $postData;
     private string $dateCreated;
+    private string $dateUpdated;
 
-    public function __construct(string $conceptId, string $authorId, string $topicId, string $postData, string $dateCreated) {
+    public function __construct(string $conceptId, string $authorId, string $topicId, string $postData, string $dateCreated, string $dateUpdated) {
         $this->conceptId = $conceptId;
         $this->authorId = $authorId;
         $this->topicId = $topicId;
         $this->postData = $postData;
         $this->dateCreated = $dateCreated;
+        $this->dateUpdated = $dateUpdated;
     }
 
     public function getConceptId() {
@@ -41,11 +43,15 @@ class PostConceptEntity implements ICreatableFromRow {
         return $this->dateCreated;
     }
 
+    public function getDateUpdated() {
+        return $this->dateUpdated;
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['conceptId'], $row['authorId'], $row['topicId'], $row['postData'], $row['dateCreated']);
+        return new self($row['conceptId'], $row['authorId'], $row['topicId'], $row['postData'], $row['dateCreated'], $row['dateUpdated']);
     }
 }
 

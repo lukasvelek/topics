@@ -264,7 +264,8 @@ class DatabaseInstaller {
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'topicId' => 'VARCHAR(256) NOT NULL',
                 'postData' => 'TEXT NOT NULL',
-                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateUpdated' => 'DATETIME NULL'
             ]
         ];
 

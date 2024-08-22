@@ -548,6 +548,25 @@ class TopicsPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
+        $conceptId = $this->httpGet('conceptId');
+
+        $postTitle = null;
+        $postText = null;
+        $postTag = null;
+        $postDateAvailable = null;
+        $postSuggestable = true;
+
+        if($conceptId !== null) {
+            $concept = $app->postRepository->getPostConceptById($conceptId);
+
+            $data = $concept->getPostData();
+
+            $postTitle = $data['title'];
+            $postText = $data['text'];
+            $postTag = $data['tag'];
+            $postDateAvailable = strtotime($data['dateAvailable']);
+            $postSuggestable = $data['suggestable'];
+        }
 
         try {
             $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
@@ -567,21 +586,33 @@ class TopicsPresenter extends AUserPresenter {
         // form
         $postTags = [];
         foreach(PostTags::getAll() as $key => $text) {
-            $postTags[] = [
+            $tag = [
                 'value' => $key,
                 'text' => $text
             ];
+
+            if($key == $postTag) {
+                $tag['selected'] = 'selected';
+            }
+
+            $postTags[] = $tag;
         }
 
         $fb = new FormBuilder();
 
-        $now = new DateTime();
+        $now = new DateTime($postDateAvailable);
         $now->format('Y-m-d H:i');
         $now = $now->getResult();
 
-        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
-            ->addTextInput('title', 'Title:', null, true)
-            ->addTextArea('text', 'Text:', null, true)
+        $formUrl = ['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId];
+
+        if($conceptId !== null) {
+            $formUrl['conceptId'] = $conceptId;
+        }
+
+        $fb ->setAction($formUrl)
+            ->addTextInput('title', 'Title:', $postTitle, true)
+            ->addTextArea('text', 'Text:', $postText, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
             ->addFileInput('image', 'Image:');
 
@@ -590,7 +621,7 @@ class TopicsPresenter extends AUserPresenter {
         }
         
         if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
-            $fb->addCheckbox('suggestable', 'Can be suggested?', true);
+            $fb->addCheckbox('suggestable', 'Can be suggested?', $postSuggestable);
         }
 
         $fb ->setCanHaveFiles();
@@ -654,18 +685,33 @@ class TopicsPresenter extends AUserPresenter {
             try {
                 $app->topicRepository->beginTransaction();
 
-                $conceptId = $app->entityManager->generateEntityId(EntityManager::POST_CONCEPTS);
+                if($this->httpGet('conceptId') !== null) {
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
 
-                $postData = [
-                    'title' => $title,
-                    'text' => $text,
-                    'tag' => $tag,
-                    'dateAvailable' => $dateAvailable,
-                    'suggestable' => $suggestable
-                ];
-                $postData = serialize($postData);
+                    $now = DateTime::now();
 
-                $app->postRepository->createNewPostConcept($conceptId, $topicId, $userId, $postData);
+                    $app->postRepository->updatePostConcept($this->httpGet('conceptId'), ['postData' => $postData, 'dateUpdated' => $now]);
+                } else {
+                    $conceptId = $app->entityManager->generateEntityId(EntityManager::POST_CONCEPTS);
+
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
+
+                    $app->postRepository->createNewPostConcept($conceptId, $topicId, $userId, $postData);
+                }
 
                 $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -1665,7 +1711,7 @@ class TopicsPresenter extends AUserPresenter {
         $grid = new GridBuilder();
 
         $grid->addDataSource($postConcepts);
-        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created']);
+        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
         $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
         $grid->addAction(function(PostConceptEntity $pce) {
             return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');

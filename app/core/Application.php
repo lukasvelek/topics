@@ -351,6 +351,11 @@ class Application {
         return $this->cfg['IS_DEV'];
     }
 
+    /**
+     * Returns DefaultGridReducer instance
+     * 
+     * @return DefaultGridReducer DefaultGridReducer instance
+     */
     public function getGridReducer() {
         return new DefaultGridReducer($this->userRepository, $this->topicRepository, $this->postRepository);
     }

@@ -547,6 +547,17 @@ class PostRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function updatePostConcept(string $conceptId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('post_concepts')
+            ->set($data)
+            ->where('conceptId = ?', [$conceptId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
     public function getPostConceptsForGrid(?string $userId, string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -573,6 +584,17 @@ class PostRepository extends ARepository {
         }
 
         return $entities;
+    }
+
+    public function getPostConceptById(string $conceptId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_concepts')
+            ->where('conceptId = ?', [$conceptId])
+            ->execute();
+
+        return PostConceptEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 
