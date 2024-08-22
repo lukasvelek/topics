@@ -97,6 +97,25 @@ class DefaultGridReducer {
                         return LinkBuilder::createSimpleLink($entity->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $id], 'grid-link');
                     });
                     break;
+
+                case 'postId':
+                    $grid->addOnColumnRender($key, function(Cell $cell, object $object) use ($key, $actionName) {
+                        $id = null;
+                        if(method_exists($object, $actionName)) {
+                            $id = $object->$actionName();
+                        } else if(isset($object->$key)) {
+                            $id = $object->$key;
+                        }
+
+                        if($id === null) {
+                            return null;
+                        }
+                        
+                        $entity = $this->postRepository->getPostById($id);
+
+                        return LinkBuilder::createSimpleLink($entity->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $id], 'grid-link');
+                    });
+                    break;
             }
         }
     }
