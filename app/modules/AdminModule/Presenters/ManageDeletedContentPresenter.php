@@ -8,28 +8,37 @@ use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageDeletedContentPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageDeletedContentPresenter', 'Deleted content management');
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
     
     public function actionListGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $filter = $this->httpGet('gridFilter');
 
         $gridSize = $gridSize = $app->getGridSize();
         $lastPage = null;
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);
 
         $gb = new GridBuilder();
 
@@ -196,27 +205,27 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getDeletedContent(0, \'' . $filter . '\')');
+        $this->addScript('getDeletedContent(-1, \'' . $filter . '\')');
 
         $links = [];
 
         switch($filter) {
             case 'topics':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
                 $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
                 break;
 
             case 'posts':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</a>&nbsp;';
                 break;
 
             case 'comments':
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
-                $links[] = '<a class="post-data-link" onclick="getDeletedContent(0, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</b>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'topics\')" style="cursor: pointer" href="#" id="filter-btn-topics">Filter topics</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'posts\')" style="cursor: pointer" href="#" id="filter-btn-posts">Filter posts</a>&nbsp;';
+                $links[] = '<a class="post-data-link" onclick="getDeletedContent(-1, \'comments\')" style="cursor: pointer" href="#" id="filter-btn-comments">Filter comments</b>&nbsp;';
                 break;
         }
 

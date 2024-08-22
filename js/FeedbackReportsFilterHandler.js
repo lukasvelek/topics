@@ -32,7 +32,7 @@ async function handleGridFilterChange() {
     const type = $("#filter-category").val();
     const key = $("#filter-subcategory").val();
 
-    await getReportGrid(0, type, key);
+    await getReportGrid(-1, type, key);
 }
 
 async function handleGridFilterClear() {
@@ -41,5 +41,5 @@ async function handleGridFilterClear() {
     $("#filter-submit").hide();
     $("#filter-clear").hide();
 
-    await getReportGrid(0, 'null', 'null');
+    await getReportGrid(-1, 'null', 'null');
 }

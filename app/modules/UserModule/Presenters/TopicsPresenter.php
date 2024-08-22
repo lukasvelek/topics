@@ -18,6 +18,7 @@ use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
@@ -29,8 +30,14 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicsPresenter extends AUserPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
+
+        global $app;
+        
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleProfile() {
@@ -1395,7 +1402,7 @@ class TopicsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb);
-        $this->addScript('getPostGrid(0, \'' . $topicId .'\', \'' . $filter . '\')');
+        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
@@ -1420,8 +1427,11 @@ class TopicsPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
         $filter = $this->httpGet('filter');
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POSTS, $gridPage, [$topicId]);
+
         $offset = $page * $gridSize;
 
         if($filter == 'scheduled') {

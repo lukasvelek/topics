@@ -96,15 +96,15 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
     public function handleList() {
         $arb = new AjaxRequestBuilder();
         $arb->setURL($this->createURL('getGrid'))
-            ->setHeader(['gridPage' => '_page', 'type' => '_type'])
+            ->setHeader(['type' => '_type'])
             ->setMethod()
             ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_page', '_type'])
+            ->setFunctionArguments(['_type'])
             ->updateHTMLElement('grid-content', 'grid')
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getGrid(0, \'pages\')');
+        $this->addScript('getGrid(\'pages\')');
 
         $cl = function(string $name, string $text) {
             return '<a class="post-data-link" href="#" onclick="handleGridFilter(\'' . $name . '\')">' . $text . '</a>';

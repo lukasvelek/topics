@@ -10,6 +10,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\ReportEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -18,6 +19,8 @@ use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class FeedbackReportsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('FeedbackReportsPresenter', 'Reports');
 
@@ -31,14 +34,18 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
         }
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function actionReportGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_REPORTS, $gridPage, [$filterType]);
 
         $gridSize = $app->getGridSize();
 
@@ -80,7 +87,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $a = HTML::a();
 
             $a->href('#')
-                ->onClick('getReportGrid(0, \'category\', \'' . $re->getCategory() . '\')')
+                ->onClick('getReportGrid(-1, \'category\', \'' . $re->getCategory() . '\')')
                 ->text(ReportCategory::toString($re->getCategory()))
                 ->class('grid-link')
             ;
@@ -92,7 +99,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             $a->href('#')
                 ->text(ReportStatus::toString($re->getStatus()))
-                ->onClick('getReportGrid(0, \'status\', \'' . $re->getStatus() . '\')')
+                ->onClick('getReportGrid(-1, \'status\', \'' . $re->getStatus() . '\')')
                 ->class('grid-link')
             ;
 
@@ -105,7 +112,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             $a->href('#')
                 ->text($user->getUsername())
-                ->onClick('getReportGrid(0, \'user\', \'' . $user->getId() . '\')')
+                ->onClick('getReportGrid(-1, \'user\', \'' . $user->getId() . '\')')
                 ->class('grid-link')
             ;
 
@@ -206,7 +213,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 </div>
             ';
 
-            $filterControl = $filterForm . '<script type="text/javascript" src="js/PostUploadImagesFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
+            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script>';
         } else {
             /** FILTER CATEGORIES */
             $filterCategories = [
@@ -292,7 +299,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getReportGrid(0, \'' . $filterType . '\', \'' . $filterKey . '\')');
+        $this->addScript('getReportGrid(-1, \'' . $filterType . '\', \'' . $filterKey . '\')');
     }
 
     public function renderList() {}

@@ -8,6 +8,7 @@ use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Option;
@@ -16,20 +17,27 @@ use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageGroupsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageGroupsPresenter', 'Group management');
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function actionLoadGroupGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_GROUPS, $gridPage);
 
         $totalCount = $app->groupRepository->getGroupCount();
         $lastPage = ceil($totalCount / $gridSize);
@@ -57,7 +65,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getGroupGrid(0)');
+        $this->addScript('getGroupGrid(-1)');
     }
 
     public function renderList() {
@@ -73,10 +81,12 @@ class ManageGroupsPresenter extends AAdminPresenter {
     public function actionGroupMemberGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $groupId = $this->httpGet('groupId');
 
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_GROUPS, $gridPage, [$groupId]);
 
         $membersCount = $app->groupRepository->getGroupMembersCount($groupId);
         $lastPage = ceil($membersCount / $gridSize);
@@ -127,7 +137,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getGroupMembersGrid(0, ' . $groupId . ')');
+        $this->addScript('getGroupMembersGrid(-1, ' . $groupId . ')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link') . "&nbsp;"

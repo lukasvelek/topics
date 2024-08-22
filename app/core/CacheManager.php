@@ -91,6 +91,29 @@ class CacheManager {
         return $result;
     }
 
+    public function saveCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null) {
+        $file = $this->loadCachedFiles($namespace);
+        
+        if($file === null) {
+            $file = [];
+        } else {
+            $file = unserialize($file);
+        }
+        
+        $result = $callback();
+        $file[$key] = $result;
+
+        $file = serialize($file);
+
+        $saveResult = $this->saveCachedFiles($namespace, $file);
+
+        if($saveResult !== null && $saveResult !== false) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function deleteFlashMessages() {
         $userId = 0;
 
