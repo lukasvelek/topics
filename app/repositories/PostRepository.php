@@ -535,6 +535,16 @@ class PostRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function createNewPostConcept(string $conceptId, string $topicId, string $authorId, string $postData) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('post_concepts', ['conceptId', 'topicId', 'authorId', 'postData'])
+            ->values([$conceptId, $topicId, $authorId, $postData])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>

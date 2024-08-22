@@ -28,6 +28,7 @@ class EntityManager extends AManager {
     public const BANNED_WORDS = 'banned_words';
     public const USER_PROSECUTIONS = 'user_prosecutions';
     public const TOPIC_POST_PINS = 'topic_post_pins';
+    public const POST_CONCEPTS = 'post_concepts';
 
     private ContentRepository $cr;
 
@@ -80,7 +81,8 @@ class EntityManager extends AManager {
             self::SUGGESTION_COMMENTS => 'commentId',
             self::BANNED_WORDS => 'wordId',
             self::USER_PROSECUTIONS => 'prosecutionId',
-            self::TOPIC_POST_PINS => 'pinId'
+            self::TOPIC_POST_PINS => 'pinId',
+            self::POST_CONCEPTS => 'conceptId'
         };
     }
 }

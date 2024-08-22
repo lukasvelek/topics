@@ -23,6 +23,7 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
@@ -588,8 +589,16 @@ class TopicsPresenter extends AUserPresenter {
             $fb->addCheckbox('suggestable', 'Can be suggested?', true);
         }
 
-        $fb ->addSubmit('Post', false, true)
-            ->setCanHaveFiles();
+        $fb ->setCanHaveFiles();
+
+        /** SUBMIT */
+        $submitPost = new SubmitButton('Post', false, 'submitPost');
+        $submitSaveAsConcept = new SubmitButton('Save as concept', false, 'submitSaveAsConcept');
+        $submitPost->setCenter();
+        $submitSaveAsConcept->setCenter();
+
+        $fb->addMultipleSubmitButtons([$submitPost, $submitSaveAsConcept]);
+        /** SUBMIT */
 
         $this->saveToPresenterCache('form', $fb);
     }
@@ -615,26 +624,53 @@ class TopicsPresenter extends AUserPresenter {
         $dateAvailable = $fr->dateAvailable;
         $suggestable = isset($fr->suggestable);
 
-        try {
-            $app->topicRepository->beginTransaction();
-
-            $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
-            
-            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
-
-            if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
-                $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
-            
-                $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+        if(isset($fr->submitPost)) {
+            try {
+                $app->topicRepository->beginTransaction();
+    
+                $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
+                
+                $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
+    
+                if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
+                    $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
+                
+                    $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+                }
+    
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+    
+                $this->flashMessage('Post created.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+    
+                $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             }
+        } else if(isset($fr->submitSaveAsConcept)) {
+            try {
+                $app->topicRepository->beginTransaction();
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+                $conceptId = $app->entityManager->generateEntityId(EntityManager::POST_CONCEPTS);
 
-            $this->flashMessage('Post created.', 'success');
-        } catch(Exception $e) {
-            $app->topicRepository->rollback();
+                $postData = [
+                    'title' => $title,
+                    'text' => $text,
+                    'tag' => $tag,
+                    'dateAvailable' => $dateAvailable,
+                    'suggestable' => $suggestable
+                ];
+                $postData = serialize($postData);
 
-            $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
+                $app->postRepository->createNewPostConcept($conceptId, $topicId, $userId, $postData);
+
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post concept saved.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+
+                $this->flashMessage('Post concept could not be saved. Error:' . $e->getMessage(), 'error');
+            }
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);

@@ -258,6 +258,13 @@ class DatabaseInstaller {
                 'postId' => 'VARCHAR(256) NOT NULL',
                 'topicId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'post_concepts' => [
+                'conceptId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'postData' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
