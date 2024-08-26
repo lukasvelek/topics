@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\NotificationEntity;
 use App\Logger\Logger;
@@ -32,15 +33,18 @@ class NotificationRepository extends ARepository {
             $qb->andWhere('dateSeen IS NULL');
         }
 
-        $qb ->orderBy('dateCreated', 'DESC')
-            ->execute();
+        $qb ->orderBy('dateCreated', 'DESC');
 
-        $notifications = [];
-        while($row = $qb->fetchAssoc()) {
-            $notifications[] = NotificationEntity::createEntityFromDbRow($row);
-        }
+        return $this->cache->loadCache($userId, function() use ($qb) {
+            $qb->execute();
 
-        return $notifications;
+            $notifications = [];
+            while($row = $qb->fetchAssoc()) {
+                $notifications[] = NotificationEntity::createEntityFromDbRow($row);
+            }
+
+            return $notifications;
+        }, CacheManager::NS_USER_NOTIFICATIONS, __METHOD__, CacheManager::EXPIRATION_MINUTES(1));
     }
 
     public function updateNotification(string $notificationId, array $data) {

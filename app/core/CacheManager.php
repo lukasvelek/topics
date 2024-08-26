@@ -22,6 +22,10 @@ class CacheManager {
     public const NS_FLASH_MESSAGES = 'flashMessages';
     public const NS_CACHED_PAGES = 'cachedPages';
     public const NS_PINNED_POSTS = 'pinnedPosts';
+    public const NS_USER_NOTIFICATIONS = 'userNotifications';
+
+    private const I_NS_DATA = '_data';
+    private const I_NS_EXPIRATION_DATE = '_cacheDateExpiration';
 
     private Logger $logger;
 
@@ -135,7 +139,7 @@ class CacheManager {
      * @param string $method Calling method's name
      * @return mixed Result
      */
-    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null) {
+    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null) {
         $file = $this->loadCachedFiles($namespace);
         $save = false;
         $result = null;
@@ -143,16 +147,22 @@ class CacheManager {
 
         if($file === null) {
             $result = $callback();
-            $file[$key] = $result;
+            $file[self::I_NS_DATA][$key] = $result;
+            if($expiration !== null) {
+                $expiration = $expiration->getResult();
+            }
+            $file[self::I_NS_EXPIRATION_DATE] = $expiration;
             $save = true;
         } else {
             $file = unserialize($file);
 
-            if(array_key_exists($key, $file)) {
-                $result = $file[$key];
+            $isCacheExpired = $this->checkCacheExpiration($file);
+
+            if(array_key_exists($key, $file[self::I_NS_DATA]) && !$isCacheExpired) {
+                $result = $file[self::I_NS_DATA][$key];
             } else {
                 $result = $callback();
-                $file[$key] = $result;
+                $file[self::I_NS_DATA][$key] = $result;
                 $save = true;
             }
         }
@@ -178,17 +188,21 @@ class CacheManager {
      * @param string $method Calling method's name
      * @return bool True if successful or false if not
      */
-    public function saveCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null) {
+    public function saveCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null) {
         $file = $this->loadCachedFiles($namespace);
         
         if($file === null) {
-            $file = [];
+            $file = [self::I_NS_DATA];
         } else {
             $file = unserialize($file);
         }
         
         $result = $callback();
-        $file[$key] = $result;
+        $file[self::I_NS_DATA][$key] = $result;
+        if($expiration !== null) {
+            $expiration = $expiration->getResult();
+        }
+        $file[self::I_NS_EXPIRATION_DATE] = $expiration;
 
         $file = serialize($file);
 
@@ -225,7 +239,7 @@ class CacheManager {
             $file = unserialize($file);
         }
 
-        $file[] = $data;
+        $file[self::I_NS_DATA][] = $data;
 
         $file = serialize($file);
 
@@ -241,7 +255,7 @@ class CacheManager {
         $file = $this->loadCachedFiles('flashMessages', true);
         
         if($file !== null && $file !== false) {
-            $file = unserialize($file);
+            $file = unserialize($file)[self::I_NS_DATA];
         }
 
         return $file;
@@ -302,7 +316,7 @@ class CacheManager {
             $file = unserialize($file);
         }
 
-        $file[$moduleName . '_' . $presenterName] = $content;
+        $file[self::I_NS_DATA][$moduleName . '_' . $presenterName] = $content;
 
         $file = serialize($file);
 
@@ -318,7 +332,7 @@ class CacheManager {
         $file = $this->loadCachedFiles(self::NS_CACHED_PAGES);
 
         if($file !== null && $file !== false) {
-            $file = unserialize($file);
+            $file = unserialize($file)[self::I_NS_DATA];
         }
 
         return $file;
@@ -351,6 +365,38 @@ class CacheManager {
      */
     private function isCacheForNamespaceCommon(string $namespace) {
         return !in_array($namespace, [self::NS_FLASH_MESSAGES]);
+    }
+
+    /**
+     * Checks if cache in the given namespace is expired or not
+     * 
+     * @param array $cacheFileContent Unserialized file content of cache
+     * @return bool True if cache is expired or false if not
+     */
+    private function checkCacheExpiration(array $cacheFileContent) {
+        if(isset($data[self::I_NS_EXPIRATION_DATE])) {
+            $expirationDate = $data[self::I_NS_EXPIRATION_DATE];
+
+            if($expirationDate !== null) {
+                if(strtotime($expirationDate) < time()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static function EXPIRATION_MINUTES(int $minutes = 1) {
+        $dt = new DateTime();
+        $dt->modify('+' . $minutes . 'i');
+        return $dt;
+    }
+
+    public static function EXPIRATION_HOURS(int $hours = 1) {
+        $dt = new DateTime();
+        $dt->modify('+'  . $hours . 'h');
+        return $dt;
     }
 }
 
