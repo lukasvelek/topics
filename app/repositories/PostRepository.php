@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostConceptEntity;
@@ -259,7 +260,7 @@ class PostRepository extends ARepository {
             $entity = PostEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'posts', __METHOD__);
+        }, CacheManager::NS_POSTS, __METHOD__);
 
         return $entity;
     }

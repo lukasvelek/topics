@@ -11,6 +11,17 @@ use App\Logger\Logger;
  * @author Lukas Velek
  */
 class CacheManager {
+    public const NS_TOPICS = 'topics';
+    public const NS_POSTS = 'posts';
+    public const NS_GROUP_MEMBERSHIPS = 'groupMemberships';
+    public const NS_GRID_PAGE_DATA = 'gridPageData';
+    public const NS_TOPIC_MEMBERSHIPS = 'topicMemberships';
+    public const NS_GROUPS = 'groups';
+    public const NS_USERS = 'users';
+    public const NS_USERS_USERNAME_TO_ID_MAPPING = 'usersUsernameToIdMapping';
+    public const NS_FLASH_MESSAGES = 'flashMessages';
+    public const NS_CACHED_PAGES = 'cachedPages';
+
     private Logger $logger;
 
     /**
@@ -100,6 +111,15 @@ class CacheManager {
         $date->format('Y-m-d');
         
         $filename = $date . $namespace;
+
+        if(!$this->isCacheForNamespaceCommon($namespace)) {
+            $userId = $this->getCurrentUserId();
+
+            if($userId !== null) {
+                $filename .= $userId;
+            }
+        }
+
         $filename = md5($filename);
 
         return $filename;
@@ -188,13 +208,7 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function deleteFlashMessages() {
-        $userId = 0;
-
-        if(isset($_SESSION['userId'])) {
-            $userId = $_SESSION['userId'];
-        }
-
-        $this->invalidateCache('flashMessages-' . $userId, true);
+        $this->invalidateCache('flashMessages', true);
     }
 
     /**
@@ -204,13 +218,7 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function saveFlashMessageToCache(array $data) {
-        $userId = 0;
-
-        if(isset($_SESSION['userId'])) {
-            $userId = $_SESSION['userId'];
-        }
-
-        $file = $this->loadCachedFiles('flashMessages-' . $userId, true);
+        $file = $this->loadCachedFiles('flashMessages', true);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -220,7 +228,7 @@ class CacheManager {
 
         $file = serialize($file);
 
-        return $this->saveCachedFiles('flashMessages-' . $userId, $file, true);
+        return $this->saveCachedFiles('flashMessages', $file, true);
     }
 
     /**
@@ -229,13 +237,7 @@ class CacheManager {
      * @return mixed Flash messages
      */
     public function loadFlashMessages() {
-        $userId = 0;
-
-        if(isset($_SESSION['userId'])) {
-            $userId = $_SESSION['userId'];
-        }
-
-        $file = $this->loadCachedFiles('flashMessages-' . $userId, true);
+        $file = $this->loadCachedFiles('flashMessages', true);
         
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -293,7 +295,7 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function savePageToCache(string $moduleName, string $presenterName, string $content) {
-        $file = $this->loadCachedFiles('cachedPages');
+        $file = $this->loadCachedFiles(self::NS_CACHED_PAGES);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
@@ -303,7 +305,7 @@ class CacheManager {
 
         $file = serialize($file);
 
-        return $this->saveCachedFiles('cachedPages', $file);
+        return $this->saveCachedFiles(self::NS_CACHED_PAGES, $file);
     }
     
     /**
@@ -312,13 +314,42 @@ class CacheManager {
      * @return mixed Cache content
      */
     public function loadPagesFromCache() {
-        $file = $this->loadCachedFiles('cachedPages');
+        $file = $this->loadCachedFiles(self::NS_CACHED_PAGES);
 
         if($file !== null && $file !== false) {
             $file = unserialize($file);
         }
 
         return $file;
+    }
+
+    /**
+     * Returns the ID of the current user
+     * 
+     * @return string|null User ID or null if no current user is defined
+     */
+    private function getCurrentUserId(): string|null {
+        if(isset($_SESSION['userId'])) {
+            return $_SESSION['userId'];
+        } else {
+            global $app;
+
+            if($app->currentUser !== null) {
+                return $app->currentUser->getId();
+            } else {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Checks if cache namespace is common or per-user
+     * 
+     * @param string $namespace Namespace name
+     * @return bool True if namespace is common or false if it is per-user
+     */
+    private function isCacheForNamespaceCommon(string $namespace) {
+        return !in_array($namespace, [self::NS_FLASH_MESSAGES]);
     }
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Entities\UserEntity;
 use App\Logger\Logger;
@@ -25,7 +26,7 @@ class UserRepository extends ARepository {
             $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'users', __METHOD__);
+        }, CacheManager::NS_USERS, __METHOD__);
 
         return $entity;
     }
@@ -90,7 +91,7 @@ class UserRepository extends ARepository {
             $qb->execute();
 
             return $qb->fetch('userId');
-        }, 'usersUsernameToIdMapping', __METHOD__);
+        }, CacheManager::NS_USERS_USERNAME_TO_ID_MAPPING, __METHOD__);
 
         return $this->getUserById($userId);
     }

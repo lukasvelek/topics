@@ -5,7 +5,6 @@ namespace App\Managers;
 use App\Constants\TopicMemberRole;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
-use App\Core\HashManager;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -20,8 +19,6 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicMembershipManager extends AManager {
-    private const CACHE_NAMESPACE = 'topicMemberships';
-
     private TopicRepository $topicRepository;
     private TopicMembershipRepository $topicMembershipRepository;
     private TopicInviteRepository $topicInviteRepository;
@@ -145,12 +142,12 @@ class TopicMembershipManager extends AManager {
 
         return $cm->loadCache($key, function () use ($userId, $topicId) {
             return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
-        }, self::CACHE_NAMESPACE, __METHOD__);
+        }, CacheManager::NS_GROUP_MEMBERSHIPS, __METHOD__);
     }
 
     private function invalidateMembershipCache() {
         $cm = new CacheManager($this->logger);
-        $cm->invalidateCache(self::CACHE_NAMESPACE);
+        $cm->invalidateCache(CacheManager::NS_GROUP_MEMBERSHIPS);
     }
 
     public function getUserMembershipsInTopics(string $userId) {

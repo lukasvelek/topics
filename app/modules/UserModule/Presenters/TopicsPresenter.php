@@ -85,7 +85,7 @@ class TopicsPresenter extends AUserPresenter {
             ->setHeader(['limit' => '_limit', 'offset' => '_offset', 'topicId' => '_topicId'])
             ->setFunctionName('loadPostsForTopic')
             ->setFunctionArguments(['_limit', '_offset', '_topicId'])
-            ->addCustomWhenDoneCode('if(_offset == 0) { $("#latest-posts").html(""); }')
+            ->addWhenDoneOperation('if(_offset == 0) { $("#latest-posts").html(""); }')
             ->updateHTMLElement('latest-posts', 'posts', true)
             ->updateHTMLElement('posts-load-more-link', 'loadMoreLink')
         ;

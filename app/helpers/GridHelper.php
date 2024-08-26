@@ -6,8 +6,6 @@ use App\Core\CacheManager;
 use App\Logger\Logger;
 
 class GridHelper {
-    private const PAGE_NAMESPACE = 'gridPageData';
-
     /** AdminModule:Manage* */
     public const GRID_TRANSACTION_LOG = 'gridTransactionLog';
     public const GRID_USERS = 'gridUsers';
@@ -62,7 +60,7 @@ class GridHelper {
 
             $page = $cm->loadCache($key, function() {
                 return 0;
-            }, self::PAGE_NAMESPACE, __METHOD__);
+            }, CacheManager::NS_GRID_PAGE_DATA, __METHOD__);
 
             $this->gridPageData[$key] = $page;
         }
@@ -81,7 +79,7 @@ class GridHelper {
 
         return $cm->saveCache($key, function() use ($page) {
             return $page;
-        }, self::PAGE_NAMESPACE, __METHOD__);
+        }, CacheManager::NS_GRID_PAGE_DATA, __METHOD__);
     }
 
     private function createCacheKey(string $gridName, array $customParams) {

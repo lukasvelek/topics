@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
@@ -26,7 +27,7 @@ class TopicRepository extends ARepository {
             $entity = TopicEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'topics', __METHOD__);
+        }, CacheManager::NS_TOPICS, __METHOD__);
 
         return $entity;
     }
