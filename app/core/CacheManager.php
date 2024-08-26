@@ -24,8 +24,15 @@ class CacheManager {
     public const NS_PINNED_POSTS = 'pinnedPosts';
     public const NS_USER_NOTIFICATIONS = 'userNotifications';
 
-    private const I_NS_DATA = '_data';
-    private const I_NS_EXPIRATION_DATE = '_cacheDateExpiration';
+    /**
+     * Internal cache namespaces
+     */
+    private const I_NS_DATA = '_data'; // cache data
+    private const I_NS_EXPIRATION_DATE = '_cacheDateExpiration'; // cache expiration date
+    private const I_NS_CACHE_LAST_WRITE_DATE = '_cacheLastWriteDate'; // cache last write date
+    /**
+     * End of internal cache namespaces
+     */
 
     private Logger $logger;
 
@@ -168,6 +175,8 @@ class CacheManager {
         }
 
         if($save === true) {
+            $file[self::I_NS_CACHE_LAST_WRITE_DATE] = DateTime::now();
+
             $file = serialize($file);
             $cacheHit = false;
             
@@ -203,6 +212,7 @@ class CacheManager {
             $expiration = $expiration->getResult();
         }
         $file[self::I_NS_EXPIRATION_DATE] = $expiration;
+        $file[self::I_NS_CACHE_LAST_WRITE_DATE] = DateTime::now();
 
         $file = serialize($file);
 
@@ -240,6 +250,7 @@ class CacheManager {
         }
 
         $file[self::I_NS_DATA][] = $data;
+        $file[self::I_NS_CACHE_LAST_WRITE_DATE] = DateTime::now();
 
         $file = serialize($file);
 
