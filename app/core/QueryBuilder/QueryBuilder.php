@@ -797,6 +797,13 @@ class QueryBuilder
 
         $valArray = [];
         foreach($this->queryData['values'] as $value) {
+            if(is_bool($value)) {
+                if($value === true) {
+                    $value = '1';
+                } else {
+                    $value = '0';
+                }
+            }
             $valArray[] = "'" . $value . "'";
         }
 
