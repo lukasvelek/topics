@@ -79,7 +79,9 @@ class FileManager {
                 } 
             }
 
-            rmdir($dirPath);
+            return rmdir($dirPath);
+        } else {
+            return false;
         }
     }
 }

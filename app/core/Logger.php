@@ -174,6 +174,12 @@ class Logger implements ILoggerCallable {
 
         $this->log($method, $text, self::LOG_CACHE);
     }
+
+    public function logCacheSave(string $method, mixed $key, string $namespace) {
+        $text = 'Cache key \'' . $key . '\' saved to namespace \'' . $namespace . '\'.';
+
+        $this->log($method, $text, self::LOG_CACHE);
+    }
 }
 
 ?>
