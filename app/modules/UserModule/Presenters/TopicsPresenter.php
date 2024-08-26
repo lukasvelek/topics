@@ -9,6 +9,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Entities\PostConceptEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
@@ -23,7 +24,9 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder\DefaultGridReducer;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
@@ -229,6 +232,8 @@ class TopicsPresenter extends AUserPresenter {
         if($app->actionAuthorizator->canManageTopicPosts($app->currentUser->getId(), $topic)) {
             $links[] = LinkBuilder::createSimpleLink('Post list', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link');
         }
+
+        $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
@@ -543,6 +548,25 @@ class TopicsPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
+        $conceptId = $this->httpGet('conceptId');
+
+        $postTitle = null;
+        $postText = null;
+        $postTag = null;
+        $postDateAvailable = null;
+        $postSuggestable = true;
+
+        if($conceptId !== null) {
+            $concept = $app->postRepository->getPostConceptById($conceptId);
+
+            $data = $concept->getPostData();
+
+            $postTitle = $data['title'];
+            $postText = $data['text'];
+            $postTag = $data['tag'];
+            $postDateAvailable = strtotime($data['dateAvailable']);
+            $postSuggestable = $data['suggestable'];
+        }
 
         try {
             $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
@@ -562,21 +586,33 @@ class TopicsPresenter extends AUserPresenter {
         // form
         $postTags = [];
         foreach(PostTags::getAll() as $key => $text) {
-            $postTags[] = [
+            $tag = [
                 'value' => $key,
                 'text' => $text
             ];
+
+            if($key == $postTag) {
+                $tag['selected'] = 'selected';
+            }
+
+            $postTags[] = $tag;
         }
 
         $fb = new FormBuilder();
 
-        $now = new DateTime();
+        $now = new DateTime($postDateAvailable);
         $now->format('Y-m-d H:i');
         $now = $now->getResult();
 
-        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
-            ->addTextInput('title', 'Title:', null, true)
-            ->addTextArea('text', 'Text:', null, true)
+        $formUrl = ['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId];
+
+        if($conceptId !== null) {
+            $formUrl['conceptId'] = $conceptId;
+        }
+
+        $fb ->setAction($formUrl)
+            ->addTextInput('title', 'Title:', $postTitle, true)
+            ->addTextArea('text', 'Text:', $postText, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
             ->addFileInput('image', 'Image:');
 
@@ -585,11 +621,19 @@ class TopicsPresenter extends AUserPresenter {
         }
         
         if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
-            $fb->addCheckbox('suggestable', 'Can be suggested?', true);
+            $fb->addCheckbox('suggestable', 'Can be suggested?', $postSuggestable);
         }
 
-        $fb ->addSubmit('Post', false, true)
-            ->setCanHaveFiles();
+        $fb ->setCanHaveFiles();
+
+        /** SUBMIT */
+        $submitPost = new SubmitButton('Post', false, 'submitPost');
+        $submitSaveAsConcept = new SubmitButton('Save as concept', false, 'submitSaveAsConcept');
+        $submitPost->setCenter();
+        $submitSaveAsConcept->setCenter();
+
+        $fb->addMultipleSubmitButtons([$submitPost, $submitSaveAsConcept]);
+        /** SUBMIT */
 
         $this->saveToPresenterCache('form', $fb);
     }
@@ -615,26 +659,68 @@ class TopicsPresenter extends AUserPresenter {
         $dateAvailable = $fr->dateAvailable;
         $suggestable = isset($fr->suggestable);
 
-        try {
-            $app->topicRepository->beginTransaction();
-
-            $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
-            
-            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
-
-            if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
-                $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
-            
-                $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+        if(isset($fr->submitPost)) {
+            try {
+                $app->topicRepository->beginTransaction();
+    
+                $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
+                
+                $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
+    
+                if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
+                    $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
+                
+                    $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+                }
+    
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+    
+                $this->flashMessage('Post created.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+    
+                $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
             }
+        } else if(isset($fr->submitSaveAsConcept)) {
+            try {
+                $app->topicRepository->beginTransaction();
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+                if($this->httpGet('conceptId') !== null) {
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
 
-            $this->flashMessage('Post created.', 'success');
-        } catch(Exception $e) {
-            $app->topicRepository->rollback();
+                    $now = DateTime::now();
 
-            $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
+                    $app->postRepository->updatePostConcept($this->httpGet('conceptId'), ['postData' => $postData, 'dateUpdated' => $now]);
+                } else {
+                    $conceptId = $app->entityManager->generateEntityId(EntityManager::POST_CONCEPTS);
+
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
+
+                    $app->postRepository->createNewPostConcept($conceptId, $topicId, $userId, $postData);
+                }
+
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post concept saved.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+
+                $this->flashMessage('Post concept could not be saved. Error:' . $e->getMessage(), 'error');
+            }
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -1570,6 +1656,74 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
+    }
+
+    public function handleListPostConcepts() {
+        $filter = $this->httpGet('filter');
+        $topicId = $this->httpGet('topicId');
+
+        $links = [];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getPostConceptsGrid')
+            ->setHeader(['gridPage' => '_page', 'filter' => '_filter', 'topicId' => '_topicId'])
+            ->setFunctionName('getPostConceptsGrid')
+            ->setFunctionArguments(['_page', '_filter', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getPostConceptsGrid(-1, \'' . $filter . '\', \'' . $topicId . '\')');
+    }
+
+    public function renderListPostConcepts() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetPostConceptsGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+        $filter = $this->httpGet('filter');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POST_CONCEPTS, $gridPage, [$filter]);
+
+        $gridSize = $app->getGridSize();
+
+        $postConcepts = [];
+        $totalCount = 0;
+
+        if($filter == 'my') {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, 0, 0));
+        } else {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid(null, $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid(null, $topicId, 0, 0));
+        }
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $grid = new GridBuilder();
+
+        $grid->addDataSource($postConcepts);
+        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
+        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
+        });
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId()]), 'grid-link');
+        });
+
+        $reducer = $app->getGridReducer();
+        $reducer->applyReducer($grid);
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
     }
 }
 

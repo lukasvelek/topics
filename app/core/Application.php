@@ -43,6 +43,7 @@ use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
+use App\UI\GridBuilder\DefaultGridReducer;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -348,6 +349,15 @@ class Application {
      */
     public function getIsDev() {
         return $this->cfg['IS_DEV'];
+    }
+
+    /**
+     * Returns DefaultGridReducer instance
+     * 
+     * @return DefaultGridReducer DefaultGridReducer instance
+     */
+    public function getGridReducer() {
+        return new DefaultGridReducer($this->userRepository, $this->topicRepository, $this->postRepository);
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
+use App\Entities\PostConceptEntity;
 use App\Entities\PostEntity;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
@@ -534,6 +535,66 @@ class PostRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function createNewPostConcept(string $conceptId, string $topicId, string $authorId, string $postData) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('post_concepts', ['conceptId', 'topicId', 'authorId', 'postData'])
+            ->values([$conceptId, $topicId, $authorId, $postData])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function updatePostConcept(string $conceptId, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('post_concepts')
+            ->set($data)
+            ->where('conceptId = ?', [$conceptId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getPostConceptsForGrid(?string $userId, string $topicId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_concepts')
+            ->where('topicId = ?', [$topicId]);
+
+        if($userId !== null) {
+            $qb->andWhere('authorId = ?', [$userId]);
+        }
+
+        if($limit > 0) {
+            $qb->limit($limit);
+        }
+        if($offset > 0) {
+            $qb->offset($offset);
+        }
+
+        $qb->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = PostConceptEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+
+    public function getPostConceptById(string $conceptId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_concepts')
+            ->where('conceptId = ?', [$conceptId])
+            ->execute();
+
+        return PostConceptEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

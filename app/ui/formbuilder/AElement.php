@@ -55,7 +55,11 @@ abstract class AElement implements IFormRenderable {
     }
 
     public function getName() {
-        return $this->name;
+        return $this->__name;
+    }
+
+    public function getElements() {
+        return $this->__elements;
     }
 }
 
