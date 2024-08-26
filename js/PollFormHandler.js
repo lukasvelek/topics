@@ -14,7 +14,7 @@ async function showSubselect(_val) {
             value: _val
         }
     )
-    .done(function(data) {
+    .done(async function(data) {
         const obj = JSON.parse(data);
 
         if(obj.empty == "0") {
