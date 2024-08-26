@@ -1723,13 +1723,51 @@ class TopicsPresenter extends AUserPresenter {
             return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
         });
         $grid->addAction(function(PostConceptEntity $pce) {
-            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId()]), 'grid-link');
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
         });
 
         $reducer = $app->getGridReducer();
         $reducer->applyReducer($grid);
 
         $this->ajaxSendResponse(['grid' => $grid->build()]);
+    }
+
+    public function handleDeletePostConcept(?FormResponse $fr = null) {
+        global $app;
+
+        $conceptId = $this->httpGet('conceptId', true);
+        $topicId = $this->httpGet('topicId', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            try {
+                $app->postRepository->beginTransaction();
+
+                $app->postRepository->deletePostConcept($conceptId);
+
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post concept deleted.', 'success');
+            } catch(AException $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Could not delete post concept. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect(['action' => 'listPostConcepts', 'topicId' => $topicId]);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction($this->createURL('deletePostConcept', ['conceptId' => $conceptId, 'topicId' => $topicId]))
+                ->addSubmit('Delete post concept')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=listPostConcepts&topicId=' . $topicId . '\';', 'formSubmit')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeletePostConcept() {
+        $this->template->form = $this->loadFromPresenterCache('form');
     }
 }
 
