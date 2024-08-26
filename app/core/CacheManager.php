@@ -21,6 +21,7 @@ class CacheManager {
     public const NS_USERS_USERNAME_TO_ID_MAPPING = 'usersUsernameToIdMapping';
     public const NS_FLASH_MESSAGES = 'flashMessages';
     public const NS_CACHED_PAGES = 'cachedPages';
+    public const NS_PINNED_POSTS = 'pinnedPosts';
 
     private Logger $logger;
 
