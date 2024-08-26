@@ -374,8 +374,8 @@ class CacheManager {
      * @return bool True if cache is expired or false if not
      */
     private function checkCacheExpiration(array $cacheFileContent) {
-        if(isset($data[self::I_NS_EXPIRATION_DATE])) {
-            $expirationDate = $data[self::I_NS_EXPIRATION_DATE];
+        if(isset($cacheFileContent[self::I_NS_EXPIRATION_DATE])) {
+            $expirationDate = $cacheFileContent[self::I_NS_EXPIRATION_DATE];
 
             if($expirationDate !== null) {
                 if(strtotime($expirationDate) < time()) {
