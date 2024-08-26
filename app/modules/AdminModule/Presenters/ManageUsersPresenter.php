@@ -51,7 +51,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $users = $app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
-        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
+        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?', 'canLogin' => 'Can login?']);
         $gb->addDataSource($users);
         $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
             if($entity->isAdmin()) {
