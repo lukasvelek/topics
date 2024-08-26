@@ -72,6 +72,8 @@ class ManageUsersPresenter extends AAdminPresenter {
                 $cell->setValue('No');
                 $cell->setTextColor('red');
             }
+
+            return $cell;
         });
         $gb->addAction(function (UserEntity $user) {
             return LinkBuilder::createSimpleLink('Profile', ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
