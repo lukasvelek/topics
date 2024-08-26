@@ -387,12 +387,24 @@ class CacheManager {
         return false;
     }
 
+    /**
+     * Returns expiration DateTime instance adjusted by given number of minutes
+     * 
+     * @param int $minutes Number of minutes to be added to the final date
+     * @return DateTime
+     */
     public static function EXPIRATION_MINUTES(int $minutes = 1) {
         $dt = new DateTime();
         $dt->modify('+' . $minutes . 'i');
         return $dt;
     }
 
+    /**
+     * Returns expiration DateTime instance adjusted by given number of hours
+     * 
+     * @param int $hours Number of hours to be added to the final date
+     * @return DateTime
+     */
     public static function EXPIRATION_HOURS(int $hours = 1) {
         $dt = new DateTime();
         $dt->modify('+'  . $hours . 'h');
