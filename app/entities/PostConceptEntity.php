@@ -8,9 +8,9 @@ class PostConceptEntity implements ICreatableFromRow {
     private string $topicId;
     private string $postData;
     private string $dateCreated;
-    private string $dateUpdated;
+    private ?string $dateUpdated;
 
-    public function __construct(string $conceptId, string $authorId, string $topicId, string $postData, string $dateCreated, string $dateUpdated) {
+    public function __construct(string $conceptId, string $authorId, string $topicId, string $postData, string $dateCreated, ?string $dateUpdated) {
         $this->conceptId = $conceptId;
         $this->authorId = $authorId;
         $this->topicId = $topicId;
