@@ -233,7 +233,9 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Post list', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link');
         }
 
-        $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
+        if($app->actionAuthorizator->canUsePostConcepts($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
+        }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 

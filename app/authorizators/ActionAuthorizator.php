@@ -238,6 +238,14 @@ class ActionAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canUsePostConcepts(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::VIP && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>
