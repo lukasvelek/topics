@@ -630,11 +630,15 @@ class TopicsPresenter extends AUserPresenter {
 
         /** SUBMIT */
         $submitPost = new SubmitButton('Post', false, 'submitPost');
-        $submitSaveAsConcept = new SubmitButton('Save as concept', false, 'submitSaveAsConcept');
         $submitPost->setCenter();
-        $submitSaveAsConcept->setCenter();
+        if($app->actionAuthorizator->canUsePostConcepts($app->currentUser->getId(), $topicId)) {
+            $submitSaveAsConcept = new SubmitButton('Save as concept', false, 'submitSaveAsConcept');
+            $submitSaveAsConcept->setCenter();
 
-        $fb->addMultipleSubmitButtons([$submitPost, $submitSaveAsConcept]);
+            $fb->addMultipleSubmitButtons([$submitPost, $submitSaveAsConcept]);
+        } else {
+            $fb->addElement('formSubmit', $submitPost);
+        }
         /** SUBMIT */
 
         $this->saveToPresenterCache('form', $fb);
