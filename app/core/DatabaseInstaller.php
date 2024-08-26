@@ -271,7 +271,7 @@ class DatabaseInstaller {
 
         $i = 0;
         foreach($tables as $name => $values) {
-            $sql = 'CREATE TABLE IF NOT EXISTS ' . $name . ' (';
+            $sql = 'CREATE TABLE IF NOT EXISTS `' . $name . '` (';
 
             $tmp = [];
 
@@ -399,7 +399,7 @@ class DatabaseInstaller {
 
             $name = $tableName . '_i' . $i;
 
-            $sql = "DROP INDEX IF EXISTS $name ON $tableName";
+            $sql = "DROP INDEX IF EXISTS `$name` ON `$tableName`";
 
             $this->logger->sql($sql, __METHOD__, null);
 
@@ -444,9 +444,9 @@ class DatabaseInstaller {
             $isAdmin = in_array($username, $admins) ? '1' : '0';
             $canLogin = in_array($username, $canLoginArray) ? '1' : '0';
 
-            $sql = 'INSERT INTO users (`userId`, `username`, `password`, `isAdmin`, `canLogin`)
+            $sql = 'INSERT INTO `users` (`userId`, `username`, `password`, `isAdmin`, `canLogin`)
                     SELECT \'' . $userId . '\', \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', ' . $canLogin . '
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
+                    WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = \'' . $username . '\')';
 
             $this->db->query($sql);
 
@@ -467,9 +467,9 @@ class DatabaseInstaller {
         foreach($systems as $name => $status) {
             $id = HashManager::createEntityId();
 
-            $sql = 'INSERT INTO system_status (`systemId`, `name`, `status`)
+            $sql = 'INSERT INTO `system_status` (`systemId`, `name`, `status`)
                     SELECT \'' . $id . '\', \'' . $name . '\', \'' . $status . '\'
-                    WHERE NOT EXISTS (SELECT 1 FROM system_status WHERE name = \'' . $name . '\')';
+                    WHERE NOT EXISTS (SELECT 1 FROM `system_status` WHERE `name` = \'' . $name . '\')';
 
             $this->db->query($sql);
 
@@ -503,9 +503,9 @@ class DatabaseInstaller {
         foreach($groups as $title => $id) {
             $description = $descriptions[$id];
 
-            $sql = "INSERT INTO groups (`groupId`, `title`, `description`)
+            $sql = "INSERT INTO `groups` (`groupId`, `title`, `description`)
                     SELECT '$id', '$title', '$description'
-                    WHERE NOT EXISTS (SELECT 1 FROM groups WHERE groupId = $id)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = $id)";
 
             $this->db->query($sql);
         }
@@ -516,7 +516,7 @@ class DatabaseInstaller {
     private function addAdminToGroups() {
         $this->logger->info('Adding admin to administrator groups.', __METHOD__);
 
-        $sql = "SELECT userId FROM users WHERE username = 'admin'";
+        $sql = "SELECT `userId` FROM `users` WHERE `username` = 'admin'";
 
         $result = $this->db->query($sql);
 
@@ -539,9 +539,9 @@ class DatabaseInstaller {
         foreach($groups as $groupId) {
             $membershipId = HashManager::createEntityId();
 
-            $sql = "INSERT INTO group_membership (`membershipId`, `userId`, `groupId`)
+            $sql = "INSERT INTO `group_membership` (`membershipId`, `userId`, `groupId`)
                     SELECT '$membershipId', '$userId', '$groupId'
-                    WHERE NOT EXISTS (SELECT 1 FROM group_membership WHERE membershipId = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE `membershipId` = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
 
             $this->db->query($sql);
         }
@@ -563,9 +563,9 @@ class DatabaseInstaller {
         foreach($services as $title => $path) {
             $id = HashManager::createEntityId();
 
-            $sql = "INSERT INTO system_services (`serviceId`, `title`, `scriptPath`)
+            $sql = "INSERT INTO `system_services` (`serviceId`, `title`, `scriptPath`)
                     SELECT '$id', '$title', '$path'
-                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE serviceId = '$id' AND title = '$title' AND scriptPath = '$path')";
+                    WHERE NOT EXISTS (SELECT 1 FROM `system_services` WHERE `serviceId` = '$id' AND title = '$title' AND scriptPath = '$path')";
 
             $this->db->query($sql);
         }
