@@ -1662,7 +1662,9 @@ class TopicsPresenter extends AUserPresenter {
         $filter = $this->httpGet('filter');
         $topicId = $this->httpGet('topicId');
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+        ];
 
         $this->saveToPresenterCache('links', $links);
 
