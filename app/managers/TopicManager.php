@@ -15,7 +15,6 @@ use Exception;
 
 class TopicManager extends AManager {
     private TopicRepository $tr;
-    private CacheManager $cm;
     private TopicMembershipManager $tmm;
     private VisibilityAuthorizator $va;
     private ContentManager $com;
@@ -26,7 +25,6 @@ class TopicManager extends AManager {
         $this->tr = $topicRepository;
         $this->tmm = $tmm;
         $this->va = $va;
-        $this->cm = new CacheManager($logger);
         $this->com = $com;
     }
 
@@ -128,7 +126,7 @@ class TopicManager extends AManager {
         try {
             $this->com->updateTopic($topicId, ['isPrivate' => $isPrivate, 'isVisible' => $isVisible]);
 
-            $this->cm->invalidateCache(CacheManager::NS_TOPICS);
+            $this->cache->invalidateCache(CacheManager::NS_TOPICS);
         } catch(Exception $e) {
             throw $e;
         }
@@ -146,7 +144,7 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId);
 
-            $this->cm->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
         } catch(AException $e) {
             throw $e;
         }
@@ -166,7 +164,7 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId, false);
 
-            $this->cm->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
         } catch(AException $e) {
             throw $e;
         }

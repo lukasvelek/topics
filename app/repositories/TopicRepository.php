@@ -235,8 +235,7 @@ class TopicRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('dateCreated', 'DESC');
 
-        $cm = new CacheManager($this->logger);
-        return $cm->loadCache($topicId, function() use ($qb) {
+        return $this->cache->loadCache($topicId, function() use ($qb) {
             $qb->execute();
 
             $postIds = [];
