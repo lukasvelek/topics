@@ -22,8 +22,11 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
+use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\Label;
+use App\UI\FormBuilder\Select;
 use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\DefaultGridReducer;
@@ -1288,6 +1291,21 @@ class TopicsPresenter extends AUserPresenter {
 
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
+            $timeElapsedSelect = [
+                [
+                    'value' => 'never',
+                    'text' => 'One vote only'
+                ],
+                [
+                    'value' => 'hours',
+                    'text' => 'Hours'
+                ],
+                [
+                    'value' => 'days',
+                    'text' => 'Days',
+                ]
+            ];
+
             $fb = new FormBuilder();
 
             $fb ->setMethod()
@@ -1296,10 +1314,15 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextArea('description', 'Poll description:', null, true)
                 ->addTextArea('choices', 'Poll choices:', null, true)
                 ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
-                ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
-                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
+                //->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
+                ->addSelect('timeElapsedSelect', 'Time between votes:', $timeElapsedSelect, true)
+                //->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
+                ->startSection('timeElapsedSubselectSection', true)
+                //->addSelect('timeElapsedSubselect', null, [], true)
+                ->endSection()
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create', false, true)
+                ->addJSHandler('js/PollFormHandler.js')
             ;
 
             $fb->updateElement('choices', function(AElement $element) {
@@ -1774,6 +1797,58 @@ class TopicsPresenter extends AUserPresenter {
 
     public function renderDeletePostConcept() {
         $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function actionPollFormHandler() {
+        global $app;
+
+        $action2 = $this->httpGet('action2');
+        $value = $this->httpGet('value');
+
+        $selectValues = [];
+
+        if($action2 == 'getTimeBetweenVotesSubselect') {
+            if($value == 'hours') {
+                for($i = 1; $i < 24; $i++) {
+                    $t = ' hours';
+
+                    if($i == 1) {
+                        $t = ' hour';
+                    }
+
+                    $selectValues[] = [
+                        'value' => "$i",
+                        'text' => $i . $t
+                    ];
+                }
+            } else if($value == 'days') {
+                for($i = 1; $i < 31; $i++) {
+                    $t = ' days';
+
+                    if($i == 1) {
+                        $t = ' day';
+                    }
+
+                    $selectValues[] = [
+                        'value' => "$i",
+                        'text' => $i . $t
+                    ];
+                }
+            }
+        }
+
+        $select = new Select('timeElapsedSubselect', $selectValues);
+
+        $result = [
+            'select' => $select->render() . '<br><br>'
+        ];
+        if(!empty($selectValues)) {
+            $result['empty'] = '1';
+        } else {
+            $result['empty'] = '0';
+        }
+
+        $this->ajaxSendResponse($result);
     }
 }
 
