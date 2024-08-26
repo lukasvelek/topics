@@ -64,6 +64,15 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             return $cell;
         });
+        $gb->addOnColumnRender('canLogin', function(Cell $cell, UserEntity $entity) {
+            if($entity->canLogin()) {
+                $cell->setValue('Yes');
+                $cell->setTextColor('green');
+            } else {
+                $cell->setValue('No');
+                $cell->setTextColor('red');
+            }
+        });
         $gb->addAction(function (UserEntity $user) {
             return LinkBuilder::createSimpleLink('Profile', ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
