@@ -404,7 +404,7 @@ class CacheManager {
      * @param int $minutes Number of minutes to be added to the final date
      * @return DateTime
      */
-    public static function EXPIRATION_MINUTES(int $minutes = 1) {
+    public static function EXPIRATION_MINUTES(int $minutes) {
         $dt = new DateTime();
         $dt->modify('+' . $minutes . 'i');
         return $dt;
@@ -416,7 +416,7 @@ class CacheManager {
      * @param int $hours Number of hours to be added to the final date
      * @return DateTime
      */
-    public static function EXPIRATION_HOURS(int $hours = 1) {
+    public static function EXPIRATION_HOURS(int $hours) {
         $dt = new DateTime();
         $dt->modify('+'  . $hours . 'h');
         return $dt;
