@@ -21,20 +21,19 @@ Topics is a website that allows people to chat about different topics. Each topi
     - Videos in posts
 
 ## Topic roles description
-Currently there are 5 roles in every topic.
+Currently there are 5 roles in every topic. Also their abilities are written below.
 
 They are:
 
-    - Member
-        - Member is every user that has followed the topic (and does not have higher role)
-    - VIP
-        - VIP currently acts as an indication that user is better that others
-    - Community Helper
-        - User in this role is able to do these things
-            - Create polls
-            - View poll list in the topic
-            - Report topics
-    - Manager
+    - Member (all users without higher role)
+        - Posts
+    - VIP (users that have a special status)
+        - Post concepts
+    - Community Helper (users that have been active members of the community)
+        - Polls
+        - View poll list in the topic
+        - Report topics
+    - Manager (users that are responsible for managing topics)
         - Manage roles
     - Owner
         - Delete topics
