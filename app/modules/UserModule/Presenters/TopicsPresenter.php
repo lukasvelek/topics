@@ -662,6 +662,10 @@ class TopicsPresenter extends AUserPresenter {
         if(isset($fr->submitPost)) {
             try {
                 $app->topicRepository->beginTransaction();
+
+                if($this->httpGet('conceptId' !== null)) {
+                    $app->postRepository->deletePostConcept($this->httpGet('conceptId'));
+                }
     
                 $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
                 

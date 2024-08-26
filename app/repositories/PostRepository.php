@@ -597,6 +597,17 @@ class PostRepository extends ARepository {
 
         return PostConceptEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function deletePostConcept(string $conceptId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from('post_concepts')
+            ->where('conceptId = ?', [$conceptId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>
