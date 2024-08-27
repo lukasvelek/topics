@@ -240,6 +240,32 @@ class TopicManager extends AManager {
             throw $e;
         }
     }
+
+    public function updateTopicRule(string $topicId, string $userId, int $ruleIndex, string $newText) {
+        $entity = $this->getTopicRulesEntityForTopicId($topicId);
+
+        try {
+            if($entity === null) {
+                throw new GeneralException('Topic has no rules.');
+            }
+
+            $rules = $entity->getRules();
+
+            $rules[$ruleIndex] = $newText;
+
+            $rulesJson = json_encode($rules);
+
+            if(!$this->trr->updateTopicRules($topicId, ['rules' => $rulesJson, 'lastUpdateUserId' => $userId, 'dateUpdated' => DateTime::now()])) {
+                throw new GeneralException('Could not update topic rule.');
+            }
+
+            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
+                throw new GeneralException('Could not invalidate cache.');
+            }
+        } catch(AException $e) {
+            throw $e;
+        }
+    }
 }
 
 ?>

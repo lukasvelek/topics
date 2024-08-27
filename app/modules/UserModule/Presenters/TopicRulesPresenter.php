@@ -38,7 +38,7 @@ class TopicRulesPresenter extends AUserPresenter {
         ];
 
         if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
-            $links[] = LinkBuilder::createSimpleLink('Manage', $this->createURL('manageRules', ['topicId' => $topicId]), 'post-data-link');
+            $links[] = LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link');
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -49,70 +49,6 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function actionGetTopicRulesList() {
-        global $app;
-
-        $topicId = $this->httpGet('topicId');
-
-        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
-
-        $grid = new GridBuilder();
-
-        $grid->addColumns(['rule' => 'Rule']);
-        $grid->addDataSourceCallback(function() use ($rules) {
-            $entity = function(string $text) {
-                return new class($text) {
-                    private string $text;
-
-                    public function __construct(string $text) {
-                        $this->text = $text;
-                    }
-
-                    public function getText() {
-                        return $this->text;
-                    }
-                };
-            };
-
-            $tmp = [];
-            foreach($rules as $rule) {
-                $tmp[] = $entity($rule);
-            }
-
-            return $tmp;
-        });
-
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
-    }
-
-    public function handleManageRules() {
-        $topicId = $this->httpGet('topicId', true);
-
-        $arb = new AjaxRequestBuilder();
-        
-        $arb->setMethod()
-            ->setHeader(['topicId' => '_topicId'])
-            ->setAction($this, 'getTopicRulesManagementGrid')
-            ->setFunctionName('getManageRulesGrid')
-            ->setFunctionArguments(['_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getManageRulesGrid(\'' . $topicId . '\')');
-
-        $links = [
-            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link'),
-            LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link')
-        ];
-
-        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
-    }
-
-    public function renderManageRules() {
-        $this->template->links = $this->loadFromPresenterCache('links');
-    }
-
-    public function actionGetTopicRulesManagementGrid() {
         global $app;
 
         $topicId = $this->httpGet('topicId');
@@ -155,9 +91,15 @@ class TopicRulesPresenter extends AUserPresenter {
 
             return $tmp;
         });
-        /*$grid->addAction(function(object $obj) use ($topicId) {
-            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteRule', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
-        });*/
+    
+        if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
+            $grid->addAction(function(object $obj) use ($topicId) {
+                return LinkBuilder::createSimpleLink('Edit', $this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
+            });
+            $grid->addAction(function(object $obj) use ($topicId) {
+                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteRule', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
+            });
+        }
 
         $this->ajaxSendResponse(['grid' => $grid->build()]);
     }
@@ -165,7 +107,7 @@ class TopicRulesPresenter extends AUserPresenter {
     public function handleNewRuleForm(?FormResponse $fr = null) {
         global $app;
 
-        $topicId = $this->httpGet('topicId');
+        $topicId = $this->httpGet('topicId', true);
 
         if($this->httpGet('isFormSubmit') == '1') {
             $ruleText = $fr->ruleText;
@@ -184,10 +126,10 @@ class TopicRulesPresenter extends AUserPresenter {
                 $this->flashMessage('Could not add new rule.', 'error');
             }
 
-            $this->redirect($this->createURL('manageRules', ['topicId' => $topicId]));
+            $this->redirect($this->createURL('list', ['topicId' => $topicId]));
         } else {
             $links = [
-                LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:TopicRules', 'action' => 'manageRules', 'topicId' => $topicId], 'post-data-link')
+                LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link')
             ];
 
             $this->saveToPresenterCache('links', $links);
@@ -206,6 +148,64 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function renderNewRuleForm() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function handleEditRuleForm(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $index = $this->httpGet('index', true);
+
+        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
+
+        if($index > (count($rules) - 1) || $rules < 0) {
+            $this->flashMessage('Incorrect rule selected.', 'error');
+            $this->redirect($this->createURL('list', ['topicId' => $topicId]));
+        }
+
+        $rule = $rules[$index];
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            $ruleText = $fr->ruleText;
+
+            try {
+                $app->topicRulesRepository->beginTransaction();
+
+                $app->topicManager->updateTopicRule($topicId, $app->currentUser->getId(), $index, $ruleText);
+
+                $app->topicRulesRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('New rule added.', 'success');
+            } catch(AException $e) {
+                $app->topicRulesRepository->rollback();
+
+                $this->flashMessage('Could not add new rule.', 'error');
+            }
+
+            $this->redirect($this->createURL('list', ['topicId' => $topicId]));
+        } else {
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
+
+            $form = new FormBuilder();
+
+            $form
+                ->setMethod()
+                ->setAction($this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $index]))
+                ->addTextArea('ruleText', 'Rule text:', $rule, true, 2)
+                ->addSubmit('Save', false, true)
+            ;
+
+            $this->saveToPresenterCache('form', $form);
+        }
+    }
+
+    public function renderEditRuleForm() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->form = $this->loadFromPresenterCache('form');
     }
