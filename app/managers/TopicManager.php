@@ -107,6 +107,10 @@ class TopicManager extends AManager {
     }
 
     public function deleteTopic(string $topicId, string $userId) {
+        if($this->tmm->getFollowRole($topicId, $userId) < TopicMemberRole::OWNER) {
+            throw new GeneralException('You are not authorized to delete this topic.');
+        }
+
         $this->com->deleteTopic($topicId);
 
         $members = $this->tmm->getTopicMembers($topicId, 0, 0, false);
