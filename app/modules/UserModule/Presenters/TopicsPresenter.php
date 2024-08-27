@@ -1258,8 +1258,25 @@ class TopicsPresenter extends AUserPresenter {
             $description = $this->httpPost('description');
             $choices = $this->httpPost('choices');
             $dateValid = $this->httpPost('dateValid');
-            $timeElapsed = $this->httpPost('timeElapsed');
             $pollId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLLS);
+
+            $timeElapsed = '';
+            $timeElapsedSelect = $this->httpPost('timeElapsedSelect');
+            $timeElapsedSubselect = $this->httpPost('timeElapsedSubselect');
+
+            switch($timeElapsedSelect) {
+                case 'hours':
+                    $timeElapsed = $timeElapsedSubselect . 'h';
+                    break;
+
+                case 'days':
+                    $timeElapsed = $timeElapsedSubselect . 'd';
+                    break;
+
+                case 'never':
+                    $timeElapsed = '0';
+                    break;
+            }
 
             $tmp = [];
             foreach(explode(',', $choices) as $choice) {
@@ -1314,11 +1331,8 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextArea('description', 'Poll description:', null, true)
                 ->addTextArea('choices', 'Poll choices:', null, true)
                 ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
-                //->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
                 ->addSelect('timeElapsedSelect', 'Time between votes:', $timeElapsedSelect, true)
-                //->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
                 ->startSection('timeElapsedSubselectSection', true)
-                //->addSelect('timeElapsedSubselect', null, [], true)
                 ->endSection()
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
                 ->addSubmit('Create', false, true)
@@ -1800,8 +1814,6 @@ class TopicsPresenter extends AUserPresenter {
     }
 
     public function actionPollFormHandler() {
-        global $app;
-
         $action2 = $this->httpGet('action2');
         $value = $this->httpGet('value');
 
@@ -1837,10 +1849,12 @@ class TopicsPresenter extends AUserPresenter {
             }
         }
 
+        $label = new Label('Duration:', 'timeElapsedSubselect', true);
         $select = new Select('timeElapsedSubselect', $selectValues);
+        $ed = new ElementDuo($select, $label, 'timeElapsedSubselect');
 
         $result = [
-            'select' => $select->render() . '<br><br>'
+            'select' => $ed->render() . '<br><br>'
         ];
         if(!empty($selectValues)) {
             $result['empty'] = '1';
