@@ -483,7 +483,11 @@ class PostRepository extends ARepository {
 
         $posts = [];
         while($row = $qb->fetchAssoc()) {
-            $posts[] = PostEntity::createEntityFromDbRow($row);
+            $entity = PostEntity::createEntityFromDbRow($row);
+
+            if($entity !== null) {
+                $posts[] = $entity;
+            }
         }
 
         return $posts;

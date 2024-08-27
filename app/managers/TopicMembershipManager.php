@@ -254,7 +254,11 @@ class TopicMembershipManager extends AManager {
 
         $topics = [];
         while($row = $qb->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
+            $entity = TopicEntity::createEntityFromDbRow($row);
+
+            if($entity !== null) {
+                $topics[] = $entity;
+            }
         }
 
         return $topics;
