@@ -6,7 +6,6 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
-use App\Core\HashManager;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;

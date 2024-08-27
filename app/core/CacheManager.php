@@ -146,7 +146,7 @@ class CacheManager {
      * @param string $method Calling method's name
      * @return mixed Result
      */
-    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null) {
+    public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null, bool $canSave = true) {
         $file = $this->loadCachedFiles($namespace);
         $save = false;
         $result = null;
@@ -174,7 +174,7 @@ class CacheManager {
             }
         }
 
-        if($save === true) {
+        if($save === true && $canSave === true) {
             $file[self::I_NS_CACHE_LAST_WRITE_DATE] = DateTime::now();
 
             $file = serialize($file);
