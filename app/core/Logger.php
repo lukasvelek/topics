@@ -121,7 +121,7 @@ class Logger implements ILoggerCallable {
                 break;
 
             case self::LOG_CACHE:
-                if($this->logLevel >= 4) {
+                if($this->logLevel >= 4 && $this->cfg['LOG_CACHE'] == 1) {
                     $this->writeLog($text);
                 }
                 break;
