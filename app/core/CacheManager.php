@@ -23,6 +23,7 @@ class CacheManager {
     public const NS_CACHED_PAGES = 'cachedPages';
     public const NS_PINNED_POSTS = 'pinnedPosts';
     public const NS_USER_NOTIFICATIONS = 'userNotifications';
+    public const NS_TOPIC_RULES = 'topicRules';
 
     /**
      * Internal cache namespaces

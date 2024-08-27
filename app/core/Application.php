@@ -37,6 +37,7 @@ use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\TopicRulesRepository;
 use App\Repositories\TransactionLogRepository;
 use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserProsecutionRepository;
@@ -89,6 +90,7 @@ class Application {
     public MailRepository $mailRepository;
     public UserRegistrationRepository $userRegistrationRepository;
     public ContentRepository $contentRepository;
+    public TopicRulesRepository $topicRulesRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -153,6 +155,7 @@ class Application {
         $this->mailRepository = new MailRepository($this->db, $this->logger);
         $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
         $this->contentRepository = new ContentRepository($this->db, $this->logger);
+        $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -171,7 +174,7 @@ class Application {
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;

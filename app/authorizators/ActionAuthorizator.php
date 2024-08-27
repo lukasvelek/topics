@@ -246,6 +246,14 @@ class ActionAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    public function canManageTopicRules(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+        
+        return true;
+    }
 }
 
 ?>
