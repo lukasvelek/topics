@@ -27,9 +27,9 @@ class CacheManager {
     /**
      * Internal cache namespaces
      */
-    private const I_NS_DATA = '_data'; // cache data
-    private const I_NS_EXPIRATION_DATE = '_cacheDateExpiration'; // cache expiration date
-    private const I_NS_CACHE_LAST_WRITE_DATE = '_cacheLastWriteDate'; // cache last write date
+    public const I_NS_DATA = '_data'; // cache data
+    public const I_NS_EXPIRATION_DATE = '_cacheDateExpiration'; // cache expiration date
+    public const I_NS_CACHE_LAST_WRITE_DATE = '_cacheLastWriteDate'; // cache last write date
     /**
      * End of internal cache namespaces
      */

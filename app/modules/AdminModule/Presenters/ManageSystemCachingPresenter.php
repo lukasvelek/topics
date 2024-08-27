@@ -35,7 +35,13 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
 
         switch($type) {
             case 'pages':
-                $files = unserialize($cm->loadCachedFiles('cachedPages'));
+                $files = unserialize($cm->loadCachedFiles(CacheManager::NS_CACHED_PAGES));
+
+                if($files === false) {
+                    $files = [];
+                } else {
+                    $files = $files[CacheManager::I_NS_DATA];
+                }
 
                 $fileArray = [];
                 if($files !== false) {
@@ -66,7 +72,13 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                 break;
 
             case 'users':
-                    $files = unserialize($cm->loadCachedFiles('users'));
+                    $files = unserialize($cm->loadCachedFiles(CacheManager::NS_USERS));
+
+                    if($files == false) {
+                        $files = [];
+                    } else {
+                        $files = $files[CacheManager::I_NS_DATA];
+                    }
 
                     $fileArray = [];
                     if($files !== false) {
