@@ -239,6 +239,10 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
         }
 
+        if($app->topicManager->hasTopicRules($topicId) || $app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('Rules', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link');
+        }
+
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         if(!empty($links)) {
@@ -519,7 +523,6 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            //$loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
             $loadMoreLink = '<button type="button" id="formSubmit" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</button>';
         }
 

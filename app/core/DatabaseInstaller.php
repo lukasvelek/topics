@@ -266,6 +266,14 @@ class DatabaseInstaller {
                 'postData' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateUpdated' => 'DATETIME NULL'
+            ],
+            'topic_rules' => [
+                'rulesetId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'rules' => 'TEXT NOT NULL',
+                'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateUpdated' => 'DATETIME NULL'
             ]
         ];
 
@@ -386,6 +394,9 @@ class DatabaseInstaller {
             'user_suggestion_comments' => [
                 'suggestionId',
                 'userId'
+            ],
+            'topic_rules' => [
+                'topicId'
             ]
         ];
 

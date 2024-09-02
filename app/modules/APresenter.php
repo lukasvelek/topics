@@ -4,6 +4,7 @@ namespace App\Modules;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
@@ -23,8 +24,8 @@ abstract class APresenter extends AGUICore {
     public string $name;
     private string $title;
     private ?string $action;
-    private array $presenterCache;
-    private array $scripts;
+    private ArrayList $presenterCache;
+    private ArrayList $scripts;
     private ?string $ajaxResponse;
     private bool $isStatic;
     private ?string $defaultAction;
@@ -33,8 +34,8 @@ abstract class APresenter extends AGUICore {
     protected ?TemplateObject $template;
     protected ?Logger $logger;
 
-    private array $beforeRenderCallbacks;
-    private array $afterRenderCallbacks;
+    private ArrayList $beforeRenderCallbacks;
+    private ArrayList $afterRenderCallbacks;
 
     /**
      * The class constructor
@@ -46,17 +47,21 @@ abstract class APresenter extends AGUICore {
         $this->title = $title;
         $this->name = $name;
         $this->params = [];
-        $this->beforeRenderCallbacks = [];
-        $this->afterRenderCallbacks = [];
         $this->action = null;
         $this->template = null;
-        $this->presenterCache = [];
-        $this->scripts = [];
         $this->ajaxResponse = null;
         $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
         $this->moduleName = null;
+
+        $this->presenterCache = new ArrayList();
+        $this->presenterCache->setStringKeyType();
+        $this->presenterCache->setEnsureKeyType(true);
+
+        $this->scripts = new ArrayList();
+        $this->beforeRenderCallbacks = new ArrayList();
+        $this->afterRenderCallbacks = new ArrayList();
     }
 
     public function createURLString(string $action, array $params = []) {
@@ -162,7 +167,7 @@ abstract class APresenter extends AGUICore {
      * @param mixed $value Data value
      */
     protected function saveToPresenterCache(string $key, mixed $value) {
-        $this->presenterCache[$key] = $value;
+        $this->presenterCache->set($key, $value);
     }
 
     /**
@@ -172,11 +177,7 @@ abstract class APresenter extends AGUICore {
      * @return mixed Data value or null
      */
     protected function loadFromPresenterCache(string $key) {
-        if(array_key_exists($key, $this->presenterCache)) {
-            return $this->presenterCache[$key];
-        } else {
-            return null;
-        }
+        return $this->presenterCache->get($key);
     }
 
     /**
@@ -320,7 +321,7 @@ abstract class APresenter extends AGUICore {
                 $this->template->sys_page_title = $this->title;
                 $this->template->sys_app_name = $app->cfg['APP_NAME'];
                 $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
-                $this->template->sys_scripts = $this->scripts;
+                $this->template->sys_scripts = $this->scripts->getAll();
             
                 if($app->currentUser !== null) {
                     $this->template->sys_user_id = $app->currentUser->getId();
@@ -343,7 +344,7 @@ abstract class APresenter extends AGUICore {
      * @param callable $function Callback
      */
     public function addBeforeRenderCallback(callable $function) {
-        $this->beforeRenderCallbacks[] = $function;
+        $this->beforeRenderCallbacks->add(null, $function);
     }
 
     /**
@@ -352,7 +353,7 @@ abstract class APresenter extends AGUICore {
      * @param callable $function Callback
      */
     public function addAfterRenderCallback(callable $function) {
-        $this->afterRenderCallbacks[] = $function;
+        $this->afterRenderCallbacks->add(null, $function);
     }
 
     /**
@@ -453,9 +454,7 @@ abstract class APresenter extends AGUICore {
             }
         }
 
-        foreach($this->beforeRenderCallbacks as $callback) {
-            $callback();
-        }
+        $this->beforeRenderCallbacks->executeCallables();
 
         return $templateContent;
     }
@@ -468,11 +467,9 @@ abstract class APresenter extends AGUICore {
             $this->template->render();
         }
 
-        $this->presenterCache = [];
+        $this->presenterCache->reset();
 
-        foreach($this->afterRenderCallbacks as $callback) {
-            $callback();
-        }
+        $this->afterRenderCallbacks->executeCallables();
     }
 
     /**
@@ -482,7 +479,7 @@ abstract class APresenter extends AGUICore {
      * @param bool True if type should be added or false if not
      */
     protected function addExternalScript(string $scriptPath, bool $hasType = true) {
-        $this->scripts[] = '<script ' . ($hasType ? 'type="text/javascript" ' : '') . 'src="' . $scriptPath . '"></script>';
+        $this->scripts->add(null, '<script ' . ($hasType ? 'type="text/javascript" ' : '') . 'src="' . $scriptPath . '"></script>');
     }
 
     /**
@@ -495,7 +492,7 @@ abstract class APresenter extends AGUICore {
             $scriptContent = $scriptContent->build();
         }
         
-        $this->scripts[] = '<script type="text/javascript">' . $scriptContent . '</script>';
+        $this->scripts->add(null, '<script type="text/javascript">' . $scriptContent . '</script>');
     }
 
     /**
