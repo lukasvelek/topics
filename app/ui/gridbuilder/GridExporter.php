@@ -50,6 +50,9 @@ class GridExporter {
                     $result = $entity->{'get' . $objectIdVarName}();
                 }
 
+                $result = trim($result);
+                $result = str_replace("\r\n", '', $result);
+
                 $tmp[] = $result;
             }
 
