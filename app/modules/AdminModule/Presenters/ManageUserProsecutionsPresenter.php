@@ -80,6 +80,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
+        $gb->addGridExport($app->logger);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
@@ -189,7 +190,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $historyEntriesCount, 'getProsecutionLog');
-        $gb->addGridExport($app->logger);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
