@@ -239,7 +239,7 @@ class ManageUsersPresenter extends AAdminPresenter {
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
-        $reportId = $this->httpGet('reportId');
+        $reportId = $this->httpGet('reportId', true);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;
@@ -247,7 +247,11 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userProsecutionRepository->beginTransaction();
 
-                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
+                $expire = new DateTime();
+                $expire->modify('+7d');
+                $expire = $expire->getResult();
+
+                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, DateTime::now(), $expire);
 
                 $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -262,7 +266,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         } else {
             $fb = new FormBuilder();
 
-            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId])
+            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId, 'reportId' => $reportId])
                 ->addTextArea('description', 'Reason:', null, true)
                 ->addSubmit('Warn user \'' . $user->getUsername() .  '\'')
                 ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit')

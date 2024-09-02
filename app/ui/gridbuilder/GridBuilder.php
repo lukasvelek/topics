@@ -497,11 +497,17 @@ class GridBuilder {
     }
 
     public function addGridExport(Logger $logger) {
+        $control = $this->createGridExportControl($logger);
+
+        if($control === null) {
+            return;
+        }
+
         if($this->gridControls !== null) {
-            $this->gridControls->setGridExport($this->createGridExportControl($logger));
+            $this->gridControls->setGridExport($control);
         } else {
             $gc = new GridControls();
-            $gc->setGridExport($this->createGridExportControl($logger));
+            $gc->setGridExport($control);
 
             $this->gridControls = $gc;
         }
