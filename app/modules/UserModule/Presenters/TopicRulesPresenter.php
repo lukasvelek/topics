@@ -4,8 +4,10 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
+use App\UI\FormBuilder\Button;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
@@ -57,7 +59,7 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $grid = new GridBuilder();
 
-        $grid->addColumns(['index' => 'Index', 'text' => 'Rule']);
+        $grid->addColumns(['index' => 'No', 'text' => 'Rule']);
         $grid->addOnColumnRender('index', function(Cell $cell, object $obj) {
             return '#' . ($obj->getIndex() + 1);
         });
@@ -97,7 +99,7 @@ class TopicRulesPresenter extends AUserPresenter {
                 return LinkBuilder::createSimpleLink('Edit', $this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
             });
             $grid->addAction(function(object $obj) use ($topicId) {
-                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteRule', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
+                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
             });
         }
 
@@ -208,6 +210,52 @@ class TopicRulesPresenter extends AUserPresenter {
     public function renderEditRuleForm() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function handleDeleteRuleForm(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $index = $this->httpGet('index', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            try {
+                $app->topicRulesRepository->beginTransaction();
+
+                $app->topicManager->deleteTopicRule($topicId, $app->currentUser->getId(), $index);
+
+                $app->topicRulesRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Rule deleted.', 'success');
+            } catch(AException $e) {
+                $app->topicRulesRepository->rollback();
+
+                $this->flashMessage('Could not delete rule.', 'error');
+            }
+
+            $this->redirect($this->createURL('list', ['topicId' => $topicId]));
+        } else {
+            $links = [];
+
+            $this->saveToPresenterCache('links', $links);
+
+            $form = new FormBuilder();
+
+            $form
+                ->setMethod()
+                ->setAction($this->createURL('deleteRuleForm', ['topicId' => $topicId, 'index' => $index]))
+                ->addLabel('Delete topic rule #' . ($index + 1) . '?')
+                ->addSubmit('Delete', false, false)
+                ->addButton('Go back', 'location.href = \'?page=UserModule:TopicRules&action=list&topicId=' . $topicId . '\'', 'formSubmit')
+            ;
+
+            $this->saveToPresenterCache('form', $form);
+        }
+    }
+
+    public function renderDeleteRuleForm() {
+        $this->template->form = $this->loadFromPresenterCache('form');
+        $this->template->links = $this->loadFromPresenterCache('links');
     }
 }
 
