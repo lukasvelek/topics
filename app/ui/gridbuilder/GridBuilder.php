@@ -201,6 +201,11 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Performs grid prebuilding
+     * 
+     * @return GridTable GridTable instance
+     */
     public function prebuild() {
         if($this->prebuiltTable !== null) {
             return $this->prebuiltTable;
