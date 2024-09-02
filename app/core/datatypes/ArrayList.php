@@ -127,7 +127,7 @@ class ArrayList {
             return null;
         }
 
-        if(!in_array($key, $this->_keys) || !array_key_exists($key, $this->_data)) {
+        if(!in_array($key, $this->_keys) && !array_key_exists($key, $this->_data)) {
             return null;
         }
 
@@ -300,8 +300,6 @@ class ArrayList {
         if(!$this->_allowOverwrite || $overrideOverwrite) {
             if(array_key_exists($key, $this->_data) && in_array($key, $this->_keys)) {
                 return true;
-            } else {
-                return false;
             }
         }
 
