@@ -86,3 +86,21 @@ function changeImage(_postId, _id, _maxId) {
 
     $("#post-" + _postId + "-image-preview").html('<a href="#post-' + _postId + '" onclick="openImagePostLister(\'' + path + '\', ' + _postId + ')"><img id="post-' + _postId + '-image-preview-source" src="' + path + '" class="limited"></a>');
 }
+
+async function exportGrid(_dataId) {
+    $.get(
+        "?page=UserModule:GridExportHelper&action=exportGrid&isAjax=1",
+        {
+            hash: _dataId
+        }
+    )
+    .done(async function(data) {
+        const obj = JSON.parse(data);
+
+        if(obj.empty == "0") {
+            window.open(obj.path, "_blank");
+        } else {
+            alert("Could not export data from table.");
+        }
+    });
+}

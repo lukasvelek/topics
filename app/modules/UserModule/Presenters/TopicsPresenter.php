@@ -1652,6 +1652,7 @@ class TopicsPresenter extends AUserPresenter {
         });
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
+        $gb->addGridExport($app->logger);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }

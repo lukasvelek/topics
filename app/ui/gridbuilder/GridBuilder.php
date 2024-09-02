@@ -2,6 +2,7 @@
 
 namespace App\UI\GridBuilder;
 
+use App\Logger\Logger;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -16,7 +17,7 @@ use Exception;
  * - row actions (info, edit, delete, etc.)
  * 
  * @author Lukas Velek
- * @version 1.1
+ * @version 1.2
  */
 class GridBuilder {
     private array $actions;
@@ -24,9 +25,11 @@ class GridBuilder {
     private array $dataSourceArray;
     private array $callbacks;
     private array $rowCallbacks;
+    private array $belowGridElementsCode;
     
     private ?string $headerCheckbox;
     private string $emptyDataSourceMessage;
+    private string $idElement;
 
     private mixed $renderRowCheckbox;
     private mixed $dataSourceCallback;
@@ -35,9 +38,8 @@ class GridBuilder {
     private bool $alwaysDrawHeaderCheckbox;
     private bool $displayNoEntriesMessage;
 
-    private array $belowGridElementsCode;
-
-    private string $idElement;
+    private ?GridControls $gridControls;
+    private ?Table $prebuiltTable;
 
     /**
      * Grid builder constructor
@@ -48,18 +50,20 @@ class GridBuilder {
         $this->dataSourceArray = [];
         $this->callbacks = [];
         $this->rowCallbacks = [];
+        $this->belowGridElementsCode = [];
 
         $this->headerCheckbox = null;
         $this->renderRowCheckbox = null;
         $this->dataSourceCallback = null;
         $this->emptyDataSourceMessage = 'No data found';
+        $this->idElement = 'gridbuilder-grid';
+
         $this->reverse = false;
         $this->alwaysDrawHeaderCheckbox = false;
         $this->displayNoEntriesMessage = true;
 
-        $this->belowGridElementsCode = [];
-
-        $this->idElement = 'gridbuilder-grid';
+        $this->gridControls = null;
+        $this->prebuiltTable = null;
     }
 
     public function getColumns() {
@@ -179,6 +183,29 @@ class GridBuilder {
      * @return string HTML table code
      */
     public function build() {
+        $table = $this->prebuild();
+        // end of data
+
+        $code = $table->render();
+
+        if(!empty($this->belowGridElementsCode)) {
+            foreach($this->belowGridElementsCode as $bgec) {
+                $code .= $bgec;
+            }
+        }
+
+        if($this->gridControls !== null) {
+            $code .= $this->gridControls->render();
+        }
+
+        return $code;
+    }
+
+    public function prebuild() {
+        if($this->prebuiltTable !== null) {
+            return $this->prebuiltTable;
+        }
+
         $table = new Table();
 
         $table->setId($this->idElement);
@@ -360,17 +387,10 @@ class GridBuilder {
         }
 
         $table->bulkAddRows($entityRows);
-        // end of data
 
-        $code = $table->render();
+        $this->prebuiltTable = $table;
 
-        if(!empty($this->belowGridElementsCode)) {
-            foreach($this->belowGridElementsCode as $bgec) {
-                $code .= $bgec;
-            }
-        }
-
-        return $code;
+        return $this->prebuiltTable;
     }
 
     /**
@@ -468,12 +488,44 @@ class GridBuilder {
     }
 
     public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
-        $code = '<div class="row">';
-        $code .= '<div class="col-md">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div>';
-        $code .= '<div class="col-md" id="right">' . $this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
-        $code .= '</div>';
+        $gc = new GridControls();
+        $gc->setGridPagingInfo($this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount));
+        $gc->setGridRefresh($this->addGridRefresh($jsHandlerName, $otherArguments));
+        $gc->setGridControls($this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments));
 
-        $this->addBelowGridElementCode($code);
+        $this->gridControls = $gc;
+    }
+
+    public function addGridExport(Logger $logger) {
+        if($this->gridControls !== null) {
+            $this->gridControls->setGridExport($this->createGridExportControl($logger));
+        } else {
+            $gc = new GridControls();
+            $gc->setGridExport($this->createGridExportControl($logger));
+
+            $this->gridControls = $gc;
+        }
+    }
+
+    private function createGridExportControl(Logger $logger) {
+        if(empty($this->dataSourceArray)) {
+            return null;
+        }
+
+        $geh = new GridExportHandler($logger);
+        $geh->setData($this);
+        $geh->saveCache();
+        $hash = $geh->getHash();
+
+        return '<a class="post-data-link" onclick="exportGrid(\'' . $hash . '\')" style="cursor: pointer">Export</a>';
+    }
+
+    public function getDataSourceArray() {
+        return $this->dataSourceArray;
+    }
+
+    public function getColumnCallbacks() {
+        return $this->callbacks;
     }
 }
 

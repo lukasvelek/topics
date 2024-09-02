@@ -24,6 +24,8 @@ class CacheManager {
     public const NS_PINNED_POSTS = 'pinnedPosts';
     public const NS_USER_NOTIFICATIONS = 'userNotifications';
     public const NS_TOPIC_RULES = 'topicRules';
+    public const NS_GRID_EXPORT_DATA = 'gridExportData';
+    public const NS_GRID_EXPORTS = 'gridExports';
 
     /**
      * Internal cache namespaces
