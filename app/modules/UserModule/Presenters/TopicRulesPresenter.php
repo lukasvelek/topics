@@ -4,10 +4,8 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
-use App\UI\FormBuilder\Button;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
@@ -26,11 +24,15 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $arb->setMethod()
             ->setHeader(['topicId' => '_topicId'])
-            ->setAction($this, 'getTopicRulesList')
+            ->setAction($this, 'getTopicRulesListForUser')
             ->setFunctionName('getTopicRules')
             ->setFunctionArguments(['_topicId'])
             ->updateHTMLElement('grid-content', 'grid')
         ;
+
+        if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId) && ($this->httpGet('userList') === null)) {
+            $arb->setAction($this, 'getTopicRulesList');
+        }
 
         $this->addScript($arb);
         $this->addScript('getTopicRules(\'' . $topicId . '\')');
@@ -41,6 +43,12 @@ class TopicRulesPresenter extends AUserPresenter {
 
         if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
             $links[] = LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link');
+
+            if($this->httpGet('userList') !== null) {
+                $links[] = LinkBuilder::createSimpleLink('Admin view', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
+            } else {
+                $links[] = LinkBuilder::createSimpleLink('User view', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
+            }
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -48,6 +56,27 @@ class TopicRulesPresenter extends AUserPresenter {
 
     public function renderList() {
         $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetTopicRulesListForUser() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+
+        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
+
+        $code = ['<ol>'];
+
+        $i = 0;
+        foreach($rules as $rule) {
+            $code[] = '<li>' . $rule . '</li>';
+
+            $i++;
+        }
+
+        $code[] = '</ol>';
+
+        $this->ajaxSendResponse(['grid' => implode('', $code)]);
     }
 
     public function actionGetTopicRulesList() {
