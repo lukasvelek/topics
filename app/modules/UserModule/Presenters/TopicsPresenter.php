@@ -523,7 +523,6 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            //$loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
             $loadMoreLink = '<button type="button" id="formSubmit" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</button>';
         }
 
