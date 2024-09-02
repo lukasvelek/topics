@@ -568,7 +568,8 @@ class DatabaseInstaller {
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
-            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemovingService.php'
+            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
         ];
 
         foreach($services as $title => $path) {
