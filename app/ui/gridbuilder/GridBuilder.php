@@ -184,7 +184,6 @@ class GridBuilder {
      */
     public function build() {
         $table = $this->prebuild();
-        // end of data
 
         $code = $table->render();
 
@@ -392,6 +391,7 @@ class GridBuilder {
         }
 
         $table->bulkAddRows($entityRows);
+        // end of data
 
         $this->prebuiltTable = $table;
 
