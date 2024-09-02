@@ -59,7 +59,7 @@ class ArrayList {
             return false;
         }
 
-        if($this->checkKeyExists($key)) {
+        if($key !== null && $this->checkKeyExists($key)) {
             return false;
         }
 
