@@ -19,6 +19,7 @@ class GridExporter {
     private ArrayList $dataToSave;
     private array $cfg;
     private bool $exportAll;
+    private int $exportedEntries;
 
     /**
      * Class constructor
@@ -33,6 +34,7 @@ class GridExporter {
         $this->dataToSave = new ArrayList();
         $this->cfg = $cfg;
         $this->exportAll = false;
+        $this->exportedEntries = 0;
     }
 
     public function setExportAll(bool $exportAll = true) {
@@ -93,6 +95,8 @@ class GridExporter {
             $i++;
         }
 
+        $this->exportedEntries = count($data);
+
         return $this->saveFile();
     }
 
@@ -140,6 +144,15 @@ class GridExporter {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Returns the number of exported entries
+     * 
+     * @return int Number of exported entries
+     */
+    public function getEntryCount() {
+        return $this->exportedEntries;
     }
 }
 

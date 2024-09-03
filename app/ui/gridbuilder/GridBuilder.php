@@ -542,8 +542,8 @@ class GridBuilder {
      * @param ?callback $allDataSourceArrayCallback All data callback that will return all the entries
      * @param ?Logger $logger Logger instance
      */
-    public function addGridExport(callable $allDataSourceArrayCallback, ?Logger $logger = null) {
-        $control = $this->createGridExportControl($logger, $allDataSourceArrayCallback);
+    public function addGridExport(callable $allDataSourceArrayCallback, string $gridName, ?Logger $logger = null) {
+        $control = $this->createGridExportControl($logger, $gridName, $allDataSourceArrayCallback);
 
         if($control === null) {
             return;
@@ -566,7 +566,7 @@ class GridBuilder {
      * @param ?callback $customDataCallback Custom data callback used
      * @return string HTML code
      */
-    private function createGridExportControl(?Logger $logger, ?callable $customDataCallback = null) {
+    private function createGridExportControl(?Logger $logger, string $gridName, ?callable $customDataCallback = null) {
         if(empty($this->dataSourceArray)) {
             return null;
         }
@@ -582,7 +582,7 @@ class GridBuilder {
         $geh->saveCache();
         $hash = $geh->getHash();
 
-        return '<a class="post-data-link" onclick="exportGrid(\'' . $hash . '\')" style="cursor: pointer">Export</a>';
+        return '<a class="post-data-link" onclick="exportGrid(\'' . $hash . '\', \'' . $gridName . '\')" style="cursor: pointer">Export</a>';
     }
 
     /**

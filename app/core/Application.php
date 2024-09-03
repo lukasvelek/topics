@@ -25,6 +25,7 @@ use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
+use App\Repositories\GridExportRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
@@ -91,6 +92,7 @@ class Application {
     public UserRegistrationRepository $userRegistrationRepository;
     public ContentRepository $contentRepository;
     public TopicRulesRepository $topicRulesRepository;
+    public GridExportRepository $gridExportRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -156,6 +158,7 @@ class Application {
         $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
         $this->contentRepository = new ContentRepository($this->db, $this->logger);
         $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
+        $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 

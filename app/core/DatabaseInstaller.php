@@ -281,7 +281,7 @@ class DatabaseInstaller {
                 'hash' => 'VARCHAR(256) NOT NULL',
                 'filename' => 'VARCHAR(256) NULL',
                 'gridName' => 'VARCHAR(256) NOT NULL',
-                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'entryCount' => 'INT(32) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp',
                 'dateFinished' => 'DATETIME NULL'
             ]

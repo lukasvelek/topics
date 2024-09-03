@@ -87,14 +87,15 @@ function changeImage(_postId, _id, _maxId) {
     $("#post-" + _postId + "-image-preview").html('<a href="#post-' + _postId + '" onclick="openImagePostLister(\'' + path + '\', ' + _postId + ')"><img id="post-' + _postId + '-image-preview-source" src="' + path + '" class="limited"></a>');
 }
 
-async function exportGrid(_dataId) {
+async function exportGrid(_dataId, _gridName) {
     const _exportAll = confirm('Export all?');
 
     $.get(
         "?page=UserModule:GridExportHelper&action=exportGrid&isAjax=1",
         {
             hash: _dataId,
-            exportAll: _exportAll
+            exportAll: _exportAll,
+            gridName: _gridName
         }
     )
     .done(async function(data) {
