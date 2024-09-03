@@ -274,6 +274,16 @@ class DatabaseInstaller {
                 'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateUpdated' => 'DATETIME NULL'
+            ],
+            'grid_exports' => [
+                'exportId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'hash' => 'VARCHAR(256) NOT NULL',
+                'filename' => 'VARCHAR(256) NULL',
+                'gridName' => 'VARCHAR(256) NOT NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp',
+                'dateFinished' => 'DATETIME NULL'
             ]
         ];
 
