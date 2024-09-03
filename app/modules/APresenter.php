@@ -580,10 +580,6 @@ abstract class APresenter extends AGUICore {
     public function isStatic() {
         return $this->isStatic;
     }
-
-    protected function getFullname() {
-        return $this->name . ':' . $this->action . '()';
-    }
 }
 
 ?>
