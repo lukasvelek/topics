@@ -56,10 +56,6 @@ class CacheManager {
      * @return null|string File contents or null
      */
     public function loadCachedFiles(string $namespace, bool $flashMessage = false) {
-        if(!$flashMessage) {
-            return null;
-        }
-
         $filename = $this->generateFilename($namespace);
         
         $path = $this->createPath($namespace) . $filename;
@@ -86,10 +82,6 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function saveCachedFiles(string $namespace, array|string $content, bool $flashMessage = false) {
-        if(!$flashMessage) {
-            return false;
-        }
-
         $filename = $this->generateFilename($namespace);
 
         $path = $this->createPath($namespace);
@@ -288,10 +280,6 @@ class CacheManager {
      */
     public function invalidateCache(string $namespace, bool $flashMessage = false) {
         global $app;
-
-        if(!$flashMessage) {
-            return false;
-        }
 
         return FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
