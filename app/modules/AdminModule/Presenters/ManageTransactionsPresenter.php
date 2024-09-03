@@ -96,6 +96,24 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated());
         });
 
+        $gb->addOnExportRender('method', function(TransactionEntity $te) {
+            return $te->getMethod() . '()';
+        });
+        $gb->addOnExportRender('user', function(TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            } else {
+                $user = $app->userRepository->getUserById($te->getUserId());
+
+                if($user === null) {
+                    return '-';
+                } else {
+                    return $user->getUsername();
+                }
+            }
+        });
+        $gb->addGridExport();
+
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }
 }
