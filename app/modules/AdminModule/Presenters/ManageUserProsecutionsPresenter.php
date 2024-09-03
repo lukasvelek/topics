@@ -80,6 +80,28 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
+
+        $gb->addOnExportRender('user', function(UserProsecutionEntity $userProsecution) use ($app) {
+            $user = $app->userRepository->getUserById($userProsecution->getUserId());
+            return $user->getUsername();
+        });
+        $gb->addOnExportRender('type', function(UserProsecutionEntity $userProsecution) {
+            return UserProsecutionType::toString($userProsecution->getType());
+        });
+        $gb->addOnExportRender('dateFrom', function(UserProsecutionEntity $userProsecution) {
+            if($userProsecution->getStartDate() !== null) {
+                return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate());
+            } else {
+                return '-';
+            }
+        });
+        $gb->addOnExportRender('dateTo', function(UserProsecutionEntity $userProsecution) {
+            if($userProsecution->getEndDate() !== null) {
+                return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate());
+            } else {
+                return '-';
+            }
+        });
         $gb->addGridExport($app->logger);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);

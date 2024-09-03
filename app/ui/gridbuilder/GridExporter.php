@@ -4,6 +4,7 @@ namespace App\UI\GridBuilder;
 
 use App\Core\CacheManager;
 use App\Core\Datatypes\ArrayList;
+use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 use App\Logger\Logger;
 
@@ -28,11 +29,13 @@ class GridExporter {
         }
 
         $columns = $data['columns'];
-        //$prebuilt = $data['prebuild'];
+        $exportCallbacks = $data['exportCallbacks'];
+
         $data = $data['data'];
 
         $this->addLine($columns);
 
+        $i = 0;
         foreach($data as $entity) {
             $tmp = [];
             foreach($columns as $column => $title) {
@@ -40,7 +43,9 @@ class GridExporter {
                 $objectIdVarName = $objectVarName . 'Id';
 
                 $result = '';
-                if(method_exists($entity, 'get' . $objectVarName)) {
+                if(isset($exportCallbacks[$i][$column])) {
+                    $result = $exportCallbacks[$i][$column];
+                } else if(method_exists($entity, 'get' . $objectVarName)) {
                     $result = $entity->{'get' . $objectVarName}();
                 } else if(method_exists($entity, 'is' . $objectVarName)) {
                     $result = $entity->{'is' . $objectVarName}();
@@ -57,6 +62,8 @@ class GridExporter {
             }
 
             $this->addLine($tmp);
+
+            $i++;
         }
 
         return $this->saveFile();
@@ -82,8 +89,12 @@ class GridExporter {
     }
 
     private function saveFile() {
+        $now = new DateTime();
+        $now->format('Y-m-d_H-i-s');
+        $now = $now->getResult();
+
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . CacheManager::NS_GRID_EXPORTS . '\\';
-        $name = 'gridExport_' . $this->hash . '.csv';
+        $name = 'gridExport_' . $this->hash . '_' . $now . '.csv';
 
         if(FileManager::saveFile($path, $name, $this->dataToSave->getAll(), false, false) !== false) {
             return 'cache\\' . CacheManager::NS_GRID_EXPORTS . '\\' . $name;

@@ -26,6 +26,7 @@ class GridBuilder {
     private array $callbacks;
     private array $rowCallbacks;
     private array $belowGridElementsCode;
+    private array $exportCallbacks;
     
     private ?string $headerCheckbox;
     private string $emptyDataSourceMessage;
@@ -51,6 +52,7 @@ class GridBuilder {
         $this->callbacks = [];
         $this->rowCallbacks = [];
         $this->belowGridElementsCode = [];
+        $this->exportCallbacks = [];
 
         $this->headerCheckbox = null;
         $this->renderRowCheckbox = null;
@@ -126,6 +128,13 @@ class GridBuilder {
      */
     public function addOnRowRender(string $entityPrimaryKey, callable $func) {
         $this->rowCallbacks[$entityPrimaryKey] = $func;
+    }
+
+    /**
+     * Adds custom table cell value override for exporting. It calls the callback with parameters: Table entity.
+     */
+    public function addOnExportRender(string $entityVarName, callable $func) {
+        $this->exportCallbacks[$entityVarName] = $func;
     }
 
     /**
@@ -537,6 +546,10 @@ class GridBuilder {
 
     public function getColumnCallbacks() {
         return $this->callbacks;
+    }
+
+    public function getExportCallbacks() {
+        return $this->exportCallbacks;
     }
 }
 

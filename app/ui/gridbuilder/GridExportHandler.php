@@ -34,7 +34,7 @@ class GridExportHandler {
             return [
                 'data' => $this->gb->getDataSourceArray(),
                 'columns' => $this->gb->getColumns(),
-                //'prebuild' => $this->gb->prebuild()
+                'exportCallbacks' => $this->processExportCallbacks()
             ];
         }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__, $expire);
     }
@@ -44,7 +44,22 @@ class GridExportHandler {
     }
 
     private function createHash() {
-        return HashManager::createHash(128);
+        return HashManager::createHash(16);
+    }
+
+    private function processExportCallbacks() {
+        $results = [];
+        
+        $i = 0;
+        foreach($this->gb->getDataSourceArray() as $entity) {
+            foreach($this->gb->getExportCallbacks() as $key => $func) {
+                $results[$i][$key] = $func($entity);
+            }
+
+            $i++;
+        }
+
+        return $results;
     }
 }
 
