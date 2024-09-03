@@ -112,7 +112,9 @@ class ManageTransactionsPresenter extends AAdminPresenter {
                 }
             }
         });
-        $gb->addGridExport();
+        $gb->addGridExportAll(function() use ($app) {
+            return $app->transactionLogRepository->getTransactionsForGrid(0, 0);
+        });
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }

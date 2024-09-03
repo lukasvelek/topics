@@ -537,7 +537,7 @@ class GridBuilder {
     }
 
     /**
-     * Adds a export control for the grid
+     * Adds an export control for the grid
      * 
      * @param ?Logger $logger Logger instance
      */
@@ -559,18 +559,48 @@ class GridBuilder {
     }
 
     /**
+     * Adds an export control for the grid that allows exporting all the entries provided
+     * 
+     * @param ?callback $allDataSourceArrayCallback All data callback that will return all the entries
+     * @param ?Logger $logger Logger instance
+     */
+    public function addGridExportAll(callable $allDataSourceArrayCallback, ?Logger $logger = null) {
+        $control = $this->createGridExportControl($logger, $allDataSourceArrayCallback);
+
+        if($control === null) {
+            return;
+        }
+
+        if($this->gridControls !== null) {
+            $this->gridControls->setGridExport($control);
+        } else {
+            $gc = new GridControls();
+            $gc->setGridExport($control);
+            
+            $this->gridControls = $gc;
+        }
+    }
+
+    /**
      * Creates a export link for the grid
      * 
      * @param ?Logger $logger Logger instance
+     * @param ?callback $customDataCallback Custom data callback used
      * @return string HTML code
      */
-    private function createGridExportControl(?Logger $logger) {
+    private function createGridExportControl(?Logger $logger, ?callable $customDataCallback = null) {
         if(empty($this->dataSourceArray)) {
             return null;
         }
 
+        $_this = $this;
+
+        if($customDataCallback !== null) {
+            $_this->dataSourceArray = $customDataCallback();
+        }
+
         $geh = new GridExportHandler($logger);
-        $geh->setData($this);
+        $geh->setData($_this);
         $geh->saveCache();
         $hash = $geh->getHash();
 
