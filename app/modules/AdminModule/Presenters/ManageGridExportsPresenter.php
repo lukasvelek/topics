@@ -103,6 +103,20 @@ class ManageGridExportsPresenter extends AAdminPresenter {
         $gd = new DefaultGridReducer($app->userRepository, $app->topicRepository, $app->postRepository);
         $gd->applyReducer($gb);
 
+        $gb->addAction(function(GridExportEntity $gee) {
+            if($gee->getFilename() !== null) {
+                $lb = new LinkBuilder();
+                $lb->setHref($gee->getFilename())
+                    ->setClass('grid-link')
+                    ->setText('Download')
+                ;
+
+                return $lb->render();
+            } else {
+                return '-';
+            }
+        });
+
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filter]);
         
         $gb->addGridExport(function() use ($app, $filter) {
