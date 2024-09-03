@@ -30,6 +30,7 @@ class EntityManager extends AManager {
     public const TOPIC_POST_PINS = 'topic_post_pins';
     public const POST_CONCEPTS = 'post_concepts';
     public const TOPIC_RULES = 'topic_rules';
+    public const GRID_EXPORTS = 'grid_exports';
 
     private ContentRepository $cr;
 
@@ -84,7 +85,8 @@ class EntityManager extends AManager {
             self::USER_PROSECUTIONS => 'prosecutionId',
             self::TOPIC_POST_PINS => 'pinId',
             self::POST_CONCEPTS => 'conceptId',
-            self::TOPIC_RULES => 'rulesetId'
+            self::TOPIC_RULES => 'rulesetId',
+            self::GRID_EXPORTS => 'exportId'
         };
     }
 }
