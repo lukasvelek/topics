@@ -73,6 +73,10 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return $te->getMethod() . '()';
         });
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            }
+            
             $user = $app->userRepository->getUserById($te->getUserId());
 
             if($user === null) {
