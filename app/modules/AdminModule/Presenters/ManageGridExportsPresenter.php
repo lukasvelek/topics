@@ -9,6 +9,7 @@ use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\DefaultGridReducer;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
+use App\UI\LinkBuilder;
 
 class ManageGridExportsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
@@ -32,9 +33,14 @@ class ManageGridExportsPresenter extends AAdminPresenter {
             $filter = 'all';
         }
 
-        $links = [];
+        $activeAll = ($filter == 'all');
 
-        $this->saveToPresenterCache('links', $links);
+        $links = [
+            ($activeAll ? '<b>' : '') . LinkBuilder::createSimpleLink('All', $this->createURL('list', ['filter' => 'all']), 'post-data-link') . ($activeAll ? '</b>' : ''),
+            ($activeAll ? '' : '<b>') . LinkBuilder::createSimpleLink('My', $this->createURL('list', ['filter' => 'my']), 'post-data-link') . ($activeAll ? '' : '</b>')
+        ];
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         $arb = new AjaxRequestBuilder();
 
