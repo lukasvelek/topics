@@ -479,6 +479,15 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Creates a information section with current page information
+     * 
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $limit Number of entries displayed in the grid
+     * @param int $totalCount Total number of entities available to be displayed
+     * @return string HTML code
+     */
     private function addGridPagingInfo(int $page, int $lastPage, int $limit, int $totalCount) {
         $offset = ($limit * $page) + 1;
         
@@ -495,12 +504,29 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Creates a grid refresh link
+     * 
+     * @param string $jsHandlerName Name of the JS function that will handle the refresh
+     * @param array $otherArguments Other arguments that will be passed to the JS function
+     * @return string HTML code
+     */
     private function addGridRefresh(string $jsHandlerName, array $otherArguments = []) {
         $args = array_merge([0], $otherArguments);
         $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh</a>';
         return $code;
     }
 
+    /**
+     * Adds a section with paging controls and paging info
+     * 
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $gridSize Number of entries displayed in grid
+     * @param int $totalCount Total number of entries available for grid
+     * @param string $jsHandlerName Name of the JS function that will handle changing pages
+     * @param array $otherArguments Other arguments that will be passed to the JS function
+     */
     public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
         $gc = new GridControls();
         $gc->setGridPagingInfo($this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount));
@@ -510,7 +536,12 @@ class GridBuilder {
         $this->gridControls = $gc;
     }
 
-    public function addGridExport(Logger $logger) {
+    /**
+     * Adds a export control for the grid
+     * 
+     * @param Logger $logger Logger instance
+     */
+    public function addGridExport(?Logger $logger = null) {
         $control = $this->createGridExportControl($logger);
 
         if($control === null) {
@@ -527,7 +558,13 @@ class GridBuilder {
         }
     }
 
-    private function createGridExportControl(Logger $logger) {
+    /**
+     * Creates a export link for the grid
+     * 
+     * @param Logger $logger Logger instance
+     * @return string HTML code
+     */
+    private function createGridExportControl(?Logger $logger) {
         if(empty($this->dataSourceArray)) {
             return null;
         }
@@ -540,14 +577,29 @@ class GridBuilder {
         return '<a class="post-data-link" onclick="exportGrid(\'' . $hash . '\')" style="cursor: pointer">Export</a>';
     }
 
+    /**
+     * Returns data source array
+     * 
+     * @return array Data source
+     */
     public function getDataSourceArray() {
         return $this->dataSourceArray;
     }
 
+    /**
+     * Returns cell callbacks
+     * 
+     * @return array Cell callbacks
+     */
     public function getColumnCallbacks() {
         return $this->callbacks;
     }
 
+    /**
+     * Returns export cell callbacks
+     * 
+     * @return array Export cell callbacks
+     */
     public function getExportCallbacks() {
         return $this->exportCallbacks;
     }

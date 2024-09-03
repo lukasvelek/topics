@@ -37,14 +37,14 @@ class CacheManager {
      * End of internal cache namespaces
      */
 
-    private Logger $logger;
+    private ?Logger $logger;
 
     /**
      * Class constructor
      * 
      * @param Logger $logger Logger instance
      */
-    public function __construct(Logger $logger) {
+    public function __construct(?Logger $logger = null) {
         $this->logger = $logger;
     }
 
@@ -56,7 +56,7 @@ class CacheManager {
      * @return null|string File contents or null
      */
     public function loadCachedFiles(string $namespace, bool $flashMessage = false) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+        if(!$flashMessage) {
             return null;
         }
 
@@ -86,7 +86,7 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function saveCachedFiles(string $namespace, array|string $content, bool $flashMessage = false) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+        if(!$flashMessage) {
             return false;
         }
 
@@ -186,7 +186,9 @@ class CacheManager {
             $this->saveCachedFiles($namespace, $file);
         }
 
-        $this->logger->logCache($method ?? __METHOD__, $cacheHit);
+        if($this->logger !== null) {
+            $this->logger->logCache($method ?? __METHOD__, $cacheHit);
+        }
 
         return $result;
     }
@@ -221,7 +223,9 @@ class CacheManager {
 
         $saveResult = $this->saveCachedFiles($namespace, $file);
 
-        $this->logger->logCacheSave($method ?? __METHOD__, $key, $namespace);
+        if($this->logger !== null) {
+            $this->logger->logCacheSave($method ?? __METHOD__, $key, $namespace);
+        }
 
         if($saveResult !== null && $saveResult !== false) {
             return true;
@@ -285,7 +289,7 @@ class CacheManager {
     public function invalidateCache(string $namespace, bool $flashMessage = false) {
         global $app;
 
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
+        if(!$flashMessage) {
             return false;
         }
 
@@ -299,10 +303,6 @@ class CacheManager {
      * @return bool True if all cache namespaces were invalidated successfully or false if not
      */
     public function invalidateCacheBulk(array $namespaces) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING']) {
-            return null;
-        }
-
         $total = true;
         foreach($namespaces as $namespace) {
             $result = self::invalidateCache($namespace);

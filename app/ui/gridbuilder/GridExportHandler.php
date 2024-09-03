@@ -12,7 +12,7 @@ class GridExportHandler {
     private string $hash;
     private ?GridBuilder $gb;
 
-    public function __construct(Logger $logger) {
+    public function __construct(?Logger $logger = null) {
         $this->cache = new CacheManager($logger);
         $this->gb = null;
         $this->hash = $this->createHash();

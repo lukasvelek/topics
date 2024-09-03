@@ -12,8 +12,6 @@ $cfg['LOG_DIR'] = ''; // directory where log files will be saved
 $cfg['CACHE_DIR'] = ''; // directory where cache files will be saved
 $cfg['UPLOAD_DIR'] = ''; // directory where uploaded files will be saved
 
-$cfg['ENABLE_CACHING'] = true; // true if caching is enabled or false if not
-
 $cfg['IS_DEV'] = false; // true if this version is development or false if not
 
 $cfg['APP_REAL_DIR'] = '';
