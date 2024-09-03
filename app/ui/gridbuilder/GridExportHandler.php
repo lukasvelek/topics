@@ -18,6 +18,7 @@ class GridExportHandler {
     private CacheManager $cache;
     private string $hash;
     private ?GridBuilder $gb;
+    private array $dataAll;
 
     /**
      * Class constructor
@@ -28,6 +29,7 @@ class GridExportHandler {
         $this->cache = new CacheManager($logger);
         $this->gb = null;
         $this->hash = $this->createHash();
+        $this->dataAll = [];
     }
 
     /**
@@ -37,6 +39,13 @@ class GridExportHandler {
      */
     public function setData(GridBuilder $gb) {
         $this->gb = $gb;
+    }
+
+    /**
+     * Sets all the data for the export
+     */
+    public function setDataAll(array $dataAll) {
+        $this->dataAll = $dataAll;
     }
 
     /**
@@ -53,11 +62,17 @@ class GridExportHandler {
         $expire->modify('+1h');
 
         return $this->cache->saveCache($this->hash, function() {
-            return [
+            $result = [
                 'data' => $this->gb->getDataSourceArray(),
                 'columns' => $this->gb->getColumns(),
                 'exportCallbacks' => $this->processExportCallbacks()
             ];
+
+            if(!empty($this->dataAll)) {
+                $result['dataAll'] = $this->dataAll;
+            }
+
+            return $result;
         }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__, $expire);
     }
 
@@ -89,9 +104,15 @@ class GridExportHandler {
      */
     private function processExportCallbacks() {
         $results = [];
+
+        $dataArray = $this->gb->getDataSourceArray();
+
+        if(!empty($this->dataAll)) {
+            $dataArray = $this->dataAll;
+        }
         
         $i = 0;
-        foreach($this->gb->getDataSourceArray() as $entity) {
+        foreach($dataArray as $entity) {
             foreach($this->gb->getExportCallbacks() as $key => $func) {
                 $results[$i][$key] = $func($entity);
             }

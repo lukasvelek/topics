@@ -102,7 +102,9 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
                 return '-';
             }
         });
-        $gb->addGridExport();
+        $gb->addGridExport(function() use ($app) {
+            return $app->userProsecutionRepository->getActiveProsecutionsForGrid(0, 0);
+        });
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }

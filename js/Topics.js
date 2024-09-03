@@ -88,10 +88,13 @@ function changeImage(_postId, _id, _maxId) {
 }
 
 async function exportGrid(_dataId) {
+    const _exportAll = confirm('Export all?');
+
     $.get(
         "?page=UserModule:GridExportHelper&action=exportGrid&isAjax=1",
         {
-            hash: _dataId
+            hash: _dataId,
+            exportAll: _exportAll
         }
     )
     .done(async function(data) {

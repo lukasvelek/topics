@@ -18,6 +18,7 @@ class GridExporter {
     private CacheManager $cache;
     private ArrayList $dataToSave;
     private array $cfg;
+    private bool $exportAll;
 
     /**
      * Class constructor
@@ -31,6 +32,11 @@ class GridExporter {
         $this->hash = $hash;
         $this->dataToSave = new ArrayList();
         $this->cfg = $cfg;
+        $this->exportAll = false;
+    }
+
+    public function setExportAll(bool $exportAll = true) {
+        $this->exportAll = $exportAll;
     }
 
     /**
@@ -48,7 +54,11 @@ class GridExporter {
         $columns = $data['columns'];
         $exportCallbacks = $data['exportCallbacks'];
 
-        $data = $data['data'];
+        if($this->exportAll) {
+            $data = $data['dataAll'];
+        } else {
+            $data = $data['data'];
+        }
 
         $this->addLine($columns);
 

@@ -13,8 +13,12 @@ class GridExportHelperPresenter extends AUserPresenter {
         global $app;
         
         $hash = $this->httpGet('hash', true);
+        $exportAll = $this->httpGet('exportAll', true);
+
+        $exportAll = ($exportAll == 'true');
 
         $ge = new GridExporter($app->logger, $hash, $app->cfg);
+        $ge->setExportAll($exportAll);
         $result = $ge->export();
 
         $data = [];
