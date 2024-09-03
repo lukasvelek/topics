@@ -539,7 +539,7 @@ class GridBuilder {
     /**
      * Adds a export control for the grid
      * 
-     * @param Logger $logger Logger instance
+     * @param ?Logger $logger Logger instance
      */
     public function addGridExport(?Logger $logger = null) {
         $control = $this->createGridExportControl($logger);
@@ -561,7 +561,7 @@ class GridBuilder {
     /**
      * Creates a export link for the grid
      * 
-     * @param Logger $logger Logger instance
+     * @param ?Logger $logger Logger instance
      * @return string HTML code
      */
     private function createGridExportControl(?Logger $logger) {
