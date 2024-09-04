@@ -504,9 +504,13 @@ class PostsPresenter extends AUserPresenter {
         foreach($matches as $match) {
             $username = substr($match, 1);
             $user = $app->userRepository->getUserByUsername($username);
-            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
-            
-            $users[$match] = $link;
+            if($user === null) {
+                $users[$match] = '@' . $username;
+            } else {
+                $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                
+                $users[$match] = $link;
+            }
         }
 
         foreach($users as $k => $v) {

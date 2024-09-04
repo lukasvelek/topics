@@ -149,6 +149,9 @@ class CacheManager {
 
         if($file === null) {
             $result = $callback();
+            if($result === null) {
+                return $result;
+            }
             $file[self::I_NS_DATA][$key] = $result;
             if($expiration !== null) {
                 $expiration = $expiration->getResult();
@@ -164,6 +167,9 @@ class CacheManager {
                 $result = $file[self::I_NS_DATA][$key];
             } else {
                 $result = $callback();
+                if($result === null) {
+                    return $result;
+                }
                 $file[self::I_NS_DATA][$key] = $result;
                 $save = true;
             }
