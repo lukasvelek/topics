@@ -6,6 +6,7 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -152,7 +153,7 @@ class PostsPresenter extends AUserPresenter {
         $postedOn = $post->getDateCreated();
         $postedOnText = 'Posted on';
         
-        if($post->getDateAvailable() != $post->getDateCreated()) {
+        if(strtotime($post->getDateAvailable()) != strtotime($post->getDateCreated())) {
             $postedOn = $post->getDateAvailable();
             $postedOnText = 'Scheduled for';
         }

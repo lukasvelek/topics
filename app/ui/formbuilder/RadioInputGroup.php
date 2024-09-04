@@ -30,6 +30,8 @@ class RadioInputGroup implements IFormRenderable {
     public function getName() {
         return $this->name;
     }
+
+    public function getTagName() {}
 }
 
 ?>
