@@ -4,6 +4,7 @@ namespace App\Core;
 
 use App\Core\Datetypes\DateTime;
 use App\Logger\Logger;
+use Exception;
 
 /**
  * CacheManager allows caching. It contains methods needed to operate with cache.
@@ -287,7 +288,15 @@ class CacheManager {
     public function invalidateCache(string $namespace, bool $flashMessage = false) {
         global $app;
 
-        return FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
+        try {
+            FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
+
+            return true;
+        } catch(Exception $e) {
+            $this->logger->exception($e, __METHOD__);
+
+            return false;
+        }
     }
 
     /**

@@ -2,7 +2,10 @@
 
 namespace App\Core;
 
+use App\Exceptions\AException;
 use App\Exceptions\FileDoesNotExistException;
+use App\Exceptions\FolderDeleteException;
+use Exception;
 
 class FileManager {
     public static function fileExists(string $filePath) {
@@ -70,22 +73,20 @@ class FileManager {
     }
 
     public static function deleteFolderRecursively(string $dirPath) {
-        if (is_dir($dirPath)) { 
+        if(is_dir($dirPath)) {
             $objects = scandir($dirPath);
             
-            foreach ($objects as $object) { 
-                if ($object != "." && $object != "..") { 
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
                         self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
                     } else {
-                        unlink($dirPath. DIRECTORY_SEPARATOR .$object); 
+                        unlink($dirPath. DIRECTORY_SEPARATOR .$object);
                     }
-                } 
+                }
             }
 
-            return rmdir($dirPath);
-        } else {
-            return false;
+            rmdir($dirPath);
         }
     }
 }
