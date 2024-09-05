@@ -22,6 +22,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
+use App\UI\FormBuilder\CheckboxInput;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -624,7 +625,17 @@ class TopicsPresenter extends AUserPresenter {
             ->addFileInput('image', 'Image:');
 
         if($app->actionAuthorizator->canSchedulePosts($app->currentUser->getId(), $topicId)) {
+            $fb->addCheckbox('availableNow', 'Available now?', true);
+            $fb->updateElement('availableNow', function(CheckboxInput $ci) {
+                $ci->id = 'availableNow';
+                return $ci;
+            });
+
+            $fb->startSection('dateAvailable');
             $fb->addDatetime('dateAvailable', 'Available from:', $now, true);
+            $fb->endSection();
+            $fb->startSection('dateAvailableBr');
+            $fb->endSection();
         }
         
         if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
@@ -645,6 +656,8 @@ class TopicsPresenter extends AUserPresenter {
             $fb->addElement('formSubmit', $submitPost);
         }
         /** SUBMIT */
+
+        $fb->addJSHandler('js/PostFormHandler.js');
 
         $this->saveToPresenterCache('form', $fb);
     }
@@ -668,9 +681,14 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
         $dateAvailable = $fr->dateAvailable;
+        $availableNow = isset($fr->availableNow);
         $suggestable = isset($fr->suggestable);
 
         if(isset($fr->submitPost)) {
+            if($availableNow) {
+                $dateAvailable = DateTime::now();
+            }
+
             try {
                 $app->topicRepository->beginTransaction();
 

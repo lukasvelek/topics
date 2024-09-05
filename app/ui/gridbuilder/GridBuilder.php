@@ -2,6 +2,7 @@
 
 namespace App\UI\GridBuilder;
 
+use App\Logger\Logger;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -16,7 +17,7 @@ use Exception;
  * - row actions (info, edit, delete, etc.)
  * 
  * @author Lukas Velek
- * @version 1.1
+ * @version 1.2
  */
 class GridBuilder {
     private array $actions;
@@ -24,9 +25,12 @@ class GridBuilder {
     private array $dataSourceArray;
     private array $callbacks;
     private array $rowCallbacks;
+    private array $belowGridElementsCode;
+    private array $exportCallbacks;
     
     private ?string $headerCheckbox;
     private string $emptyDataSourceMessage;
+    private string $idElement;
 
     private mixed $renderRowCheckbox;
     private mixed $dataSourceCallback;
@@ -35,9 +39,8 @@ class GridBuilder {
     private bool $alwaysDrawHeaderCheckbox;
     private bool $displayNoEntriesMessage;
 
-    private array $belowGridElementsCode;
-
-    private string $idElement;
+    private ?GridControls $gridControls;
+    private ?Table $prebuiltTable;
 
     /**
      * Grid builder constructor
@@ -48,18 +51,21 @@ class GridBuilder {
         $this->dataSourceArray = [];
         $this->callbacks = [];
         $this->rowCallbacks = [];
+        $this->belowGridElementsCode = [];
+        $this->exportCallbacks = [];
 
         $this->headerCheckbox = null;
         $this->renderRowCheckbox = null;
         $this->dataSourceCallback = null;
         $this->emptyDataSourceMessage = 'No data found';
+        $this->idElement = 'gridbuilder-grid';
+
         $this->reverse = false;
         $this->alwaysDrawHeaderCheckbox = false;
         $this->displayNoEntriesMessage = true;
 
-        $this->belowGridElementsCode = [];
-
-        $this->idElement = 'gridbuilder-grid';
+        $this->gridControls = null;
+        $this->prebuiltTable = null;
     }
 
     public function getColumns() {
@@ -125,6 +131,13 @@ class GridBuilder {
     }
 
     /**
+     * Adds custom table cell value override for exporting. It calls the callback with parameters: Table entity.
+     */
+    public function addOnExportRender(string $entityVarName, callable $func) {
+        $this->exportCallbacks[$entityVarName] = $func;
+    }
+
+    /**
      * Adds column headers
      * 
      * @param array $columns Column names
@@ -179,6 +192,33 @@ class GridBuilder {
      * @return string HTML table code
      */
     public function build() {
+        $table = $this->prebuild();
+
+        $code = $table->render();
+
+        if(!empty($this->belowGridElementsCode)) {
+            foreach($this->belowGridElementsCode as $bgec) {
+                $code .= $bgec;
+            }
+        }
+
+        if($this->gridControls !== null) {
+            $code .= $this->gridControls->render();
+        }
+
+        return $code;
+    }
+
+    /**
+     * Performs grid prebuilding
+     * 
+     * @return GridTable GridTable instance
+     */
+    public function prebuild() {
+        if($this->prebuiltTable !== null) {
+            return $this->prebuiltTable;
+        }
+
         $table = new Table();
 
         $table->setId($this->idElement);
@@ -362,15 +402,9 @@ class GridBuilder {
         $table->bulkAddRows($entityRows);
         // end of data
 
-        $code = $table->render();
+        $this->prebuiltTable = $table;
 
-        if(!empty($this->belowGridElementsCode)) {
-            foreach($this->belowGridElementsCode as $bgec) {
-                $code .= $bgec;
-            }
-        }
-
-        return $code;
+        return $this->prebuiltTable;
     }
 
     /**
@@ -445,6 +479,15 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Creates a information section with current page information
+     * 
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $limit Number of entries displayed in the grid
+     * @param int $totalCount Total number of entities available to be displayed
+     * @return string HTML code
+     */
     private function addGridPagingInfo(int $page, int $lastPage, int $limit, int $totalCount) {
         $offset = ($limit * $page) + 1;
         
@@ -461,19 +504,112 @@ class GridBuilder {
         return $code;
     }
 
+    /**
+     * Creates a grid refresh link
+     * 
+     * @param string $jsHandlerName Name of the JS function that will handle the refresh
+     * @param array $otherArguments Other arguments that will be passed to the JS function
+     * @return string HTML code
+     */
     private function addGridRefresh(string $jsHandlerName, array $otherArguments = []) {
         $args = array_merge([0], $otherArguments);
         $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh</a>';
         return $code;
     }
 
+    /**
+     * Adds a section with paging controls and paging info
+     * 
+     * @param int $page Current page
+     * @param int $lastPage Last page
+     * @param int $gridSize Number of entries displayed in grid
+     * @param int $totalCount Total number of entries available for grid
+     * @param string $jsHandlerName Name of the JS function that will handle changing pages
+     * @param array $otherArguments Other arguments that will be passed to the JS function
+     */
     public function addGridPaging(int $page, int $lastPage, int $gridSize, int $totalCount, string $jsHandlerName, array $otherArguments = []) {
-        $code = '<div class="row">';
-        $code .= '<div class="col-md">' . $this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount) . '</div><div class="col-md">' . $this->addGridRefresh($jsHandlerName, $otherArguments) . '</div>';
-        $code .= '<div class="col-md" id="right">' . $this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments) . '</div>';
-        $code .= '</div>';
+        $gc = new GridControls();
+        $gc->setGridPagingInfo($this->addGridPagingInfo($page, $lastPage, $gridSize, $totalCount));
+        $gc->setGridRefresh($this->addGridRefresh($jsHandlerName, $otherArguments));
+        $gc->setGridControls($this->createGridControls($jsHandlerName, $page, $lastPage, $otherArguments));
 
-        $this->addBelowGridElementCode($code);
+        $this->gridControls = $gc;
+    }
+
+    /**
+     * Adds an export control for the grid that allows exporting all the entries provided
+     * 
+     * @param ?callback $allDataSourceArrayCallback All data callback that will return all the entries
+     * @param ?Logger $logger Logger instance
+     */
+    public function addGridExport(callable $allDataSourceArrayCallback, string $gridName, ?Logger $logger = null) {
+        $control = $this->createGridExportControl($logger, $gridName, $allDataSourceArrayCallback);
+
+        if($control === null) {
+            return;
+        }
+
+        if($this->gridControls !== null) {
+            $this->gridControls->setGridExport($control);
+        } else {
+            $gc = new GridControls();
+            $gc->setGridExport($control);
+            
+            $this->gridControls = $gc;
+        }
+    }
+
+    /**
+     * Creates a export link for the grid
+     * 
+     * @param ?Logger $logger Logger instance
+     * @param ?callback $customDataCallback Custom data callback used
+     * @return string HTML code
+     */
+    private function createGridExportControl(?Logger $logger, string $gridName, ?callable $customDataCallback = null) {
+        if(empty($this->dataSourceArray)) {
+            return null;
+        }
+
+        $geh = new GridExportHandler($logger);
+        $geh->setData($this);
+
+        if($customDataCallback !== null) {
+            $dataAll = $customDataCallback();
+            $geh->setDataAll($dataAll);
+        }
+
+        $geh->saveCache();
+        $hash = $geh->getHash();
+
+        return '<a class="post-data-link" onclick="exportGrid(\'' . $hash . '\', \'' . $gridName . '\')" style="cursor: pointer">Export</a>';
+    }
+
+    /**
+     * Returns data source array
+     * 
+     * @return array Data source
+     */
+    public function getDataSourceArray() {
+        return $this->dataSourceArray;
+    }
+
+    /**
+     * Returns cell callbacks
+     * 
+     * @return array Cell callbacks
+     */
+    public function getColumnCallbacks() {
+        return $this->callbacks;
+    }
+
+    /**
+     * Returns export cell callbacks
+     * 
+     * @return array Export cell callbacks
+     */
+    public function getExportCallbacks() {
+        return $this->exportCallbacks;
     }
 }
 

@@ -274,6 +274,16 @@ class DatabaseInstaller {
                 'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateUpdated' => 'DATETIME NULL'
+            ],
+            'grid_exports' => [
+                'exportId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'hash' => 'VARCHAR(256) NOT NULL',
+                'filename' => 'VARCHAR(256) NULL',
+                'gridName' => 'VARCHAR(256) NOT NULL',
+                'entryCount' => 'INT(32) NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp',
+                'dateFinished' => 'DATETIME NULL'
             ]
         ];
 
@@ -568,7 +578,8 @@ class DatabaseInstaller {
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
-            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemovingService.php'
+            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
         ];
 
         foreach($services as $title => $path) {

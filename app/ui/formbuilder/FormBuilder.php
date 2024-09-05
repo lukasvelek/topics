@@ -28,6 +28,8 @@ class FormBuilder implements IFormRenderable {
         return $this->name;
     }
 
+    public function getTagName() {}
+
     public function updateElement(string $name, callable $updateOperation) {
         foreach($this->elements as $k => $element) {
             if($element instanceof ElementDuo) {
@@ -37,10 +39,18 @@ class FormBuilder implements IFormRenderable {
                 if($label instanceof IFormRenderable && $label->getName() == $name) {
                     $label = $updateOperation($label);
                     $element->setLabel($label);
+                    $this->elements[$k] = $element;
                     break;
                 } else if($el instanceof IFormRenderable && $el->getName() == $name) {
                     $el = $updateOperation($el);
                     $element->setElement($el);
+                    $this->elements[$k] = $element;
+                    break;
+                }
+            } else {
+                if($element instanceof IFormRenderable && $element->getName() == $name) {
+                    $element = $updateOperation($element);
+                    $this->elements[$k] = $element;
                     break;
                 }
             }

@@ -35,7 +35,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
         $gridPage = $this->httpGet('gridPage');
         $filter = $this->httpGet('gridFilter');
 
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $app->getGridSize();
         $lastPage = null;
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);

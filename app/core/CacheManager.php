@@ -24,6 +24,8 @@ class CacheManager {
     public const NS_PINNED_POSTS = 'pinnedPosts';
     public const NS_USER_NOTIFICATIONS = 'userNotifications';
     public const NS_TOPIC_RULES = 'topicRules';
+    public const NS_GRID_EXPORT_DATA = 'gridExportData';
+    public const NS_GRID_EXPORTS = 'gridExports';
 
     /**
      * Internal cache namespaces
@@ -35,14 +37,14 @@ class CacheManager {
      * End of internal cache namespaces
      */
 
-    private Logger $logger;
+    private ?Logger $logger;
 
     /**
      * Class constructor
      * 
      * @param Logger $logger Logger instance
      */
-    public function __construct(Logger $logger) {
+    public function __construct(?Logger $logger = null) {
         $this->logger = $logger;
     }
 
@@ -54,10 +56,6 @@ class CacheManager {
      * @return null|string File contents or null
      */
     public function loadCachedFiles(string $namespace, bool $flashMessage = false) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
-            return null;
-        }
-
         $filename = $this->generateFilename($namespace);
         
         $path = $this->createPath($namespace) . $filename;
@@ -84,10 +82,6 @@ class CacheManager {
      * @return bool True if successful or false if not
      */
     public function saveCachedFiles(string $namespace, array|string $content, bool $flashMessage = false) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
-            return false;
-        }
-
         $filename = $this->generateFilename($namespace);
 
         $path = $this->createPath($namespace);
@@ -155,6 +149,9 @@ class CacheManager {
 
         if($file === null) {
             $result = $callback();
+            if($result === null) {
+                return $result;
+            }
             $file[self::I_NS_DATA][$key] = $result;
             if($expiration !== null) {
                 $expiration = $expiration->getResult();
@@ -170,6 +167,9 @@ class CacheManager {
                 $result = $file[self::I_NS_DATA][$key];
             } else {
                 $result = $callback();
+                if($result === null) {
+                    return $result;
+                }
                 $file[self::I_NS_DATA][$key] = $result;
                 $save = true;
             }
@@ -184,7 +184,9 @@ class CacheManager {
             $this->saveCachedFiles($namespace, $file);
         }
 
-        $this->logger->logCache($method ?? __METHOD__, $cacheHit);
+        if($this->logger !== null) {
+            $this->logger->logCache($method ?? __METHOD__, $cacheHit);
+        }
 
         return $result;
     }
@@ -219,7 +221,9 @@ class CacheManager {
 
         $saveResult = $this->saveCachedFiles($namespace, $file);
 
-        $this->logger->logCacheSave($method ?? __METHOD__, $key, $namespace);
+        if($this->logger !== null) {
+            $this->logger->logCacheSave($method ?? __METHOD__, $key, $namespace);
+        }
 
         if($saveResult !== null && $saveResult !== false) {
             return true;
@@ -283,10 +287,6 @@ class CacheManager {
     public function invalidateCache(string $namespace, bool $flashMessage = false) {
         global $app;
 
-        if(!$this->logger->getCfg()['ENABLE_CACHING'] && !$flashMessage) {
-            return false;
-        }
-
         return FileManager::deleteFolderRecursively($app->cfg['APP_REAL_DIR'] . $app->cfg['CACHE_DIR'] . $namespace . '\\');
     }
 
@@ -297,10 +297,6 @@ class CacheManager {
      * @return bool True if all cache namespaces were invalidated successfully or false if not
      */
     public function invalidateCacheBulk(array $namespaces) {
-        if(!$this->logger->getCfg()['ENABLE_CACHING']) {
-            return null;
-        }
-
         $total = true;
         foreach($namespaces as $namespace) {
             $result = self::invalidateCache($namespace);

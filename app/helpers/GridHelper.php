@@ -16,6 +16,7 @@ class GridHelper {
     public const GRID_GROUPS = 'gridGroups';
     public const GRID_DELETED_CONTENT = 'gridDeletedContent';
     public const GRID_BANNED_WORDS = 'gridBannedWords';
+    public const GRID_GRID_EXPORTS = 'gridGridExports';
     /** AdminModule:Feedback* */
     public const GRID_SUGGESTIONS = 'gridSuggestions';
     public const GRID_REPORTS = 'gridReports';

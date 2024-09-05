@@ -45,9 +45,13 @@ class FileManager {
         return $objects;
     }
 
-    public static function saveFile(string $path, string $filename, string|array $fileContent, bool $overwrite = false) {
+    public static function saveFile(string $path, string $filename, string|array $fileContent, bool $overwrite = false, bool $appendNewLine = true) {
         if(is_array($fileContent)) {
-            $fileContent = implode('\r\n', $fileContent);
+            if($appendNewLine) {
+                $fileContent = implode("\r\n", $fileContent);
+            } else {
+                $fileContent = implode('', $fileContent);
+            }
         }
 
         if(!self::folderExists($path)) {

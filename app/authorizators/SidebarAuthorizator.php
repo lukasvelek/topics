@@ -124,6 +124,10 @@ class SidebarAuthorizator extends AAuthorizator {
     public function canManageTransactions(string $userId) {
         return $this->canManageSystemCaching($userId);
     }
+
+    public function canManageGridExports(string $userId) {
+        return $this->canManageSystemCaching($userId);
+    }
 }
 
 ?>

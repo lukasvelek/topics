@@ -30,6 +30,10 @@ class Label implements IFormRenderable {
     public function getName() {
         return 'label_' . $this->for;
     }
+
+    public function getTagName() {
+        return 'label';
+    }
 }
 
 ?>

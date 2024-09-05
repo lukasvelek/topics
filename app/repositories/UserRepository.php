@@ -93,6 +93,10 @@ class UserRepository extends ARepository {
             return $qb->fetch('userId');
         }, CacheManager::NS_USERS_USERNAME_TO_ID_MAPPING, __METHOD__);
 
+        if($userId === null) {
+            return $userId;
+        }
+
         return $this->getUserById($userId);
     }
 

@@ -6,6 +6,7 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -14,8 +15,10 @@ use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
+use App\UI\FormBuilder\Button;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\SubmitButton;
 use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 use Exception;
@@ -152,7 +155,7 @@ class PostsPresenter extends AUserPresenter {
         $postedOn = $post->getDateCreated();
         $postedOnText = 'Posted on';
         
-        if($post->getDateAvailable() != $post->getDateCreated()) {
+        if(strtotime($post->getDateAvailable()) != strtotime($post->getDateCreated())) {
             $postedOn = $post->getDateAvailable();
             $postedOnText = 'Scheduled for';
         }
@@ -213,13 +216,9 @@ class PostsPresenter extends AUserPresenter {
         $newImageUploadLink = LinkBuilder::createSimpleLink('Upload image', $this->createURL('uploadImageForm', ['postId' => $postId]), 'post-data-link');
 
         $newImageUploadSection = '<div class="row">
-                <div class="col-md-2 col-lg-2"></div>
-
                 <div class="col-md" id="post-upload-image-section">
                     ' . $newImageUploadLink . '
                 </div>
-
-                <div class="col-md-2 col-lg-2"></div>
             </div>
 
             <br>';
@@ -504,9 +503,13 @@ class PostsPresenter extends AUserPresenter {
         foreach($matches as $match) {
             $username = substr($match, 1);
             $user = $app->userRepository->getUserByUsername($username);
-            $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
-            
-            $users[$match] = $link;
+            if($user === null) {
+                $users[$match] = '@' . $username;
+            } else {
+                $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                
+                $users[$match] = $link;
+            }
         }
 
         foreach($users as $k => $v) {
@@ -746,7 +749,7 @@ class PostsPresenter extends AUserPresenter {
             
             $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'deleteComment', 'isSubmit' => '1', 'commentId' => $commentId, 'postId' => $postId])
                 ->addSubmit('Delete comment')
-                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+                ->addButton('Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -799,7 +802,7 @@ class PostsPresenter extends AUserPresenter {
                 ->addTextInput('postTitle', 'Post title:', null, true)
                 ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete post')
-                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Posts&action=profile&postId=' . $postId . '\';', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);

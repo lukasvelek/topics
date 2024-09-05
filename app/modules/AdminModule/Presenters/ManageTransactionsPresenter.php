@@ -73,6 +73,10 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return $te->getMethod() . '()';
         });
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            }
+            
             $user = $app->userRepository->getUserById($te->getUserId());
 
             if($user === null) {
@@ -91,6 +95,26 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TransactionEntity $te) {
             return DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated());
         });
+
+        $gb->addOnExportRender('method', function(TransactionEntity $te) {
+            return $te->getMethod() . '()';
+        });
+        $gb->addOnExportRender('user', function(TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            } else {
+                $user = $app->userRepository->getUserById($te->getUserId());
+
+                if($user === null) {
+                    return '-';
+                } else {
+                    return $user->getUsername();
+                }
+            }
+        });
+        $gb->addGridExport(function() use ($app) {
+            return $app->transactionLogRepository->getTransactionsForGrid(0, 0);
+        }, GridHelper::GRID_TRANSACTION_LOG);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }

@@ -4,11 +4,11 @@ namespace App\Entities;
 
 class TransactionEntity implements ICreatableFromRow {
     private string $id;
-    private string $userId;
+    private ?string $userId;
     private string $method;
     private string $dateCreated;
 
-    public function __construct(string $id, string $userId, string $method, string $dateCreated) {
+    public function __construct(string $id, ?string $userId, string $method, string $dateCreated) {
         $this->id = $id;
         $this->userId = $userId;
         $this->method = $method;
