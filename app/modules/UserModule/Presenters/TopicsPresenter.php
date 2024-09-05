@@ -176,11 +176,17 @@ class TopicsPresenter extends AUserPresenter {
             $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
+        $followersLink = 'Followers';
+        
+        if($app->actionAuthorizator->canManageTopicFollowers($app->currentUser->getId(), $topicId)) {
+            $followersLink = LinkBuilder::createSimpleLink('Followers', ['page' => 'UserModule:TopicManagement', 'action' => 'followersList', 'topicId' => $topicId], 'post-data-link');
+        }
+
         $code = '
             <div>
                 <div class="row">
                     <div class="col-md col-lg">
-                        <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
+                        <p class="post-data">' . $followersLink . ': ' . $topicMembers . ' ' . $finalFollowLink . '</p>
                     </div>
 
                     <div class="col-md col-lg">

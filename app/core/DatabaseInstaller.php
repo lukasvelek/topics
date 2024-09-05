@@ -160,7 +160,8 @@ class DatabaseInstaller {
                 'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'topicId' => 'VARCHAR(256) NOT NULL',
-                'role' => 'INT(4) NOT NULL DEFAULT 1'
+                'role' => 'INT(4) NOT NULL DEFAULT 1',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'system_services' => [
                 'serviceId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',

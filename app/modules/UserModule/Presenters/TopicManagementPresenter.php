@@ -8,6 +8,7 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicInviteEntity;
 use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
@@ -644,6 +645,91 @@ class TopicManagementPresenter extends AUserPresenter {
         }
 
         $this->redirect($this->createURL('managePrivacy', ['topicId' => $topicId]));
+    }
+
+    public function handleFollowersList() {
+        $topicId = $this->httpGet('topicId', true);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getFollowersGrid')
+            ->setHeader(['topicId' => '_topicId', 'gridPage' => '_page'])
+            ->setFunctionName('getFollowersGrid')
+            ->setFunctionArguments(['_page', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getFollowersGrid(0, \'' . $topicId . '\')');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderFollowersList() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetFollowersGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+
+        $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_FOLLOWERS, $gridPage, [$topicId]);
+
+        $offset = $page * $gridSize;
+
+        $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, $offset, false);
+        $totalCount = $app->topicMembershipManager->getTopicMemberCount($topicId);
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $grid = new GridBuilder();
+        $grid->addColumns(['userId' => 'User', 'role' => 'Role', 'dateCreated' => 'Member from', 'daysMember' => 'Days of membership']);
+        $grid->addDataSource($members);
+        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getFollowersGrid', [$topicId]);
+        $grid->addOnColumnRender('role', function(Cell $cell, TopicMemberEntity $tme) {
+            $text = TopicMemberRole::toString($tme->getRole());
+            $color = TopicMemberRole::getColorByKey($tme->getRole());
+            
+            $cell->setTextColor($color);
+            $cell->setValue($text);
+            
+            return $cell;
+        });
+        $grid->addOnColumnRender('daysMember', function(Cell $cell, TopicMemberEntity $tme) {
+            $dateFrom = $tme->getDateCreated();
+            
+            $diff = time() - strtotime($dateFrom);
+            
+            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+        });
+        $grid->addOnExportRender('role', function(TopicMemberEntity $tme) {
+            return TopicMemberRole::toString($tme->getRole());
+        });
+        $grid->addOnExportRender('daysMember', function(TopicMemberEntity $tme) {
+            $dateFrom = $tme->getDateCreated();
+            
+            $diff = time() - strtotime($dateFrom);
+            
+            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+        });
+
+        $app->getGridReducer()->applyReducer($grid);
+        
+        $grid->addGridExport(function() use ($app, $topicId) {
+            return $app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        }, GridHelper::GRID_TOPIC_FOLLOWERS, $app->logger);
+        
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
     }
 }
 
