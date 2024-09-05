@@ -864,7 +864,9 @@ class QueryBuilder
     }
 
     /**
-     * Logs an SQL string
+     * Logs an SQL string (with the number of miliseconds it took)
+     * 
+     * @param float $msTaken Miliseconds the SQL query took
      */
     private function log(?float $msTaken = null) {
         if($this->logger !== NULL) {
@@ -872,6 +874,13 @@ class QueryBuilder
         }
     }
 
+    /**
+     * Runs a SQL query with the given string and parameters
+     * 
+     * @param string $sql SQL query
+     * @param array $params SQL parameters
+     * @return mixed SQL query result
+     */
     private function query(string $sql, array $params = []) {
         $tsStart = null;
         $tsEnd = null;
@@ -892,6 +901,11 @@ class QueryBuilder
         return $result;
     }
 
+    /**
+     * Logs an SQL exception
+     * 
+     * @param Exception $e Exception generated
+     */
     private function logException(Exception $e) {
         if($this->logger !== null) {
             $this->logger->exception($e, $this->callingMethod);
