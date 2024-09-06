@@ -39,6 +39,11 @@ class CalendarDayEntity {
     public function render() {
         $code = '<b>' . $this->header . '</b>';
 
+        if(!empty($this->events)) {
+            $code .= '<br>';
+            $code .= implode('<br>', $this->events);
+        }
+
         return $code;
     }
 }

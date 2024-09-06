@@ -15,10 +15,11 @@ class PostEntity implements ICreatableFromRow {
     private string $tag;
     private string $dateAvailable;
     private bool $isSuggestable;
+    private bool $isScheduled;
 
     private bool $isPinned;
 
-    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag, string $dateAvailable, bool $isSuggestable) {
+    public function __construct(string $postId, string $topicId, string $authorId, string $title, string $text, string $dateCreated, int $likes, bool $isDeleted, ?string $dateDeleted, string $tag, string $dateAvailable, bool $isSuggestable, bool $isScheduled) {
         $this->postId = $postId;
         $this->topicId = $topicId;
         $this->authorId = $authorId;
@@ -31,6 +32,7 @@ class PostEntity implements ICreatableFromRow {
         $this->tag = $tag;
         $this->dateAvailable = $dateAvailable;
         $this->isSuggestable = $isSuggestable;
+        $this->isScheduled = $isScheduled;
         
         $this->isPinned = false;
     }
@@ -99,11 +101,15 @@ class PostEntity implements ICreatableFromRow {
         $this->isPinned = $isPinned;
     }
 
+    public function isScheduled() {
+        return $this->isScheduled();
+    }
+
     public static function createEntityFromDbRow(mixed $row) {
         if($row === null) {
             return null;
         }
-        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag'], $row['dateAvailable'], $row['isSuggestable']);
+        return new self($row['postId'], $row['topicId'], $row['authorId'], $row['title'], $row['description'], $row['dateCreated'], $row['likes'], $row['isDeleted'], $row['dateDeleted'], $row['tag'], $row['dateAvailable'], $row['isSuggestable'], $row['isScheduled']);
     }
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Core\AjaxRequestBuilder;
 use App\UI\CalendarBuilder\CalendarBuilder;
 use App\UI\LinkBuilder;
 
@@ -11,11 +12,22 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleCalendar() {
+        global $app;
+
         $topicId = $this->httpGet('topicId', true);
 
-        $calendar = new CalendarBuilder();
+        $arb = new AjaxRequestBuilder();
 
-        $this->saveToPresenterCache('calendar', $calendar);
+        $arb->setMethod()
+            ->setHeader(['topicId' => '_topicId', 'year' => '_year', 'month' => '_month'])
+            ->setAction($this, 'getCalendar')
+            ->setFunctionName('getCalendar')
+            ->setFunctionArguments(['_topicId', '_year', '_month'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getCalendar(\'' . $topicId . '\', ' . date('Y') . ', ' . date('m') . ')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
@@ -25,8 +37,32 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function renderCalendar() {
-        $this->template->grid_content = $this->loadFromPresenterCache('calendar');
+        $this->template->grid_controls = $this->loadFromPresenterCache('gridControls');
         $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetCalendar() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+
+        $month = $this->httpGet('month');
+        $year = $this->httpGet('year');
+
+        $calendar = new CalendarBuilder();
+
+        // Scheduled posts
+        $dateFrom = $year . '-' . $month . '-01 00:00:00';
+
+        $lastDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+        $dateTo = $year . '-' . $month . '-' . $lastDay . ' 00:00:00';
+
+        $posts = $app->postRepository->getScheduledPostsForTopicIdForDate($dateFrom, $dateTo, $topicId);
+
+        $calendar->addEventsFromPosts($posts);
+        // End of scheduled posts
+
+        $this->ajaxSendResponse(['grid' => $calendar->render()]);
     }
 }
 

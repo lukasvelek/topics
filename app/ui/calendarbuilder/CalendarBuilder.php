@@ -5,6 +5,7 @@ namespace App\UI\CalendarBuilder;
 use App\Core\Datetypes\DateTime;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
+use App\UI\LinkBuilder;
 
 /**
  * Calendar Builder UI Library
@@ -15,6 +16,7 @@ class CalendarBuilder implements IRenderable {
     private GridBuilder $grid;
     private int $year;
     private int $month;
+    private array $events;
 
     /**
      * Class constructor
@@ -24,6 +26,8 @@ class CalendarBuilder implements IRenderable {
 
         $this->year = date('Y');
         $this->month = date('m');
+
+        $this->events = [];
     }
 
     /**
@@ -188,6 +192,25 @@ class CalendarBuilder implements IRenderable {
      * @return CalendarDayEntity Day cell (single table cell)
      */
     private function createDayCell(string $day, array $events = []) {
+        if(empty($events)) {
+            if($this->month < 10) {
+                $month = '0' . $this->month;
+            } else {
+                $month = $this->month;
+            }
+    
+            if($day < 10) {
+                $day = '0' . $day;
+            }
+    
+            $date = $this->year . '-' . $month . '-' . $day;
+
+            
+            if(isset($this->events[$date])) {
+                $events = $this->events[$date];
+            }
+        }
+
         return $this->createCell($day, $events);
     }
 
@@ -247,6 +270,24 @@ class CalendarBuilder implements IRenderable {
         $date = new DateTime(strtotime($t));
         $date->format('l');
         return $date->getResult();
+    }
+
+    /**
+     * Adds PostEntities to the calendar as events
+     * 
+     * @param array<\App\Entities\PostEntity> $postEntities
+     */
+    public function addEventsFromPosts(array $postEntities) {
+        foreach($postEntities as $pe) {
+            $date = new DateTime(strtotime($pe->getDateAvailable()));
+
+            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $pe->getId()], 'grid-link'), $date);
+
+            $d = $date;
+            $d->format('Y-m-d');
+
+            $this->events[$d->getResult()][] = $cee->render();
+        }
     }
 }
 
