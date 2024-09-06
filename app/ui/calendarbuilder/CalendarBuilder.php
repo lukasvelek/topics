@@ -292,6 +292,13 @@ class CalendarBuilder implements IRenderable {
         }
     }
 
+    /**
+     * Creates calendar control that allows switching between months
+     * 
+     * @param string $jsHandlerName Name of the JS handler
+     * @param array $params Parameters passed to the JS handler
+     * @return array<string> Buttons
+     */
     public function createCalendarControls(string $jsHandlerName, array $params = []) {
         $buttons = [];
 
