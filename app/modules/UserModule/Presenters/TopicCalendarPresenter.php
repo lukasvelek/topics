@@ -12,8 +12,6 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleCalendar() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         $arb = new AjaxRequestBuilder();
@@ -24,6 +22,8 @@ class TopicCalendarPresenter extends AUserPresenter {
             ->setFunctionName('getCalendar')
             ->setFunctionArguments(['_topicId', '_year', '_month'])
             ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid-controls', 'controls')
+            ->updateHTMLElement('calendar-info', 'info')
         ;
 
         $this->addScript($arb);
@@ -50,6 +50,8 @@ class TopicCalendarPresenter extends AUserPresenter {
         $year = $this->httpGet('year');
 
         $calendar = new CalendarBuilder();
+        $calendar->setYear($year);
+        $calendar->setMonth($month);
 
         // Scheduled posts
         $dateFrom = $year . '-' . $month . '-01 00:00:00';
@@ -62,7 +64,7 @@ class TopicCalendarPresenter extends AUserPresenter {
         $calendar->addEventsFromPosts($posts);
         // End of scheduled posts
 
-        $this->ajaxSendResponse(['grid' => $calendar->render()]);
+        $this->ajaxSendResponse(['grid' => $calendar->render(), 'controls' => $calendar->createCalendarControls('getCalendar', [$topicId]), 'info' => $calendar->getCalendarHeader()]);
     }
 }
 

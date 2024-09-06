@@ -263,6 +263,8 @@ class CalendarBuilder implements IRenderable {
         }
         if($this->month < 10) {
             $month = '0' . $this->month;
+        } else {
+            $month = $this->month;
         }
 
         $t = $this->year . '-' . $month . '-' . $day . ' 00:00:00';
@@ -288,6 +290,89 @@ class CalendarBuilder implements IRenderable {
 
             $this->events[$d->getResult()][] = $cee->render();
         }
+    }
+
+    public function createCalendarControls(string $jsHandlerName, array $params = []) {
+        $buttons = [];
+
+        $backParams = $params;
+        $monthName = $this->getMonthName($this->month);
+
+        if($this->month == '01') {
+            $backParams[] = $this->year - 1;
+            $backParams[] = '12';
+
+            $monthName = $this->getMonthName(12) . ' ' . ($this->year - 1);
+        } else {
+            $backParams[] = $this->year;
+            $backParams[] = $this->month - 1;
+
+            $monthName = $this->getMonthName($this->month - 1);
+        }
+
+        $backButton = '<button type="button" class="calendar-control-button" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $backParams);
+        $backButton .= '\')">&larr; ' . $monthName . '</button>';
+
+        $buttons[] = $backButton;
+
+        $todayParams = $params;
+        $monthName = $this->getMonthName(date('m'));
+
+        $todayParams[] = date('Y');
+        $todayParams[] = date('m');
+
+        $todayButton = '<button type="button" class="calendar-control-button" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $todayParams);
+        $todayButton .= '\')">' . $monthName . '</button>';
+
+        $buttons[] = $todayButton;
+
+        $nextParams = $params;
+        $monthName = $this->getMonthName($this->month);
+
+        if($this->month == '12') {
+            $nextParams[] = $this->year + 1;
+            $nextParams[] = '1';
+
+            $monthName = $this->getMonthName(1) . ' ' . ($this->year + 1);
+        } else {
+            $nextParams[] = $this->year;
+            $nextParams[] = $this->month + 1;
+
+            $monthName = $this->getMonthName($this->month + 1);
+        }
+
+        $nextButton = '<button type="button" class="calendar-control-button" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $nextParams);
+        $nextButton .= '\')">' . $monthName . ' &rarr;</button>';
+
+        $buttons[] = $nextButton;
+
+        return $buttons;
+    }
+
+    public function getCalendarHeader() {
+        $monthName = $this->getMonthName($this->month);
+
+        $code = '<b>' . $monthName . ' ' . $this->year . '</b>';
+
+        return $code;
+    }
+
+    /**
+     * Returns name of the month
+     * 
+     * @param int $day Month number
+     * @return string Name of the month
+     */
+    private function getMonthName(int $month) {
+        if($month < 10) {
+            $month = '0' . $month;
+        }
+
+        $t = $this->year . '-' . $month . '-01 00:00:00';
+
+        $date = new DateTime(strtotime($t));
+        $date->format('F');
+        return $date->getResult();
     }
 }
 
