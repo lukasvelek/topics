@@ -30,10 +30,11 @@ class TopicCalendarPresenter extends AUserPresenter {
         $this->addScript('getCalendar(\'' . $topicId . '\', ' . date('Y') . ', ' . date('m') . ')');
 
         $links = [
-            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'),
+            LinkBuilder::createSimpleLink('New event', $this->createURL('newEventForm', ['topicId' => $topicId]), 'post-data-link')
         ];
 
-        $this->saveToPresenterCache('links', $links);
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
     }
 
     public function renderCalendar() {
