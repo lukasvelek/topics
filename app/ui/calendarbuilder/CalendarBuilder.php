@@ -383,6 +383,11 @@ class CalendarBuilder implements IRenderable {
         return $buttons;
     }
 
+    /**
+     * Sets the calendar header
+     * 
+     * @return string HTML code
+     */
     public function getCalendarHeader() {
         $monthName = $this->getMonthName($this->month);
 
