@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
-use App\Core\HashManager;
 use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;

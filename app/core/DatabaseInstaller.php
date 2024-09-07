@@ -284,8 +284,17 @@ class DatabaseInstaller {
                 'filename' => 'VARCHAR(256) NULL',
                 'gridName' => 'VARCHAR(256) NOT NULL',
                 'entryCount' => 'INT(32) NULL',
-                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateFinished' => 'DATETIME NULL'
+            ],
+            'topic_calendar_user_events' => [
+                'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateFrom' => 'DATETIME NOT NULL',
+                'dateTo' => 'DATETIME NOT NULL'
             ]
         ];
 
