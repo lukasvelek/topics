@@ -64,6 +64,12 @@ class TopicCalendarPresenter extends AUserPresenter {
         $calendar->addEventsFromPosts($posts);
         // End of scheduled posts
 
+        // Polls
+        // End of polls
+
+        // User events
+        // End of user events
+
         $this->ajaxSendResponse(['grid' => $calendar->render(), 'controls' => $calendar->createCalendarControls('getCalendar', [$topicId]), 'info' => $calendar->getCalendarHeader()]);
     }
 }
