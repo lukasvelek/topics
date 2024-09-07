@@ -320,6 +320,42 @@ class CalendarBuilder implements IRenderable {
     }
 
     /**
+     * Adds TopicCalendarUserEventEntities to the calendar as events
+     * 
+     * @param array<\App\Entities\TopicCalendarUserEventEntity> $userEventEntities
+     */
+    public function addEventsFromUserEvents(array $userEventEntities) {
+        foreach($userEventEntities as $uee) {
+            if($uee->getDateFrom() != $uee->getDateTo()) {
+                $d = $uee->getDateFrom();
+
+                while($d != $uee->getDateTo()) {
+                    $date = new DateTime(strtotime($d));
+
+                    $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($uee->getTitle(), [], 'grid-link'), $date);
+
+                    $de = $date;
+                    $de->format('Y-m-d');
+
+                    $this->events[$de->getResult()][] = $cee->render();
+
+                    $date->modify('+1d');
+                    $d = $date->getResult();
+                }
+            } else {
+                $date = new DateTime(strtotime($uee->getDateFrom()));
+
+                $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($uee->getTitle(), [], 'grid-link'), $date);
+
+                $d = $date;
+                $d->format('Y-m-d');
+
+                $this->events[$d->getResult()][] = $cee->render();
+            }
+        }
+    }
+
+    /**
      * Creates calendar control that allows switching between months
      * 
      * @param string $jsHandlerName Name of the JS handler

@@ -77,6 +77,9 @@ class TopicCalendarPresenter extends AUserPresenter {
         // End of polls
 
         // User events
+        $events = $app->topicCalendarEventRepository->getEventsForTopicIdForDateRange($topicId, $dateFrom, $dateTo);
+
+        $calendar->addEventsFromUserEvents($events);
         // End of user events
 
         $this->ajaxSendResponse(['grid' => $calendar->render(), 'controls' => $calendar->createCalendarControls('getCalendar', [$topicId]), 'info' => $calendar->getCalendarHeader()]);
@@ -99,7 +102,7 @@ class TopicCalendarPresenter extends AUserPresenter {
 
                 $eventId = $app->topicCalendarEventRepository->createEntityId(EntityManager::TOPIC_CALENDAR_USER_EVENTS);
 
-                $app->topicCalendarEventRepository->createEvent($eventId, $userId, $title, $description, $dateFrom, $dateTo);
+                $app->topicCalendarEventRepository->createEvent($eventId, $userId, $topicId, $title, $description, $dateFrom, $dateTo);
 
                 $app->topicCalendarEventRepository->commit($userId, __METHOD__);
 

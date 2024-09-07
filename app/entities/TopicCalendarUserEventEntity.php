@@ -5,15 +5,17 @@ namespace App\Entities;
 class TopicCalendarUserEventEntity implements ICreatableFromRow {
     private string $id;
     private string $userId;
+    private string $topicId;
     private string $title;
     private string $description;
     private string $dateCreated;
     private string $dateFrom;
     private string $dateTo;
 
-    public function __construct(string $id, string $userId, string $title, string $description, string $dateCreated, string $dateFrom, string $dateTo) {
+    public function __construct(string $id, string $userId, string $topicId, string $title, string $description, string $dateCreated, string $dateFrom, string $dateTo) {
         $this->id = $id;
         $this->userId = $userId;
+        $this->topicId = $topicId;
         $this->title = $title;
         $this->description = $description;
         $this->dateCreated = $dateCreated;
@@ -27,6 +29,10 @@ class TopicCalendarUserEventEntity implements ICreatableFromRow {
 
     public function getUserId() {
         return $this->userId;
+    }
+
+    public function getTopicId() {
+        return $this->topicId;
     }
 
     public function getTitle() {
@@ -50,7 +56,7 @@ class TopicCalendarUserEventEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['eventId'], $row['userId'], $row['title'], $row['description'], $row['dateCreated'], $row['dateFrom'], $row['dateTo']);
+        return new self($row['eventId'], $row['userId'], $row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['dateFrom'], $row['dateTo']);
     }
 }
 

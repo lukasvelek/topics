@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\TopicCalendarUserEventEntity;
 use App\Logger\Logger;
 
 class TopicCalendarEventRepository extends ARepository {
@@ -10,11 +11,11 @@ class TopicCalendarEventRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
-    public function createEvent(string $eventId, string $userId, string $title, string $description, string $dateFrom, string $dateTo) {
+    public function createEvent(string $eventId, string $userId, string $topicId, string $title, string $description, string $dateFrom, string $dateTo) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_calendar_user_events', ['eventId', 'userId', 'title', 'description', 'dateFrom', 'dateTo'])
-            ->values([$eventId, $userId, $title, $description, $dateFrom, $dateTo])
+        $qb ->insert('topic_calendar_user_events', ['eventId', 'userId', 'topicId', 'title', 'description', 'dateFrom', 'dateTo'])
+            ->values([$eventId, $userId, $topicId, $title, $description, $dateFrom, $dateTo])
             ->execute();
 
         return $qb->fetchBool();
@@ -31,6 +32,11 @@ class TopicCalendarEventRepository extends ARepository {
             ->execute();
 
         $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = TopicCalendarUserEventEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
     }
 }
 

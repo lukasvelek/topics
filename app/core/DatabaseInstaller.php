@@ -290,6 +290,7 @@ class DatabaseInstaller {
             'topic_calendar_user_events' => [
                 'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'userId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'title' => 'VARCHAR(256) NOT NULL',
                 'description' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
