@@ -45,7 +45,7 @@ class CalendarEventEntity {
     public function render() {
         $bgColor = $this->generateRandomColor();
 
-        $code = '<span style="background-color: ' . $bgColor . '; border-radius: 10px; padding: 2px">' . $this->link . '</span>';
+        $code = '<div style="background-color: ' . $bgColor . '; border-radius: 10px; padding: 2px">' . $this->link . '</div>';
 
         return $code;
     }

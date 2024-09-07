@@ -23,6 +23,7 @@ class CalendarBuilder implements IRenderable {
      */
     public function __construct() {
         $this->grid = new GridBuilder();
+        $this->grid->setIdElement('gridbuilder-calendar');
 
         $this->year = date('Y');
         $this->month = date('m');
@@ -211,7 +212,12 @@ class CalendarBuilder implements IRenderable {
             }
         }
 
-        return $this->createCell($day, $events);
+        $isToday = false;
+        if(date('d') == $day && date('m') == $this->month && date('Y') == $this->year) {
+            $isToday = true;
+        }
+
+        return $this->createCell($day, $events, $isToday);
     }
 
     /**
@@ -221,12 +227,15 @@ class CalendarBuilder implements IRenderable {
      * @param array $events Event array for the day
      * @return CalendarDayEntity Day cell (single table cell)
      */
-    private function createCell(?string $day = null, array $events = []) {
+    private function createCell(?string $day = null, array $events = [], bool $isToday = false) {
         if($day !== null) {
-            return new CalendarDayEntity($day, $events);
+            $cee = new CalendarDayEntity($day, $events);
+            $cee->setIsToday($isToday);
         } else {
-            return new CalendarDayEntity('');
+            $cee = new CalendarDayEntity('');
         }
+
+        return $cee;
     }
 
     /**
@@ -284,6 +293,24 @@ class CalendarBuilder implements IRenderable {
             $date = new DateTime(strtotime($pe->getDateAvailable()));
 
             $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $pe->getId()], 'grid-link'), $date);
+
+            $d = $date;
+            $d->format('Y-m-d');
+
+            $this->events[$d->getResult()][] = $cee->render();
+        }
+    }
+
+    /**
+     * Adds TopicPollEntities to the calendar as events
+     * 
+     * @param array<\App\Entities\TopicPollEntity> $pollEntities
+     */
+    public function addEventsFromPolls(array $pollEntities) {
+        foreach($pollEntities as $pe) {
+            $date = new DateTime(strtotime($pe->getDateValid()));
+            
+            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $pe->getTopicId()], 'grid-link'), $date);
 
             $d = $date;
             $d->format('Y-m-d');
