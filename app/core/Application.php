@@ -34,6 +34,7 @@ use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicCalendarEventRepository;
 use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
@@ -93,6 +94,7 @@ class Application {
     public ContentRepository $contentRepository;
     public TopicRulesRepository $topicRulesRepository;
     public GridExportRepository $gridExportRepository;
+    public TopicCalendarEventRepository $topicCalendarEventRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -159,6 +161,7 @@ class Application {
         $this->contentRepository = new ContentRepository($this->db, $this->logger);
         $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
         $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
+        $this->topicCalendarEventRepository = new TopicCalendarEventRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
