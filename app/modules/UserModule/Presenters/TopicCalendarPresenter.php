@@ -53,18 +53,21 @@ class TopicCalendarPresenter extends AUserPresenter {
         $calendar->setYear($year);
         $calendar->setMonth($month);
 
-        // Scheduled posts
         $dateFrom = $year . '-' . $month . '-01 00:00:00';
 
         $lastDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
         $dateTo = $year . '-' . $month . '-' . $lastDay . ' 00:00:00';
 
+        // Scheduled posts
         $posts = $app->postRepository->getScheduledPostsForTopicIdForDate($dateFrom, $dateTo, $topicId);
 
         $calendar->addEventsFromPosts($posts);
         // End of scheduled posts
 
         // Polls
+        $polls = $app->topicPollRepository->getActivePollsWithValidityForDateRangeForTopicId($topicId, $dateFrom, $dateTo);
+
+        $calendar->addEventsFromPolls($polls);
         // End of polls
 
         // User events

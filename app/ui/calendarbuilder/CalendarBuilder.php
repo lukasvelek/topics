@@ -293,6 +293,23 @@ class CalendarBuilder implements IRenderable {
     }
 
     /**
+     * Adds TopicPollEntities to the calendar as events
+     * 
+     * @param array<\App\Entities\TopicPollEntity> $pollEntities
+     */
+    public function addEventsFromPolls(array $pollEntities) {
+        foreach($pollEntities as $pe) {
+            $date = new DateTime(strtotime($pe->getDateValid()));
+            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $pe->getTopicId()], 'grid-link'), $date);
+
+            $d = $date;
+            $d->format('Y-m-d');
+
+            $this->events[$d->getResult()][] = $cee->render();
+        }
+    }
+
+    /**
      * Creates calendar control that allows switching between months
      * 
      * @param string $jsHandlerName Name of the JS handler
