@@ -10,6 +10,7 @@ namespace App\UI\CalendarBuilder;
 class CalendarDayEntity {
     private string $header;
     private array $events;
+    private bool $isToday;
 
     /**
      * Class constructor
@@ -20,6 +21,16 @@ class CalendarDayEntity {
     public function __construct(string $header, array $events = []) {
         $this->header = $header;
         $this->events = $events;
+        $this->isToday = false;
+    }
+
+    /**
+     * Sets if the CalendarDayEntity is today
+     * 
+     * @param bool $isToday True if it is today or false if not
+     */
+    public function setIsToday(bool $isToday = true) {
+        $this->isToday = $isToday;
     }
 
     /**
@@ -37,12 +48,23 @@ class CalendarDayEntity {
      * @return string HTML code
      */
     public function render() {
-        $code = '<b>' . $this->header . '</b>';
+        $code = '<div class="row"><div class="col-md">';
+
+        if($this->isToday) {
+            $code .= '<b style="color: red">' . $this->header . '</b>';
+        } else {
+            $code .= '<b>' . $this->header . '</b>';
+        }
+
+        $code .= '</div></div>';
+        $code .= '<hr>';
+        $code .= '<div class="row"><div class="col-md">';
 
         if(!empty($this->events)) {
-            $code .= '<br>';
             $code .= implode('<br>', $this->events);
         }
+
+        $code .= '</div></div>';
 
         return $code;
     }

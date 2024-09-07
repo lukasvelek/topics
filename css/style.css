@@ -617,3 +617,7 @@ div [id*="user-action-history-"] {
 .user-list-link:hover {
     color: rgb(100, 100, 100);
 }
+
+#gridbuilder-calendar td {
+    height: 100px;
+}
