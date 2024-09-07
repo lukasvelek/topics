@@ -13,6 +13,8 @@ use App\UI\LinkBuilder;
  * @author Lukas Velek
  */
 class CalendarBuilder implements IRenderable {
+    public const EVENT_TITLE_LENGTH = 10;
+
     private GridBuilder $grid;
     private int $year;
     private int $month;
@@ -292,7 +294,9 @@ class CalendarBuilder implements IRenderable {
         foreach($postEntities as $pe) {
             $date = new DateTime(strtotime($pe->getDateAvailable()));
 
-            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $pe->getId()], 'grid-link'), $date);
+            $linkText = $this->getShortenedText($pe->getTitle());
+
+            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($linkText, ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $pe->getId()], 'grid-link'), $date);
 
             $d = $date;
             $d->format('Y-m-d');
@@ -309,8 +313,10 @@ class CalendarBuilder implements IRenderable {
     public function addEventsFromPolls(array $pollEntities) {
         foreach($pollEntities as $pe) {
             $date = new DateTime(strtotime($pe->getDateValid()));
+
+            $linkText = $this->getShortenedText($pe->getTitle());
             
-            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($pe->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $pe->getTopicId()], 'grid-link'), $date);
+            $cee = new CalendarEventEntity($pe->getTitle(), LinkBuilder::createSimpleLink($linkText, ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $pe->getTopicId()], 'grid-link'), $date);
 
             $d = $date;
             $d->format('Y-m-d');
@@ -326,13 +332,15 @@ class CalendarBuilder implements IRenderable {
      */
     public function addEventsFromUserEvents(array $userEventEntities) {
         foreach($userEventEntities as $uee) {
+            $linkText = $this->getShortenedText($uee->getTitle());
+
             if($uee->getDateFrom() != $uee->getDateTo()) {
                 $d = $uee->getDateFrom();
 
                 while($d != $uee->getDateTo()) {
                     $date = new DateTime(strtotime($d));
 
-                    $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($uee->getTitle(), [], 'grid-link'), $date);
+                    $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, [], 'grid-link'), $date);
 
                     $de = $date;
                     $de->format('Y-m-d');
@@ -345,7 +353,7 @@ class CalendarBuilder implements IRenderable {
             } else {
                 $date = new DateTime(strtotime($uee->getDateFrom()));
 
-                $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($uee->getTitle(), [], 'grid-link'), $date);
+                $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, [], 'grid-link'), $date);
 
                 $d = $date;
                 $d->format('Y-m-d');
@@ -448,6 +456,14 @@ class CalendarBuilder implements IRenderable {
         $date = new DateTime(strtotime($t));
         $date->format('F');
         return $date->getResult();
+    }
+
+    private function getShortenedText(string $text) {
+        if(strlen($text) > self::EVENT_TITLE_LENGTH) {
+            return substr($text, 0, self::EVENT_TITLE_LENGTH) . '...';
+        } else {
+            return $text;
+        }
     }
 }
 
