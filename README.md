@@ -15,7 +15,7 @@ Topics is a website that allows people to chat about different topics. Each topi
     - Images in posts
 
 ## Current version
-    - v1.4 (09/10/2024)
+    - v1.5_dev (-)
 
 ## Future plans
     - Videos in posts
