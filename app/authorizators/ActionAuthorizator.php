@@ -295,6 +295,14 @@ class ActionAuthorizator extends AAuthorizator {
     public function canDeleteUserCalendarEvent(string $userId, string $topicId, TopicCalendarUserEventEntity $tcuee) {
         return $this->canEditUserCalendarEvent($userId, $topicId, $tcuee);
     }
+
+    public function getManageContentRegulation(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>

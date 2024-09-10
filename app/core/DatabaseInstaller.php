@@ -153,7 +153,7 @@ class DatabaseInstaller {
             ],
             'banned_words' => [
                 'wordId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
-                'word' => 'VARCHAR(256)',
+                'word' => 'VARCHAR(256) NOT NULL',
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
@@ -296,7 +296,14 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateFrom' => 'DATETIME NOT NULL',
                 'dateTo' => 'DATETIME NOT NULL'
-            ]
+            ],
+            'topic_banned_words' => [
+                'wordId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'word' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
         ];
 
         $i = 0;
@@ -418,6 +425,15 @@ class DatabaseInstaller {
                 'userId'
             ],
             'topic_rules' => [
+                'topicId'
+            ],
+            'topic_calendar_user_events' => [
+                'dateFrom',
+                'dateTo',
+                'topicId'
+            ],
+            'topic_banned_words' => [
+                'authorId',
                 'topicId'
             ]
         ];

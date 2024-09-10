@@ -12,6 +12,7 @@ use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
 use App\Logger\Logger;
+use App\Repositories\TopicContentRegulationRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\TopicRulesRepository;
 use Exception;
@@ -22,8 +23,9 @@ class TopicManager extends AManager {
     private VisibilityAuthorizator $va;
     private ContentManager $com;
     private TopicRulesRepository $trr;
+    private TopicContentRegulationRepository $tcrr;
 
-    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr) {
+    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr) {
         parent::__construct($logger, $entityManager);
         
         $this->tr = $topicRepository;
@@ -31,6 +33,7 @@ class TopicManager extends AManager {
         $this->va = $va;
         $this->com = $com;
         $this->trr = $trr;
+        $this->tcrr = $tcrr;
     }
 
     public function getTopicById(string $topicId, string $userId) {
@@ -276,7 +279,6 @@ class TopicManager extends AManager {
             }
 
             $rules = $entity->getRules();
-
 
             unset($rules[$ruleIndex]);
 

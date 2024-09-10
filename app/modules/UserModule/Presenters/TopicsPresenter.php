@@ -49,7 +49,7 @@ class TopicsPresenter extends AUserPresenter {
     public function handleProfile() {
         global $app;
 
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
 
         $topicId = $this->httpGet('topicId');
 
@@ -76,7 +76,7 @@ class TopicsPresenter extends AUserPresenter {
         $topicName = $bwh->checkText($topic->getTitle());
         $this->saveToPresenterCache('topicName', $topicName);
 
-        $topicDescription = $bwh->checkText($topic->getDescription());
+        $topicDescription = $bwh->checkText($topic->getDescription(), $topicId);
         $this->saveToPresenterCache('topicDescription', $topicDescription);
 
         // posts
@@ -176,6 +176,11 @@ class TopicsPresenter extends AUserPresenter {
             $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
+        $contentRegulationManagementLink = '';
+        if($app->actionAuthorizator->getManageContentRegulation($app->currentUser->getId(), $topicId)) {
+            $contentRegulationManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+        }
+
         $followersLink = 'Followers';
         
         if($app->actionAuthorizator->canManageTopicFollowers($app->currentUser->getId(), $topicId)) {
@@ -206,6 +211,7 @@ class TopicsPresenter extends AUserPresenter {
                     ' . $roleManagementLink . '
                     ' . $inviteManagementLink . '
                     ' . $privacyManagementLink . '
+                    ' . $contentRegulationManagementLink . '
                 </div>
             </div>
         ';
@@ -394,7 +400,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $code = [];
 
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
 
         $postIds = [];
         foreach($posts as $post) {
@@ -427,14 +433,14 @@ class TopicsPresenter extends AUserPresenter {
                 $userProfileLink = '-';
             }
     
-            $title = $bwh->checkText($post->getTitle());
+            $title = $bwh->checkText($post->getTitle(), $topicId);
     
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
             $liked = in_array($post->getId(), $likedArray);
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
-            $shortenedText = $bwh->checkText($post->getShortenedText(100));
+            $shortenedText = $bwh->checkText($post->getShortenedText(100), $topicId);
     
             [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 

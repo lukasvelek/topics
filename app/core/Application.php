@@ -35,6 +35,7 @@ use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicCalendarEventRepository;
+use App\Repositories\TopicContentRegulationRepository;
 use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
@@ -95,6 +96,7 @@ class Application {
     public TopicRulesRepository $topicRulesRepository;
     public GridExportRepository $gridExportRepository;
     public TopicCalendarEventRepository $topicCalendarEventRepository;
+    public TopicContentRegulationRepository $topicContentRegulationRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -162,6 +164,7 @@ class Application {
         $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
         $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
         $this->topicCalendarEventRepository = new TopicCalendarEventRepository($this->db, $this->logger);
+        $this->topicContentRegulationRepository = new TopicContentRegulationRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -180,7 +183,7 @@ class Application {
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository, $this->topicContentRegulationRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;
