@@ -340,7 +340,7 @@ class CalendarBuilder implements IRenderable {
                 while(strtotime($d) < strtotime($uee->getDateTo())) {
                     $date = new DateTime(strtotime($d));
 
-                    $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, [], 'grid-link'), $date);
+                    $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, ['page' => 'UserModule:TopicCalendar', 'action' => 'event', 'topicId' => $uee->getTopicId(), 'eventId' => $uee->getId()], 'grid-link'), $date);
 
                     $de = $date;
                     $de->format('Y-m-d');
@@ -353,7 +353,7 @@ class CalendarBuilder implements IRenderable {
             } else {
                 $date = new DateTime(strtotime($uee->getDateFrom()));
 
-                $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, [], 'grid-link'), $date);
+                $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, ['page' => 'UserModule:TopicCalendar', 'action' => 'event', 'topicId' => $uee->getTopicId(), 'eventId' => $uee->getId()], 'grid-link'), $date);
 
                 $d = $date;
                 $d->format('Y-m-d');

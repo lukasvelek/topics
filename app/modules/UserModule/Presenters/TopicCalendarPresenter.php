@@ -4,7 +4,9 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
 use App\UI\CalendarBuilder\CalendarBuilder;
 use App\UI\FormBuilder\FormBuilder;
@@ -148,6 +150,48 @@ class TopicCalendarPresenter extends AUserPresenter {
     public function renderNewEventForm() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function handleEvent() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $eventId = $this->httpGet('eventId', true);
+
+        $event = $app->topicCalendarEventRepository->getEventById($eventId);
+
+        $dateRange = DateTimeFormatHelper::formatDateToUserFriendly($event->getDateFrom()) . ' - ' . DateTimeFormatHelper::formatDateToUserFriendly($event->getDateTo());
+
+        $author = $app->userRepository->getUserById($event->getUserId());
+
+        if($author !== null) {
+            $author = UserEntity::createUserProfileLink($author);
+        } else {
+            $author = '-';
+        }
+
+        $code = '
+            <div id="center">
+                <h3>' . $event->getTitle() . '</h3>
+            </div>
+            <br>
+            <p><b>Date:</b> ' . $dateRange . '</p>
+            <p><b>Description:</b> ' . $event->getDescription() . '</p>
+            <p><b>Author:</b> ' . $author . '</p>
+        ';
+
+        $this->saveToPresenterCache('event_content', $code);
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('calendar', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderEvent() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->event_content = $this->loadFromPresenterCache('event_content');
     }
 }
 

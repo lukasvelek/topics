@@ -38,6 +38,17 @@ class TopicCalendarEventRepository extends ARepository {
 
         return $entities;
     }
+
+    public function getEventById(string $eventId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_calendar_user_events')
+            ->where('eventId = ?', [$eventId])
+            ->execute();
+
+        return TopicCalendarUserEventEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
