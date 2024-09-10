@@ -2,8 +2,6 @@
 
 namespace App\Entities;
 
-use App\UI\CalendarBuilder\CalendarBuilder;
-
 class TopicCalendarUserEventEntity implements ICreatableFromRow {
     private string $id;
     private string $userId;

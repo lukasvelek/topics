@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\NonExistingEntityException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
 use App\UI\CalendarBuilder\CalendarBuilder;
@@ -22,6 +23,13 @@ class TopicCalendarPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
+
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         $arb = new AjaxRequestBuilder();
 
@@ -199,6 +207,111 @@ class TopicCalendarPresenter extends AUserPresenter {
     public function renderEvent() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->event_content = $this->loadFromPresenterCache('event_content');
+    }
+
+    public function handleEditEventForm(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $eventId = $this->httpGet('eventId', true);
+
+        try {
+            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+
+            $event = $app->topicCalendarEventRepository->getEventById($eventId);
+
+            if($event === null) {
+                throw new NonExistingEntityException('Event #' . $eventId . ' does not exist.');
+            }
+        } catch(AException $e) {
+            $this->flashMessage($e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
+
+        if($this->httpGet('isFormSubmit') !== null) {
+            $title = $fr->title;
+            $description = $fr->description;
+            $dateFrom = $fr->dateFrom;
+            $dateTo = $fr->dateTo;
+            $userId = $app->currentUser->getId();
+
+            try {
+                $app->topicCalendarEventRepository->beginTransaction();
+
+                $data = [
+                    'title' => $title,
+                    'description' => $description,
+                    'dateFrom' => $dateFrom,
+                    'dateTo' => $dateTo
+                ];
+
+                $app->topicCalendarEventRepository->updateEvent($eventId, $data);
+
+                $app->topicCalendarEventRepository->commit($userId, __METHOD__);
+
+                $this->flashMessage('Event updated.', 'success');
+            } catch(AException $e) {
+                $app->topicCalendarEventRepository->rollback();
+
+                $this->flashMessage('Could not edit event. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect($this->createURL('event', ['topicId' => $topicId, 'eventId' => $eventId]));
+        } else {
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('event', ['topicId' => $topicId, 'eventId' => $eventId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', $links);
+
+            $dateFrom = new DateTime(strtotime($event->getDateFrom()));
+            $dateFrom->format('Y-m-d H:i');
+            $dateFrom = $dateFrom->getResult();
+
+            $dateTo = new DateTime(strtotime($event->getDateTo()));
+            $dateTo->format('Y-m-d H:i');
+            $dateTo = $dateTo->getResult();
+
+            $form = new FormBuilder();
+
+            $form->setMethod()
+                ->setAction($this->createURL('editEventForm', ['topicId' => $topicId, 'eventId' => $eventId]))
+                ->addTextInput('title', 'Title', $event->getTitle(), true)
+                ->addTextArea('description', 'Description', $event->getDescription(), true)
+                ->addDatetime('dateFrom', 'Date from', $dateFrom, true)
+                ->addDatetime('dateTo', 'Date to', $dateTo, false)
+                ->addSubmit('Save', false, true)
+            ;
+
+            $this->saveToPresenterCache('form', $form);
+        }
+    }
+
+    public function renderEditEventForm() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function handleDeleteEvent() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $eventId = $this->httpGet('eventId', true);
+
+        try {
+            $app->topicCalendarEventRepository->beginTransaction();
+
+            $app->topicCalendarEventRepository->deleteEvent($eventId);
+
+            $app->topicCalendarEventRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Event deleted.', 'success');
+            $this->redirect($this->createUrl('calendar', ['topicId' => $topicId]));
+        } catch(AException $e) {
+            $this->flashMessage('Could not delete event. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('event', ['topicId' => $topicId, 'eventId' => $eventId]));
+        }
+
     }
 }
 

@@ -125,6 +125,17 @@ abstract class ARepository {
 
         return $em->generateEntityId($category);
     }
+
+    protected function deleteEntryById(string $tableName, string $keyName, string $keyValue) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from($tableName)
+            ->where($keyName . ' = ?', [$keyValue])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>

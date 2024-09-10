@@ -8,8 +8,8 @@ use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
-use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
+use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
 use App\Logger\Logger;
 use App\Repositories\TopicRepository;
@@ -37,7 +37,7 @@ class TopicManager extends AManager {
         $topic = $this->tr->getTopicById($topicId);
 
         if($topic === null) {
-            throw new TopicVisibilityException('No topic with ID #' . $topicId . ' exists.');
+            throw new NonExistingEntityException('Topic with ID #' . $topicId . ' does not exist.');
         }
 
         $this->checkPrivacy($topic, $userId);

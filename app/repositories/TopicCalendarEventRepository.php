@@ -49,6 +49,21 @@ class TopicCalendarEventRepository extends ARepository {
 
         return TopicCalendarUserEventEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function updateEvent(string $eventId, array $data) {
+        $qb = $this->qb(__METHOD__);
+        
+        $qb ->update('topic_calendar_user_events')
+            ->set($data)
+            ->where('eventId = ?', [$eventId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function deleteEvent(string $eventId) {
+        return $this->deleteEntryById('topic_calendar_user_events', 'eventId', $eventId);
+    }
 }
 
 ?>
