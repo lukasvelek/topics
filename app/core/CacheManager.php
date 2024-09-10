@@ -173,6 +173,10 @@ class CacheManager {
                     return $result;
                 }
                 $file[self::I_NS_DATA][$key] = $result;
+                if($expiration !== null) {
+                    $expiration = $expiration->getResult();
+                }
+                $file[self::I_NS_EXPIRATION_DATE] = $expiration;
                 $save = true;
             }
         }
@@ -394,7 +398,7 @@ class CacheManager {
     private function checkCacheExpiration(array $cacheFileContent) {
         if(isset($cacheFileContent[self::I_NS_EXPIRATION_DATE])) {
             $expirationDate = $cacheFileContent[self::I_NS_EXPIRATION_DATE];
-
+            
             if($expirationDate !== null) {
                 if(strtotime($expirationDate) < time()) {
                     return true;
