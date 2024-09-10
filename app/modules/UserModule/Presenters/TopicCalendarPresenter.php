@@ -17,6 +17,8 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleCalendar() {
+        global $app;
+
         $topicId = $this->httpGet('topicId', true);
 
         $arb = new AjaxRequestBuilder();
@@ -35,9 +37,12 @@ class TopicCalendarPresenter extends AUserPresenter {
         $this->addScript('getCalendar(\'' . $topicId . '\', ' . date('Y') . ', ' . date('m') . ')');
 
         $links = [
-            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'),
-            LinkBuilder::createSimpleLink('New event', $this->createURL('newEventForm', ['topicId' => $topicId]), 'post-data-link')
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
         ];
+
+        if($app->actionAuthorizator->canCreateTopicCalendarUserEvents($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('New event', $this->createURL('newEventForm', ['topicId' => $topicId]), 'post-data-link');
+        }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
     }
