@@ -7,6 +7,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\DatabaseConnection;
 use App\Entities\PostEntity;
 use App\Entities\PostImageFileEntity;
+use App\Entities\TopicCalendarUserEventEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
@@ -261,6 +262,38 @@ class ActionAuthorizator extends AAuthorizator {
         }
 
         return true;
+    }
+
+    public function canSeeTopicCalendar(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canCreateTopicCalendarUserEvents(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canEditUserCalendarEvent(string $userId, string $topicId, TopicCalendarUserEventEntity $tcuee) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        if(($tcuee->getUserId() != $userId) && ($this->tpm->getFollowRole($topicId, $tcuee->getUserId()) > $this->tpm->getFollowRole($topicId, $userId))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canDeleteUserCalendarEvent(string $userId, string $topicId, TopicCalendarUserEventEntity $tcuee) {
+        return $this->canEditUserCalendarEvent($userId, $topicId, $tcuee);
     }
 }
 

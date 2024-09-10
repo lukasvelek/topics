@@ -19,6 +19,15 @@ Topics is a website that allows people to chat about different topics. Each topi
 
 ## Future plans
     - Videos in posts
+    - Automatic user reporting
+        - If users use a banned word in a comment or a post, they will automatically be reported
+    - Word banning on topic-level
+        - Currently words are banned on the application-level
+    - Common search indexing
+        - Searched terms and their results should be cached, so next users can get the information faster
+    - Topic tags grouping
+        - When topics are created, their tags are custom written by the topic author. These tags can be misspelled or just similar to other already existing tags - e.g. "tech" and "technology".
+        - There problems should be analyzed and available in a management overview
 
 ## Topic roles description
 Currently there are 5 roles in every topic. Also their abilities are written below.
