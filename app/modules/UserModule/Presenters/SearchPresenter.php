@@ -9,8 +9,14 @@ use App\Entities\UserEntity;
 use App\UI\LinkBuilder;
 
 class SearchPresenter extends AUserPresenter {
+    private CacheManager $cache;
+
     public function __construct() {
         parent::__construct('SearchPresenter', 'Search');
+
+        global $app;
+
+        $this->cache = new CacheManager($app->logger);
     }
 
     public function handleSearch() {
@@ -19,12 +25,10 @@ class SearchPresenter extends AUserPresenter {
         $query = $this->httpGet('q', true);
 
         // users
-        $cm = new CacheManager($app->logger);
-        
         $expire = new DateTime();
         $expire->modify('+1h');
 
-        $users = $cm->loadCache('users', function() use ($app, $query) {
+        $users = $this->cache->loadCache('users', function() use ($app, $query) {
             return $app->userRepository->searchUsersByUsername($query);
         }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
 
@@ -43,7 +47,7 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('users', $userResult);
 
         // topics
-        $topics = $cm->loadCache('topics', function() use ($app, $query) {
+        $topics = $this->cache->loadCache('topics', function() use ($app, $query) {
             return $app->topicRepository->searchTopics($query);
         }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
         
@@ -69,7 +73,7 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topics', $topicResult);
 
         // tags
-        $tags = $cm->loadCache('tags', function() use ($app, $query) {
+        $tags = $this->cache->loadCache('tags', function() use ($app, $query) {
             $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
 
             $topics = [];
@@ -126,12 +130,10 @@ class SearchPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $cm = new CacheManager($app->logger);
-        
         $expire = new DateTime();
         $expire->modify('+1h');
 
-        $topics = $cm->loadCache('topicTags', function() use ($app, $tag) {
+        $topics = $this->cache->loadCache('topicTags', function() use ($app, $tag) {
             $topics = $app->topicRepository->getTopicsWithTag($tag);
             return $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
         }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
