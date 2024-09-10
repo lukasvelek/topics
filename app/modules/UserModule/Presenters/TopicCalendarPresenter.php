@@ -186,7 +186,14 @@ class TopicCalendarPresenter extends AUserPresenter {
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('calendar', ['topicId' => $topicId]), 'post-data-link')
         ];
 
-        $this->saveToPresenterCache('links', $links);
+        if($app->actionAuthorizator->canEditUserCalendarEvent($app->currentUser->getId(), $topicId, $event)) {
+            $links[] = LinkBuilder::createSimpleLink('Edit', $this->createURL('editEventForm', ['topicId' => $topicId, 'eventId' => $eventId]), 'post-data-link');
+        }
+        if($app->actionAuthorizator->canDeleteUserCalendarEvent($app->currentUser->getId(), $topicId, $event)) {
+            $links[] = LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteEvent', ['topicId' => $topicId, 'eventId' => $eventId]), 'post-data-link');
+        }
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
     }
 
     public function renderEvent() {
