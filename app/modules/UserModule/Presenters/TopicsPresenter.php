@@ -176,6 +176,11 @@ class TopicsPresenter extends AUserPresenter {
             $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
+        $contentRegulationManagementLink = '';
+        if($app->actionAuthorizator->getManageContentRegulation($app->currentUser->getId(), $topicId)) {
+            $contentRegulationManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+        }
+
         $followersLink = 'Followers';
         
         if($app->actionAuthorizator->canManageTopicFollowers($app->currentUser->getId(), $topicId)) {
@@ -206,6 +211,7 @@ class TopicsPresenter extends AUserPresenter {
                     ' . $roleManagementLink . '
                     ' . $inviteManagementLink . '
                     ' . $privacyManagementLink . '
+                    ' . $contentRegulationManagementLink . '
                 </div>
             </div>
         ';
