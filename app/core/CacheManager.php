@@ -27,6 +27,7 @@ class CacheManager {
     public const NS_TOPIC_RULES = 'topicRules';
     public const NS_GRID_EXPORT_DATA = 'gridExportData';
     public const NS_GRID_EXPORTS = 'gridExports';
+    public const NS_COMMON_SEARCH_INDEX = 'commonSearchIndex';
 
     /**
      * Internal cache namespaces
@@ -172,6 +173,10 @@ class CacheManager {
                     return $result;
                 }
                 $file[self::I_NS_DATA][$key] = $result;
+                if($expiration !== null) {
+                    $expiration = $expiration->getResult();
+                }
+                $file[self::I_NS_EXPIRATION_DATE] = $expiration;
                 $save = true;
             }
         }
@@ -393,7 +398,7 @@ class CacheManager {
     private function checkCacheExpiration(array $cacheFileContent) {
         if(isset($cacheFileContent[self::I_NS_EXPIRATION_DATE])) {
             $expirationDate = $cacheFileContent[self::I_NS_EXPIRATION_DATE];
-
+            
             if($expirationDate !== null) {
                 if(strtotime($expirationDate) < time()) {
                     return true;

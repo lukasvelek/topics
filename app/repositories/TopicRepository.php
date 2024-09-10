@@ -58,6 +58,18 @@ class TopicRepository extends ARepository {
         return $qb;
     }
 
+    public function searchTopics(string $query) {
+        $qb = $this->composeQueryForTopicsSearch($query);
+        $qb->execute();
+
+        $topics = [];
+        while($row = $qb->fetchAssoc()) {
+            $topics[] = TopicEntity::createEntityFromDbRow($row);
+        }
+
+        return $topics;
+    }
+
     public function createNewTopic(string $topicId, string $title, string $description, string $tags, bool $isPrivate, string $rawTags) {
         $qb = $this->qb(__METHOD__);
 
