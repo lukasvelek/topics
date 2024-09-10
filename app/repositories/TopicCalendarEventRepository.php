@@ -64,6 +64,10 @@ class TopicCalendarEventRepository extends ARepository {
     public function deleteEvent(string $eventId) {
         return $this->deleteEntryById('topic_calendar_user_events', 'eventId', $eventId);
     }
+
+    public function deleteUserEventsForTopicId(string $topicId) {
+        return $this->deleteEntryById('topic_calendar_user_events', 'topicId', $topicId);
+    }
 }
 
 ?>

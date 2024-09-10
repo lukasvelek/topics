@@ -270,6 +270,14 @@ class TopicPollRepository extends ARepository {
 
         return $rows;
     }
+
+    public function deletePollResponsesForPollId(string $pollId) {
+        return $this->deleteEntryById('topic_polls_responses', 'pollId', $pollId);
+    }
+
+    public function deletePoll(string $pollId) {
+        return $this->deleteEntryById('topic_polls', 'pollId', $pollId);
+    }
 }
 
 ?>

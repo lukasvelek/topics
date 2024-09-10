@@ -65,6 +65,10 @@ class TopicContentRegulationRepository extends ARepository {
     public function deleteBannedWord(string $wordId) {
         return $this->deleteEntryById('topic_banned_words', 'wordId', $wordId);
     }
+
+    public function deleteBannedWordsForTopicId(string $topicId) {
+        return $this->deleteEntryById('topic_banned_words', 'topicId', $topicId);
+    }
 }
 
 ?>

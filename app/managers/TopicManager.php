@@ -12,6 +12,7 @@ use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
 use App\Logger\Logger;
+use App\Repositories\TopicCalendarEventRepository;
 use App\Repositories\TopicContentRegulationRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\TopicRulesRepository;
@@ -24,8 +25,9 @@ class TopicManager extends AManager {
     private ContentManager $com;
     private TopicRulesRepository $trr;
     private TopicContentRegulationRepository $tcrr;
+    private TopicCalendarEventRepository $tcer;
 
-    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr) {
+    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr, TopicCalendarEventRepository $tcer) {
         parent::__construct($logger, $entityManager);
         
         $this->tr = $topicRepository;
@@ -34,6 +36,7 @@ class TopicManager extends AManager {
         $this->com = $com;
         $this->trr = $trr;
         $this->tcrr = $tcrr;
+        $this->tcer = $tcer;
     }
 
     public function getTopicById(string $topicId, string $userId) {
@@ -121,6 +124,7 @@ class TopicManager extends AManager {
 
         $this->com->deleteTopic($topicId);
 
+        // memberships
         $members = $this->tmm->getTopicMembers($topicId, 0, 0, false);
 
         foreach($members as $member) {
@@ -128,6 +132,12 @@ class TopicManager extends AManager {
 
             $this->tmm->unfollowTopic($topicId, $memberId);
         }
+
+        // banned words
+        $this->tcrr->deleteBannedWordsForTopicId($topicId);
+
+        // user calendar events
+        $this->tcer->deleteUserEventsForTopicId($topicId);
     }
 
     public function updateTopicPrivacy(string $userId, string $topicId, bool $isPrivate, bool $isVisible) {

@@ -41,16 +41,29 @@ class ContentManager extends AManager {
     }
 
     public function deleteTopic(string $topicId, bool $deleteCache = true) {
+        // posts
         $posts = $this->postRepository->getLatestPostsForTopicId($topicId, 0);
 
         foreach($posts as $post) {
             $this->deletePost($post->getId(), false);
         }
 
+        // polls
+        $polls = $this->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0);
+
+        foreach($polls as $poll) {
+            $this->deletePoll($poll->getId());
+        }
+
         $this->topicRepository->deleteTopic($topicId, $this->isHide());
 
         $this->afterDelete(self::T_TOPIC, $deleteCache);
         $this->afterDelete(self::T_POST, $deleteCache);
+    }
+
+    public function deletePoll(string $pollId) {
+        $this->topicPollRepository->deletePollResponsesForPollId($pollId);
+        $this->topicPollRepository->deletePoll($pollId);
     }
 
     public function deletePost(string $postId, bool $deleteCache = true) {
@@ -82,6 +95,7 @@ class ContentManager extends AManager {
             switch($type) {
                 case self::T_POST:
                     $cm->invalidateCache('posts');
+                    $cm->invalidateCache('pinnedPosts');
                     break;
                 
                 case self::T_TOPIC:

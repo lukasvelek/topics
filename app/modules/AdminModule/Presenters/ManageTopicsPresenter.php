@@ -41,10 +41,11 @@ class ManageTopicsPresenter extends AAdminPresenter {
 
             $topicOwner = $app->topicMembershipManager->getTopicOwnerId($topicId);
 
-            
             try {
                 $app->topicRepository->beginTransaction();
-                $app->contentManager->deleteTopic($topicId);
+                //$app->contentManager->deleteTopic($topicId);
+
+                $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
 
                 $app->notificationManager->createNewTopicDeleteDueToReportNotification($topicOwner, $topicLink, $userLink, $reason);
 
