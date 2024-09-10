@@ -64,6 +64,13 @@ abstract class APresenter extends AGUICore {
         $this->afterRenderCallbacks = new ArrayList();
     }
 
+    /**
+     * Returns a URL with parameters saved in the presenter class as a string (e.g. "?page=UserModule:Users&action=profile&userId=...")
+     * 
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return string URL as string
+     */
     public function createURLString(string $action, array $params = []) {
         $urlParts = $this->createURL($action, $params);
 
@@ -75,6 +82,14 @@ abstract class APresenter extends AGUICore {
         return '?' . implode('&', $tmp);
     }
 
+    /**
+     * Creates a full URL with parameters and returns it as a string
+     * 
+     * @param string $modulePresenter Module and presenter name
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return string URL as string
+     */
     public function createFullURLString(string $modulePresenter, string $action, array $params = []) {
         $urlParts = $this->createFullURL($modulePresenter, $action, $params);
 
@@ -92,7 +107,7 @@ abstract class APresenter extends AGUICore {
      * @param string $modulePresenter Module and presenter name
      * @param string $action Action name
      * @param array $params Custom URL params
-     * @return array $url
+     * @return array URL
      */
     public function createFullURL(string $modulePresenter, string $action, array $params = []) {
         $url = ['page' => $modulePresenter, 'action' => $action];
