@@ -27,6 +27,7 @@ class GridHelper {
     public const GRID_TOPIC_POLLS = 'gridTopicPolls';
     public const GRID_TOPIC_INVITES_ALL = 'gridTopicInvitesAll';
     public const GRID_TOPIC_FOLLOWERS = 'gridTopicFollowers';
+    public const GRID_TOPIC_BANNED_WORDS = 'gridTopicBannedWords';
     /** UserModule:Topics */
     public const GRID_TOPIC_POSTS = 'gridTopicPosts';
     public const GRID_TOPIC_POST_CONCEPTS = 'gridTopicPostConcepts';

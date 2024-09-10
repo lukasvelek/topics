@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicBannedWordEntity;
 use App\Entities\TopicInviteEntity;
 use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
@@ -12,6 +13,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -730,6 +732,176 @@ class TopicManagementPresenter extends AUserPresenter {
         
 
         $this->ajaxSendResponse(['grid' => $grid->build()]);
+    }
+
+    public function handleBannedWordsList() {
+        $topicId = $this->httpGet('topicId', true);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getBannedWordsGrid')
+            ->setFunctionName('getBannedWordsGrid')
+            ->setFunctionArguments(['_page', '_topicId'])
+            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getBannedWordsGrid(0, \'' . $topicId . '\')');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'),
+            LinkBuilder::createSimpleLink('New word', $this->createURL('bannedWordForm', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+    }
+
+    public function renderBannedWordsList() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetBannedWordsGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_BANNED_WORDS, $gridPage, ['topicId' => $topicId]);
+
+        $gridSize = $app->getGridSize();
+
+        $bannedWords = $app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, $gridSize, ($page * $gridSize));
+        $bannedWordsTotalCount = count($app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, 0, 0));
+
+        $lastPage = ceil($bannedWordsTotalCount / $gridSize);
+
+        $grid = new GridBuilder();
+        $grid->addColumns(['authorId' => 'Author', 'text' => 'Text', 'dateCreated' => 'Date created']);
+        $grid->addDataSource($bannedWords);
+
+        $grid->addOnColumnRender('authorId', function(Cell $cell, TopicBannedWordEntity $tbwe) use ($app) {
+            $user = $app->userRepository->getUserById($tbwe->getAuthorId());
+
+            if($user !== null) {
+                return UserEntity::createUserProfileLink($user);
+            } else {
+                return '-';
+            }
+        });
+
+        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
+            return LinkBuilder::createSimpleLink('Edit', $this->createURL('bannedWordForm', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
+        });
+        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteBannedWord', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
+        });
+
+        $grid->addGridPaging($page, $lastPage, $gridSize, $bannedWordsTotalCount, 'getBannedWordsGrid', [$topicId]);
+
+        $gr = $app->getGridReducer();
+        $gr->applyReducer($grid);
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
+    }
+
+    public function handleBannedWordForm(?FormResponse $fr = null) {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            $word = $fr->word;
+
+            try {
+                $app->topicContentRegulationRepository->beginTransaction();
+
+                if($this->httpGet('wordId') !== null) {
+                    // update
+                    $wordId = $this->httpGet('wordId');
+
+                    $app->topicContentRegulationRepository->updateBannedWord($wordId, ['word' => $word]);
+                } else {
+                    // create
+                    $wordId = $app->topicContentRegulationRepository->createEntityId(EntityManager::TOPIC_BANNED_WORDS);
+
+                    $app->topicContentRegulationRepository->createNewBannedWord($wordId, $topicId, $app->currentUser->getId(), $word);
+                }
+
+                $app->topicContentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Banned new word.', 'success');
+            } catch(AException $e) {
+                $app->topicContentRegulationRepository->rollback();
+
+                $this->flashMessage('Could not create new banned word. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect($this->createURL('bannedWordsList', ['topicId' => $topicId]));
+        } else {
+            $params = [
+                'topicId' => $topicId
+            ];
+
+            $submitText = 'Create';
+            $word = null;
+
+            if($this->httpGet('wordId') !== null) {
+                $wordId = $this->httpGet('wordId');
+                $bannedWord = $app->topicContentRegulationRepository->getBannedWordById($wordId);
+
+                $word = $bannedWord->getText();
+
+                $params['wordId'] = $wordId;
+
+                $submitText = 'Save';
+            }
+
+            $form = new FormBuilder();
+
+            $form->setMethod()
+                ->setAction($this->createURL('bannedWordForm', $params))
+                ->addTextInput('word', 'Word:', $word, true)
+                ->addSubmit($submitText)
+            ;
+
+            $this->saveToPresenterCache('form', $form);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('bannedWordsList', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+        }
+    }
+
+    public function renderBannedWordForm() {
+        $this->template->form = $this->loadFromPresenterCache('form');
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function handleDeleteBannedWord() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId', true);
+        $wordId = $this->httpGet('wordId', true);
+
+        try {
+            $app->topicContentRegulationRepository->beginTransaction();
+
+            $app->topicContentRegulationRepository->deleteBannedWord($wordId);
+
+            $app->topicContentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $this->flashMessage('Banned word deleted.', 'success');
+        } catch(AException $e) {
+            $app->topicContentRegulationRepository->rollback();
+
+            $this->flashMessage('Could not delete banned word. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('bannedWordsList', ['topicId' => $topicId]));
     }
 }
 

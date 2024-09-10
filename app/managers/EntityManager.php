@@ -32,6 +32,7 @@ class EntityManager extends AManager {
     public const TOPIC_RULES = 'topic_rules';
     public const GRID_EXPORTS = 'grid_exports';
     public const TOPIC_CALENDAR_USER_EVENTS = 'topic_calendar_user_events';
+    public const TOPIC_BANNED_WORDS = 'topic_banned_words';
 
     private ContentRepository $cr;
 
@@ -88,7 +89,8 @@ class EntityManager extends AManager {
             self::POST_CONCEPTS => 'conceptId',
             self::TOPIC_RULES => 'rulesetId',
             self::GRID_EXPORTS => 'exportId',
-            self::TOPIC_CALENDAR_USER_EVENTS => 'eventId'
+            self::TOPIC_CALENDAR_USER_EVENTS => 'eventId',
+            self::TOPIC_BANNED_WORDS => 'wordId'
         };
     }
 }

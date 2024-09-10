@@ -5,11 +5,11 @@ namespace App\Entities;
 class TopicBannedWordEntity implements ICreatableFromRow {
     private string $id;
     private string $authorId;
-    private string $topicId;
+    private ?string $topicId;
     private string $text;
     private string $dateCreated;
 
-    public function __construct(string $id, string $authorId, string $topicId, string $text, string $dateCreated) {
+    public function __construct(string $id, string $authorId, ?string $topicId, string $text, string $dateCreated) {
         $this->id = $id;
         $this->authorId = $authorId;
         $this->topicId = $topicId;

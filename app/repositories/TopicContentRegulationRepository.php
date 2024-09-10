@@ -29,6 +29,42 @@ class TopicContentRegulationRepository extends ARepository {
 
         return $entities;
     }
+
+    public function getBannedWordById(string $wordId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_banned_words')
+            ->where('wordId = ?', [$wordId])
+            ->execute();
+
+        return TopicBannedWordEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function createNewBannedWord(string $wordId, string $topicId, string $authorId, string $word) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->insert('topic_banned_words', ['wordId', 'topicId', 'authorId', 'word'])
+            ->values([$wordId, $topicId, $authorId, $word])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function updateBannedWord(string $wordId, array $data) {
+        $qb = $this->qb(__METHOD__);
+        
+        $qb ->update('topic_banned_words')
+            ->set($data)
+            ->where('wordId = ?', [$wordId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function deleteBannedWord(string $wordId) {
+        return $this->deleteEntryById('topic_banned_words', 'wordId', $wordId);
+    }
 }
 
 ?>
