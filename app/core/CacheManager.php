@@ -27,6 +27,7 @@ class CacheManager {
     public const NS_TOPIC_RULES = 'topicRules';
     public const NS_GRID_EXPORT_DATA = 'gridExportData';
     public const NS_GRID_EXPORTS = 'gridExports';
+    public const NS_COMMON_SEARCH_INDEX = 'commonSearchIndex';
 
     /**
      * Internal cache namespaces

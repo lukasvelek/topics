@@ -2,6 +2,8 @@
 
 namespace App\Modules\UserModule;
 
+use App\Core\CacheManager;
+use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\UI\LinkBuilder;
@@ -17,7 +19,14 @@ class SearchPresenter extends AUserPresenter {
         $query = $this->httpGet('q', true);
 
         // users
-        $users = $app->userRepository->searchUsersByUsername($query);
+        $cm = new CacheManager($app->logger);
+        
+        $expire = new DateTime();
+        $expire->modify('+1h');
+
+        $users = $cm->loadCache('users', function() use ($app, $query) {
+            return $app->userRepository->searchUsersByUsername($query);
+        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
 
         $usersArray = [];
         foreach($users as $user) {
@@ -34,12 +43,9 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('users', $userResult);
 
         // topics
-        $topicRows = $app->topicRepository->composeQueryForTopicsSearch($query)->execute();
-        
-        $topics = [];
-        while($row = $topicRows->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
-        }
+        $topics = $cm->loadCache('topics', function() use ($app, $query) {
+            return $app->topicRepository->searchTopics($query);
+        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
         
         $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
 
@@ -63,21 +69,23 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topics', $topicResult);
 
         // tags
-        $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
+        $tags = $cm->loadCache('tags', function() use ($app, $query) {
+            $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
 
-        $topics = [];
-        while($row = $topicsDb->fetchAssoc()) {
-            $topics[] = TopicEntity::createEntityFromDbRow($row);
-        }
-
-        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
-
-        $topicIds = [];
-        foreach($topics as $topic) {
-            $topicIds[] = $topic->getId();
-        }
-
-        $tags = $app->topicRepository->searchTags(ucfirst($query), $topicIds);
+            $topics = [];
+            while($row = $topicsDb->fetchAssoc()) {
+                $topics[] = TopicEntity::createEntityFromDbRow($row);
+            }
+    
+            $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+    
+            $topicIds = [];
+            foreach($topics as $topic) {
+                $topicIds[] = $topic->getId();
+            }
+    
+            return $app->topicRepository->searchTags(ucfirst($query), $topicIds);
+        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
 
         $tagArray = [];
         foreach($tags as $t) {
