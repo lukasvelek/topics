@@ -230,6 +230,20 @@ class QueryBuilder
     }
 
     /**
+     * Appends JOIN
+     * 
+     * @param string $tableName Name of the table being joined
+     * @param ?string $alias Alias of the table being joined
+     * @param string $joinOn On section of JOIN
+     * @return self
+     */
+    public function join(string $tableName, ?string $alias = null, string $joinOn) {
+        $this->queryData['join'] = $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
+
+        return $this;
+    }
+
+    /**
      * Appends SELECT
      * 
      * @param array $keys Table columns
@@ -247,10 +261,15 @@ class QueryBuilder
      * Appends FROM
      * 
      * @param string $tableName Table name
+     * @param ?string $tableNameAlias Table name alias
      * @return self
      */
-    public function from(string $tableName) {
+    public function from(string $tableName, ?string $tableNameAlias = null) {
         $this->queryData['table'] = $tableName;
+        
+        if($tableNameAlias !== null) {
+            $this->queryData['table'] .= ' ' . $tableNameAlias;
+        }
 
         return $this;
     }
@@ -279,7 +298,7 @@ class QueryBuilder
             $count = count(explode('?', $cond));
 
             if($count != (count($values) + 1)) {
-                die('QueryBuilder: Number of condition parameters does not equal to the number of passed parameters!');
+                throw new QueryBuilderException('Number of condition parameters does not equal to the number of passed parameters.');
             }
 
             $search = [];
@@ -323,7 +342,7 @@ class QueryBuilder
             $count = count(explode('?', $cond));
 
             if($count != (count($values) + 1)) {
-                die('QueryBuilder: Number of condition parameters does not equal to the number of passed parameters!');
+                throw new QueryBuilderException('Number of condition parameters does not equal to the number of passed parameters.');
             }
 
             $search = [];
@@ -371,7 +390,7 @@ class QueryBuilder
             $count = count(explode('?', $cond));
 
             if($count != (count($values) + 1)) {
-                die('QueryBuilder: Number of condition parameters does not equal to the number of passed parameters!');
+                throw new QueryBuilderException('Number of condition parameters does not equal to the number of passed parameters.');
             }
 
             $search = [];
@@ -399,12 +418,6 @@ class QueryBuilder
         } else {
             $this->queryData['where'] .= ' OR ' . $cond;
         }
-
-        return $this;
-    }
-
-    public function join(string $tableName, string $onLeft, string $onRight) {
-        $this->queryData['join'] = ' JOIN `' . $tableName . '` ON `' . $onLeft . '` = `' . $onRight . '`';
 
         return $this;
     }
@@ -559,7 +572,7 @@ class QueryBuilder
         }
 
         if($this->currentState != self::STATE_DIRTY) {
-            die('QueryBuilder: No query has been created!');
+            throw new QueryBuilderException('No query has been created.');
         }
 
         if($this->sql === '') {
@@ -567,11 +580,11 @@ class QueryBuilder
         }
 
         if($this->openBrackets > 0) {
-            die('QueryBuilder: Not all brackets have been closed: ' . $this->sql);
+            throw new QueryBuilderException('Not all brackets have been closed.', $this->sql);
         }
 
         if($this->conn === NULL) {
-            die('QueryBuilder: No connection has been found!');
+            throw new QueryBuilderException('No connection has been found.');
         }
 
         try {
@@ -580,10 +593,10 @@ class QueryBuilder
             } else {
                 $this->queryResult = $this->query($this->sql);
             }
-        } catch(\mysqli_sql_exception $e) {
+        } catch(AException $e) {
             $this->logException($e);
             
-            throw new DatabaseExecutionException($e->getMessage(), $this->getSQL(), $e);
+            throw $e;
         }
 
         $this->currentState = self::STATE_CLEAN;
@@ -797,6 +810,13 @@ class QueryBuilder
 
         $valArray = [];
         foreach($this->queryData['values'] as $value) {
+            if(is_bool($value)) {
+                if($value === true) {
+                    $value = '1';
+                } else {
+                    $value = '0';
+                }
+            }
             $valArray[] = "'" . $value . "'";
         }
 
@@ -857,7 +877,9 @@ class QueryBuilder
     }
 
     /**
-     * Logs an SQL string
+     * Logs an SQL string (with the number of miliseconds it took)
+     * 
+     * @param float $msTaken Miliseconds the SQL query took
      */
     private function log(?float $msTaken = null) {
         if($this->logger !== NULL) {
@@ -865,13 +887,24 @@ class QueryBuilder
         }
     }
 
+    /**
+     * Runs a SQL query with the given string and parameters
+     * 
+     * @param string $sql SQL query
+     * @param array $params SQL parameters
+     * @return mixed SQL query result
+     */
     private function query(string $sql, array $params = []) {
         $tsStart = null;
         $tsEnd = null;
 
         $q = function(string $sql, array $params) use (&$tsStart, &$tsEnd) {
             $tsStart = time();
-            $result = $this->conn->query($sql, $params);
+            try {
+                $result = $this->conn->query($sql, $params);
+            } catch(\mysqli_sql_exception $e) {
+                throw new DatabaseExecutionException($e, $sql, $e);
+            }
             $tsEnd = time();
             return $result;
         };
@@ -885,7 +918,12 @@ class QueryBuilder
         return $result;
     }
 
-    private function logException(Exception $e) {
+    /**
+     * Logs an SQL exception
+     * 
+     * @param Exception $e Exception generated
+     */
+    private function logException(AException|Exception $e) {
         if($this->logger !== null) {
             $this->logger->exception($e, $this->callingMethod);
         }

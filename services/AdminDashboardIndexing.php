@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\ServiceException;
 use App\Services\AdminDashboardIndexingService;
 
 require_once('CommonService.php');
@@ -10,7 +11,7 @@ try {
     $service = new AdminDashboardIndexingService($app->logger, $app->serviceManager, $app->topicRepository, $app->postRepository);
     $service->run();
 } catch(Exception $e) {
-    $app->logger->error($e->getMessage(), 'AdminDashboardIndexing');
+    throw new ServiceException($e->getMessage(), $e);
 }
 
 ?>

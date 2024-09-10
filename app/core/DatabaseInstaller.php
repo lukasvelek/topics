@@ -67,7 +67,8 @@ class DatabaseInstaller {
                 'dateDeleted' => 'DATETIME NULL',
                 'tag' => 'VARCHAR(256) NOT NULL',
                 'dateAvailable' => 'DATETIME NOT NULL',
-                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1'
+                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1',
+                'isScheduled' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'post_likes' => [
                 'postId' => 'VARCHAR(256) NOT NULL',
@@ -146,7 +147,7 @@ class DatabaseInstaller {
             ],
             'group_membership' => [
                 'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
-                'groupId' => 'VARCHAR(256) NOT NULL',
+                'groupId' => 'INT(32) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
@@ -160,7 +161,8 @@ class DatabaseInstaller {
                 'membershipId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'topicId' => 'VARCHAR(256) NOT NULL',
-                'role' => 'INT(4) NOT NULL DEFAULT 1'
+                'role' => 'INT(4) NOT NULL DEFAULT 1',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'system_services' => [
                 'serviceId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
@@ -196,7 +198,7 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_invites' => [
-                'topicId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateValid' => 'DATETIME NOT NULL'
@@ -258,12 +260,48 @@ class DatabaseInstaller {
                 'postId' => 'VARCHAR(256) NOT NULL',
                 'topicId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'post_concepts' => [
+                'conceptId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'postData' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateUpdated' => 'DATETIME NULL'
+            ],
+            'topic_rules' => [
+                'rulesetId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'rules' => 'TEXT NOT NULL',
+                'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateUpdated' => 'DATETIME NULL'
+            ],
+            'grid_exports' => [
+                'exportId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'hash' => 'VARCHAR(256) NOT NULL',
+                'filename' => 'VARCHAR(256) NULL',
+                'gridName' => 'VARCHAR(256) NOT NULL',
+                'entryCount' => 'INT(32) NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateFinished' => 'DATETIME NULL'
+            ],
+            'topic_calendar_user_events' => [
+                'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateFrom' => 'DATETIME NOT NULL',
+                'dateTo' => 'DATETIME NOT NULL'
             ]
         ];
 
         $i = 0;
         foreach($tables as $name => $values) {
-            $sql = 'CREATE TABLE IF NOT EXISTS ' . $name . ' (';
+            $sql = 'CREATE TABLE IF NOT EXISTS `' . $name . '` (';
 
             $tmp = [];
 
@@ -378,6 +416,9 @@ class DatabaseInstaller {
             'user_suggestion_comments' => [
                 'suggestionId',
                 'userId'
+            ],
+            'topic_rules' => [
+                'topicId'
             ]
         ];
 
@@ -391,7 +432,7 @@ class DatabaseInstaller {
 
             $name = $tableName . '_i' . $i;
 
-            $sql = "DROP INDEX IF EXISTS $name ON $tableName";
+            $sql = "DROP INDEX IF EXISTS `$name` ON `$tableName`";
 
             $this->logger->sql($sql, __METHOD__, null);
 
@@ -436,9 +477,9 @@ class DatabaseInstaller {
             $isAdmin = in_array($username, $admins) ? '1' : '0';
             $canLogin = in_array($username, $canLoginArray) ? '1' : '0';
 
-            $sql = 'INSERT INTO users (`userId`, `username`, `password`, `isAdmin`, `canLogin`)
+            $sql = 'INSERT INTO `users` (`userId`, `username`, `password`, `isAdmin`, `canLogin`)
                     SELECT \'' . $userId . '\', \'' . $username . '\', \'' . $password . '\', ' . $isAdmin . ', ' . $canLogin . '
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = \'' . $username . '\')';
+                    WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = \'' . $username . '\')';
 
             $this->db->query($sql);
 
@@ -459,9 +500,9 @@ class DatabaseInstaller {
         foreach($systems as $name => $status) {
             $id = HashManager::createEntityId();
 
-            $sql = 'INSERT INTO system_status (`systemId`, `name`, `status`)
+            $sql = 'INSERT INTO `system_status` (`systemId`, `name`, `status`)
                     SELECT \'' . $id . '\', \'' . $name . '\', \'' . $status . '\'
-                    WHERE NOT EXISTS (SELECT 1 FROM system_status WHERE name = \'' . $name . '\')';
+                    WHERE NOT EXISTS (SELECT 1 FROM `system_status` WHERE `name` = \'' . $name . '\')';
 
             $this->db->query($sql);
 
@@ -495,9 +536,9 @@ class DatabaseInstaller {
         foreach($groups as $title => $id) {
             $description = $descriptions[$id];
 
-            $sql = "INSERT INTO groups (`groupId`, `title`, `description`)
+            $sql = "INSERT INTO `groups` (`groupId`, `title`, `description`)
                     SELECT '$id', '$title', '$description'
-                    WHERE NOT EXISTS (SELECT 1 FROM groups WHERE groupId = $id)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = $id)";
 
             $this->db->query($sql);
         }
@@ -508,7 +549,7 @@ class DatabaseInstaller {
     private function addAdminToGroups() {
         $this->logger->info('Adding admin to administrator groups.', __METHOD__);
 
-        $sql = "SELECT userId FROM users WHERE username = 'admin'";
+        $sql = "SELECT `userId` FROM `users` WHERE `username` = 'admin'";
 
         $result = $this->db->query($sql);
 
@@ -531,9 +572,9 @@ class DatabaseInstaller {
         foreach($groups as $groupId) {
             $membershipId = HashManager::createEntityId();
 
-            $sql = "INSERT INTO group_membership (`membershipId`, `userId`, `groupId`)
+            $sql = "INSERT INTO `group_membership` (`membershipId`, `userId`, `groupId`)
                     SELECT '$membershipId', '$userId', '$groupId'
-                    WHERE NOT EXISTS (SELECT 1 FROM group_membership WHERE membershipId = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE `membershipId` = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
 
             $this->db->query($sql);
         }
@@ -549,15 +590,16 @@ class DatabaseInstaller {
             'PostLikeEqualizer' => 'PostLikeEqualizer.php',
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
-            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemovingService.php'
+            'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
         ];
 
         foreach($services as $title => $path) {
             $id = HashManager::createEntityId();
 
-            $sql = "INSERT INTO system_services (`serviceId`, `title`, `scriptPath`)
+            $sql = "INSERT INTO `system_services` (`serviceId`, `title`, `scriptPath`)
                     SELECT '$id', '$title', '$path'
-                    WHERE NOT EXISTS (SELECT 1 FROM system_services WHERE serviceId = '$id' AND title = '$title' AND scriptPath = '$path')";
+                    WHERE NOT EXISTS (SELECT 1 FROM `system_services` WHERE `serviceId` = '$id' AND title = '$title' AND scriptPath = '$path')";
 
             $this->db->query($sql);
         }

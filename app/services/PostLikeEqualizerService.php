@@ -83,12 +83,23 @@ class PostLikeEqualizerService extends AService {
 
     private function updateLikes(string $postId, int $likes) {
         $this->logger->info('Updating post #' . $postId . '. Setting likes to ' . $likes . '.', __METHOD__);
-        return $this->pr->updatePost($postId, ['likes' => $likes]);
+
+        try {
+            $this->pr->beginTransaction();
+
+            $this->pr->updatePost($postId, ['likes' => $likes]);
+
+            $this->pr->commit(null, __METHOD__);
+        } catch(AException $e) {
+            $this->pr->rollback();
+
+            throw $e;
+        }
     }
 
     private function invalidateCache() {
         $cm = new CacheManager($this->logger);
-        $cm->invalidateCache('posts');
+        $cm->invalidateCache(CacheManager::NS_POSTS);
     }
 }
 

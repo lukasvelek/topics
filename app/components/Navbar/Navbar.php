@@ -60,7 +60,7 @@ class Navbar implements IRenderable {
 
             $notificationLink = $this->createNotificationsLink();
 
-            $this->template->user_info = [$notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invites'), $this->createLink($profileLinkArray, $app->currentUser->getUsername()), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+            $this->template->user_info = [$notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invites'), $this->createLink($profileLinkArray, /*$app->currentUser->getUsername()*/ 'me'), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
         } else {
             $this->template->user_info = '';
         }
@@ -97,7 +97,7 @@ class Navbar implements IRenderable {
 
         $code = '
             <input type="text" name="searchQuery" id="searchQuery" placeholder="Search..."' . $query . '>
-            <button type="button" style="' /*. 'border: 1px solid black;'*/ . '" onclick="doSearch(\'' . $app->currentUser->getId() . '\')" id="searchQueryButton">Search</button>
+            <button type="button" onclick="doSearch(\'' . $app->currentUser->getId() . '\')" id="searchQueryButton"><div style="-webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -o-transform: rotate(45deg); transform: rotate(45deg);">&#9906;</div></button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';
 

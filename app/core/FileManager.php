@@ -2,7 +2,10 @@
 
 namespace App\Core;
 
+use App\Exceptions\AException;
 use App\Exceptions\FileDoesNotExistException;
+use App\Exceptions\FolderDeleteException;
+use Exception;
 
 class FileManager {
     public static function fileExists(string $filePath) {
@@ -45,9 +48,13 @@ class FileManager {
         return $objects;
     }
 
-    public static function saveFile(string $path, string $filename, string|array $fileContent, bool $overwrite = false) {
+    public static function saveFile(string $path, string $filename, string|array $fileContent, bool $overwrite = false, bool $appendNewLine = true) {
         if(is_array($fileContent)) {
-            $fileContent = implode('\r\n', $fileContent);
+            if($appendNewLine) {
+                $fileContent = implode("\r\n", $fileContent);
+            } else {
+                $fileContent = implode('', $fileContent);
+            }
         }
 
         if(!self::folderExists($path)) {
@@ -66,17 +73,17 @@ class FileManager {
     }
 
     public static function deleteFolderRecursively(string $dirPath) {
-        if (is_dir($dirPath)) { 
+        if(is_dir($dirPath)) {
             $objects = scandir($dirPath);
             
-            foreach ($objects as $object) { 
-                if ($object != "." && $object != "..") { 
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
                         self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
                     } else {
-                        unlink($dirPath. DIRECTORY_SEPARATOR .$object); 
+                        unlink($dirPath. DIRECTORY_SEPARATOR .$object);
                     }
-                } 
+                }
             }
 
             rmdir($dirPath);

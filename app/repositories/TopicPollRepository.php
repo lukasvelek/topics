@@ -252,6 +252,24 @@ class TopicPollRepository extends ARepository {
 
         return TopicPollChoiceEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getActivePollsWithValidityForDateRangeForTopicId(string $topicId, string $dateFrom, string $dateTo) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('dateValid >= ?', [$dateFrom])
+            ->andWhere('dateValid <= ?', [$dateTo])
+            ->execute();
+
+        $rows = [];
+        while($row = $qb->fetchAssoc()) {
+            $rows[] = TopicPollEntity::createEntityFromDbRow($row);
+        }
+
+        return $rows;
+    }
 }
 
 ?>

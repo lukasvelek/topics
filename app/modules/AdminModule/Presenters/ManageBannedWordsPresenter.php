@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\BannedWordEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -14,20 +15,27 @@ use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageBannedWordsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageBannedWordsPresenter', 'Banned words management');
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function actionGridList() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_BANNED_WORDS, $gridPage);
 
         $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
         $totalCount = $app->contentRegulationRepository->getBannedWordsCount();
@@ -62,7 +70,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             ->setFunctionArguments(['_page']);
 
         $this->addScript($arb->build());
-        $this->addScript('getBannedWordsGrid(0)');
+        $this->addScript('getBannedWordsGrid(-1)');
 
         $links = [
             '<a class="post-data-link" href="?page=AdminModule:ManageBannedWords&action=newForm">Add word</a>'
@@ -106,7 +114,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             $fb = new FormBuilder();
             $fb ->setAction(['page' => 'AdminModule:ManageBannedWords', 'action' => 'newForm', 'isSubmit' => '1'])
                 ->addTextInput('word', 'Word to ban:', null, true)
-                ->addSubmit('Add')
+                ->addSubmit('Add', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

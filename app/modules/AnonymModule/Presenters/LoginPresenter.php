@@ -3,6 +3,7 @@
 namespace App\Modules\AnonymModule;
 
 use App\Exceptions\AException;
+use App\Exceptions\DatabaseExecutionException;
 use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -30,6 +31,9 @@ class LoginPresenter extends APresenter {
                 
                 $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+            } catch (DatabaseExecutionException $e) {
+                $this->flashMessage('Could not log in due to internal error. [' . $e->getHash() . ']', 'error');
+                $this->redirect();
             } catch (AException $e) {
                 $this->flashMessage($e->getMessage(), 'error');
                 $this->redirect();

@@ -28,6 +28,10 @@ class EntityManager extends AManager {
     public const BANNED_WORDS = 'banned_words';
     public const USER_PROSECUTIONS = 'user_prosecutions';
     public const TOPIC_POST_PINS = 'topic_post_pins';
+    public const POST_CONCEPTS = 'post_concepts';
+    public const TOPIC_RULES = 'topic_rules';
+    public const GRID_EXPORTS = 'grid_exports';
+    public const TOPIC_CALENDAR_USER_EVENTS = 'topic_calendar_user_events';
 
     private ContentRepository $cr;
 
@@ -80,7 +84,11 @@ class EntityManager extends AManager {
             self::SUGGESTION_COMMENTS => 'commentId',
             self::BANNED_WORDS => 'wordId',
             self::USER_PROSECUTIONS => 'prosecutionId',
-            self::TOPIC_POST_PINS => 'pinId'
+            self::TOPIC_POST_PINS => 'pinId',
+            self::POST_CONCEPTS => 'conceptId',
+            self::TOPIC_RULES => 'rulesetId',
+            self::GRID_EXPORTS => 'exportId',
+            self::TOPIC_CALENDAR_USER_EVENTS => 'eventId'
         };
     }
 }

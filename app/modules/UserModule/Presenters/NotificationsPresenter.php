@@ -4,7 +4,6 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
-use App\UI\LinkBuilder;
 
 class NotificationsPresenter extends AUserPresenter {
     public function __construct() {
@@ -18,7 +17,7 @@ class NotificationsPresenter extends AUserPresenter {
             ->setMethod()
             ->setFunctionName('getNotificationsList')
             ->updateHTMLElement('notifications', 'notifications')
-            ->addCustomWhenDoneCode('
+            ->addWhenDoneOperation('
                 if(obj.isEmpty == 1) {
                     $("#notification-links").html("");
                 }
@@ -38,7 +37,7 @@ class NotificationsPresenter extends AUserPresenter {
             ->setFunctionArguments(['_notificationId'])
             ->hideHTMLElementRaw('"#notification-id-" + _notificationId')
             ->hideHTMLElementRaw('"#notification-id-" + _notificationId + "-br"')
-            ->addCustomWhenDoneCode('
+            ->addWhenDoneOperation('
                 if(obj.empty == "1") {
                     $("#notifications").html(obj.text);
                 }
@@ -52,7 +51,7 @@ class NotificationsPresenter extends AUserPresenter {
         $arb->setAction($this, 'closeAll')
             ->setMethod()
             ->setFunctionName('closeAllNotifications')
-            ->addCustomWhenDoneCode('
+            ->addWhenDoneOperation('
                 $("#notifications").html(obj.text);
             ')
             ->disableLoadingAnimation()

@@ -25,6 +25,7 @@ use App\Modules\ModuleManager;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
+use App\Repositories\GridExportRepository;
 use App\Repositories\GroupRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
@@ -33,16 +34,19 @@ use App\Repositories\ReportRepository;
 use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
+use App\Repositories\TopicCalendarEventRepository;
 use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
+use App\Repositories\TopicRulesRepository;
 use App\Repositories\TransactionLogRepository;
 use App\Repositories\UserFollowingRepository;
 use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
+use App\UI\GridBuilder\DefaultGridReducer;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -88,6 +92,9 @@ class Application {
     public MailRepository $mailRepository;
     public UserRegistrationRepository $userRegistrationRepository;
     public ContentRepository $contentRepository;
+    public TopicRulesRepository $topicRulesRepository;
+    public GridExportRepository $gridExportRepository;
+    public TopicCalendarEventRepository $topicCalendarEventRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -152,6 +159,9 @@ class Application {
         $this->mailRepository = new MailRepository($this->db, $this->logger);
         $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
         $this->contentRepository = new ContentRepository($this->db, $this->logger);
+        $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
+        $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
+        $this->topicCalendarEventRepository = new TopicCalendarEventRepository($this->db, $this->logger);
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -170,7 +180,7 @@ class Application {
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;
@@ -348,6 +358,15 @@ class Application {
      */
     public function getIsDev() {
         return $this->cfg['IS_DEV'];
+    }
+
+    /**
+     * Returns DefaultGridReducer instance
+     * 
+     * @return DefaultGridReducer DefaultGridReducer instance
+     */
+    public function getGridReducer() {
+        return new DefaultGridReducer($this->userRepository, $this->topicRepository, $this->postRepository);
     }
 }
 

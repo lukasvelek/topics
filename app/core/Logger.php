@@ -121,7 +121,7 @@ class Logger implements ILoggerCallable {
                 break;
 
             case self::LOG_CACHE:
-                if($this->logLevel >= 4) {
+                if($this->logLevel >= 4 && $this->cfg['LOG_CACHE'] == 1) {
                     $this->writeLog($text);
                 }
                 break;
@@ -171,6 +171,12 @@ class Logger implements ILoggerCallable {
 
     public function logCache(string $method, bool $hit) {
         $text = 'Cache ' . ($hit ? 'hit' : 'miss') . '.';
+
+        $this->log($method, $text, self::LOG_CACHE);
+    }
+
+    public function logCacheSave(string $method, mixed $key, string $namespace) {
+        $text = 'Cache key \'' . $key . '\' saved to namespace \'' . $namespace . '\'.';
 
         $this->log($method, $text, self::LOG_CACHE);
     }

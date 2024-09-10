@@ -5,13 +5,20 @@ namespace App\Modules\AdminModule;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\TransactionEntity;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 
 class ManageTransactionsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
+        global $app;
+
         parent::__construct('ManageTransactionsPresenter', 'Manage transactions');
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
@@ -26,15 +33,15 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $arb = new AjaxRequestBuilder();
 
         $arb->setMethod()
+            ->setHeader(['gridPage' => '_gridPage'])
             ->setAction($this, 'getGrid')
-            ->setHeader(['gridPage' => '_page'])
             ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_page'])
+            ->setFunctionArguments(['_gridPage'])
             ->updateHTMLElement('grid-content', 'grid')
         ;
 
         $this->addScript($arb);
-        $this->addScript('getGrid(0)');
+        $this->addScript('getGrid(-1)');
     }
 
     public function renderList() {
@@ -46,8 +53,10 @@ class ManageTransactionsPresenter extends AAdminPresenter {
     public function actionGetGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
         $gridSize = $app->getGridSize();
+        $gridPage = $this->httpGet('gridPage');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TRANSACTION_LOG, $gridPage);
         
         $transactions = $app->transactionLogRepository->getTransactionsForGrid($gridSize, ($page * $gridSize));
         $totalCount = count($app->transactionLogRepository->getTransactionsForGrid(0, 0));
@@ -64,6 +73,10 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return $te->getMethod() . '()';
         });
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            }
+            
             $user = $app->userRepository->getUserById($te->getUserId());
 
             if($user === null) {
@@ -82,6 +95,26 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TransactionEntity $te) {
             return DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated());
         });
+
+        $gb->addOnExportRender('method', function(TransactionEntity $te) {
+            return $te->getMethod() . '()';
+        });
+        $gb->addOnExportRender('user', function(TransactionEntity $te) use ($app) {
+            if($te->getUserId() === null) {
+                return '-';
+            } else {
+                $user = $app->userRepository->getUserById($te->getUserId());
+
+                if($user === null) {
+                    return '-';
+                } else {
+                    return $user->getUsername();
+                }
+            }
+        });
+        $gb->addGridExport(function() use ($app) {
+            return $app->transactionLogRepository->getTransactionsForGrid(0, 0);
+        }, GridHelper::GRID_TRANSACTION_LOG);
 
         $this->ajaxSendResponse(['grid' => $gb->build()]);
     }

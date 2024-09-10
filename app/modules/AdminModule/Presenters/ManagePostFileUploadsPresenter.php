@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\PostImageFileEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
@@ -13,12 +14,18 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class ManagePostFileUploadsPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+    
     public function __construct() {
         parent::__construct('ManagePostFileUploadsPresenter', 'Post file uploads management');
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
         });
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleList() {
@@ -37,7 +44,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getGrid(0, \'' . $filterType . '\', \'' . $filterKey . '\')');
+        $this->addScript('getGrid(-1, \'' . $filterType . '\', \'' . $filterKey . '\')');
 
         $links = [];
 
@@ -53,9 +60,11 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
     public function actionGetGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_POST_FILE_UPLOADS, $gridPage, [$filterType]);
 
         $gridSize = $gridSize = $app->getGridSize();
 

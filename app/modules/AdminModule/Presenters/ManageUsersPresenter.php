@@ -10,6 +10,8 @@ use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Helpers\GridHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -17,6 +19,8 @@ use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
      
@@ -25,6 +29,8 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
 
         global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
 
         if(!$app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
             $this->flashMessage('You are not authorized to visit this section.');
@@ -35,19 +41,31 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function actionLoadUsersGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USERS, $gridPage);
 
         $userCount = $app->userRepository->getUsersCount();
         $lastPage = ceil($userCount / $gridSize);
         $users = $app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
-        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?']);
+        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?', 'canLogin' => 'Can login?']);
         $gb->addDataSource($users);
         $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
             if($entity->isAdmin()) {
+                $cell->setValue('Yes');
+                $cell->setTextColor('green');
+            } else {
+                $cell->setValue('No');
+                $cell->setTextColor('red');
+            }
+
+            return $cell;
+        });
+        $gb->addOnColumnRender('canLogin', function(Cell $cell, UserEntity $entity) {
+            if($entity->canLogin()) {
                 $cell->setValue('Yes');
                 $cell->setTextColor('green');
             } else {
@@ -88,7 +106,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUsers(0)');
+        $this->addScript('getUsers(-1)');
     }
 
     public function renderList() {
@@ -146,7 +164,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'unsetAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Unset user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'');
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'', 'formSubmit');
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -203,7 +221,7 @@ class ManageUsersPresenter extends AAdminPresenter {
             $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'isSubmit' => '1', 'userId' => $userId])
                 ->addPassword('password', 'Your password:', null, true)
                 ->addSubmit('Set user \'' . $user->getUsername() . '\' as administrator')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:ManageUsers&action=list\'', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -221,7 +239,7 @@ class ManageUsersPresenter extends AAdminPresenter {
 
         $userId = $this->httpGet('userId', true);
         $user = $app->userRepository->getUserById($userId);
-        $reportId = $this->httpGet('reportId');
+        $reportId = $this->httpGet('reportId', true);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;
@@ -229,7 +247,11 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userProsecutionRepository->beginTransaction();
 
-                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, null, null);
+                $expire = new DateTime();
+                $expire->modify('+7d');
+                $expire = $expire->getResult();
+
+                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, DateTime::now(), $expire);
 
                 $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -244,10 +266,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         } else {
             $fb = new FormBuilder();
 
-            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId])
+            $fb ->setAction(['page' => 'AdminModule:ManageUsers', 'action' => 'warnUser', 'isSubmit' => '1', 'userId' => $userId, 'reportId' => $reportId])
                 ->addTextArea('description', 'Reason:', null, true)
                 ->addSubmit('Warn user \'' . $user->getUsername() .  '\'')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -310,7 +332,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addDatetime('startDate', 'Date from:', $date->getResult(), true)
                 ->addDatetime('endDate', 'Date to:', $date->getResult(), true)
                 ->addSubmit('Ban user \'' . $user->getUsername() .  '\'')
-                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'')
+                ->addButton('Back', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit')
                 ->addJSHandler('js/UserBanFormHandler.js')
             ;
 
@@ -342,7 +364,9 @@ class ManageUsersPresenter extends AAdminPresenter {
             try {
                 $app->userRepository->beginTransaction();
 
-                $app->userRepository->createNewUser($username, $password, $email, $isAdmin);
+                $userId = $app->userRepository->createEntityId(EntityManager::USERS);
+
+                $app->userRepository->createNewUser($userId, $username, $password, $email, $isAdmin);
 
                 $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -362,7 +386,7 @@ class ManageUsersPresenter extends AAdminPresenter {
                 ->addEmailInput('email', 'Email:', null, false)
                 ->addPassword('password', 'Password:', null, true)
                 ->addCheckbox('isAdmin', 'Administrator?')
-                ->addSubmit('Create')
+                ->addSubmit('Create', false, true)
             ;
 
             $this->saveToPresenterCache('form', $fb);

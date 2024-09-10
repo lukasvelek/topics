@@ -9,6 +9,7 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
+use App\Entities\PostConceptEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
@@ -18,10 +19,16 @@ use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\AElement;
+use App\UI\FormBuilder\CheckboxInput;
+use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\Label;
+use App\UI\FormBuilder\Select;
+use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
@@ -29,8 +36,14 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicsPresenter extends AUserPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
+
+        global $app;
+        
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleProfile() {
@@ -75,7 +88,7 @@ class TopicsPresenter extends AUserPresenter {
             ->setHeader(['limit' => '_limit', 'offset' => '_offset', 'topicId' => '_topicId'])
             ->setFunctionName('loadPostsForTopic')
             ->setFunctionArguments(['_limit', '_offset', '_topicId'])
-            ->addCustomWhenDoneCode('if(_offset == 0) { $("#latest-posts").html(""); }')
+            ->addWhenDoneOperation('if(_offset == 0) { $("#latest-posts").html(""); }')
             ->updateHTMLElement('latest-posts', 'posts', true)
             ->updateHTMLElement('posts-load-more-link', 'loadMoreLink')
         ;
@@ -130,14 +143,16 @@ class TopicsPresenter extends AUserPresenter {
 
         $tags = $topic->getTags();
 
-        $tagCode = '<div style="line-height: 2.5em">';
+        $tagCode = '<div style="line-height: 2.5em" class="row">';
+
+        $max = ceil(count($tags) / 2);
 
         $i = 0;
         foreach($tags as $tag) {
-            if($i == 3) {
+            if($i == $max) {
                 $i = 0;
 
-                $tagCode .= '<br>';
+                $tagCode .= '</div><div style="line-height: 2.5em" class="row">';
             }
 
             if($tag instanceof IRenderable) {
@@ -161,11 +176,17 @@ class TopicsPresenter extends AUserPresenter {
             $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
+        $followersLink = 'Followers';
+        
+        if($app->actionAuthorizator->canManageTopicFollowers($app->currentUser->getId(), $topicId)) {
+            $followersLink = LinkBuilder::createSimpleLink('Followers', ['page' => 'UserModule:TopicManagement', 'action' => 'followersList', 'topicId' => $topicId], 'post-data-link');
+        }
+
         $code = '
             <div>
                 <div class="row">
                     <div class="col-md col-lg">
-                        <p class="post-data">Followers: ' . $topicMembers . ' ' . $finalFollowLink . '</p>
+                        <p class="post-data">' . $followersLink . ': ' . $topicMembers . ' ' . $finalFollowLink . '</p>
                     </div>
 
                     <div class="col-md col-lg">
@@ -219,6 +240,18 @@ class TopicsPresenter extends AUserPresenter {
 
         if($app->actionAuthorizator->canManageTopicPosts($app->currentUser->getId(), $topic)) {
             $links[] = LinkBuilder::createSimpleLink('Post list', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link');
+        }
+
+        if($app->actionAuthorizator->canUsePostConcepts($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('My post concepts', $this->createURL('listPostConcepts', ['topicId' => $topicId, 'filter' => 'my']), 'post-data-link');
+        }
+
+        if($app->topicManager->hasTopicRules($topicId) || $app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('Rules', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link');
+        }
+
+        if($app->actionAuthorizator->canSeeTopicCalendar($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -501,7 +534,6 @@ class TopicsPresenter extends AUserPresenter {
         if(($offset + $limit) >= $postCount) {
             $loadMoreLink = '';
         } else {
-            //$loadMoreLink = '<a class="post-data-link" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</a>';
             $loadMoreLink = '<button type="button" id="formSubmit" onclick="loadPostsForTopic(' . $limit . ',' . ($offset + $limit) . ', \'' . $topicId . '\')" style="cursor: pointer">Load more</button>';
         }
 
@@ -534,6 +566,25 @@ class TopicsPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId', true);
+        $conceptId = $this->httpGet('conceptId');
+
+        $postTitle = null;
+        $postText = null;
+        $postTag = null;
+        $postDateAvailable = null;
+        $postSuggestable = true;
+
+        if($conceptId !== null) {
+            $concept = $app->postRepository->getPostConceptById($conceptId);
+
+            $data = $concept->getPostData();
+
+            $postTitle = $data['title'];
+            $postText = $data['text'];
+            $postTag = $data['tag'];
+            $postDateAvailable = strtotime($data['dateAvailable']);
+            $postSuggestable = $data['suggestable'];
+        }
 
         try {
             $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
@@ -553,34 +604,70 @@ class TopicsPresenter extends AUserPresenter {
         // form
         $postTags = [];
         foreach(PostTags::getAll() as $key => $text) {
-            $postTags[] = [
+            $tag = [
                 'value' => $key,
                 'text' => $text
             ];
+
+            if($key == $postTag) {
+                $tag['selected'] = 'selected';
+            }
+
+            $postTags[] = $tag;
         }
 
         $fb = new FormBuilder();
 
-        $now = new DateTime();
+        $now = new DateTime($postDateAvailable);
         $now->format('Y-m-d H:i');
         $now = $now->getResult();
 
-        $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId])
-            ->addTextInput('title', 'Title:', null, true)
-            ->addTextArea('text', 'Text:', null, true)
+        $formUrl = ['page' => 'UserModule:Topics', 'action' => 'newPost', 'topicId' => $topicId];
+
+        if($conceptId !== null) {
+            $formUrl['conceptId'] = $conceptId;
+        }
+
+        $fb ->setAction($formUrl)
+            ->addTextInput('title', 'Title:', $postTitle, true)
+            ->addTextArea('text', 'Text:', $postText, true)
             ->addSelect('tag', 'Tag:', $postTags, true)
             ->addFileInput('image', 'Image:');
 
         if($app->actionAuthorizator->canSchedulePosts($app->currentUser->getId(), $topicId)) {
+            $fb->addCheckbox('availableNow', 'Available now?', true);
+            $fb->updateElement('availableNow', function(CheckboxInput $ci) {
+                $ci->id = 'availableNow';
+                return $ci;
+            });
+
+            $fb->startSection('dateAvailable');
             $fb->addDatetime('dateAvailable', 'Available from:', $now, true);
+            $fb->endSection();
+            $fb->startSection('dateAvailableBr');
+            $fb->endSection();
         }
         
         if($app->actionAuthorizator->canSetPostSuggestability($app->currentUser->getId(), $topicId)) {
-            $fb->addCheckbox('suggestable', 'Can be suggested?', true);
+            $fb->addCheckbox('suggestable', 'Can be suggested?', $postSuggestable);
         }
 
-        $fb ->addSubmit('Post')
-            ->setCanHaveFiles();
+        $fb ->setCanHaveFiles();
+
+        /** SUBMIT */
+        $submitPost = new SubmitButton('Post', false, 'submitPost');
+        $submitPost->setCenter();
+        if($app->actionAuthorizator->canUsePostConcepts($app->currentUser->getId(), $topicId)) {
+            $submitSaveAsConcept = new SubmitButton('Save as concept', false, 'submitSaveAsConcept');
+            $submitSaveAsConcept->setCenter();
+
+            $fb->addMultipleSubmitButtons([$submitPost, $submitSaveAsConcept]);
+        } else {
+            $fb->addElement('formSubmit', $submitPost);
+        }
+        /** SUBMIT */
+
+        $fb->addJSHandler('js/PostFormHandler.js');
 
         $this->saveToPresenterCache('form', $fb);
     }
@@ -604,28 +691,79 @@ class TopicsPresenter extends AUserPresenter {
         $userId = $app->currentUser->getId();
         $topicId = $this->httpGet('topicId');
         $dateAvailable = $fr->dateAvailable;
+        $availableNow = isset($fr->availableNow);
         $suggestable = isset($fr->suggestable);
 
-        try {
-            $app->topicRepository->beginTransaction();
-
-            $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
-            
-            $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
-
-            if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
-                $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
-            
-                $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+        if(isset($fr->submitPost)) {
+            if($availableNow) {
+                $dateAvailable = DateTime::now();
             }
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            try {
+                $app->topicRepository->beginTransaction();
 
-            $this->flashMessage('Post created.', 'success');
-        } catch(Exception $e) {
-            $app->topicRepository->rollback();
+                if($this->httpGet('conceptId' !== null)) {
+                    $app->postRepository->deletePostConcept($this->httpGet('conceptId'));
+                }
+    
+                $postId = $app->entityManager->generateEntityId(EntityManager::POSTS);
+                
+                $app->postRepository->createNewPost($postId, $topicId, $userId, $title, $text, $tag, $dateAvailable, $suggestable);
+    
+                if(isset($_FILES['image']['name']) && $_FILES['image']['name'] != '') {
+                    $id = $app->postRepository->getLastCreatedPostInTopicByUserId($topicId, $userId)->getId();
+                
+                    $app->fileUploadManager->uploadPostImage($userId, $id, $topicId, $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+                }
+    
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+    
+                $this->flashMessage('Post created.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+    
+                $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
+            }
+        } else if(isset($fr->submitSaveAsConcept)) {
+            try {
+                $app->topicRepository->beginTransaction();
 
-            $this->flashMessage('Post could not be created. Error: ' . $e->getMessage(), 'error');
+                if($this->httpGet('conceptId') !== null) {
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
+
+                    $now = DateTime::now();
+
+                    $app->postRepository->updatePostConcept($this->httpGet('conceptId'), ['postData' => $postData, 'dateUpdated' => $now]);
+                } else {
+                    $conceptId = $app->entityManager->generateEntityId(EntityManager::POST_CONCEPTS);
+
+                    $postData = [
+                        'title' => $title,
+                        'text' => $text,
+                        'tag' => $tag,
+                        'dateAvailable' => $dateAvailable,
+                        'suggestable' => $suggestable
+                    ];
+                    $postData = serialize($postData);
+
+                    $app->postRepository->createNewPostConcept($conceptId, $topicId, $userId, $postData);
+                }
+
+                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post concept saved.', 'success');
+            } catch(Exception $e) {
+                $app->topicRepository->rollback();
+
+                $this->flashMessage('Post concept could not be saved. Error:' . $e->getMessage(), 'error');
+            }
         }
 
         $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -743,7 +881,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextInput('tags', 'Tags:', null, true)
                 ->addLabel('Individual tags must be separated by commas - e.g.: technology, art, scifi ...', 'lbl_tags_1')
                 ->addCheckbox('private', 'Is private?')
-                ->addSubmit('Create topic');
+                ->addSubmit('Create topic', false, true);
 
             $this->saveToPresenterCache('form', $fb);
         }
@@ -1061,7 +1199,7 @@ class TopicsPresenter extends AUserPresenter {
             $fb ->setAction(['page' => 'UserModule:Topics', 'action' => 'reportForm', 'isSubmit' => '1', 'topicId' => $topicId])
                 ->addSelect('category', 'Category:', $categoryArray, true)
                 ->addTextArea('description', 'Additional notes:', null, true)
-                ->addSubmit('Send')
+                ->addSubmit('Send', false, true)
                 ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -1127,7 +1265,7 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextInput('topicTitle', 'Topic title:', null, true)
                 ->addPassword('userPassword', 'Your password:', null, true)
                 ->addSubmit('Delete topic')
-                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=profile&topicId=' . $topicId . '\';', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -1150,8 +1288,25 @@ class TopicsPresenter extends AUserPresenter {
             $description = $this->httpPost('description');
             $choices = $this->httpPost('choices');
             $dateValid = $this->httpPost('dateValid');
-            $timeElapsed = $this->httpPost('timeElapsed');
             $pollId = $app->entityManager->generateEntityId(EntityManager::TOPIC_POLLS);
+
+            $timeElapsed = '';
+            $timeElapsedSelect = $this->httpPost('timeElapsedSelect');
+            $timeElapsedSubselect = $this->httpPost('timeElapsedSubselect');
+
+            switch($timeElapsedSelect) {
+                case 'hours':
+                    $timeElapsed = $timeElapsedSubselect . 'h';
+                    break;
+
+                case 'days':
+                    $timeElapsed = $timeElapsedSubselect . 'd';
+                    break;
+
+                case 'never':
+                    $timeElapsed = '0';
+                    break;
+            }
 
             $tmp = [];
             foreach(explode(',', $choices) as $choice) {
@@ -1183,6 +1338,21 @@ class TopicsPresenter extends AUserPresenter {
 
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         } else {
+            $timeElapsedSelect = [
+                [
+                    'value' => 'never',
+                    'text' => 'One vote only'
+                ],
+                [
+                    'value' => 'hours',
+                    'text' => 'Hours'
+                ],
+                [
+                    'value' => 'days',
+                    'text' => 'Days',
+                ]
+            ];
+
             $fb = new FormBuilder();
 
             $fb ->setMethod()
@@ -1191,10 +1361,12 @@ class TopicsPresenter extends AUserPresenter {
                 ->addTextArea('description', 'Poll description:', null, true)
                 ->addTextArea('choices', 'Poll choices:', null, true)
                 ->addLabel('Choices should be formatted this way: <i>Pizza, Spaghetti, Pasta</i>.', 'clbl1')
-                ->addTextInput('timeElapsed', 'Time between votes:', '1d', true)
-                ->addLabel('Format must be: count [m - minutes, h - hours, d - days]; e.g.: 1d means 1 day -> 24 hours, 0 means single-vote-only', 'clbl2')
+                ->addSelect('timeElapsedSelect', 'Time between votes:', $timeElapsedSelect, true)
+                ->startSection('timeElapsedSubselectSection', true)
+                ->endSection()
                 ->addDatetime('dateValid', 'Date the poll is available for voting:')
-                ->addSubmit('Create')
+                ->addSubmit('Create', false, true)
+                ->addJSHandler('js/PollFormHandler.js')
             ;
 
             $fb->updateElement('choices', function(AElement $element) {
@@ -1393,7 +1565,7 @@ class TopicsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb);
-        $this->addScript('getPostGrid(0, \'' . $topicId .'\', \'' . $filter . '\')');
+        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
@@ -1418,8 +1590,11 @@ class TopicsPresenter extends AUserPresenter {
         $topicId = $this->httpGet('topicId');
         $filter = $this->httpGet('filter');
 
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POSTS, $gridPage, [$topicId]);
+
         $offset = $page * $gridSize;
 
         if($filter == 'scheduled') {
@@ -1558,6 +1733,166 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
+    }
+
+    public function handleListPostConcepts() {
+        $filter = $this->httpGet('filter');
+        $topicId = $this->httpGet('topicId');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getPostConceptsGrid')
+            ->setHeader(['gridPage' => '_page', 'filter' => '_filter', 'topicId' => '_topicId'])
+            ->setFunctionName('getPostConceptsGrid')
+            ->setFunctionArguments(['_page', '_filter', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getPostConceptsGrid(-1, \'' . $filter . '\', \'' . $topicId . '\')');
+    }
+
+    public function renderListPostConcepts() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetPostConceptsGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+        $filter = $this->httpGet('filter');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POST_CONCEPTS, $gridPage, [$filter]);
+
+        $gridSize = $app->getGridSize();
+
+        $postConcepts = [];
+        $totalCount = 0;
+
+        if($filter == 'my') {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid($app->currentUser->getId(), $topicId, 0, 0));
+        } else {
+            $postConcepts = $app->postRepository->getPostConceptsForGrid(null, $topicId, $gridSize, ($page * $gridSize));
+            $totalCount = count($app->postRepository->getPostConceptsForGrid(null, $topicId, 0, 0));
+        }
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $grid = new GridBuilder();
+
+        $grid->addDataSource($postConcepts);
+        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
+        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
+        });
+        $grid->addAction(function(PostConceptEntity $pce) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
+        });
+
+        $reducer = $app->getGridReducer();
+        $reducer->applyReducer($grid);
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
+    }
+
+    public function handleDeletePostConcept(?FormResponse $fr = null) {
+        global $app;
+
+        $conceptId = $this->httpGet('conceptId', true);
+        $topicId = $this->httpGet('topicId', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            try {
+                $app->postRepository->beginTransaction();
+
+                $app->postRepository->deletePostConcept($conceptId);
+
+                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+
+                $this->flashMessage('Post concept deleted.', 'success');
+            } catch(AException $e) {
+                $app->postRepository->rollback();
+
+                $this->flashMessage('Could not delete post concept. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect(['action' => 'listPostConcepts', 'topicId' => $topicId]);
+        } else {
+            $fb = new FormBuilder();
+
+            $fb ->setAction($this->createURL('deletePostConcept', ['conceptId' => $conceptId, 'topicId' => $topicId]))
+                ->addSubmit('Delete post concept')
+                ->addButton('&larr; Go back', 'location.href = \'?page=UserModule:Topics&action=listPostConcepts&topicId=' . $topicId . '\';', 'formSubmit')
+            ;
+
+            $this->saveToPresenterCache('form', $fb);
+        }
+    }
+
+    public function renderDeletePostConcept() {
+        $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function actionPollFormHandler() {
+        $action2 = $this->httpGet('action2');
+        $value = $this->httpGet('value');
+
+        $selectValues = [];
+
+        if($action2 == 'getTimeBetweenVotesSubselect') {
+            if($value == 'hours') {
+                for($i = 1; $i < 24; $i++) {
+                    $t = ' hours';
+
+                    if($i == 1) {
+                        $t = ' hour';
+                    }
+
+                    $selectValues[] = [
+                        'value' => "$i",
+                        'text' => $i . $t
+                    ];
+                }
+            } else if($value == 'days') {
+                for($i = 1; $i < 31; $i++) {
+                    $t = ' days';
+
+                    if($i == 1) {
+                        $t = ' day';
+                    }
+
+                    $selectValues[] = [
+                        'value' => "$i",
+                        'text' => $i . $t
+                    ];
+                }
+            }
+        }
+
+        $label = new Label('Duration:', 'timeElapsedSubselect', true);
+        $select = new Select('timeElapsedSubselect', $selectValues);
+        $ed = new ElementDuo($select, $label, 'timeElapsedSubselect');
+
+        $result = [
+            'select' => $ed->render() . '<br><br>'
+        ];
+        if(!empty($selectValues)) {
+            $result['empty'] = '1';
+        } else {
+            $result['empty'] = '0';
+        }
+
+        $this->ajaxSendResponse($result);
     }
 }
 

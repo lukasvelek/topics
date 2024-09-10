@@ -28,6 +28,8 @@ class FormBuilder implements IFormRenderable {
         return $this->name;
     }
 
+    public function getTagName() {}
+
     public function updateElement(string $name, callable $updateOperation) {
         foreach($this->elements as $k => $element) {
             if($element instanceof ElementDuo) {
@@ -37,10 +39,18 @@ class FormBuilder implements IFormRenderable {
                 if($label instanceof IFormRenderable && $label->getName() == $name) {
                     $label = $updateOperation($label);
                     $element->setLabel($label);
+                    $this->elements[$k] = $element;
                     break;
                 } else if($el instanceof IFormRenderable && $el->getName() == $name) {
                     $el = $updateOperation($el);
                     $element->setElement($el);
+                    $this->elements[$k] = $element;
+                    break;
+                }
+            } else {
+                if($element instanceof IFormRenderable && $element->getName() == $name) {
+                    $element = $updateOperation($element);
+                    $this->elements[$k] = $element;
                     break;
                 }
             }
@@ -138,16 +148,26 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
-    public function addSubmit(string $text = 'Submit', bool $disabled = false, bool $center = false) {
-        $sb = new SubmitButton($text, $disabled);
+    public function addSubmit(string $text = 'Submit', bool $disabled = false, bool $center = false, string $name = 'btn_submit') {
+        $sb = new SubmitButton($text, $disabled, $name);
 
         if($center) {
             $sb->setCenter($center);
         }
 
-        $this->addElement('btn_submit', $sb);
+        $this->addElement($name, $sb);
 
         return $this;
+    }
+
+    public function addMultipleSubmitButtons(array $submitButtons) {
+        $code = '';
+
+        foreach($submitButtons as $sb) {
+            $code .= $sb->render() . '<br>';
+        }
+
+        $this->elements['submit'] = $code;
     }
 
     public function addPassword(string $name, ?string $label = null, mixed $value = null, bool $required = false) {
@@ -189,8 +209,9 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
-    public function addButton(string $text, string $onclickAction) {
+    public function addButton(string $text, string $onclickAction, string $id = '') {
         $b = new Button($text, $onclickAction);
+        $b->id = $id;
 
         $this->elements['btn_' . HashManager::createHash()] = $b;
 

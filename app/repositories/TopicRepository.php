@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
@@ -26,7 +27,7 @@ class TopicRepository extends ARepository {
             $entity = TopicEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, 'topics', __METHOD__);
+        }, CacheManager::NS_TOPICS, __METHOD__);
 
         return $entity;
     }
@@ -232,15 +233,18 @@ class TopicRepository extends ARepository {
         $qb ->select(['postId'])
             ->from('topic_post_pins')
             ->where('topicId = ?', [$topicId])
-            ->orderBy('dateCreated', 'DESC')
-            ->execute();
+            ->orderBy('dateCreated', 'DESC');
 
-        $ids = [];
-        while($row = $qb->fetchAssoc()) {
-            $ids[] = $row['postId'];
-        }
+        return $this->cache->loadCache($topicId, function() use ($qb) {
+            $qb->execute();
 
-        return $ids;
+            $postIds = [];
+            while($row = $qb->fetchAssoc()) {
+                $postIds[] = $row['postId'];
+            }
+
+            return $postIds;
+        }, CacheManager::NS_PINNED_POSTS, __METHOD__);
     }
 }
 

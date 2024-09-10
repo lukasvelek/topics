@@ -7,13 +7,20 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicInviteEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class TopicInvitesPresenter extends AUserPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('TopicInvitesPresenter', 'Topic invites');
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleList() {
@@ -28,7 +35,7 @@ class TopicInvitesPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(0)');
+        $this->addScript('getInvitesGrid(-1)');
     }
 
     public function renderList() {}
@@ -36,9 +43,10 @@ class TopicInvitesPresenter extends AUserPresenter {
     public function actionGetInvitesGrid() {
         global $app;
 
-        $page = $this->httpGet('gridPage');
-
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES, $gridPage);
 
         $validOnly = true;
 

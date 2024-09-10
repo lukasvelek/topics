@@ -86,11 +86,11 @@ class UserEntity implements ICreatableFromRow {
         return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin'], $row['canLogin']);
     }
 
-    public static function createUserProfileLink(UserEntity $user, bool $object = false) {
+    public static function createUserProfileLink(UserEntity $user, bool $object = false, string $linkClassName = 'post-data-link') {
         if($object) {
-            return LinkBuilder::createSimpleLinkObject($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLinkObject($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $linkClassName);
         } else {
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'post-data-link');
+            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $linkClassName);
         }
     }
 }

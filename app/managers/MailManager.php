@@ -3,7 +3,6 @@
 namespace App\Managers;
 
 use App\Constants\MailTemplates;
-use App\Core\HashManager;
 use App\Entities\EmailEntity;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;

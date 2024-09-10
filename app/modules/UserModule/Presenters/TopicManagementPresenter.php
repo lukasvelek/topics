@@ -8,8 +8,10 @@ use App\Core\Datetypes\DateTime;
 use App\Entities\TopicInviteEntity;
 use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -18,8 +20,14 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicManagementPresenter extends AUserPresenter {
+    private GridHelper $gridHelper;
+
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
+
+        global $app;
+
+        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
     }
 
     public function handleManageRoles() {
@@ -45,7 +53,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getUserRolesGrid(0, \'' . $topicId . '\')');
+        $this->addScript('getUserRolesGrid(-1, \'' . $topicId . '\')');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
 
@@ -68,8 +76,10 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_TOPIC_ROLES, $gridPage, [$topicId]);
 
         $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
         $allMembersCount = count($app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
@@ -218,7 +228,7 @@ class TopicManagementPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getPollGrid(0, \'' . $topicId . '\');');
+        $this->addScript('getPollGrid(-1, \'' . $topicId . '\');');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
@@ -237,9 +247,11 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
 
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POLLS, $gridPage, [$topicId]);
 
         if($app->actionAuthorizator->canSeeAllTopicPolls($app->currentUser->getId(), $topicId)) {
             $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
@@ -372,7 +384,7 @@ class TopicManagementPresenter extends AUserPresenter {
             ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(0, ' . $topicId . ')');
+        $this->addScript('getInvitesGrid(-1, ' . $topicId . ')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link') . '&nbsp;',
@@ -392,9 +404,11 @@ class TopicManagementPresenter extends AUserPresenter {
         global $app;
 
         $topicId = $this->httpGet('topicId');
-        $page = $this->httpGet('gridPage');
+        $gridPage = $this->httpGet('gridPage');
         
         $gridSize = $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES_ALL, $gridPage, [$topicId]);
 
         $invites = $app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
         $inviteCount = count($app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
@@ -631,6 +645,91 @@ class TopicManagementPresenter extends AUserPresenter {
         }
 
         $this->redirect($this->createURL('managePrivacy', ['topicId' => $topicId]));
+    }
+
+    public function handleFollowersList() {
+        $topicId = $this->httpGet('topicId', true);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getFollowersGrid')
+            ->setHeader(['topicId' => '_topicId', 'gridPage' => '_page'])
+            ->setFunctionName('getFollowersGrid')
+            ->setFunctionArguments(['_page', '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getFollowersGrid(0, \'' . $topicId . '\')');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderFollowersList() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetFollowersGrid() {
+        global $app;
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+
+        $gridSize = $app->getGridSize();
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_FOLLOWERS, $gridPage, [$topicId]);
+
+        $offset = $page * $gridSize;
+
+        $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, $offset, false);
+        $totalCount = $app->topicMembershipManager->getTopicMemberCount($topicId);
+
+        $lastPage = ceil($totalCount / $gridSize);
+
+        $grid = new GridBuilder();
+        $grid->addColumns(['userId' => 'User', 'role' => 'Role', 'dateCreated' => 'Member from', 'daysMember' => 'Days of membership']);
+        $grid->addDataSource($members);
+        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getFollowersGrid', [$topicId]);
+        $grid->addOnColumnRender('role', function(Cell $cell, TopicMemberEntity $tme) {
+            $text = TopicMemberRole::toString($tme->getRole());
+            $color = TopicMemberRole::getColorByKey($tme->getRole());
+            
+            $cell->setTextColor($color);
+            $cell->setValue($text);
+            
+            return $cell;
+        });
+        $grid->addOnColumnRender('daysMember', function(Cell $cell, TopicMemberEntity $tme) {
+            $dateFrom = $tme->getDateCreated();
+            
+            $diff = time() - strtotime($dateFrom);
+            
+            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+        });
+        $grid->addOnExportRender('role', function(TopicMemberEntity $tme) {
+            return TopicMemberRole::toString($tme->getRole());
+        });
+        $grid->addOnExportRender('daysMember', function(TopicMemberEntity $tme) {
+            $dateFrom = $tme->getDateCreated();
+            
+            $diff = time() - strtotime($dateFrom);
+            
+            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
+        });
+
+        $app->getGridReducer()->applyReducer($grid);
+        
+        $grid->addGridExport(function() use ($app, $topicId) {
+            return $app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        }, GridHelper::GRID_TOPIC_FOLLOWERS, $app->logger);
+        
+
+        $this->ajaxSendResponse(['grid' => $grid->build()]);
     }
 }
 

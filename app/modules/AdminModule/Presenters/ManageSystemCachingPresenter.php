@@ -35,7 +35,13 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
 
         switch($type) {
             case 'pages':
-                $files = unserialize($cm->loadCachedFiles('cachedPages'));
+                $files = unserialize($cm->loadCachedFiles(CacheManager::NS_CACHED_PAGES));
+
+                if($files === false) {
+                    $files = [];
+                } else {
+                    $files = $files[CacheManager::I_NS_DATA];
+                }
 
                 $fileArray = [];
                 if($files !== false) {
@@ -66,7 +72,13 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                 break;
 
             case 'users':
-                    $files = unserialize($cm->loadCachedFiles('users'));
+                    $files = unserialize($cm->loadCachedFiles(CacheManager::NS_USERS));
+
+                    if($files == false) {
+                        $files = [];
+                    } else {
+                        $files = $files[CacheManager::I_NS_DATA];
+                    }
 
                     $fileArray = [];
                     if($files !== false) {
@@ -96,15 +108,15 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
     public function handleList() {
         $arb = new AjaxRequestBuilder();
         $arb->setURL($this->createURL('getGrid'))
-            ->setHeader(['gridPage' => '_page', 'type' => '_type'])
+            ->setHeader(['type' => '_type'])
             ->setMethod()
             ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_page', '_type'])
+            ->setFunctionArguments(['_type'])
             ->updateHTMLElement('grid-content', 'grid')
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getGrid(0, \'pages\')');
+        $this->addScript('getGrid(\'pages\')');
 
         $cl = function(string $name, string $text) {
             return '<a class="post-data-link" href="#" onclick="handleGridFilter(\'' . $name . '\')">' . $text . '</a>';

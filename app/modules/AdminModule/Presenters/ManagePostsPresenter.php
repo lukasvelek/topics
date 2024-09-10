@@ -64,7 +64,7 @@ class ManagePostsPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManagePosts', 'action' => 'deleteComment', 'commentId' => $commentId, 'isSubmit' => '1', 'reportId' => $reportId])
                 ->addSubmit('Delete comment #' . $commentId)
-                ->addButton('Don\'t delete', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'');
+                ->addButton('Don\'t delete', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit');
             ;
 
             $this->saveToPresenterCache('form', $fb);
@@ -118,7 +118,7 @@ class ManagePostsPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $postId, 'isSubmit' => '1', 'reportId' => $reportId])
                 ->addSubmit('Delete post \'' . $post->getTitle() . '\'')
-                ->addButton('Don\'t delete', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'');
+                ->addButton('Don\'t delete', 'location.href = \'?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '\'', 'formSubmit');
             ;
 
             $this->saveToPresenterCache('form', $fb);
