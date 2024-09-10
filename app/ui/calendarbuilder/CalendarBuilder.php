@@ -337,7 +337,7 @@ class CalendarBuilder implements IRenderable {
             if($uee->getDateFrom() != $uee->getDateTo()) {
                 $d = $uee->getDateFrom();
 
-                while($d != $uee->getDateTo()) {
+                while(strtotime($d) < strtotime($uee->getDateTo())) {
                     $date = new DateTime(strtotime($d));
 
                     $cee = new CalendarEventEntity($uee->getTitle(), LinkBuilder::createSimpleLink($linkText, [], 'grid-link'), $date);
