@@ -67,7 +67,8 @@ class DatabaseInstaller {
                 'dateDeleted' => 'DATETIME NULL',
                 'tag' => 'VARCHAR(256) NOT NULL',
                 'dateAvailable' => 'DATETIME NOT NULL',
-                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1'
+                'isSuggestable' => 'INT(2) NOT NULL DEFAULT 1',
+                'isScheduled' => 'INT(2) NOT NULL DEFAULT 0'
             ],
             'post_likes' => [
                 'postId' => 'VARCHAR(256) NOT NULL',
@@ -283,8 +284,18 @@ class DatabaseInstaller {
                 'filename' => 'VARCHAR(256) NULL',
                 'gridName' => 'VARCHAR(256) NOT NULL',
                 'entryCount' => 'INT(32) NULL',
-                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateFinished' => 'DATETIME NULL'
+            ],
+            'topic_calendar_user_events' => [
+                'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'title' => 'VARCHAR(256) NOT NULL',
+                'description' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateFrom' => 'DATETIME NOT NULL',
+                'dateTo' => 'DATETIME NOT NULL'
             ]
         ];
 

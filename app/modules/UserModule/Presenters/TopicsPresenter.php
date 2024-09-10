@@ -250,6 +250,10 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Rules', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link');
         }
 
+        if($app->actionAuthorizator->canSeeTopicCalendar($app->currentUser->getId(), $topicId)) {
+            $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
+        }
+
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         if(!empty($links)) {

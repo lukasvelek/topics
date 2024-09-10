@@ -238,10 +238,16 @@ class PostRepository extends ARepository {
     }
 
     public function createNewPost(string $postId, string $topicId, string $authorId, string $title, string $text, string $tag, string $dateAvailable, bool $suggestable) {
+        if(strtotime($dateAvailable) > time()) {
+            $isScheduled = true;
+        } else {
+            $isScheduled = false;
+        }
+
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable', 'isSuggestable'])
-            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable, $suggestable])
+        $qb ->insert('posts', ['postId', 'topicId', 'authorId', 'title', 'description', 'tag', 'dateAvailable', 'isSuggestable', 'isScheduled'])
+            ->values([$postId, $topicId, $authorId, $title, $text, $tag, $dateAvailable, $suggestable, $isScheduled])
             ->execute();
 
         return $qb->fetch();
@@ -611,6 +617,20 @@ class PostRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function getScheduledPostsForTopicIdForDate(string $dateFrom, string $dateTo, string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('dateAvailable >= ?', [$dateFrom])
+            ->andWhere('dateAvailable <= ?', [$dateTo])
+            ->andWhere('isScheduled = 1')
+            ->execute();
+
+        return $this->createPostsArrayFromQb($qb);
     }
 }
 

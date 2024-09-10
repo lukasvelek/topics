@@ -513,7 +513,7 @@ class GridBuilder {
      */
     private function addGridRefresh(string $jsHandlerName, array $otherArguments = []) {
         $args = array_merge([0], $otherArguments);
-        $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh</a>';
+        $code = '<a class="post-data-link" href="#" onclick="' . $jsHandlerName . '(\'' . implode('\', \'', $args) . '\');">Refresh &orarr;</a>';
         return $code;
     }
 

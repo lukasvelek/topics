@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\DatabaseConnection;
-use App\Core\HashManager;
 use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
 use App\Logger\Logger;
@@ -125,6 +124,17 @@ abstract class ARepository {
         $em = new EntityManager($this->logger, new ContentRepository($this->conn, $this->logger));
 
         return $em->generateEntityId($category);
+    }
+
+    protected function deleteEntryById(string $tableName, string $keyName, string $keyValue) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->delete()
+            ->from($tableName)
+            ->where($keyName . ' = ?', [$keyValue])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 
