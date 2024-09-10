@@ -126,8 +126,15 @@ class SearchPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $topics = $app->topicRepository->getTopicsWithTag($tag);
-        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+        $cm = new CacheManager($app->logger);
+        
+        $expire = new DateTime();
+        $expire->modify('+1h');
+
+        $topics = $cm->loadCache('topicTags', function() use ($app, $tag) {
+            $topics = $app->topicRepository->getTopicsWithTag($tag);
+            return $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
 
         $topicArray = [];
         foreach($topics as $t) {
