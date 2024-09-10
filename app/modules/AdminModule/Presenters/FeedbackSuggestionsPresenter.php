@@ -249,7 +249,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackSuggestionsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
+        return ['grid' => $gb->build(), 'filterControl' => $filterControl];
     }
 
     public function actionGetFilterCategorySuboptions() {
@@ -282,7 +282,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                 break;
         }
 
-        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
+        return ['options' => $options, 'empty' => (empty($options))];
     }
     
     public function handleList() {
@@ -319,7 +319,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $loadMoreLink = '';
 
         if(empty($comments)) {
-            return $this->ajaxSendResponse(['comments' => 'No comments', 'loadMoreLink' => $loadMoreLink]);
+            return ['comments' => 'No comments', 'loadMoreLink' => $loadMoreLink];
         }
 
         $commentCode = [];
@@ -350,7 +350,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $loadMoreLink = '<a class="post-data-link" onclick="loadSuggestionComments(' . $suggestionId . ', ' . $limit . ', ' . ($limit + $offset) . ')" href="#">Load more</a>';
         }
 
-        $this->ajaxSendResponse(['comments' => implode('<hr>', $commentCode), 'loadMoreLink' => $loadMoreLink]);
+        return ['comments' => implode('<hr>', $commentCode), 'loadMoreLink' => $loadMoreLink];
     }
 
     public function handleProfile() {

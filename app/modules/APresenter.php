@@ -394,12 +394,14 @@ abstract class APresenter extends AGUICore {
 
         if($isAjax) {
             if(method_exists($this, $actionAction)) {
-                $app->logger->stopwatch(function() use ($actionAction) {
+                $result = $app->logger->stopwatch(function() use ($actionAction) {
                     return $this->$actionAction();
                 }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
 
                 if($this->ajaxResponse !== null) {
                     return new TemplateObject($this->ajaxResponse);
+                } else if($result !== null) {
+                    return new TemplateObject(json_encode($result));
                 } else {
                     throw new NoAjaxResponseException();
                 }
@@ -544,15 +546,6 @@ abstract class APresenter extends AGUICore {
         } else {
             return null;
         }
-    }
-
-    /**
-     * Sends AJAX response encoded to JSON
-     * 
-     * @param array $data The response data.
-     */
-    protected function ajaxSendResponse(array $data) {
-        $this->ajaxResponse = json_encode($data);
     }
 
     /**

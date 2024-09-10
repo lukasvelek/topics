@@ -29,11 +29,8 @@ class GridExportHelperPresenter extends AUserPresenter {
         } catch(AException $e) {
             $app->gridExportRepository->rollback();
 
-            $this->ajaxSendResponse(['empty' => '1']);
-
-            return;
+            return ['empty' => '1'];
         }
-
 
         $ge = new GridExporter($app->logger, $hash, $app->cfg);
         $ge->setExportAll($exportAll);
@@ -69,7 +66,7 @@ class GridExportHelperPresenter extends AUserPresenter {
             ];
         }
 
-        $this->ajaxSendResponse($data);
+        return $data;
     }
 }
 

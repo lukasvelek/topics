@@ -46,7 +46,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
         });
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {

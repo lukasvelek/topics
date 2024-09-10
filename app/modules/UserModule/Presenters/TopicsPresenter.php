@@ -300,7 +300,7 @@ class TopicsPresenter extends AUserPresenter {
  
         $likes = $app->postRepository->getLikes($postId);
 
-        $this->ajaxSendResponse(['postLink' => PostLister::createLikeLink($postId, $liked), 'postLikes' => $likes]);
+        return ['postLink' => PostLister::createLikeLink($postId, $liked), 'postLikes' => $likes];
     }
 
     public function actionLoadPostsForTopic() {
@@ -320,7 +320,7 @@ class TopicsPresenter extends AUserPresenter {
         $isMember = $app->topicMembershipManager->checkFollow($topicId, $app->currentUser->getId());
 
         if(!$isMember && $topic->isPrivate()) {
-            return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
+            return ['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => ''];
         }
 
         $posts = $app->postRepository->getLatestPostsForTopicId($topicId, $limit, $offset, !$topic->isDeleted());
@@ -395,7 +395,7 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         if(empty($posts) && empty($pollCode)) {
-            return $this->ajaxSendResponse(['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => '']);
+            return ['posts' => '<p class="post-text" id="center">No posts found</p>', 'loadMoreLink' => ''];
         }
 
         $code = [];
@@ -549,7 +549,7 @@ class TopicsPresenter extends AUserPresenter {
             $code .= '<br>';
         }
 
-        $this->ajaxSendResponse(['posts' => $code, 'loadMoreLink' => $loadMoreLink]);
+        return ['posts' => $code, 'loadMoreLink' => $loadMoreLink];
     }
 
     public function renderProfile() {
@@ -1127,7 +1127,7 @@ class TopicsPresenter extends AUserPresenter {
                 </div>';
         }
 
-        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray)]);
+        return ['list' => implode('<br>', $codeArray)];
     }
 
     public function actionGetTrendingPostsList() {
@@ -1155,7 +1155,7 @@ class TopicsPresenter extends AUserPresenter {
                 </div>';
         }
 
-        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray)]);
+        return ['list' => implode('<br>', $codeArray)];
     }
 
     public function handleReportForm(?FormResponse $fr = null) {
@@ -1531,7 +1531,7 @@ class TopicsPresenter extends AUserPresenter {
             $colors[] = $chartColors[$i];
         }
 
-        $this->ajaxSendResponse(['labels' => $labels, 'data' => $data, 'colors' => $colors]);
+        return ['labels' => $labels, 'data' => $data, 'colors' => $colors];
     }
 
     public function handlePollCloseVoting() {
@@ -1687,7 +1687,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleUpdatePost() {
@@ -1808,7 +1808,7 @@ class TopicsPresenter extends AUserPresenter {
         $reducer = $app->getGridReducer();
         $reducer->applyReducer($grid);
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
     }
 
     public function handleDeletePostConcept(?FormResponse $fr = null) {
@@ -1898,7 +1898,7 @@ class TopicsPresenter extends AUserPresenter {
             $result['empty'] = '0';
         }
 
-        $this->ajaxSendResponse($result);
+        return $result;
     }
 }
 

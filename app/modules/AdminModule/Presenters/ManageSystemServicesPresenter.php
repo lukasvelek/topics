@@ -143,7 +143,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             }
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleRun() {

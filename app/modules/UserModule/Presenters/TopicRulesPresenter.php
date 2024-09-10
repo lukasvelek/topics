@@ -76,7 +76,7 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $code[] = '</ol>';
 
-        $this->ajaxSendResponse(['grid' => implode('', $code)]);
+        return ['grid' => implode('', $code)];
     }
 
     public function actionGetTopicRulesList() {
@@ -132,7 +132,7 @@ class TopicRulesPresenter extends AUserPresenter {
             });
         }
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
     }
 
     public function handleNewRuleForm(?FormResponse $fr = null) {

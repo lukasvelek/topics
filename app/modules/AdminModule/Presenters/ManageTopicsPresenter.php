@@ -43,7 +43,6 @@ class ManageTopicsPresenter extends AAdminPresenter {
 
             try {
                 $app->topicRepository->beginTransaction();
-                //$app->contentManager->deleteTopic($topicId);
 
                 $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
 

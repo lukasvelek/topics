@@ -106,7 +106,7 @@ class TopicInvitesPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalInviteCount, 'getInvitesGrid');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleAcceptInvite() {

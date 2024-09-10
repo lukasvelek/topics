@@ -173,7 +173,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getDeletedContent', [$filter]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {

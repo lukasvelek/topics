@@ -115,7 +115,7 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $allMembersCount, 'getUserRolesGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleChangeRoleForm() {
@@ -319,7 +319,7 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $pollCount, 'getPollGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleDeactivatePoll() {
@@ -444,7 +444,7 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $inviteCount, 'getInvitesGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleInviteForm() {
@@ -542,7 +542,7 @@ class TopicManagementPresenter extends AUserPresenter {
             $usersOptions[] = '<option value="' . $user->getId() . '">' . $user->getUsername() . '</option>';
         }
 
-        $this->ajaxSendResponse(['users' => $usersOptions, 'empty' => empty($usersOptions)]);
+        return ['users' => $usersOptions, 'empty' => empty($usersOptions)];
     }
 
     public function handleRemoveInvite() {
@@ -731,7 +731,7 @@ class TopicManagementPresenter extends AUserPresenter {
         }, GridHelper::GRID_TOPIC_FOLLOWERS, $app->logger);
         
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
     }
 
     public function handleBannedWordsList() {
@@ -803,7 +803,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $gr = $app->getGridReducer();
         $gr->applyReducer($grid);
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
     }
 
     public function handleBannedWordForm(?FormResponse $fr = null) {

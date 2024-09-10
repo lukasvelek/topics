@@ -102,7 +102,7 @@ class ManageSystemCachingPresenter extends AAdminPresenter {
                 break;
         }
         
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {

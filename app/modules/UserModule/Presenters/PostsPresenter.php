@@ -353,7 +353,7 @@ class PostsPresenter extends AUserPresenter {
             return $ta;
         });
 
-        $this->ajaxSendResponse(['form' => '<div id="post-comment-form">' . $fb->render() . '</div>']);
+        return ['form' => '<div id="post-comment-form">' . $fb->render() . '</div>'];
     }
 
     public function actionLikePostComment() {
@@ -399,7 +399,7 @@ class PostsPresenter extends AUserPresenter {
         
         $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $commentId .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
-        $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
+        return ['link' => $link, 'likes' => $likes];
     }
 
     public function actionLoadCommentsForPost() {
@@ -428,7 +428,7 @@ class PostsPresenter extends AUserPresenter {
         $code = [];
 
         if(empty($comments)) {
-            return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
+            return ['comments' => 'No comments found', 'loadMoreLink' => ''];
         }
 
         $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
@@ -448,7 +448,7 @@ class PostsPresenter extends AUserPresenter {
             $c = '<br>';
         }
 
-        $this->ajaxSendResponse(['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
+        return ['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink];
     }
 
     private function createPostComment(string $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {

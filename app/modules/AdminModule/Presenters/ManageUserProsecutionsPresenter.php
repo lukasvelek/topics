@@ -106,7 +106,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             return $app->userProsecutionRepository->getActiveProsecutionsForGrid(0, 0);
         }, GridHelper::GRID_USER_PROSECUTIONS);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
     
     public function handleList() {
@@ -215,7 +215,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $historyEntriesCount, 'getProsecutionLog');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleLogList() {

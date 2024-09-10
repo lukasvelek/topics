@@ -51,7 +51,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGroupGrid');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {
@@ -116,7 +116,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $membersCount, 'getGroupMembersGrid', [$groupId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleListMembers() {
@@ -243,7 +243,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
             $options[] = $option->render();
         }
 
-        $this->ajaxSendResponse(['users' => $options, 'count' => count($options)]);
+        return ['users' => $options, 'count' => count($options)];
     }
 
     public function renderNewMember() {

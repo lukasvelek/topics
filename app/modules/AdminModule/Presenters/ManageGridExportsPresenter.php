@@ -127,7 +127,7 @@ class ManageGridExportsPresenter extends AAdminPresenter {
             }
         }, GridHelper::GRID_GRID_EXPORTS);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 }
 

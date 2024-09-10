@@ -105,7 +105,7 @@ class UsersPresenter extends AUserPresenter {
 
         $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
 
-        $this->ajaxSendResponse(['actionHistory' => $actionHistory]);
+        return ['actionHistory' => $actionHistory];
     }
 
     public function handleManageFollowers() {
@@ -172,7 +172,7 @@ class UsersPresenter extends AUserPresenter {
             $loadMoreLink = '<br><button type="button" onclick="getFollowersList(' . ($offset + $limit) . ')">Load more</button>';
         }
 
-        $this->ajaxSendResponse(['list' => implode('<br>', $codeArray), 'loadMoreLink' => $loadMoreLink]);
+        return ['list' => implode('<br>', $codeArray), 'loadMoreLink' => $loadMoreLink];
     }
 
     public function handleManageFollowing() {
@@ -245,7 +245,7 @@ class UsersPresenter extends AUserPresenter {
             $result = '<br>' . $result;
         }
 
-        $this->ajaxSendResponse(['list' => $result, 'loadMoreLink' => $loadMoreLink]);
+        return ['list' => $result, 'loadMoreLink' => $loadMoreLink];
     }
 
     public function handleFollowUser() {

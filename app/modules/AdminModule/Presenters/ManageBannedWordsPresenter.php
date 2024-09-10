@@ -56,7 +56,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getBannedWordsGrid');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {

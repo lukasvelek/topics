@@ -97,7 +97,7 @@ class TopicCalendarPresenter extends AUserPresenter {
         $calendar->addEventsFromUserEvents($events);
         // End of user events
 
-        $this->ajaxSendResponse(['grid' => $calendar->render(), 'controls' => $calendar->createCalendarControls('getCalendar', [$topicId]), 'info' => $calendar->getCalendarHeader()]);
+        return ['grid' => $calendar->render(), 'controls' => $calendar->createCalendarControls('getCalendar', [$topicId]), 'info' => $calendar->getCalendarHeader()];
     }
 
     public function handleNewEventForm(?FormResponse $fr = null) {

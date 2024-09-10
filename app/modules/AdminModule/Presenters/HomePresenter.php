@@ -106,7 +106,7 @@ class HomePresenter extends AAdminPresenter {
             $json['users']['data'] = $resultData;
         }
 
-        $this->ajaxSendResponse($json);
+        return $json;
     }
 }
 

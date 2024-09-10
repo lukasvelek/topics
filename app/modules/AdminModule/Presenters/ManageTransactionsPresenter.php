@@ -116,7 +116,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return $app->transactionLogRepository->getTransactionsForGrid(0, 0);
         }, GridHelper::GRID_TRANSACTION_LOG);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 }
 

@@ -135,7 +135,7 @@ class FeedbackPresenter extends AAdminPresenter {
             ];
         }
 
-        $this->ajaxSendResponse($resultData);
+        return $resultData;
     }
 }
 

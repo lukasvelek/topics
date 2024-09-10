@@ -107,7 +107,7 @@ class NotificationsPresenter extends AUserPresenter {
             $listCode = '<div style="text-align: center">No notifications found</div>';
         }
 
-        $this->ajaxSendResponse(['notifications' => $listCode, 'isEmpty' => $isEmpty]);
+        return ['notifications' => $listCode, 'isEmpty' => $isEmpty];
     }
 
     public function actionClose() {
@@ -139,7 +139,7 @@ class NotificationsPresenter extends AUserPresenter {
             $text = '<div style="text-align: center">No notifications found</div>';
         }
 
-        $this->ajaxSendResponse(['text' => $text, 'empty' => $empty]);
+        return ['text' => $text, 'empty' => $empty];
     }
 
     public function actionCloseAll() {
@@ -160,7 +160,7 @@ class NotificationsPresenter extends AUserPresenter {
             $this->flashMessage('Could not close notifications. Reason: ' . $e->getMessage(), 'error');
         }
 
-        $this->ajaxSendResponse(['text' => '<div style="text-align: center">No notifications found</div>']);
+        return ['text' => '<div style="text-align: center">No notifications found</div>'];
     }
 }
 

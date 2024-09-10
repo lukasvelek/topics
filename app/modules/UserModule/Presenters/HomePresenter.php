@@ -110,7 +110,7 @@ class HomePresenter extends AUserPresenter {
 
         $post = $app->postRepository->getPostById($postId);
 
-        $this->ajaxSendResponse(['likes' => $post->getLikes(), 'link' => $link]);
+        return ['likes' => $post->getLikes(), 'link' => $link];
 
     }
 }

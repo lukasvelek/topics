@@ -11,7 +11,6 @@ use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
-use Exception;
 
 class ManagePostFileUploadsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
@@ -258,7 +257,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/PostUploadImagesFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
+        return ['grid' => $gb->build(), 'filterControl' => $filterControl];
     }
 
     public function handleDelete() {
@@ -311,7 +310,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             break;
         }
 
-        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
+        return ['options' => $options, 'empty' => (empty($options))];
     }
 }
 

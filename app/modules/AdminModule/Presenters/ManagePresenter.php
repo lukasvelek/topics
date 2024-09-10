@@ -83,7 +83,7 @@ class ManagePresenter extends AAdminPresenter {
                     </div>
                 </div>';
 
-        $this->ajaxSendResponse(['widget' => $widget]);
+        return ['widget' => $widget];
     }
 }
 

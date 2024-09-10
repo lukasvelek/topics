@@ -91,7 +91,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {
