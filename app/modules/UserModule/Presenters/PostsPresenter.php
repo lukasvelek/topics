@@ -6,7 +6,6 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
-use App\Core\Datetypes\DateTime;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -15,10 +14,8 @@ use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
-use App\UI\FormBuilder\Button;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\FormBuilder\SubmitButton;
 use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 use Exception;
@@ -31,7 +28,7 @@ class PostsPresenter extends AUserPresenter {
     public function handleProfile() {
         global $app;
 
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
 
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
@@ -43,7 +40,7 @@ class PostsPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('post', $post);
         
-        $postTitle = $bwh->checkText($post->getTitle());
+        $postTitle = $bwh->checkText($post->getTitle(), $post->getTopicId());
         $this->saveToPresenterCache('postTitle', $postTitle);
 
         $arb = new AjaxRequestBuilder();
@@ -120,7 +117,7 @@ class PostsPresenter extends AUserPresenter {
         $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topicTitle . '</a>';
         $this->saveToPresenterCache('topic', $topicLink);
 
-        $postDescription = $bwh->checkText($post->getText());
+        $postDescription = $bwh->checkText($post->getText(), $post->getTopicId());
         $this->saveToPresenterCache('postDescription', $postDescription);
 
         // post data
@@ -434,7 +431,7 @@ class PostsPresenter extends AUserPresenter {
             return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
         }
 
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
 
         foreach($comments as $comment) {
             $code[] = $this->createPostComment($postId, $comment, $likedComments, $bwh, $childrenComments);
@@ -490,7 +487,7 @@ class PostsPresenter extends AUserPresenter {
             $deleteLink = ' | <a class="post-comment-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
-        $text = $bwh->checkText($comment->getText());
+        $text = $bwh->checkText($comment->getText(), $post->getTopicId());
 
         $matches = [];
         preg_match_all("/[@]\w*/m", $text, $matches);
