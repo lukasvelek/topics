@@ -15,6 +15,7 @@ use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
+use App\Managers\ReportManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserFollowingManager;
@@ -110,6 +111,7 @@ class Application {
     public UserRegistrationManager $userRegistrationManager;
     public UserManager $userManager;
     public EntityManager $entityManager;
+    public ReportManager $reportManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -178,6 +180,7 @@ class Application {
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository, $this->entityManager);
         $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
+        $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

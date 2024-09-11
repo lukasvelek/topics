@@ -23,7 +23,7 @@ class ReportRepository extends ARepository {
             ->values([$reportId, $userId, $entityId, $entityType, $category, $description])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function createTopicReport(string $userId, string $topicId, int $category, string $description) {
@@ -245,6 +245,28 @@ class ReportRepository extends ARepository {
         }
 
         return $users;
+    }
+
+    public function getUserReportsForUser(string $userId, bool $activeOnly = true) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('entityType = ?', [ReportEntityType::USER])
+            ->andWhere('entityId = ?', [$userId]);
+
+        if($activeOnly) {
+            $qb->andWhere('status = ?', [ReportStatus::OPEN]);
+        }
+
+        $qb->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = ReportEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
     }
 }
 

@@ -305,6 +305,10 @@ class TopicManager extends AManager {
             throw $e;
         }
     }
+
+    public function getTopicOwner(string $topicId) {
+        return $this->tmm->getTopicOwnerId($topicId);
+    }
 }
 
 ?>

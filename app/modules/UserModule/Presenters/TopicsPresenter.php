@@ -74,9 +74,35 @@ class TopicsPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topic', $topic);
 
         $topicName = $bwh->checkText($topic->getTitle());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                $topicOwnerId = $app->topicManager->getTopicOwner($topic->getId());
+
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $topicOwnerId);
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('topicName', $topicName);
 
         $topicDescription = $bwh->checkText($topic->getDescription(), $topicId);
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                $topicOwnerId = $app->topicManager->getTopicOwner($topic->getId());
+
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $topicOwnerId);
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('topicDescription', $topicDescription);
 
         // posts
@@ -434,6 +460,16 @@ class TopicsPresenter extends AUserPresenter {
             }
     
             $title = $bwh->checkText($post->getTitle(), $topicId);
+
+            if(!empty($bwh->getBannedWordsUsed())) {
+                try {
+                    foreach($bwh->getBannedWordsUsed() as $word) {
+                        $app->reportManager->reportUserForUsingBannedWord($word, $author->getId());
+                    }
+                } catch(AException) {}
+
+                $bwh->cleanBannedWordsUsed();
+            }
     
             $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';
 
@@ -441,6 +477,16 @@ class TopicsPresenter extends AUserPresenter {
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100), $topicId);
+
+            if(!empty($bwh->getBannedWordsUsed())) {
+                try {
+                    foreach($bwh->getBannedWordsUsed() as $word) {
+                        $app->reportManager->reportUserForUsingBannedWord($word, $author->getId());
+                    }
+                } catch(AException) {}
+
+                $bwh->cleanBannedWordsUsed();
+            }
     
             [$tagColor, $tagBgColor] = PostTags::getColorByKey($post->getTag());
 

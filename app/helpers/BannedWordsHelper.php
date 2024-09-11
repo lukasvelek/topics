@@ -10,12 +10,14 @@ class BannedWordsHelper {
     private ?TopicContentRegulationRepository $tcrr;
     private array $bannedWordsList;
     private bool $isListFilled;
+    private array $bannedWordsUsed;
 
     public function __construct(ContentRegulationRepository $crr, ?TopicContentRegulationRepository $tcrr = null) {
         $this->crr = $crr;
         $this->tcrr = $tcrr;
         $this->bannedWordsList = [];
         $this->isListFilled = false;
+        $this->bannedWordsUsed = [];
     }
 
     public function checkText(string $text, ?string $topicId = null) {
@@ -36,6 +38,7 @@ class BannedWordsHelper {
         $pattern = '/\b(' . implode('|', $escapedWords) . ')\b/i';
 
         $callback = function($matches) {
+            $this->bannedWordsUsed[] = $matches[0];
             return str_repeat('*', strlen($matches[0]));
         };
 
@@ -64,6 +67,14 @@ class BannedWordsHelper {
         }
 
         return $tmp;
+    }
+
+    public function getBannedWordsUsed() {
+        return $this->bannedWordsUsed;
+    }
+
+    public function cleanBannedWordsUsed() {
+        $this->bannedWordsUsed = [];
     }
 }
 

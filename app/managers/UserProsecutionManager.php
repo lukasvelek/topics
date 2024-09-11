@@ -172,10 +172,6 @@ class UserProsecutionManager extends AManager {
 
         return true;
     }
-
-    private function calculateDaysToSeconds(int $days) {
-        return (60 * 60 * 24 * $days);
-    }
 }
 
 ?>

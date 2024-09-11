@@ -7,6 +7,7 @@ use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Exceptions\EntityUpdateException;
 use App\Exceptions\GeneralException;
+use App\Exceptions\NonExistingEntityException;
 use App\Logger\Logger;
 use App\Repositories\GroupRepository;
 use App\Repositories\UserRepository;
@@ -31,11 +32,23 @@ class UserManager extends AManager {
     }
 
     public function getUserByUsername(string $username) {
-        return $this->userRepository->getUserByUsername($username);
+        $user = $this->userRepository->getUserByUsername($username);
+
+        if($user === null) {
+            throw new NonExistingEntityException('User with username \'' . $username . '\' does not exist.');
+        }
+
+        return $user;
     }
 
     public function getUserById(string $userId) {
-        return $this->userRepository->getUserById($userId);
+        $user = $this->userRepository->getUserById($userId);
+
+        if($user === null) {
+            throw new NonExistingEntityException('User with ID \'' . $userId . '\' does not exist.');
+        }
+
+        return $user;
     }
 
     public function createNewForgottenPassword(string $userId) {

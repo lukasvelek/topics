@@ -41,6 +41,17 @@ class PostsPresenter extends AUserPresenter {
         $this->saveToPresenterCache('post', $post);
         
         $postTitle = $bwh->checkText($post->getTitle(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $post->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('postTitle', $postTitle);
 
         $arb = new AjaxRequestBuilder();
@@ -114,10 +125,33 @@ class PostsPresenter extends AUserPresenter {
 
         $topicTitle = $bwh->checkText($topic->getTitle());
 
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                $topicOwnerId = $app->topicManager->getTopicOwner($topic->getId());
+
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $topicOwnerId);
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topicTitle . '</a>';
         $this->saveToPresenterCache('topic', $topicLink);
 
         $postDescription = $bwh->checkText($post->getText(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $post->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('postDescription', $postDescription);
 
         // post data
@@ -488,6 +522,16 @@ class PostsPresenter extends AUserPresenter {
         }
 
         $text = $bwh->checkText($comment->getText(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $app->reportManager->reportUserForUsingBannedWord($word, $comment->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
 
         $matches = [];
         preg_match_all("/[@]\w*/m", $text, $matches);
