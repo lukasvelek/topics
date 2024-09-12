@@ -615,7 +615,8 @@ class DatabaseInstaller {
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
             'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
-            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php',
+            'UnlimitedGridExport' => 'UnlimitedGridExport.php'
         ];
 
         foreach($services as $title => $path) {
