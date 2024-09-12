@@ -6,20 +6,26 @@ use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
+use App\Exceptions\ServiceException;
 use App\Logger\Logger;
+use App\Managers\NotificationManager;
 use App\Repositories\GridExportRepository;
 use App\UI\GridBuilder\GridExporter;
+use App\UI\LinkBuilder;
 use Exception;
 
 class UnlimitedGridExportService extends AService {
     private array $cfg;
     private GridExportRepository $ger;
+    private NotificationManager $nm;
 
-    public function __construct(Logger $logger, ServiceManager $serviceManager, array $cfg, GridExportRepository $ger) {
+    public function __construct(Logger $logger, ServiceManager $serviceManager, array $cfg, GridExportRepository $ger, NotificationManager $nm) {
         parent::__construct('UnlimitedGridExport', $logger, $serviceManager);
 
         $this->cfg = $cfg;
         $this->ger = $ger;
+        $this->nm = $nm;
     }
 
     public function run() {
@@ -39,13 +45,27 @@ class UnlimitedGridExportService extends AService {
         $hashes = $this->getAllExportHashes();
         
         foreach($hashes as $hash) {
-            $ge = new GridExporter($this->logger, $hash, $this->cfg, $this->serviceManager);
-            $ge->setExportAll();
-            $result = $ge->export();
+            try {
+                $this->logInfo('Starting export \'' . $hash . '\'.');
+                $this->ger->beginTransaction();
 
-            if($result !== null) {
-                $result = str_replace('\\', '\\\\', $result);
-                $this->updateGridExportEntry($hash, $result);
+                $ge = new GridExporter($this->logger, $hash, $this->cfg, $this->serviceManager);
+                $ge->setExportAll();
+                $result = $ge->export();
+
+                if($result !== null) {
+                    $result = str_replace('\\', '\\\\', $result);
+                    $this->updateGridExportEntry($hash, $result);
+                    $this->notifyUser($hash, $result);
+                }
+
+                $this->ger->commit(null, __METHOD__);
+            } catch(AException $e) {
+                $this->ger->rollback();
+
+                $this->logError('Could not export \'' . $hash . '\'. Reason: ' . $e->getMessage());
+
+                continue;
             }
         }
     }
@@ -62,7 +82,23 @@ class UnlimitedGridExportService extends AService {
             'dateFinished' => DateTime::now()
         ];
 
-        $this->ger->updateExportByHash($hash, $data);
+        return $this->ger->updateExportByHash($hash, $data);
+    }
+
+    private function notifyUser(string $hash, string $filename) {
+        $export = $this->ger->getExportByHash($hash);
+        if($export === null) {
+            throw new ServiceException('No export with hash \'' . $hash . '\' exists.');
+        }
+        $userId = $export->getUserId();
+
+        $link = new LinkBuilder();
+        $link->setHref($this->cfg['APP_URL_BASE']. '/' . $filename)
+            ->setClass('post-data-link')
+            ->setText('here')
+        ;
+
+        $this->nm->createNewUnlimitedGridExportNotification($userId, $link->render());
     }
 }
 

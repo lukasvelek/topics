@@ -91,6 +91,17 @@ class GridExportRepository extends ARepository {
 
         return $hashes;
     }
+
+    public function getExportByHash(string $hash) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('grid_exports')
+            ->where('hash = ?', [$hash])
+            ->execute();
+
+        return GridExportEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>

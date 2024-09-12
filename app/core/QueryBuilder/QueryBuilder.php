@@ -3,7 +3,6 @@
 namespace QueryBuilder;
 
 use App\Exceptions\AException;
-use App\Exceptions\DatabaseConnectionException;
 use App\Exceptions\DatabaseExecutionException;
 use Exception;
 
