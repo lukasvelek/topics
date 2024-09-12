@@ -21,7 +21,7 @@ class PostRepository extends ARepository {
         $qb ->select(['*'])
             ->from('posts')
             ->where('topicId = ?', [$topicId])
-            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC');
 
         if($deletedOnly) {
@@ -46,7 +46,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
-            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
             ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
@@ -72,7 +72,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where($qb->getColumnInValues('topicId', $topicIds))
             ->andWhere('isDeleted = 0')
-            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
             ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC');
@@ -210,7 +210,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('isDeleted = 0')
-            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
             ->execute();
 
         $posts = [];
@@ -453,7 +453,7 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('topicId = ?', [$topicId])
             ->andWhere('authorId = ?', [$userId])
-            ->andWhere('dateAvailable < ?', [DateTime::now()])
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
             ->orderBy('dateCreated', 'DESC')
             ->limit(1)
             ->execute();
