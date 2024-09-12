@@ -3,7 +3,6 @@
 namespace App\UI\GridBuilder;
 
 use App\Logger\Logger;
-use App\UI\LinkBuilder;
 use Exception;
 
 /**
@@ -269,7 +268,7 @@ class GridBuilder {
                 $entityRows[] = $entityRow;
             }
         } else {
-            if(empty($this->dataSourceArray)) {
+            if(empty($this->dataSourceArray) && is_callable($this->dataSourceCallback)) {
                 $this->dataSourceArray = call_user_func($this->dataSourceCallback);
             }
 
