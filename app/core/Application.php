@@ -49,6 +49,7 @@ use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
 use App\UI\GridBuilder\DefaultGridReducer;
+use ReflectionClass;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -141,32 +142,8 @@ class Application {
             throw $e;
         }
         $this->logger->info('Database connection established', __METHOD__);
-        
-        $this->userRepository = new UserRepository($this->db, $this->logger);
-        $this->topicRepository = new TopicRepository($this->db, $this->logger);
-        $this->postRepository = new PostRepository($this->db, $this->logger);
-        $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
-        $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
-        $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
-        $this->reportRepository = new ReportRepository($this->db, $this->logger);
-        $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
-        $this->groupRepository = new GroupRepository($this->db, $this->logger);
-        $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
-        $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
-        $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
-        $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
-        $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
-        $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
-        $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
-        $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
-        $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
-        $this->mailRepository = new MailRepository($this->db, $this->logger);
-        $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
-        $this->contentRepository = new ContentRepository($this->db, $this->logger);
-        $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
-        $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
-        $this->topicCalendarEventRepository = new TopicCalendarEventRepository($this->db, $this->logger);
-        $this->topicContentRegulationRepository = new TopicContentRegulationRepository($this->db, $this->logger);
+
+        $this->initRepositories();
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -195,6 +172,26 @@ class Application {
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
             $this->db->installDb();
+        }
+    }
+
+    /**
+     * Initializes *Repository classes
+     */
+    private function initRepositories() {
+        $rc = new ReflectionClass($this);
+
+        $rpa = $rc->getProperties();
+
+        foreach($rpa as $rp) {
+            $rt = $rp->getType();
+
+            if(str_contains($rt, 'Repository')) {
+                $name = $rp->getName();
+                $className = (string)$rt;
+
+                $this->$name = new $className($this->db, $this->logger);
+            }
         }
     }
 
