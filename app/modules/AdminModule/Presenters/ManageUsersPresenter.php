@@ -15,6 +15,7 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder\DefaultGridReducer;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -55,10 +56,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         $gb->addDataSource($users);
         $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
             if($entity->isAdmin()) {
-                $cell->setValue('Yes');
+                $cell->setValue('&check;');
                 $cell->setTextColor('green');
             } else {
-                $cell->setValue('No');
+                $cell->setValue('&times;');
                 $cell->setTextColor('red');
             }
 
@@ -66,10 +67,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
         $gb->addOnColumnRender('canLogin', function(Cell $cell, UserEntity $entity) {
             if($entity->canLogin()) {
-                $cell->setValue('Yes');
+                $cell->setValue('&check;');
                 $cell->setTextColor('green');
             } else {
-                $cell->setValue('No');
+                $cell->setValue('&times;');
                 $cell->setTextColor('red');
             }
 
@@ -90,6 +91,9 @@ class ManageUsersPresenter extends AAdminPresenter {
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
+
+        $gr = $app->getGridReducer();
+        $gr->applyReducer($gb);
 
         return ['grid' => $gb->build()];
     }
