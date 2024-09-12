@@ -93,7 +93,6 @@ class UserManager extends AManager {
     }
 
     private function createNewForgottenPasswordRequestId() {
-        //return HashManager::createEntityId();
         return $this->createId(EntityManager::FORGOTTEN_PASSWORD);
     }
 
@@ -114,11 +113,10 @@ class UserManager extends AManager {
     public function processForgottenPasswordRequestPasswordChange(string $linkId, string $hashedPassword) {
         // update password
         // activate user
-        // deactive link
         
         $request = $this->userRepository->getForgottenPasswordRequestById($linkId);
         $userId = $request['userId'];
-
+        
         $data = [
             'password' => $hashedPassword,
             'canLogin' => '1'
@@ -126,7 +124,8 @@ class UserManager extends AManager {
         if(!$this->userRepository->updateUser($userId, $data)) {
             throw new EntityUpdateException('Could not update user #' . $userId . ' with data [' . implode(', ', $data) . '].');
         }
-
+        
+        // deactive link
         $rdata = [
             'isActive' => '0'
         ];
