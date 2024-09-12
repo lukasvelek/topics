@@ -304,6 +304,14 @@ class DatabaseInstaller {
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
+            'grid_unlimited_exports' => [
+                'exportId' => 'VARCHAR(256) NOT NULL PRIAMRY KEY',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'sqlString' => 'TEXT NOT NULL',
+                'status' => 'INT(4) NOT NULL DEFAULT 1',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
+                'dateFinished' => 'DATETIME NULL'
+            ]
         ];
 
         $i = 0;
