@@ -39,4 +39,6 @@ $cfg['APP_URL_BASE'] = ''; // base URL of application - e.g. "topics.com" or "lo
 
 $cfg['MAX_TOPIC_POST_PINS'] = 5; // maximum of topic post pins
 
+$cfg['MAX_GRID_EXPORT_SIZE'] = 100; // grid row count for export, must be greater than GRID_SIZE
+
 ?>
