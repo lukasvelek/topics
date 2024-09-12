@@ -14,14 +14,12 @@ use Exception;
 class UnlimitedGridExportService extends AService {
     private array $cfg;
     private GridExportRepository $ger;
-    private CacheManager $cache;
 
     public function __construct(Logger $logger, ServiceManager $serviceManager, array $cfg, GridExportRepository $ger) {
         parent::__construct('UnlimitedGridExport', $logger, $serviceManager);
 
         $this->cfg = $cfg;
         $this->ger = $ger;
-        $this->cache = new CacheManager($logger);
     }
 
     public function run() {
