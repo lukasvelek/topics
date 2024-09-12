@@ -38,7 +38,9 @@ class BannedWordsHelper {
         $pattern = '/\b(' . implode('|', $escapedWords) . ')\b/i';
 
         $callback = function($matches) {
-            $this->bannedWordsUsed[] = $matches[0];
+            if(!empty($matches[0])) {
+                $this->bannedWordsUsed[] = $matches[0];
+            }
             return str_repeat('*', strlen($matches[0]));
         };
 

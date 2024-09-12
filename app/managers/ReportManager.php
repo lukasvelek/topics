@@ -22,7 +22,7 @@ class ReportManager extends AManager {
     public function reportUserForUsingBannedWord(string $bannedWord, string $userId) {
         try {
             if($this->isUserAlreadyReported($userId)) {
-                throw new GeneralException('User already reported.');
+                throw new GeneralException('User already reported.', null, false);
             }
 
             $systemUserId = $this->getSystemUserId();
