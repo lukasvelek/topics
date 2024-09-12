@@ -41,8 +41,6 @@ class UnlimitedGridExportService extends AService {
         $hashes = $this->getAllExportHashes();
         
         foreach($hashes as $hash) {
-            $data = $this->getExportDataFromCacheForHash($hash);
-
             $ge = new GridExporter($this->logger, $hash, $this->cfg, $this->serviceManager);
             $ge->setExportAll();
             $result = $ge->export();
@@ -58,10 +56,6 @@ class UnlimitedGridExportService extends AService {
         $maxCount = $this->cfg['MAX_GRID_EXPORT_SIZE'];
 
         return $this->ger->getWaitingUnlimitedExports($maxCount);
-    }
-
-    private function getExportDataFromCacheForHash(string $hash) {
-        return $this->cache->loadCache($hash, function() { return []; }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__);
     }
 
     private function updateGridExportEntry(string $hash, string $filename) {
