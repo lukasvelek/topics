@@ -20,6 +20,7 @@
 5. Logging
 6. Caching
 7. Asynchronous server requests (AJAX)
+8. Application life cycle
 
 ## 1 Different sections of the application
 The application has different sections of code. All the important code is located in the `app/` directory.
@@ -136,7 +137,62 @@ An important class is also `LinkBuilder` that is used to create a `<a>` link in 
 ## 4 Background services
 
 ## 5 Logging
+Logging is handled by the `Logger` class. Log files are located in the root of the application in `logs/` directory.
+
+Logging has several levels and three namespaces.
+
+The three namespaces are:
+- Default (`log_`)
+- Service (`service_log_`)
+- SQL (`sql_log_`)
+
+The levels define what is allowed to be logged - information, warnings, errors, exceptions, services, SQLs.
+
+For each day in a month a new log file is created - no matter the namespace.
+
+`Logger` class also allows stopwatching the actions passed in the callback. E.g. it can measure how much time does a operation take.
 
 ## 6 Caching
+Caching is handled using the `CacheManager` class. Cache files are located in the root of the application in `cache/` directory.
+
+Cache is divided into separate sections - namespaces. All the namespaces are defined as contants in the `CacheManager` class.
+
+Cached data is loaded from the cache using `loadCache()` method. It requires the key of the element and the callback function that is used to obtain the result in case no value for the key exists. It also required the namespace. It may contain the name of the calling method and the expiration in form of an instance of `DateTime`.
+
+The cached data can expire and when it does it is invalidated and cached again.
+
+The cached data is saved in form of an serialized array. When loaded it gets unserialized and searches for the key passed. If the key does not exist, it adds the key with the result of the callback as an result to the array and finally saves it again.
+
+If no data loading from cache is needed and only saving is required, then `saveCache` method comes in hand. It will only save data and return true if the operation was successful or false if not.
 
 ## 7 Asynchronous server requests (AJAX)
+Asynchronous requests are handled using AJAX and in particular using the `jquery` JavaScript library.
+
+These requests are not written manually and instead the `AjaxRequestBuilder` class is used. It allows creating a JS code using PHP.
+
+To use `AjaxRequestBuilder` it's instance must be created. It requires these methods to be called:
+- `setURL()`
+    - Sets the URL of the PHP handler that will handle the request and return a JSON-encoded response
+    - An array of parameters is passed
+- `setMethod()`
+    - Sets the method of the request
+    - Most commonly `GET`
+- `setHeader()`
+    - Sets the request header parameters
+    - If dynamic values from the JS function attributes are needed to be passed the underscore symbol (`_`) is used - e.g. `_page`
+- `setFunctionName()`
+    - Sets the JS function name
+    - It is useful for calling the JS function
+- `setFunctionArguments()`
+    - Sets the JS function arguments
+    - These should start with underscore symbol (`_`)
+- `updateHtmlElement()`
+    - When the request is finished and a response is returned it will insert (or append) to the HTML element
+
+When the AJAX request is defined that it is passed to the template using `addScript()` method of `APresenter` abstract class.
+
+When the JS code is created an additional parameter is passed to the URL - `isAjax=1`. This indicates to the presenter and render engine that it will return a JSON-encoded string.
+
+An action in a presenter that handles AJAX request begins with `action` - e.g. `actionLoadData()`. It can obtain parameters passed from the URL query using `httpGet` method of `APresenter` abstract class.
+
+## 8 Application life cycle
