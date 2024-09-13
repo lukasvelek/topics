@@ -130,3 +130,13 @@ In contradiction to `Managers`, repositories do not check rights and thus should
 An important class is also `LinkBuilder` that is used to create a `<a>` link in PHP easily.
 
 ## 2 UI / Frontend
+
+## 3 Backend
+
+## 4 Background services
+
+## 5 Logging
+
+## 6 Caching
+
+## 7 Asynchronous server requests (AJAX)
