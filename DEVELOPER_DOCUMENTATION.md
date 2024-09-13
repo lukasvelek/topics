@@ -8,15 +8,15 @@
 6. Caching
 7. Asynchronous server requests (AJAX)
 
-## 1. Different sections of the application
+## 1 Different sections of the application
 The application has different sections of code. All the important code is located in the `app/` directory.
 
-### 1.1. Authenticators
+### 1.1 Authenticators
 Authenticators are located in `app/authenticators`. The only used authenticator is the `UserAuthenticator` that allows users to login and also to perform certain tasks, where authentication of the user is needed.
 
 The `UserAuthenticator` has several methods. E.g. `loginUser()` is used in the login form, when user tries to login. It checks if the username and password entered are correct and equal to information saved in the database. Documentation for other methods can be found in the class itself.
 
-### 1.2. Authorizators
+### 1.2 Authorizators
 Authorizators are located in `app/authorizators`. Their job is to check if user is authorized to perform or see certain things.
 
 Currently three different authorizators are used - `ActionAuthorizator`, `SidebarAuthorizator` and `VisibilityAuthorizator`. All these three authorizators extend an abstract `AAuthorizator` that contains common methods.
@@ -27,4 +27,42 @@ Currently three different authorizators are used - `ActionAuthorizator`, `Sideba
 
 `VisibilityAuthorizator` is responsible for checking if user is allowed to view deleted posts, topics and private topics.
 
-### 1.3. Components
+### 1.3 Components
+Components are in context of this application self-standing UI elements.
+
+There are currently three components - `Navbar`, `PostLister` and `Sidebar`.
+
+`Navbar` is used throughout the whole application and it is the upper bar with links leading to different sections.
+
+`PostLister` is used to display posts on the homepage.
+
+`Sidebar` is used similarly to `Navbar` but is displayed on the side and is only visible in the management section.
+
+### 1.4 Constants
+`Constants` section contains classes with constants.
+
+### 1.5 Core
+
+### 1.6 Entities
+
+### 1.7 Exceptions
+
+### 1.8 Helpers
+
+### 1.9 Managers
+
+### 1.10 Modules
+
+### 1.10.1 AdminModule
+
+### 1.10.2 AnonymModule
+
+### 1.10.3 ErrorModule
+
+### 1.10.4 UserModule
+
+### 1.11 Repositories
+
+### 1.12 Services
+
+### 1.13 UI
