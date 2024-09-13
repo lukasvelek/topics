@@ -135,6 +135,17 @@ An important class is also `LinkBuilder` that is used to create a `<a>` link in 
 ## 3 Backend
 
 ## 4 Background services
+Background services are classes that contain methods that perform time-taking operations.
+
+Each background service contains of two parts - the running section and the class section.
+
+The running section is located in the `services` directory in the root of the application and the class section is located in the `services` directory in the `app/` directory.
+
+The running section is the script that loads required classes and creates an instance of the class section. Each class section implements the `IRunnable` interface and thus contains the `run()` method that performs all the operations. And therefore the running sections calls this method on the instance of the class section.
+
+The class section is a class that contains all the methods required for the service to perform what it's intended to do. Every class section must extend the `AService` abstract class that implements the `IRenderable` interface.
+
+All background processes are run in independent thread and thus it cannot interfere with the main thread the application runs in.
 
 ## 5 Logging
 Logging is handled by the `Logger` class. Log files are located in the root of the application in `logs/` directory.
