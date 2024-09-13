@@ -1,6 +1,19 @@
 # Developer documentation for topics
 ## Content
 1. Different sections of the application
+    1. Authenticators
+    2. Authorizators
+    3. Components
+    4. Constants
+    5. Core
+    6. Entities
+    7. Exceptions
+    8. Helpers
+    9. Managers
+    10. Modules
+    11. Repositories
+    12. Services
+    13. UI
 2. UI / Frontend
 3. Backend
 4. Background services
@@ -102,7 +115,18 @@ E.g. In URL we have this: `?page=UserModule:Topics&action=profile&topicId=...` a
 `UserModule` is the most used UI section, because it contains everything that is visible to every user.
 
 ### 1.11 Repositories
+`Repositories` are classes that extend the abstract class `ARepository` and that allow working with data in the database.
+
+In most cases each repository operates on a single database table that's name is name of the repository. However sometimes a repository works with several database tables.
+
+In contradiction to `Managers`, repositories do not check rights and thus should not be used without checking for user rights (where necessary).
 
 ### 1.12 Services
+`Services` are classes that are used to be run in background and to perform certain set of operations.
 
 ### 1.13 UI
+`UI` section contains UI components that are used within the application. E.g. `GridBuilder` that allows creating tables (or in context of this application - grids). There is also `FormBuilder` that allows creating forms.
+
+An important class is also `LinkBuilder` that is used to create a `<a>` link in PHP easily.
+
+## 2 UI / Frontend
