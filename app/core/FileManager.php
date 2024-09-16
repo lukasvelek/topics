@@ -10,6 +10,12 @@ use App\Exceptions\FileDoesNotExistException;
  * @author Lukas Velek
  */
 class FileManager {
+    private FileLockManager $flm;
+
+    private function __construct() {
+        $this->flm = new FileLockManager();
+    }
+
     /**
      * Checks if file exists
      * 
@@ -32,7 +38,25 @@ class FileManager {
             throw new FileDoesNotExistException($filePath);
         }
 
-        return file_get_contents($filePath);
+        $obj = new self();
+
+        $locked = $obj->flm->lock($filePath);
+
+        if($locked) {
+            $handle = $obj->flm->getHandle($filePath);
+        
+            if($handle === null) {
+                return false;
+            }
+
+            $content = fread($handle, filesize($filePath));
+
+            $obj->flm->unlock($filePath);
+        } else {
+            $content = file_get_contents($filePath);
+        }
+
+        return $content;
     }
 
     /**
