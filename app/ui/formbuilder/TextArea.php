@@ -9,6 +9,10 @@ class TextArea extends AElement {
         $this->name = $name;
     }
 
+    public function setId(string $id) {
+        $this->id = $id;
+    }
+
     public function setRows(int $rows = 3) {
         $this->rows = $rows;
     }

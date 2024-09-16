@@ -2,9 +2,7 @@
 
 namespace App\Managers;
 
-use App\Constants\AdministratorGroups;
 use App\Core\Datetypes\DateTime;
-use App\Core\HashManager;
 use App\Exceptions\EntityUpdateException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;

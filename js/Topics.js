@@ -110,3 +110,41 @@ async function exportGrid(_dataId, _gridName) {
         }
     });
 }
+
+async function sendPostComment(_postId, _parentCommentId) {
+    let _tmp = "postCommentText";
+    if(_parentCommentId) {
+        _tmp = _tmp + "-" + _parentCommentId;
+    }
+    const _text = $("#" + _tmp).val();
+
+    await sleep(100);
+
+    $.get(
+        "?page=UserModule:Posts&action=asyncPostComment&isAjax=1&postId=" + _postId,
+        {
+            text: _text,
+            parentCommentId: _parentCommentId
+        }
+    )
+    .done(async function(data) {
+        try {
+            const obj = JSON.parse(data);
+            
+            const comment = obj.comment;
+
+            if(obj.parentComment) {
+                $("#post-comment-child-comments-" + _parentCommentId).prepend(comment);
+            } else {
+                $("#post-comments").prepend(comment + "<br>");
+            }
+
+            $("#" + _tmp).val("");
+            if(_parentCommentId) {
+                $("#post-comment-" + _parentCommentId + "-comment-form").html("");
+            }
+        } catch (error) {
+            alert("Could not load data");
+        }
+    });
+}

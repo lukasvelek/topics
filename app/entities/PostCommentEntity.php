@@ -75,7 +75,7 @@ class PostCommentEntity extends AEntity {
         }
 
         $row = self::createRow($row);
-        self::checkTypes($row, ['commentId' => 'string', 'postId' => 'string', 'authorId' => 'string', 'text' => 'string', 'dateCreated' => 'string', 'likes' => 'int', 'parentCommentId' => '?string', 'isDeleted' => 'bool', 'dateDeleted' => '?string']);
+        self::checkTypes($row, ['commentId' => 'string', 'postId' => 'string', 'authorId' => 'string', 'commentText' => 'string', 'dateCreated' => 'string', 'likes' => 'int', 'parentCommentId' => '?string', 'isDeleted' => 'bool', 'dateDeleted' => '?string']);
 
         return new self($row->commentId, $row->postId, $row->authorId, $row->commentText, $row->dateCreated, $row->likes, $row->parentCommentId, $row->isDeleted, $row->dateDeleted);
     }
