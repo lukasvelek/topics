@@ -1515,12 +1515,6 @@ class TopicsPresenter extends AUserPresenter {
             $topicId = $row['topicId'];
         }
 
-        $userChoices = $app->topicPollRepository->getPollResponses($pollId);
-
-        $cnt = count($userChoices);
-
-        $this->saveToPresenterCache('w1desc', 'Total responses: ' . $cnt);
-
         $backUrl = ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId];
 
         if($this->httpGet('backPage') !== null && $this->httpGet('backAction') !== null) {
@@ -1533,14 +1527,12 @@ class TopicsPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $this->addScript('createWidgets(\'' . $pollId . '\');');
+        $this->addScript('autoRefreshWidgets(\'' . $pollId . '\')');
     }
 
     public function renderPollAnalytics() {
-        $w1desc = $this->loadFromPresenterCache('w1desc');
         $links = $this->loadFromPresenterCache('links');
 
-        $this->template->widget1_description = $w1desc;
         $this->template->links = $links;
     }
 
@@ -1583,7 +1575,13 @@ class TopicsPresenter extends AUserPresenter {
             $colors[] = $chartColors[$i];
         }
 
-        return ['labels' => $labels, 'data' => $data, 'colors' => $colors];
+        $userChoices = $app->topicPollRepository->getPollResponses($pollId);
+
+        $cnt = 'Total responses: ' . count($userChoices);
+
+        $tmp = ['labels' => $labels, 'data' => $data, 'colors' => $colors, 'totalCount' => $cnt];
+
+        return $tmp;
     }
 
     public function handlePollCloseVoting() {
