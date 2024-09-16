@@ -122,7 +122,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $gb->addAction(function(SystemServiceEntity $sse) {
             $text = '-';
 
-            if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING) {
+            if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING && $sse->getTitle() != 'PostLikeEqualizer') {
                 $text = LinkBuilder::createSimpleLink('Run', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'run', 'serviceId' => $sse->getId()], 'grid-link');
             }
 
