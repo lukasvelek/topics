@@ -91,6 +91,16 @@ abstract class AAuthorizator {
     protected function isUserSuperAdministrator(string $userId) {
         return $this->isUserMemberOfGroup($userId, AdministratorGroups::G_SUPERADMINISTRATOR);
     }
+
+    /**
+     * Checks if user is a beta tester (member of Beta testers group)
+     * 
+     * @param string $userId User ID
+     * @return bool True if user is member or false if not
+     */
+    public function isUserBetaTester(string $userId) {
+        return $this->isUserMemberOfGroup($userId, AdministratorGroups::G_BETA_TESTER);
+    }
 }
 
 ?>
