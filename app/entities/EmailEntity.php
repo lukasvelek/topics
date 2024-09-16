@@ -2,8 +2,6 @@
 
 namespace App\Entities;
 
-use App\Exceptions\TypeException;
-
 class EmailEntity extends AEntity {
     private string $id;
     private string $recipient;
