@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
+use App\Core\ServiceManager;
 use App\Logger\Logger;
 
 /**
@@ -20,6 +21,7 @@ class GridExporter {
     private array $cfg;
     private bool $exportAll;
     private int $exportedEntries;
+    private ServiceManager $serviceManager;
 
     /**
      * Class constructor
@@ -28,17 +30,42 @@ class GridExporter {
      * @param string $hash Grid export hash
      * @param array $cfg Application configuration array
      */
-    public function __construct(?Logger $logger, string $hash, array $cfg) {
+    public function __construct(?Logger $logger, string $hash, array $cfg, ServiceManager $serviceManager) {
         $this->cache = new CacheManager($logger);
         $this->hash = $hash;
         $this->dataToSave = new ArrayList();
         $this->cfg = $cfg;
         $this->exportAll = false;
         $this->exportedEntries = 0;
+        $this->serviceManager = $serviceManager;
+    }
+
+    private function loadData() {
+        $data = $this->loadCache();
+
+        return $data;
     }
 
     public function setExportAll(bool $exportAll = true) {
         $this->exportAll = $exportAll;
+    }
+
+    public function getRowCount() {
+        $data = $this->loadData();
+
+        if(empty($data)) {
+            return 0;
+        }
+
+        if(isset($data['dataAll'])) {
+            return count($data['dataAll']);
+        } else {
+            return count($data['data']);   
+        }
+    }
+
+    public function exportAsync() {
+        return 'async';
     }
 
     /**
@@ -47,7 +74,7 @@ class GridExporter {
      * @return string|null Generated filename or null if not successful
      */
     public function export() {
-        $data = $this->loadCache();
+        $data = $this->loadData();
 
         if(empty($data)) {
             return null;

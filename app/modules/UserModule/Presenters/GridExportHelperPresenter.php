@@ -32,16 +32,28 @@ class GridExportHelperPresenter extends AUserPresenter {
             return ['empty' => '1'];
         }
 
-        $ge = new GridExporter($app->logger, $hash, $app->cfg);
+        $ge = new GridExporter($app->logger, $hash, $app->cfg, $app->serviceManager);
         $ge->setExportAll($exportAll);
-        $result = $ge->export();
+
+        $count = $ge->getRowCount();
+        if($count >= $app->cfg['MAX_GRID_EXPORT_SIZE'] && $exportAll) {
+            $result = $ge->exportAsync();
+        } else {
+            $result = $ge->export();
+        }
 
         if($result !== null) {
-            $updateData = [
-                'filename' => str_replace('\\', '\\\\', $result),
-                'entryCount' => $ge->getEntryCount(),
-                'dateFinished' => DateTime::now()
-            ];
+            if($result == 'async') {
+                $updateData = [
+                    'entryCount' => $count
+                ];
+            } else {
+                $updateData = [
+                    'filename' => str_replace('\\', '\\\\', $result),
+                    'entryCount' => $ge->getEntryCount(),
+                    'dateFinished' => DateTime::now()
+                ];
+            }
     
             try {
                 $app->gridExportRepository->beginTransaction();
@@ -58,6 +70,10 @@ class GridExportHelperPresenter extends AUserPresenter {
         if($result === null) {
             $data = [
                 'empty' => '1'
+            ];
+        } else if($result == 'async') {
+            $data = [
+                'empty' => 'async'
             ];
         } else {
             $data = [

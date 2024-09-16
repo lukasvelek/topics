@@ -61,7 +61,7 @@ class UserRepository extends ARepository {
             ->where('userId = ?', [$userId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getLoginHashForUserId(string $userId) {

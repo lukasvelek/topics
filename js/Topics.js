@@ -103,6 +103,8 @@ async function exportGrid(_dataId, _gridName) {
 
         if(obj.empty == "0") {
             window.open(obj.path, "_blank");
+        } else if(obj.empty == "async") {
+            alert("Export will be processed using background service.");
         } else {
             alert("Could not export data from table.");
         }

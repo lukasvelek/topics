@@ -16,6 +16,7 @@ class Notifications {
     public const TOPIC_DELETE = 11;
     public const TOPIC_ROLE_CHANGE = 12;
     public const NEW_USER_FOLLOWER = 13;
+    public const GRID_EXPORT_FINISHED = 14;
 
     public static function getTitleByKey(int $key) {
         return match($key) {
@@ -31,7 +32,8 @@ class Notifications {
             self::COMMENT_DELETE_DUE_TO_REPORT => 'Comment deleted due to being reported',
             self::TOPIC_DELETE_DUE_TO_REPORT => 'Topic deleted due to being reported',
             self::TOPIC_ROLE_CHANGE => 'Topic role changed',
-            self::NEW_USER_FOLLOWER => 'New follower'
+            self::NEW_USER_FOLLOWER => 'New follower',
+            self::GRID_EXPORT_FINISHED => 'Grid export finished'
         };
     }
 
@@ -49,7 +51,8 @@ class Notifications {
             self::POST_DELETE_DUE_TO_REPORT => 'Your post $POST_LINK$ has been reported and then deleted for reason: "$DELETE_REASON$" by user $USER_LINK$.',
             self::COMMENT_DELETE_DUE_TO_REPORT => 'Your comment on post $POST_LINK$ has been reported and then deleted for reason: "$DELETE_REASON$" by user $USER_LINK$.',
             self::TOPIC_ROLE_CHANGE => 'Your role in topic $TOPIC_LINK$ has changed from $OLD_ROLE$ to $NEW_ROLE$.',
-            self::NEW_USER_FOLLOWER => 'User $USER_LINK$ started following you.'
+            self::NEW_USER_FOLLOWER => 'User $USER_LINK$ started following you.',
+            self::GRID_EXPORT_FINISHED => 'Your grid export is finished. Download it $DOWNLOAD_LINK$.'
         };
     }
 }

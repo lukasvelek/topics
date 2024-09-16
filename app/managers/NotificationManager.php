@@ -21,6 +21,24 @@ class NotificationManager extends AManager {
         $this->nr = $nr;
     }
 
+    public function createNewUnlimitedGridExportNotification(string $userId, string $downloadLink) {
+        $type = Notifications::GRID_EXPORT_FINISHED;
+        $title = Notifications::getTitleByKey($type);
+
+        $id = $this->createId(EntityManager::NOTIFICATIONS);
+
+        //[$downloadLink] = $this->processURL($id, [$downloadLink]);
+
+        $message = $this->prepareMessage($type, ['$DOWNLOAD_LINK$' => $downloadLink]);
+
+        if(self::LOG) {
+            $params = ['userId' => $userId, 'type' => $type, 'title' => $title, 'message' => $message, '$DOWNLOAD_LINK$' => $downloadLink];
+            $this->logger->info('Creating notification with params: ' . var_export($params, true), __METHOD__);
+        }
+
+        $this->createNotification($id, $userId, $type, $title, $message);
+    }
+
     public function createNewCommentDeleteDueToReportNotification(string $userId, LinkBuilder $postLink, LinkBuilder $userLink, string $reason) {
         $type = Notifications::COMMENT_DELETE_DUE_TO_REPORT;
         $title = Notifications::getTitleByKey($type);

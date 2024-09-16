@@ -303,7 +303,7 @@ class DatabaseInstaller {
                 'word' => 'VARCHAR(256) NOT NULL',
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
-            ],
+            ]
         ];
 
         $i = 0;
@@ -537,7 +537,8 @@ class DatabaseInstaller {
             AdministratorGroups::toString(AdministratorGroups::G_SUPERADMINISTRATOR) => AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_SYSTEM_ADMINISTRATOR) => AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_USER_ADMINISTRATOR) => AdministratorGroups::G_USER_ADMINISTRATOR,
-            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_BETA_TESTER) => AdministratorGroups::G_BETA_TESTER
         ];
 
         $descriptions = [
@@ -546,7 +547,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUPERADMINISTRATOR => 'Administrator group that allows performing all operations without limit',
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR => 'Administrator group whose members manage system status',
             AdministratorGroups::G_USER_ADMINISTRATOR => 'Administrator group whose members manage users',
-            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content'
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content',
+            AdministratorGroups::G_BETA_TESTER => 'Group of beta testers'
         ];
 
         foreach($groups as $title => $id) {
@@ -582,7 +584,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
             AdministratorGroups::G_USER_ADMINISTRATOR,
-            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR,
+            AdministratorGroups::G_BETA_TESTER
         ];
 
         foreach($groups as $groupId) {
@@ -607,7 +610,8 @@ class DatabaseInstaller {
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
             'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
-            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php',
+            'UnlimitedGridExport' => 'UnlimitedGridExport.php'
         ];
 
         foreach($services as $title => $path) {

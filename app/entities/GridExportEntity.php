@@ -56,6 +56,9 @@ class GridExportEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) {
+            return null;
+        }
         return new self($row['exportId'], $row['userId'], $row['hash'], $row['filename'], $row['gridName'], $row['entryCount'], $row['dateCreated'], $row['dateFinished']);
     }
 }

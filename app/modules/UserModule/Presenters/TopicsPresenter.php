@@ -155,7 +155,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId()) && !$topic->isDeleted()) {
+        if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId(), $topic->getId()) && !$topic->isDeleted()) {
             $deleteLink = '<div class="col-md col-lg"><p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
         } else if($topic->isDeleted()) {
             $deleteLink = '<div class="col-md col-lg"><p class="post-data">Topic deleted</p></div>';
@@ -203,7 +203,7 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         $contentRegulationManagementLink = '';
-        if($app->actionAuthorizator->getManageContentRegulation($app->currentUser->getId(), $topicId)) {
+        if($app->actionAuthorizator->canManageContentRegulation($app->currentUser->getId(), $topicId)) {
             $contentRegulationManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
