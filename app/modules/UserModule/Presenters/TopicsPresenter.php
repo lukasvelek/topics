@@ -1287,7 +1287,7 @@ class TopicsPresenter extends AUserPresenter {
                     throw new GeneralException('Topic titles do not match.');
                 }
 
-                $app->userAuth->authUser($fr->getHashedPassword('userPassword'));
+                $app->userAuth->authUser($fr->userPassword);
 
                 $topicLink = TopicEntity::createTopicProfileLink($topic, true);
                 $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
@@ -1321,6 +1321,11 @@ class TopicsPresenter extends AUserPresenter {
             ;
 
             $this->saveToPresenterCache('form', $fb);
+
+            $topic = $app->topicRepository->getTopicById($topicId);
+            $topicTitle = ($topic !== null) ? $topic->getTitle() : '';
+
+            $this->saveToPresenterCache('topic_title', $topicTitle);
         }
     }
 
@@ -1328,6 +1333,7 @@ class TopicsPresenter extends AUserPresenter {
         $form = $this->loadFromPresenterCache('form');
 
         $this->template->form = $form;
+        $this->template->topic_title = $this->loadFromPresenterCache('topic_title');
     }
 
     public function handleNewPollForm() {
