@@ -9,8 +9,16 @@ abstract class AEntity implements ICreatableFromRow {
         return ValueHelper::isValueInteger($value);
     }
 
+    protected function checkIntOrNull(mixed $value) {
+        return ValueHelper::isValueInteger($value) || ValueHelper::isValueNull($value);
+    }
+
     protected function checkString(mixed $value) {
         return ValueHelper::isValueString($value);
+    }
+
+    protected function checkStringOrNull(mixed $value) {
+        return ValueHelper::isValueString($value) || ValueHelper::isValueNull($value);
     }
 
     protected function checkBool(mixed $value) {
@@ -19,6 +27,10 @@ abstract class AEntity implements ICreatableFromRow {
 
     protected function checkDouble(mixed $value) {
         return ValueHelper::isValueDouble($value);
+    }
+
+    protected function checkDoubleOrNull(mixed $value) {
+        return ValueHelper::isValueDouble($value) || ValueHelper::isValueNull($value);
     }
 }
 
