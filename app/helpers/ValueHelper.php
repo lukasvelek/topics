@@ -55,7 +55,7 @@ class ValueHelper {
                 break;
 
             case self::TYPE_BOOL:
-                if(is_bool($value)) {
+                if(is_bool($value) || (self::internalCheckValue($value, self::TYPE_INT))) {
                     return true;
                 }
                 break;

@@ -111,11 +111,11 @@ class PostEntity extends AEntity {
         }
 
         $row = self::createRow($row);
-        self::checkTypes($row, ['postId' => 'string', 'topicId' => 'string', 'authorId' => 'string', 'title' => 'string', 'text' => 'string', 'dateCreated' => 'string',
+        self::checkTypes($row, ['postId' => 'string', 'topicId' => 'string', 'authorId' => 'string', 'title' => 'string', 'description' => 'string', 'dateCreated' => 'string',
                                 'likes' => 'int', 'isDeleted' => 'bool', 'dateDeleted' => '?string', 'tag' => 'string', 'dateAvailable' => 'string', 'isSuggestable' => 'bool',
                                 'isScheduled' => 'bool']);
 
-        return new self($row->postId, $row->topicId, $row->authorId, $row->title, $row->text, $row->dateCreated, $row->likes, $row->isDeleted, $row->dateDeleted, $row->tag, $row->dateAvailable, $row->isSuggestable, $row->isScheduled);
+        return new self($row->postId, $row->topicId, $row->authorId, $row->title, $row->description, $row->dateCreated, $row->likes, $row->isDeleted, $row->dateDeleted, $row->tag, $row->dateAvailable, $row->isSuggestable, $row->isScheduled);
     }
 }
 
