@@ -83,7 +83,11 @@ class UserEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['userId'], $row['username'], $row['email'], $row['dateCreated'], $row['isAdmin'], $row['canLogin']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['userId' => 'string', 'username' => 'string', 'email' => '?string', 'dateCreated' => 'string', 'isAdmin' => 'bool', 'canLogin' => 'bool']);
+
+        return new self($row->userId, $row->username, $row->email, $row->dateCreated, $row->isAdmin, $row->canLogin);
     }
 
     public static function createUserProfileLink(UserEntity $user, bool $object = false, string $linkClassName = 'post-data-link') {

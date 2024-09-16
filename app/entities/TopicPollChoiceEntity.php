@@ -41,7 +41,11 @@ class TopicPollChoiceEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['responseId'], $row['pollId'], $row['userId'], $row['choice'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['responseId' => 'string', 'pollId' => 'string', 'userId' => 'string', 'choice' => 'int', 'dateCreated' => 'string']);
+
+        return new self($row->responseId, $row->pollId, $row->userId, $row->choice, $row->dateCreated);
     }
 }
 

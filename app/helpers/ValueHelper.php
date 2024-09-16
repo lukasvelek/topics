@@ -8,6 +8,7 @@ class ValueHelper {
     private const TYPE_DOUBLE = 'double';
     private const TYPE_BOOL = 'bool';
     private const TYPE_NULL = 'null';
+    private const TYPE_ARRAY = 'array';
 
     public static function isValueInteger(mixed $value) {
         return self::internalCheckValue($value, self::TYPE_INT);
@@ -27,6 +28,10 @@ class ValueHelper {
 
     public static function isValueNull(mixed $value) {
         return self::internalCheckValue($value, self::TYPE_NULL);
+    }
+
+    public static function isValueArray(mixed $value) {
+        return self::internalCheckValue($value, self::TYPE_ARRAY);
     }
 
     private static function internalCheckValue(mixed $value, string $type) {
@@ -57,6 +62,12 @@ class ValueHelper {
             
             case self::TYPE_NULL:
                 if(is_null($value) && ($value === null)) {
+                    return true;
+                }
+                break;
+
+            case self::TYPE_ARRAY:
+                if(is_array($value)) {
                     return true;
                 }
                 break;

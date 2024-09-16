@@ -3,11 +3,11 @@
 namespace App\Entities;
 
 class GroupEntity extends AEntity {
-    private string $id;
+    private int $id;
     private string $title;
     private ?string $description;
 
-    public function __construct(string $id, string $title, string $description) {
+    public function __construct(int $id, string $title, string $description) {
         $this->id = $id;
         $this->title = $title;
         $this->description = $description;
@@ -29,7 +29,11 @@ class GroupEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['groupId'], $row['title'], $row['description']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['groupId' => 'int', 'title' => 'string', 'description' => '?string']);
+
+        return new self($row->groupId, $row->title, $row->description);
     }
 }
 

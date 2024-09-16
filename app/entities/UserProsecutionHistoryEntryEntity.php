@@ -41,7 +41,11 @@ class UserProsecutionHistoryEntryEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['historyId'], $row['prosecutionId'], $row['userId'], $row['commentText'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['historyid' => 'string', 'prosecutionId' => 'string', 'userId' => 'string', 'text' => 'commentText', 'dateCreated' => 'string']);
+
+        return new self($row->historyId, $row->prosecutionId, $row->userId, $row->commentText, $row->dateCreated);
     }
 }
 

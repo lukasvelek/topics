@@ -42,7 +42,10 @@ class TopicBannedWordEntity extends AEntity {
             return null;
         }
         
-        return new self($row['wordId'], $row['authorId'], $row['topicId'], $row['word'], $row['dateCreated']);
+        $row = self::createRow($row);
+        self::checkTypes($row, ['wordId' => 'string', 'authorId' => 'string', 'topicId' => '?string', 'text' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->wordId, $row->authorId, $row->topicId, $row->word, $row->dateCreated);
     }
 }
 

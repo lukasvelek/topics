@@ -47,7 +47,11 @@ class PostImageFileEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['uploadId'], $row['userId'], $row['postId'], $row['filename'], $row['filepath'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['uploadId' => 'string', 'userId' => 'string', 'postId' => 'string', 'filename' => 'string', 'filepath' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->uploadId, $row->userId, $row->postId, $row->filename, $row->filepath, $row->dateCreated);
     }
 }
 

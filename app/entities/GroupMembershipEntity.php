@@ -4,7 +4,7 @@ namespace App\Entities;
 
 class GroupMembershipEntity extends AEntity {
     private string $id;
-    private string $groupId;
+    private int $groupId;
     private string $userId;
     private string $dateCreated;
 
@@ -35,7 +35,11 @@ class GroupMembershipEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['membershipId'], $row['groupId'], $row['userId'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['membershipId' => 'string', 'groupId' => 'int', 'userId' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->membershipId, $row->groupId, $row->userId, $row->dateCreated);
     }
 }
 

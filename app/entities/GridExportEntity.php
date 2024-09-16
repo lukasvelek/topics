@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\Exceptions\TypeException;
+
 class GridExportEntity extends AEntity {
     private string $id;
     private string $userId;
@@ -59,7 +61,11 @@ class GridExportEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['exportId'], $row['userId'], $row['hash'], $row['filename'], $row['gridName'], $row['entryCount'], $row['dateCreated'], $row['dateFinished']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['exportId' => 'string', 'userId' => 'string', 'hash' => 'string', 'filename' => '?string', 'gridName' => 'string', 'entryCount' => 'int', 'dateCreated' => 'string', 'dateFinished' => '?string']);
+
+        return new self($row->exportId, $row->userId, $row->hash, $row->filename, $row->gridName, $row->entryCount, $row->dateCreated, $row->dateFinished);
     }
 }
 

@@ -73,8 +73,14 @@ class TopicEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        $tags = unserialize($row['tags']);
-        return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted'], $tags, $row['isPrivate'], $row['isVisible'], explode(',', $row['rawTags']));
+
+        $row = self::createRow($row);
+        $row->tags = unserialize($row->tags);
+        $row->rawTags = explode(',', $row->rawTags);
+        self::checkTypes($row, ['topicId' => 'string', 'title' => 'string', 'description' => 'string', 'dateCreated' => 'string', 'isDeleted' => 'bool', 'dateDeleted' => '?string', 'tags' => 'array', 'private' => 'bool',
+                                'visible' => 'bool', 'rawTags' => 'array']);
+
+        return new self($row->topicId, $row->title, $row->description, $row->dateCreated, $row->isDeleted, $row->dateDeleted, $row->tags, $row->isPrivate, $row->isVisible, $row->rawTags);
     }
 
     public static function createTopicProfileLink(TopicEntity $topic, bool $object = false, string $class = 'post-data-link') {

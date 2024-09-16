@@ -35,7 +35,11 @@ class TopicInviteEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['topicId'], $row['userId'], $row['dateCreated'], $row['dateValid']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['topicId' => 'string', 'userId' => 'string', 'dateCreated' => 'string', 'dateValid' => 'string']);
+
+        return new self($row->topicId, $row->userId, $row->dateCreated, $row->dateValid);
     }
 }
 

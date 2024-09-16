@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\Exceptions\TypeException;
+
 class BannedWordEntity extends AEntity {
     private string $id;
     private string $authorId;
@@ -36,7 +38,10 @@ class BannedWordEntity extends AEntity {
             return null;
         }
 
-        return new self($row['wordId'], $row['authorId'], $row['word'], $row['dateCreated']);
+        $row = self::createRow($row);
+        self::checkTypes($row, ['wordId' => 'string', 'authorId' => 'string', 'word' => 'string', 'dateCreated' => 'string']);
+        
+        return new self($row->wordId, $row->authorId, $row->word, $row->dateCreated);
     }
 }
 

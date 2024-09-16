@@ -35,7 +35,11 @@ class UserFollowEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['followId'], $row['authorId'], $row['userId'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['followId' => 'string', 'authorId' => 'string', 'userId' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->followId, $row->authorId, $row->userId, $row->dateCreated);
     }
 }
 

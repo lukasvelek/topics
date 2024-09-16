@@ -41,7 +41,11 @@ class SystemStatusEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['systemId'], $row['name'], $row['status'], $row['description'], $row['dateUpdated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['systemId' => 'string', 'name' => 'string', 'status' => 'int', 'description' => '?string', 'dateUpdated' => 'string']);
+
+        return new self($row->systemId, $row->name, $row->status, $row->description, $row->dateUpdated);
     }
 }
 

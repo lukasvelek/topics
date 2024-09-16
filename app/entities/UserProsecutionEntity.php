@@ -47,7 +47,11 @@ class UserProsecutionEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['prosecutionId'], $row['userId'], $row['type'], $row['reason'], $row['startDate'], $row['endDate']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['procesutionId' => 'string', 'userId' => 'string', 'type' => 'int', 'reason' => 'string', 'startDate' => '?string', 'endDate' => '?string']);
+
+        return new self($row->prosecutionId, $row->userId, $row->type, $row->reason, $row->startDate, $row->endDate);
     }
 }
 

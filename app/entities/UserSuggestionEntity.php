@@ -3,8 +3,8 @@
 namespace App\Entities;
 
 class UserSuggestionEntity extends AEntity {
-    private int $id;
-    private int $userId;
+    private string $id;
+    private string $userId;
     private string $title;
     private string $text;
     private string $category;
@@ -61,7 +61,11 @@ class UserSuggestionEntity extends AEntity {
         if($row === null) {
             return null;
         }
-        return new self($row['suggestionId'], $row['userId'], $row['title'], $row['description'], $row['category'], $row['status'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['suggestionId' => 'string', 'userId' => 'string', 'title' => 'string', 'description' => 'string', 'status' => 'int', 'dateCreated' => 'string']);
+
+        return new self($row->suggestionId, $row->userId, $row->title, $row->description, $row->category, $row->status, $row->dateCreated);
     }
 }
 

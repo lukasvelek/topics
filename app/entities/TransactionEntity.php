@@ -32,7 +32,14 @@ class TransactionEntity extends AEntity {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['transactionId'], $row['userId'], $row['methodName'], $row['dateCreated']);
+        if($row === null) {
+            return null;
+        }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['transactionId' => 'string', 'userId' => '?string', 'methodName' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->transactionId, $row->userId, $row->methodName, $row->dateCreated);
     }
 }
 

@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use App\Exceptions\TypeException;
+
 class EmailEntity extends AEntity {
     private string $id;
     private string $recipient;
@@ -38,7 +40,14 @@ class EmailEntity extends AEntity {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['mailId'], $row['recipient'], $row['title'], $row['content'], $row['dateCreated']);
+        if($row === null) {
+            return null;
+        }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['mailId' => 'string', 'recipient' => 'string', 'title' => 'string', 'content' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->mailId, $row->recipient, $row->title, $row->content, $row->dateCreated);
     }
 }
 
