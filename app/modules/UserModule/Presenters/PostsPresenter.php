@@ -94,22 +94,16 @@ class PostsPresenter extends AUserPresenter {
         $this->addScript($arb->build());
         
         // new comment form
-        $parentCommentId = $this->httpGet('parentCommentId');
         $fb = new FormBuilder();
 
-        $newCommentFormUrl = ['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId];
-
-        if($parentCommentId !== null) {
-            $newCommentFormUrl['parentCommentId'] = $parentCommentId;
-        }
-
-        $fb ->setAction($newCommentFormUrl)
+        $fb ->setAction([])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment', false, true)
+            ->addButton('Post comment', 'sendPostComment(\'' . $postId . '\')', 'formSubmit')
         ;
 
         $fb->updateElement('text', function(TextArea $ta) {
             $ta->setPlaceholder('Your comment...');
+            $ta->setId('postCommentText');
 
             return $ta;
         });
@@ -317,6 +311,54 @@ class PostsPresenter extends AUserPresenter {
         $this->template->post_images = $postImages;
     }
 
+    public function actionAsyncPostComment() {
+        global $app;
+
+        $postId = $this->httpGet('postId', true);
+        $text = $this->httpGet('text', true);
+        $parentCommentId = $this->httpGet('parentCommentId');
+        $authorId = $app->currentUser->getId();
+
+        $post = $app->postRepository->getPostById($postId);
+        $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+
+        $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
+
+        $success = false;
+
+        try {
+            $app->postCommentRepository->beginTransaction();
+
+            $commentId = $app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
+
+            $app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
+
+            if($post->getAuthorId() != $authorId) {
+                $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            }
+
+            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
+
+            $commentEntity = $app->postCommentRepository->getCommentById($commentId);
+
+            $success = true;
+        } catch (AException) {
+            $app->postCommentRepository->rollback();
+        }
+
+        if($success) {
+            $bwh = new BannedWordsHelper($app->contentRegulationRepository, $app->topicContentRegulationRepository);
+            $comment = $this->createPostComment($postId, $commentEntity, [], $bwh, [], ($parentCommentId === null));
+            $values = ['comment' => $comment];
+            if($parentCommentId !== null) {
+                $values['parentComment'] = true;
+            }
+            return $values;
+        } else {
+            return [];
+        }
+    }
+
     public function handleUploadImageForm() {
         $postId = $this->httpGet('postId');
 
@@ -350,7 +392,6 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
         $post = $app->postRepository->getPostById($postId);
 
-        
         try {
             $app->topicRepository->beginTransaction();
             
@@ -376,13 +417,14 @@ class PostsPresenter extends AUserPresenter {
 
         $fb = new FormBuilder();
 
-        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
+        $fb ->setAction([])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment')
+            ->addButton('Post comment', 'sendPostComment(\'' . $postId . '\', \'' . $parentCommentId . '\')', 'formSubmit')
         ;
 
-        $fb->updateElement('text', function(TextArea $ta) {
+        $fb->updateElement('text', function(TextArea $ta) use ($parentCommentId) {
             $ta->setPlaceholder('Your comment...');
+            $ta->setId('postCommentText-' . $parentCommentId);
 
             return $ta;
         });
@@ -585,7 +627,9 @@ class PostsPresenter extends AUserPresenter {
                         
                         <div class="col-md-2"></div>
                     </div>
+                    <div id="post-comment-child-comments-' . $comment->getId() . '">
                     ' . implode('', $childCommentsCode) .  '
+                    </div>
                     ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 </div>
             </div>
