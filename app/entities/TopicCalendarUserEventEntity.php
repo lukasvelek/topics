@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicCalendarUserEventEntity implements ICreatableFromRow {
+class TopicCalendarUserEventEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $topicId;

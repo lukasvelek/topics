@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class NotificationEntity implements ICreatableFromRow {
+class NotificationEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $title;

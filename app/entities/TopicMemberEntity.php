@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicMemberEntity implements ICreatableFromRow {
+class TopicMemberEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $topicId;

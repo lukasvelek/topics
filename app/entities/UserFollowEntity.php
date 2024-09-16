@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserFollowEntity implements ICreatableFromRow {
+class UserFollowEntity extends AEntity {
     private string $id;
     private string $authorId;
     private string $userId;

@@ -4,7 +4,7 @@ namespace App\Entities;
 
 use App\UI\LinkBuilder;
 
-class UserEntity implements ICreatableFromRow {
+class UserEntity extends AEntity {
     private string $id;
     private string $username;
     private ?string $email;

@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserProsecutionHistoryEntryEntity implements ICreatableFromRow {
+class UserProsecutionHistoryEntryEntity extends AEntity {
     private string $id;
     private string $prosecutionId;
     private string $userId;

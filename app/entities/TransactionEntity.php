@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TransactionEntity implements ICreatableFromRow {
+class TransactionEntity extends AEntity {
     private string $id;
     private ?string $userId;
     private string $method;

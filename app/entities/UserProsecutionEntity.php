@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserProsecutionEntity implements ICreatableFromRow {
+class UserProsecutionEntity extends AEntity {
     private string $id;
     private string $userId;
     private int $type;

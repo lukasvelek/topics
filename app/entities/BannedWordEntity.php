@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class BannedWordEntity implements ICreatableFromRow {
+class BannedWordEntity extends AEntity {
     private string $id;
     private string $authorId;
     private string $text;
@@ -35,7 +35,7 @@ class BannedWordEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        
+
         return new self($row['wordId'], $row['authorId'], $row['word'], $row['dateCreated']);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class SystemStatusEntity implements ICreatableFromRow {
+class SystemStatusEntity extends AEntity {
     private string $id;
     private string $name;
     private int $status;

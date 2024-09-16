@@ -4,7 +4,7 @@ namespace App\Entities;
 
 use App\UI\LinkBuilder;
 
-class TopicEntity implements ICreatableFromRow {
+class TopicEntity extends AEntity {
     private string $topicId;
     private string $title;
     private string $description;

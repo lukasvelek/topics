@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class GroupEntity implements ICreatableFromRow {
+class GroupEntity extends AEntity {
     private string $id;
     private string $title;
     private ?string $description;

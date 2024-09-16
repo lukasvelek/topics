@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class GridExportEntity implements ICreatableFromRow {
+class GridExportEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $hash;

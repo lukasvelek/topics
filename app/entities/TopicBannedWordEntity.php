@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicBannedWordEntity implements ICreatableFromRow {
+class TopicBannedWordEntity extends AEntity {
     private string $id;
     private string $authorId;
     private ?string $topicId;

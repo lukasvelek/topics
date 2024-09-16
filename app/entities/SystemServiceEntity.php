@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class SystemServiceEntity implements ICreatableFromRow {
+class SystemServiceEntity extends AEntity {
     private string $id;
     private string $title;
     private string $scriptPath;

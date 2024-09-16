@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class EmailEntity implements ICreatableFromRow {
+class EmailEntity extends AEntity {
     private string $id;
     private string $recipient;
     private string $title;

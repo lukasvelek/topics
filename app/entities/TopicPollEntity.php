@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicPollEntity implements ICreatableFromRow {
+class TopicPollEntity extends AEntity {
     private string $id;
     private string $title;
     private string $description;

@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class PostImageFileEntity implements ICreatableFromRow {
+class PostImageFileEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $postId;

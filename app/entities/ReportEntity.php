@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class ReportEntity implements ICreatableFromRow {
+class ReportEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $entityId;

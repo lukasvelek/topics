@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicRulesEntity implements ICreatableFromRow {
+class TopicRulesEntity extends AEntity {
     private string $rulesetId;
     private string $topicId;
     private array $rules;

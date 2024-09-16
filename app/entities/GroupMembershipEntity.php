@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class GroupMembershipEntity implements ICreatableFromRow {
+class GroupMembershipEntity extends AEntity {
     private string $id;
     private string $groupId;
     private string $userId;

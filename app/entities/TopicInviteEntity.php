@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicInviteEntity implements ICreatableFromRow {
+class TopicInviteEntity extends AEntity {
     private string $topicId;
     private string $userId;
     private string $dateCreated;

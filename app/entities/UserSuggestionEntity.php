@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserSuggestionEntity implements ICreatableFromRow {
+class UserSuggestionEntity extends AEntity {
     private int $id;
     private int $userId;
     private string $title;

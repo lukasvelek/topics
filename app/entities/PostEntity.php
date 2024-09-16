@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class PostEntity implements ICreatableFromRow {
+class PostEntity extends AEntity {
     private string $postId;
     private string $topicId;
     private string $authorId;
