@@ -2,13 +2,21 @@
 
 namespace App\Core\DB;
 
+/**
+ * Class representing a single row from database query
+ * 
+ * @author Lukas Velek
+ */
 class DatabaseRow {
     private array $values;
 
+    /**
+     * Class constructor
+     */
     public function __construct() {
         $this->values = [];
     }
-
+    
     public function __set(mixed $key, mixed $value) {
         $this->values[$key] = $value;
     }
