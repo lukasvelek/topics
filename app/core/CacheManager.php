@@ -45,6 +45,7 @@ class CacheManager {
      * Class constructor
      * 
      * @param Logger $logger Logger instance
+     * @deprecated
      */
     public function __construct(?Logger $logger = null) {
         $this->logger = $logger;
@@ -142,6 +143,7 @@ class CacheManager {
      * @param string $namespace Namespace name
      * @param string $method Calling method's name
      * @return mixed Result
+     * @deprecated
      */
     public function loadCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null, bool $canSave = true) {
         $file = $this->loadCachedFiles($namespace);
@@ -205,6 +207,7 @@ class CacheManager {
      * @param string $namespace Namespace name
      * @param string $method Calling method's name
      * @return bool True if successful or false if not
+     * @deprecated
      */
     public function saveCache(mixed $key, callable $callback, string $namespace = 'default', ?string $method = null, ?DateTime $expiration = null) {
         $file = $this->loadCachedFiles($namespace);
