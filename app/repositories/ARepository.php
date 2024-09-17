@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
 use App\Core\DatabaseConnection;
 use App\Exceptions\DatabaseExecutionException;
 use App\Exceptions\GeneralException;
@@ -16,13 +17,19 @@ abstract class ARepository {
     protected Logger $logger;
     protected CacheManager $cache;
     private TransactionLogRepository $tlr;
+    protected CacheFactory $cacheFactory;
 
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
         $this->cache = new CacheManager($logger);
+        $this->cacheFactory = new CacheFactory($logger->getCfg());
 
         $this->tlr = new TransactionLogRepository($this->conn, $this->logger);
+    }
+
+    public function __destruct() {
+        $this->cacheFactory->savePersistentCaches();
     }
 
     protected function qb(string $method = __METHOD__) {

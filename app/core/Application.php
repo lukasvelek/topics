@@ -132,7 +132,7 @@ class Application {
         
         $this->currentUser = null;
 
-        $this->moduleManager = new ModuleManager();
+        $this->moduleManager = new ModuleManager($this->cfg);
 
         $this->logger = new Logger($this->cfg);
         $this->logger->info('Logger initialized.', __METHOD__);

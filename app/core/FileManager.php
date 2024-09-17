@@ -165,6 +165,20 @@ class FileManager {
 
         return false;
     }
+
+    /**
+     * Deletes a file
+     * 
+     * @param string $filePath Path to the file
+     * @return bool True on success or false on failure
+     */
+    public static function deleteFile(string $filePath) {
+        if(self::fileExists($filePath)) {
+            return unlink($filePath);
+        }
+
+        return false;
+    }
 }
 
 ?>

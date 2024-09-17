@@ -4,6 +4,7 @@ namespace App\Modules;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\ActionDoesNotExistException;
@@ -37,6 +38,9 @@ abstract class APresenter extends AGUICore {
     private ArrayList $beforeRenderCallbacks;
     private ArrayList $afterRenderCallbacks;
 
+    protected array $cfg;
+    protected ?CacheFactory $cacheFactory;
+
     /**
      * The class constructor
      * 
@@ -62,6 +66,8 @@ abstract class APresenter extends AGUICore {
         $this->scripts = new ArrayList();
         $this->beforeRenderCallbacks = new ArrayList();
         $this->afterRenderCallbacks = new ArrayList();
+
+        $this->cacheFactory = null;
     }
 
     /**
@@ -400,6 +406,8 @@ abstract class APresenter extends AGUICore {
     private function beforeRender(string $moduleName, bool $isAjax) {
         global $app;
 
+        $this->cacheFactory = new CacheFactory($this->cfg);
+
         $ok = false;
         $templateContent = null;
 
@@ -483,6 +491,8 @@ abstract class APresenter extends AGUICore {
         if($this->template !== null) {
             $this->template->render();
         }
+
+        $this->cacheFactory->savePersistentCaches();
 
         $this->presenterCache->reset();
 
@@ -587,6 +597,15 @@ abstract class APresenter extends AGUICore {
      */
     public function isStatic() {
         return $this->isStatic;
+    }
+
+    /**
+     * Sets configuration
+     * 
+     * @param array $cfg
+     */
+    public function setCfg(array $cfg) {
+        $this->cfg = $cfg;
     }
 }
 

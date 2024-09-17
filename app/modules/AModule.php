@@ -22,6 +22,8 @@ abstract class AModule extends AGUICore {
     private array $cachedPages;
     private ?Logger $logger;
 
+    public array $cfg;
+
     /**
      * The class constructor
      * 
@@ -154,6 +156,7 @@ abstract class AModule extends AGUICore {
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
         $this->presenter->setLogger($this->logger);
+        $this->presenter->setCfg($this->cfg);
 
         /**
          * FLASH MESSAGES
@@ -195,6 +198,15 @@ abstract class AModule extends AGUICore {
      */
     public function getTitle() {
         return $this->title;
+    }
+
+    /**
+     * Sets configuration
+     * 
+     * @param array $cfg Configuration
+     */
+    public function setCfg(array $cfg) {
+        $this->cfg = $cfg;
     }
 }
 
