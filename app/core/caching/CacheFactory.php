@@ -6,6 +6,11 @@ use App\Core\Caching\Persistent\Cache;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 
+/**
+ * CacheFactory allows creating cache
+ * 
+ * @author Lukas Velek
+ */
 class CacheFactory {
     private const I_NS_DATA = '_data';
     private const I_NS_CACHE_EXPIRATION = '_cacheExpirationDate';
@@ -16,11 +21,50 @@ class CacheFactory {
     /** @var array<Cache> */
     private array $persistentCaches;
 
+    /** @var array<Memory\Cache> */
+    private array $memoryCaches;
+
+    /**
+     * Class constructor
+     * 
+     * @param array $cfg Cofiguration
+     */
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
         $this->persistentCaches = [];
+        $this->memoryCaches = [];
     }
 
+    /**
+     * Class destructor
+     */
+    public function __destruct() {
+        $this->savePersistentCaches();
+
+        $this->memoryCaches = [];
+        $this->persistentCaches = [];
+    }
+
+    /**
+     * Returns a new instance of memory cache
+     * 
+     * @param string $namespace
+     * @return Memory\Cache Memory cache
+     */
+    public function getMemoryCache(string $namespace) {
+        $cache = new Memory\Cache($namespace);
+        $this->memoryCaches[$cache->getHash()] = &$cache;
+        return $cache;
+    }
+
+    /**
+     * Returns a new instance of persistance cache
+     * 
+     * If persistent cache with given namespace already exists, the data is loaded and passed to the instance.
+     * 
+     * @param string $namespace Namespace
+     * @return Cache Persistent cache
+     */
     public function getPersistentCache(string $namespace) {
         $cacheData = $this->loadDataFromPersistentCache($namespace);
 
@@ -45,6 +89,12 @@ class CacheFactory {
         return $cache;
     }
 
+    /**
+     * Loads data from persistent cache
+     * 
+     * @param string $namespace Namespace
+     * @return mixed|null Loaded content or null
+     */
     private function loadDataFromPersistentCache(string $namespace) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
@@ -65,14 +115,30 @@ class CacheFactory {
         return $content;
     }
 
+    /**
+     * Loads file content
+     * 
+     * @param string $path Path
+     * @param string $filename Filename
+     * @return string|null File content or null if file does not exist
+     */
     private function loadFileContent(string $path, string $filename) {
         if(!FileManager::fileExists($path . $filename)) {
             return null;
         }
 
-        return FileManager::loadFile($path . $filename);
+        $content = FileManager::loadFile($path . $filename);
+
+        if($content === false) {
+            return null;
+        }
+
+        return $content;
     }
 
+    /**
+     * Saves persistent caches
+     */
     public function savePersistentCaches() {
         foreach($this->persistentCaches as $cache) {
             if($cache->isInvalidated()) {
@@ -89,6 +155,13 @@ class CacheFactory {
         }
     }
 
+    /**
+     * Save persistent cache to disk
+     * 
+     * @param string $namespace Namespace
+     * @param array $data Persistent cache data
+     * @return int|false Number of bytes written or false if error occured
+     */
     private function saveDataToPersistentCache(string $namespace, array $data) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
@@ -101,6 +174,12 @@ class CacheFactory {
         return FileManager::saveFile($path, $filename, serialize($data), true);
     }
 
+    /**
+     * Deletes persistent cache
+     * 
+     * @param string $namespace Namespace
+     * @return bool True on success or false on failure
+     */
     private function deletePersistentCache(string $namespace) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
 

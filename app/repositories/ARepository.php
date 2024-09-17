@@ -28,10 +28,6 @@ abstract class ARepository {
         $this->tlr = new TransactionLogRepository($this->conn, $this->logger);
     }
 
-    public function __destruct() {
-        $this->cacheFactory->savePersistentCaches();
-    }
-
     protected function qb(string $method = __METHOD__) {
         return new QueryBuilder($this->conn, $this->logger, $method);
     }
