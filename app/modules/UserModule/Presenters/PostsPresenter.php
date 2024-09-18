@@ -5,7 +5,6 @@ namespace App\Modules\UserModule;
 use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;

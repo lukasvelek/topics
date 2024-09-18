@@ -4,7 +4,6 @@ namespace App\Modules\AdminModule;
 
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;

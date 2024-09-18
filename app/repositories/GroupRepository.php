@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;

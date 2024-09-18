@@ -2,7 +2,6 @@
 
 namespace App\Modules\UserModule;
 
-use App\Core\CacheManager;
 use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;

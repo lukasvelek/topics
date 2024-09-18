@@ -3,7 +3,6 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
 use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;

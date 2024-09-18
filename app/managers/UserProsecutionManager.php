@@ -3,7 +3,7 @@
 namespace App\Managers;
 
 use App\Constants\UserProsecutionType;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
@@ -138,8 +138,8 @@ class UserProsecutionManager extends AManager {
         $this->commit($byUser->getId(), __METHOD__);
 
         if($invalidateCache) {
-            $cm = new CacheManager($this->userProsecutionRepository->getLogger());
-            $cm->invalidateCache('users');
+            $cache = $this->cacheFactory->getCache(CacheNames::USERS);
+            $cache->invalidate();
         }
     }
 

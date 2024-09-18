@@ -2,7 +2,7 @@
 
 namespace App\Managers;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserActionEntity;
@@ -89,18 +89,25 @@ class ContentManager extends AManager {
     }
 
     private function afterDelete(int $type, bool $deleteCache) {
-        $cm = new CacheManager($this->postRepository->getLogger());
-
         if($deleteCache) {
             switch($type) {
                 case self::T_POST:
-                    $cm->invalidateCache('posts');
-                    $cm->invalidateCache('pinnedPosts');
+                    $postsCache = $this->cacheFactory->getCache(CacheNames::POSTS);
+                    $postsCache->invalidate();
+
+                    $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+                    $pinnedPostsCache->invalidate();
                     break;
                 
                 case self::T_TOPIC:
-                    $cm->invalidateCache('topics');
-                    $cm->invalidateCache('topicMemberships');
+                    $topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+                    $topicsCache->invalidate();
+
+                    $topicMembershipsCache = $this->cacheFactory->getCache(CacheNames::TOPIC_MEMBERSHIPS);
+                    $topicMembershipsCache->invalidate();
+
+                    $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+                    $topicRulesCache->invalidate();
                     break;
             }
         }

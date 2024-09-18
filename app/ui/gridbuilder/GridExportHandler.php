@@ -2,7 +2,8 @@
 
 namespace App\UI\GridBuilder;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Logger\Logger;
@@ -15,10 +16,10 @@ use App\Logger\Logger;
  * @author Lukas Velek
  */
 class GridExportHandler {
-    private CacheManager $cache;
     private string $hash;
     private ?GridBuilder $gb;
     private array $dataAll;
+    private CacheFactory $cacheFactory;
 
     /**
      * Class constructor
@@ -26,10 +27,10 @@ class GridExportHandler {
      * @param ?Logger $logger Logger instance
      */
     public function __construct(?Logger $logger = null) {
-        $this->cache = new CacheManager($logger);
         $this->gb = null;
         $this->hash = $this->createHash();
         $this->dataAll = [];
+        $this->cacheFactory = new CacheFactory($logger->getCfg());
     }
 
     /**
@@ -61,7 +62,9 @@ class GridExportHandler {
         $expire = new DateTime();
         $expire->modify('+1h');
 
-        return $this->cache->saveCache($this->hash, function() {
+        $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORT_DATA, $expire);
+
+        return $cache->save($this->hash, function() {
             $result = [
                 'data' => $this->gb->getDataSourceArray(),
                 'columns' => $this->gb->getColumns(),
@@ -73,7 +76,7 @@ class GridExportHandler {
             }
 
             return $result;
-        }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__, $expire);
+        });
     }
 
     /**

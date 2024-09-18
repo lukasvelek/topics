@@ -15,6 +15,10 @@ class CacheNames {
     public const FLASH_MESSAGES = 'flashMessages';
     public const CACHED_PAGES = 'cachedPages';
     public const COMMON_SEARCH_INDEX = 'commonSearchIndex';
+    public const GRID_PAGE_DATA = 'gridPageData';
+    public const TOPIC_MEMBERSHIPS = 'topicMemberships';
+    public const GRID_EXPORT_DATA = 'gridExportData';
+    public const GRID_EXPORTS = 'gridExports';
 }
 
 ?>

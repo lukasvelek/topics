@@ -2,18 +2,18 @@
 
 namespace App\Managers;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
 use App\Logger\Logger;
 
 abstract class AManager {
     protected Logger $logger;
     private ?EntityManager $entityManager;
-    protected CacheManager $cache;
+    protected CacheFactory $cacheFactory;
 
     protected function __construct(Logger $logger, ?EntityManager $entityManager) {
         $this->logger = $logger;
         $this->entityManager = $entityManager;
-        $this->cache = new CacheManager($this->logger);
+        $this->cacheFactory = new CacheFactory($this->logger->getCfg());
     }
 
     public function createId(string $category) {

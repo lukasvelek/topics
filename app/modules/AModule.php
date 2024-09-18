@@ -2,7 +2,6 @@
 
 namespace App\Modules;
 
-use App\Core\CacheManager;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Exceptions\TemplateDoesNotExistException;
@@ -21,7 +20,6 @@ abstract class AModule extends AGUICore {
     private array $flashMessages;
     protected ?TemplateObject $template;
     private ?APresenter $presenter;
-    private array $cachedPages;
     private ?Logger $logger;
 
     public array $cfg;
@@ -37,7 +35,6 @@ abstract class AModule extends AGUICore {
         $this->flashMessages = [];
         $this->template = null;
         $this->presenter = null;
-        $this->cachedPages = [];
         $this->logger = null;
     }
 
@@ -182,15 +179,6 @@ abstract class AModule extends AGUICore {
 
             $cache->invalidate();
         }
-    }
-
-    /**
-     * Sets cached pages. Keys are the presenter names and the values is the page content.
-     * 
-     * @param array $cachedPages Array of cached pages
-     */
-    public function setCachedPages(array $cachedPages) {
-        $this->cachedPages = $cachedPages;
     }
 
     /**
