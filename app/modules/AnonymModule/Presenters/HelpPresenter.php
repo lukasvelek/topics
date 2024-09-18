@@ -26,6 +26,8 @@ class HelpPresenter extends APresenter {
             $category = $fr->category;
             $user = $fr->user;
 
+            $fmHash = '';
+
             try {
                 $app->suggestionRepository->beginTransaction();
 
@@ -35,14 +37,14 @@ class HelpPresenter extends APresenter {
 
                 $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
                 
-                $app->flashMessage('Suggestion created. Thank you :)', 'success');
+                $fmHash = $app->flashMessage('Suggestion created. Thank you :)', 'success');
             } catch(AException $e) {
                 $app->suggestionRepository->rollback();
 
-                $app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
+                $fmHash = $app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
             }
 
-            $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
+            $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin', '_fm' => $fmHash]);
         } else {
             try {
                 $this->httpGet('userId', true);

@@ -6,6 +6,8 @@ use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\ModuleDoesNotExistException;
@@ -222,7 +224,7 @@ class Application {
                 $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
 
                 if($message != '') {
-                    $this->flashMessage($message);
+                    $fmHash = $this->flashMessage($message);
                 }
             }
         }
@@ -279,8 +281,16 @@ class Application {
      * @param string $type Flash message type
      */
     public function flashMessage(string $text, string $type = 'info') {
-        $cm = new CacheManager($this->logger);
-        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        $cacheFactory = new CacheFactory($this->cfg);
+        $cache = $cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
+
+        $hash = HashManager::createHash(8, false);
+
+        $cache->save($hash, function() use ($type, $text) {
+            return ['type' => $type, 'text' => $text];
+        });
+
+        return $hash;
     }
     
     /**

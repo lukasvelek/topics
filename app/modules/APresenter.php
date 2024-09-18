@@ -3,10 +3,11 @@
 namespace App\Modules;
 
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
 use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
@@ -41,6 +42,9 @@ abstract class APresenter extends AGUICore {
     protected array $cfg;
     protected ?CacheFactory $cacheFactory;
 
+    private array $flashMessages;
+    private array $specialRedirectUrlParams;
+
     /**
      * The class constructor
      * 
@@ -68,6 +72,9 @@ abstract class APresenter extends AGUICore {
         $this->afterRenderCallbacks = new ArrayList();
 
         $this->cacheFactory = null;
+
+        $this->flashMessages = [];
+        $this->specialRedirectUrlParams = [];
     }
 
     /**
@@ -208,8 +215,17 @@ abstract class APresenter extends AGUICore {
      * @param string $type Flash message type
      */
     protected function flashMessage(string $text, string $type = 'info') {
-        $cm = new CacheManager($this->logger);
-        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        if(empty($this->flashMessages)) {
+            $hash = HashManager::createHash(8, false);
+        } else {
+            $hash = $this->flashMessages[0]['hash'];
+        }
+
+        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash];
+        
+        if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
+            $this->specialRedirectUrlParams['_fm'] = $hash;
+        }
     }
 
     /**
@@ -262,6 +278,12 @@ abstract class APresenter extends AGUICore {
             if(!array_key_exists('page', $url)) {
                 $url['page'] = $this->httpGet('page');
             }
+
+            if(!empty($this->specialRedirectUrlParams)) {
+                $url = array_merge($url, $this->specialRedirectUrlParams);
+            }
+
+            $this->saveFlashMessagesToCache();
         }
 
         $app->redirect($url);
@@ -492,7 +514,7 @@ abstract class APresenter extends AGUICore {
             $this->template->render();
         }
 
-        $this->cacheFactory->savePersistentCaches();
+        $this->saveFlashMessagesToCache();
 
         $this->presenterCache->reset();
 
@@ -606,6 +628,23 @@ abstract class APresenter extends AGUICore {
      */
     public function setCfg(array $cfg) {
         $this->cfg = $cfg;
+    }
+
+    /**
+     * Saves flash messages to cache and then saves the cache
+     */
+    private function saveFlashMessagesToCache() {
+        if(!empty($this->flashMessages)) {
+            $cache = $this->cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
+
+            $hash = $this->flashMessages[0]['hash'];
+
+            $cache->save($hash, function() {
+                return $this->flashMessages;
+            });
+        }
+
+        $this->cacheFactory->saveCaches();
     }
 }
 

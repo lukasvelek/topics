@@ -11,6 +11,8 @@ class CacheNames {
     public const POSTS = 'posts';
     public const NOTIFICATIONS = 'notifications';
     public const GROUPS = 'groups';
+    public const GROUP_MEMBERSHIPS = 'groupMemberships';
+    public const FLASH_MESSAGES = 'flashMessages';
 }
 
 ?>

@@ -35,7 +35,7 @@ class CacheFactory {
      * Class destructor
      */
     public function __destruct() {
-        $this->savePersistentCaches();
+        $this->saveCaches();
 
         $this->persistentCaches = [];
     }
@@ -122,7 +122,7 @@ class CacheFactory {
     /**
      * Saves persistent caches
      */
-    public function savePersistentCaches() {
+    public function saveCaches() {
         foreach($this->persistentCaches as $cache) {
             if($cache->isInvalidated()) {
                 $this->deletePersistentCache($cache->getNamespace());

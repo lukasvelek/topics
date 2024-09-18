@@ -3,6 +3,8 @@
 namespace App\Modules;
 
 use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 
@@ -167,19 +169,22 @@ abstract class AModule extends AGUICore {
             return;
         }
 
-        $cm = new CacheManager($this->logger);
+        if(isset($_GET['_fm'])) {
+            $cacheFactory = new CacheFactory($this->logger->getCfg());
+            $cache = $cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
 
-        $flashMessages = $cm->loadFlashMessages();
+            $flashMessages = $cache->load($_GET['_fm'], function() { return []; });
 
-        if($flashMessages === null) {
-            return;
+            if(empty($flashMessages)) {
+                return;
+            }
+
+            foreach($flashMessages as $flashMessage) {
+                $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
+            }
+
+            $cache->invalidate();
         }
-
-        foreach($flashMessages as $flashMessage) {
-            $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
-        }
-
-        $cm->deleteFlashMessages();
     }
 
     /**
