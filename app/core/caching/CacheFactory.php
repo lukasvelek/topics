@@ -4,6 +4,7 @@ namespace App\Core\Caching;
 
 use App\Core\Caching\Cache;
 use App\Core\Datetypes\DateTime;
+use App\Core\FileLockManager;
 use App\Core\FileManager;
 
 /**
@@ -49,7 +50,7 @@ class CacheFactory {
      * @return Cache Persistent cache
      */
     public function getCache(string $namespace) {
-        $cacheData = $this->loadDataFromPersistentCache($namespace);
+        $cacheData = $this->loadDataFromCache($namespace);
 
         if($cacheData === null) {
             $cache = new Cache([], $namespace, null, null);
@@ -78,7 +79,7 @@ class CacheFactory {
      * @param string $namespace Namespace
      * @return mixed|null Loaded content or null
      */
-    private function loadDataFromPersistentCache(string $namespace) {
+    private function loadDataFromCache(string $namespace) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
@@ -125,7 +126,7 @@ class CacheFactory {
     public function saveCaches() {
         foreach($this->persistentCaches as $cache) {
             if($cache->isInvalidated()) {
-                $this->deletePersistentCache($cache->getNamespace());
+                $this->deleteCache($cache->getNamespace());
             } else {
                 $tmp = [
                     self::I_NS_DATA => $cache->getData(),
@@ -133,7 +134,7 @@ class CacheFactory {
                     self::I_NS_CACHE_LAST_WRITE_DATE => $cache->getLastWriteDate()?->getResult()
                 ];
 
-                $this->saveDataToPersistentCache($cache->getNamespace(), $tmp);
+                $this->saveDataToCache($cache->getNamespace(), $tmp);
             }
         }
     }
@@ -145,7 +146,7 @@ class CacheFactory {
      * @param array $data Persistent cache data
      * @return int|false Number of bytes written or false if error occured
      */
-    private function saveDataToPersistentCache(string $namespace, array $data) {
+    private function saveDataToCache(string $namespace, array $data) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
@@ -154,7 +155,14 @@ class CacheFactory {
         $filename = $date . $namespace;
         $filename = md5($filename);
 
-        return FileManager::saveFile($path, $filename, serialize($data), true);
+        $flm = new FileLockManager();
+        $flm->lock($path . $filename);
+
+        $result = FileManager::saveFile($path, $filename, serialize($data), true);
+
+        $flm->unlock($path . $filename);
+
+        return $result;
     }
 
     /**
@@ -163,7 +171,7 @@ class CacheFactory {
      * @param string $namespace Namespace
      * @return bool True on success or false on failure
      */
-    private function deletePersistentCache(string $namespace) {
+    private function deleteCache(string $namespace) {
         $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
 
         return FileManager::deleteFolderRecursively($path);

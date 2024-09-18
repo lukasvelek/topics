@@ -2,8 +2,6 @@
 
 namespace App\Core;
 
-use App\Core\Datetypes\DateTime;
-
 /**
  * Manages file locks
  * 
