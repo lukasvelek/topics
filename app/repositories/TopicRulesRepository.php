@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
-use App\Core\Caching\Persistent\Cache;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicRulesEntity;
 use App\Logger\Logger;
@@ -15,7 +15,7 @@ class TopicRulesRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
 
-        $this->topicRulesCache = $this->cacheFactory->getPersistentCache(CacheNames::TOPIC_RULES);
+        $this->topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
     }
 
     public function getTopicRulesForTopicId(string $topicId): TopicRulesEntity|null {

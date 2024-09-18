@@ -2,9 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
-use App\Core\Caching\Persistent\Cache;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Entities\UserEntity;
 use App\Logger\Logger;
@@ -17,8 +16,8 @@ class UserRepository extends ARepository {
     public function __construct(DatabaseConnection $conn, Logger $logger) {
         parent::__construct($conn, $logger);
 
-        $this->userCache = $this->cacheFactory->getPersistentCache(CacheNames::USERS);
-        $this->userUsername2IdCache = $this->cacheFactory->getPersistentCache(CacheNames::USERS_USERNAME_TO_ID_MAPPING);
+        $this->userCache = $this->cacheFactory->getCache(CacheNames::USERS);
+        $this->userUsername2IdCache = $this->cacheFactory->getCache(CacheNames::USERS_USERNAME_TO_ID_MAPPING);
     }
 
     public function getUserById(string $id): UserEntity|null {

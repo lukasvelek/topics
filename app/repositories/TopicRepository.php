@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
-use App\Core\Caching\Persistent\Cache;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
@@ -18,8 +18,8 @@ class TopicRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
         
-        $this->topicsCache = $this->cacheFactory->getPersistentCache(CacheNames::TOPICS);
-        $this->pinnedPostsCache = $this->cacheFactory->getPersistentCache(CacheNames::PINNED_POSTS);
+        $this->topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+        $this->pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
     }
 
     public function getTopicById(string $id): TopicEntity|null {

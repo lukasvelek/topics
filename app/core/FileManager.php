@@ -155,7 +155,7 @@ class FileManager {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
                         self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
                     } else {
-                        unlink($dirPath. DIRECTORY_SEPARATOR .$object);
+                        self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
                     }
                 }
             }

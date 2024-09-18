@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Core\Caching\Persistent;
+namespace App\Core\Caching;
 
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;

@@ -2,7 +2,7 @@
 
 namespace App\Core\Caching;
 
-use App\Core\Caching\Persistent\Cache;
+use App\Core\Caching\Cache;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
 
@@ -21,9 +21,6 @@ class CacheFactory {
     /** @var array<Cache> */
     private array $persistentCaches;
 
-    /** @var array<Memory\Cache> */
-    private array $memoryCaches;
-
     /**
      * Class constructor
      * 
@@ -32,7 +29,6 @@ class CacheFactory {
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
         $this->persistentCaches = [];
-        $this->memoryCaches = [];
     }
 
     /**
@@ -41,20 +37,7 @@ class CacheFactory {
     public function __destruct() {
         $this->savePersistentCaches();
 
-        $this->memoryCaches = [];
         $this->persistentCaches = [];
-    }
-
-    /**
-     * Returns a new instance of memory cache
-     * 
-     * @param string $namespace
-     * @return Memory\Cache Memory cache
-     */
-    public function getMemoryCache(string $namespace) {
-        $cache = new Memory\Cache($namespace);
-        $this->memoryCaches[$cache->getHash()] = &$cache;
-        return $cache;
     }
 
     /**
@@ -65,7 +48,7 @@ class CacheFactory {
      * @param string $namespace Namespace
      * @return Cache Persistent cache
      */
-    public function getPersistentCache(string $namespace) {
+    public function getCache(string $namespace) {
         $cacheData = $this->loadDataFromPersistentCache($namespace);
 
         if($cacheData === null) {

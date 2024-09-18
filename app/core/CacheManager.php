@@ -10,6 +10,7 @@ use Exception;
  * CacheManager allows caching. It contains methods needed to operate with cache.
  * 
  * @author Lukas Velek
+ * @deprecated
  */
 class CacheManager {
     public const NS_TOPICS = 'topics';

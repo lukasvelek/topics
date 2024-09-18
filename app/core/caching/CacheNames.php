@@ -9,6 +9,8 @@ class CacheNames {
     public const PINNED_POSTS = 'pinnedPosts';
     public const TOPICS = 'topics';
     public const POSTS = 'posts';
+    public const NOTIFICATIONS = 'notifications';
+    public const GROUPS = 'groups';
 }
 
 ?>

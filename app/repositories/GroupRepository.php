@@ -3,14 +3,20 @@
 namespace App\Repositories;
 
 use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;
 use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;
 use App\Logger\Logger;
 
 class GroupRepository extends ARepository {
+    private Cache $cache;
+
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+
+        $this->cache = $this->cacheFactory->getCache(CacheNames::GROUPS);
     }
 
     public function isUserMemberOfGroup(string $userId, int $groupId) {
@@ -90,13 +96,9 @@ class GroupRepository extends ARepository {
             ->from('groups')
             ->where('groupId = ?', [$groupId]);
 
-        $entity = $this->cache->loadCache($groupId, function() use ($qb) {
-            $row = $qb->execute()->fetch();
-
-            return GroupEntity::createEntityFromDbRow($row);
-        }, CacheManager::NS_GROUPS, __METHOD__);
-
-        return $entity;
+        return $this->cache->load($groupId, function() use ($qb) {
+            return GroupEntity::createEntityFromDbRow($qb->execute()->fetch());
+        });
     }
 
     public function getGroupMemberUserIds(int $groupId) {

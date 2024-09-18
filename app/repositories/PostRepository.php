@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Core\CacheManager;
 use App\Core\Caching\CacheNames;
-use App\Core\Caching\Persistent\Cache;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostConceptEntity;
@@ -18,7 +18,7 @@ class PostRepository extends ARepository {
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
 
-        $this->postsCache = $this->cacheFactory->getPersistentCache(CacheNames::POSTS);
+        $this->postsCache = $this->cacheFactory->getCache(CacheNames::POSTS);
     }
 
     public function getLatestPostsForTopicId(string $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
