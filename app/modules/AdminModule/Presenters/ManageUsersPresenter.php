@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Entities\UserEntity;
@@ -15,7 +16,6 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\DefaultGridReducer;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
@@ -149,8 +149,8 @@ class ManageUsersPresenter extends AAdminPresenter {
 
                 $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('users');
+                $cache = $this->cacheFactory->getCache(CacheNames::USERS);
+                $cache->invalidate();
 
                 $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -206,8 +206,8 @@ class ManageUsersPresenter extends AAdminPresenter {
 
                 $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('users');
+                $cache = $this->cacheFactory->getCache(CacheNames::USERS);
+                $cache->invalidate();
 
                 $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
 

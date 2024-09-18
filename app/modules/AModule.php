@@ -77,11 +77,12 @@ abstract class AModule extends AGUICore {
      */
     public function render(string $presenterTitle, string $actionTitle, bool $isAjax) {
         $this->beforePresenterRender($presenterTitle, $actionTitle, $isAjax);
-
-        $isCacheable = $this->renderPresenter($isAjax);
+        
+        
+        $this->renderPresenter($isAjax);
         $this->renderModule();
 
-        return [$this->template->render()->getRenderedContent(), $isCacheable];
+        return $this->template->render()->getRenderedContent();
     }
 
     /**
@@ -95,15 +96,11 @@ abstract class AModule extends AGUICore {
      * @param bool $isAjax Is request called from AJAX?
      */
     public function renderPresenter(bool $isAjax) {
-        $isCacheable = false;
-
-        [$this->template, $isCacheable] = $this->presenter->render($this->title, $isAjax);
+        $this->template = $this->presenter->render($this->title, $isAjax);
 
         if(!$isAjax) {
             $this->fillFlashMessages();
         }
-
-        return $isCacheable;
     }
 
     /**

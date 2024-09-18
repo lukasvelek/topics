@@ -5,7 +5,7 @@ namespace App\Modules\UserModule;
 use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Exceptions\AException;
 
 class HomePresenter extends AUserPresenter {
@@ -98,8 +98,8 @@ class HomePresenter extends AUserPresenter {
                 $app->postRepository->unlikePost($userId, $postId);
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
 
             $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {

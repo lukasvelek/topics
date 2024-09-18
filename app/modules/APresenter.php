@@ -11,7 +11,6 @@ use App\Core\HashManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
-use App\Exceptions\StaticPageException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
@@ -29,7 +28,6 @@ abstract class APresenter extends AGUICore {
     private ArrayList $presenterCache;
     private ArrayList $scripts;
     private ?string $ajaxResponse;
-    private bool $isStatic;
     private ?string $defaultAction;
     public ?string $moduleName;
 
@@ -58,7 +56,6 @@ abstract class APresenter extends AGUICore {
         $this->action = null;
         $this->template = null;
         $this->ajaxResponse = null;
-        $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
         $this->moduleName = null;
@@ -329,6 +326,7 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $moduleName Name of the current module
      * @param bool $isAjax True if this request is AJAX or false if not
+     * @return string Presenter template content
      */
     public function render(string $moduleName, bool $isAjax) {
         global $app;
@@ -378,7 +376,7 @@ abstract class APresenter extends AGUICore {
         
         $this->afterRender();
 
-        return [$this->template, $this->isStatic];
+        return $this->template;
     }
 
     /**
@@ -593,32 +591,6 @@ abstract class APresenter extends AGUICore {
         } else {
             return null;
         }
-    }
-
-    /**
-     * Sets the current page as static
-     * 
-     * @param bool $static True if the page is static and false if not
-     */
-    public function setStatic(bool $static = true) {
-        $methods = get_class_methods($this);
-
-        foreach($methods as $method) {
-            if(str_contains($method, 'action')) {
-                throw new StaticPageException('Presenter contains AJAX requests and thus cannot be set as static.');
-            }
-        }
-
-        $this->isStatic = $static;
-    }
-
-    /**
-     * Returns true if the page is static
-     * 
-     * @return bool True if the page is static or false if not
-     */
-    public function isStatic() {
-        return $this->isStatic;
     }
 
     /**

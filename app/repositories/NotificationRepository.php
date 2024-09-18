@@ -6,6 +6,7 @@ use App\Core\CacheManager;
 use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\NotificationEntity;
 use App\Logger\Logger;
 
@@ -14,6 +15,9 @@ class NotificationRepository extends ARepository {
 
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+
+        $expiration = new DateTime();
+        $expiration->modify('+1i'); // 1 minute
 
         $this->cache = $this->cacheFactory->getCache(CacheNames::NOTIFICATIONS);
     }

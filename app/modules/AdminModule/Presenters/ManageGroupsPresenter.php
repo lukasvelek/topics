@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Entities\GroupEntity;
 use App\Entities\GroupMembershipEntity;
 use App\Exceptions\AException;
@@ -175,8 +176,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
                 $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('groupMemberships');
+                $cache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
+                $cache->invalidate();
                 
                 $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
             } catch(AException $e) {
@@ -271,8 +272,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
                 $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('groupMemberships');
+                $cache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
+                $cache->invalidate();
 
                 $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
             } catch(AException $e) {

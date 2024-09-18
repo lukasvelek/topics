@@ -6,6 +6,7 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
 use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -918,8 +919,8 @@ class PostsPresenter extends AUserPresenter {
                 $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
 
             $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
@@ -942,8 +943,8 @@ class PostsPresenter extends AUserPresenter {
             $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
             $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
             
             $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {

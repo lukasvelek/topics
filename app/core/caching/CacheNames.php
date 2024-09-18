@@ -13,6 +13,8 @@ class CacheNames {
     public const GROUPS = 'groups';
     public const GROUP_MEMBERSHIPS = 'groupMemberships';
     public const FLASH_MESSAGES = 'flashMessages';
+    public const CACHED_PAGES = 'cachedPages';
+    public const COMMON_SEARCH_INDEX = 'commonSearchIndex';
 }
 
 ?>

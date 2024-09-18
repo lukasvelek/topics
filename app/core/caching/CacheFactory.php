@@ -47,13 +47,14 @@ class CacheFactory {
      * If persistent cache with given namespace already exists, the data is loaded and passed to the instance.
      * 
      * @param string $namespace Namespace
+     * @param DateTime $expiration Expiration date
      * @return Cache Persistent cache
      */
-    public function getCache(string $namespace) {
+    public function getCache(string $namespace, ?DateTime $expiration = null) {
         $cacheData = $this->loadDataFromCache($namespace);
 
         if($cacheData === null) {
-            $cache = new Cache([], $namespace, null, null);
+            $cache = new Cache([], $namespace, $expiration, null);
             $this->persistentCaches[$cache->getHash()] = &$cache;
             return $cache;
         }
@@ -61,6 +62,10 @@ class CacheFactory {
         $expirationDate = null;
         if(isset($cacheData[self::I_NS_CACHE_EXPIRATION])) {
             $expirationDate = new DateTime(strtotime($cacheData[self::I_NS_CACHE_EXPIRATION]));
+        }
+
+        if($expiration !== null) {
+            $expirationDate = $expiration;
         }
 
         $lastWriteDate = null;
