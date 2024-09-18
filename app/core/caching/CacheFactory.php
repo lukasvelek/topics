@@ -163,11 +163,18 @@ class CacheFactory {
         $flm = new FileLockManager();
         $flm->lock($path . $filename);
 
-        $result = FileManager::saveFile($path, $filename, serialize($data), true);
+        $handle = $flm->getHandle($path . $filename);
 
-        $flm->unlock($path . $filename);
+        $result = false;
+        if($handle === null) {
+            $result = FileManager::saveFile($path, $filename, serialize($data));
+        } else {
+            $result = fputs($handle, serialize($data));
 
-        return $result;
+            $flm->unlock($path . $filename);
+        }
+
+        return $result !== false;
     }
 
     /**

@@ -42,17 +42,27 @@ class FileManager {
 
         $locked = $obj->flm->lock($filePath);
 
+        $success = true;
+
         if($locked) {
             $handle = $obj->flm->getHandle($filePath);
         
             if($handle === null) {
-                return false;
+                $success = false;
             }
 
-            $content = fread($handle, filesize($filePath));
+            if(filesize($filePath) == 0) {
+                $success = false;
+            }
 
-            $obj->flm->unlock($filePath);
-        } else {
+            if($success) {
+                $content = fread($handle, filesize($filePath));
+
+                $obj->flm->unlock($filePath);
+            }
+        }
+
+        if(!$locked || !$success) {
             $content = file_get_contents($filePath);
         }
 
