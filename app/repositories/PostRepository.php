@@ -2,7 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostConceptEntity;
@@ -11,8 +12,12 @@ use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
 
 class PostRepository extends ARepository {
+    private Cache $postsCache;
+
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+
+        $this->postsCache = $this->cacheFactory->getCache(CacheNames::POSTS);
     }
 
     public function getLatestPostsForTopicId(string $topicId, int $limit = 5, int $offset = 0, bool $deletedOnly = true) {
@@ -260,15 +265,9 @@ class PostRepository extends ARepository {
             ->from('posts')
             ->where('postId = ?', [$postId]);
 
-        $entity = $this->cache->loadCache($postId, function() use ($qb) {
-            $row = $qb->execute()->fetch();
-
-            $entity = PostEntity::createEntityFromDbRow($row);
-
-            return $entity;
-        }, CacheManager::NS_POSTS, __METHOD__);
-
-        return $entity;
+        return $this->postsCache->load($postId, function() use ($qb) {
+            return PostEntity::createEntityFromDbRow($qb->execute()->fetch());
+        });
     }
 
     public function getPostCountForUserId(string $userId) {
@@ -580,12 +579,7 @@ class PostRepository extends ARepository {
             $qb->andWhere('authorId = ?', [$userId]);
         }
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

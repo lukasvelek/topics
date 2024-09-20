@@ -3,7 +3,9 @@
 namespace App\Authorizators;
 
 use App\Constants\AdministratorGroups;
-use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;
 use App\Logger\Logger;
 use App\Repositories\GroupRepository;
@@ -21,6 +23,9 @@ abstract class AAuthorizator {
     protected Logger $logger;
     protected GroupRepository $groupRepository;
     protected UserRepository $userRepository;
+    private CacheFactory $cacheFactory;
+
+    private Cache $groupMembershipsCache;
 
     /**
      * Abstract class constructor
@@ -35,6 +40,9 @@ abstract class AAuthorizator {
         $this->logger = $logger;
         $this->groupRepository = $groupRepository;
         $this->userRepository = $userRepository;
+        $this->cacheFactory = new CacheFactory($this->logger->getCfg());
+
+        $this->groupMembershipsCache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
     }
 
     /**
@@ -64,10 +72,9 @@ abstract class AAuthorizator {
      * @return bool True if user is member or false if not
      */
     protected function isUserMemberOfGroup(string $userId, int $groupId): bool {
-        $cm = new CacheManager($this->logger);
-        return $cm->loadCache('group_' . $groupId . '_' . $userId, function() use ($userId, $groupId) {
+        return $this->groupMembershipsCache->load('group_' . $groupId . '_' . $userId, function() use ($userId, $groupId) {
             return $this->groupRepository->isUserMemberOfGroup($userId, $groupId);
-        }, CacheManager::NS_GROUP_MEMBERSHIPS, __METHOD__);
+        });
     }
 
     /**

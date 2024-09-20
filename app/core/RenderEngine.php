@@ -47,13 +47,7 @@ class RenderEngine {
         $this->beforeRender();
 
         if($this->renderedContent === null) {
-            $isCacheable = false;
-
-            [$this->renderedContent, $isCacheable] = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
-
-            if($isCacheable) {
-                $this->cachePage();
-            }
+            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
         }
 
         return $this->renderedContent;
@@ -64,35 +58,12 @@ class RenderEngine {
      */
     private function beforeRender() {
         $this->module->loadPresenters();
-        $this->loadCachedPages();
 
         $key = $this->module->getTitle() . '_' . $this->presenterTitle;
 
         if(array_key_exists($key, $this->cachedPages)) {
             $this->renderedContent = $this->cachedPages[$key];
         }
-    }
-
-    /**
-     * Loads cached pages from cache
-     */
-    private function loadCachedPages() {
-        $cm = new CacheManager($this->logger);
-        $result = $cm->loadPagesFromCache();
-        
-        if($result !== false && $result !== null) {
-            $this->cachedPages = $result;
-        } else {
-            $this->cachedPages = [];
-        }
-    }
-
-    /**
-     * Saves page to cache
-     */
-    private function cachePage() {
-        $cm = new CacheManager($this->logger);
-        $cm->savePageToCache($this->module->getTitle(), $this->presenterTitle, $this->renderedContent);
     }
 }
 

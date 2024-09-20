@@ -2,15 +2,22 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Entities\UserEntity;
 use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
 
 class UserRepository extends ARepository {
+    private Cache $userCache;
+    private Cache $userUsername2IdCache;
+
     public function __construct(DatabaseConnection $conn, Logger $logger) {
         parent::__construct($conn, $logger);
+
+        $this->userCache = $this->cacheFactory->getCache(CacheNames::USERS);
+        $this->userUsername2IdCache = $this->cacheFactory->getCache(CacheNames::USERS_USERNAME_TO_ID_MAPPING);
     }
 
     public function getUserById(string $id): UserEntity|null {
@@ -20,13 +27,13 @@ class UserRepository extends ARepository {
             ->from('users')
             ->where('userId = ?', [$id]);
 
-        $entity = $this->cache->loadCache($id, function () use ($qb) {
+        $entity = $this->userCache->load($id, function() use ($qb) {
             $row = $qb->execute()->fetch();
 
             $entity = UserEntity::createEntityFromDbRow($row);
 
             return $entity;
-        }, CacheManager::NS_USERS, __METHOD__);
+        });
 
         return $entity;
     }
@@ -87,11 +94,11 @@ class UserRepository extends ARepository {
             ->from('users')
             ->where('username = ?', [$username]);
 
-        $userId = $this->cache->loadCache($username, function() use ($qb) {
+        $userId = $this->userUsername2IdCache->load($username, function() use ($qb) {
             $qb->execute();
 
             return $qb->fetch('userId');
-        }, CacheManager::NS_USERS_USERNAME_TO_ID_MAPPING, __METHOD__);
+        });
 
         if($userId === null) {
             return $userId;

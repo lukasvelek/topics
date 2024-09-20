@@ -10,10 +10,14 @@ use App\Exceptions\ModuleDoesNotExistException;
  * @author Lukas Velek
  */
 class ModuleManager {
+    private array $cfg;
+
     /**
      * The class constructor is not used for anything currently
      */
-    public function __construct() {}
+    public function __construct(array $cfg) {
+        $this->cfg = $cfg;
+    }
 
     /**
      * Loads modules
@@ -48,7 +52,11 @@ class ModuleManager {
         if(is_dir(__DIR__ . '\\' . $name) && is_file(__DIR__ . '\\' . $name . '\\' . $name . '.php')) {
             $className = '\\App\\Modules\\' . $name . '\\' . $name;
 
-            return new $className();
+            /** @var AModule */
+            $module = new $className();
+            $module->setCfg($this->cfg);
+            
+            return $module;
         } else {
             throw new ModuleDoesNotExistException($name);
         }

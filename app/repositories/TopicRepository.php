@@ -2,7 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
@@ -10,8 +11,14 @@ use App\Logger\Logger;
 use QueryBuilder\QueryBuilder;
 
 class TopicRepository extends ARepository {
+    private Cache $topicsCache;
+    private Cache $pinnedPostsCache;
+
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+        
+        $this->topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+        $this->pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
     }
 
     public function getTopicById(string $id): TopicEntity|null {
@@ -21,15 +28,9 @@ class TopicRepository extends ARepository {
             ->from('topics')
             ->where('topicId = ?', [$id]);
 
-        $entity = $this->cache->loadCache($id, function () use ($qb) {
-            $row = $qb->execute()->fetch();
-
-            $entity = TopicEntity::createEntityFromDbRow($row);
-
-            return $entity;
-        }, CacheManager::NS_TOPICS, __METHOD__);
-
-        return $entity;
+        return $this->topicsCache->load($id, function() use ($qb) {
+            return TopicEntity::createEntityFromDbRow($qb->execute()->fetch());
+        });
     }
 
     public function bulkGetTopicsByIds(array $ids, bool $idAsKey = false) {
@@ -247,7 +248,7 @@ class TopicRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('dateCreated', 'DESC');
 
-        return $this->cache->loadCache($topicId, function() use ($qb) {
+        return $this->pinnedPostsCache->load($topicId, function() use ($qb) {
             $qb->execute();
 
             $postIds = [];
@@ -256,7 +257,7 @@ class TopicRepository extends ARepository {
             }
 
             return $postIds;
-        }, CacheManager::NS_PINNED_POSTS, __METHOD__);
+        });
     }
 }
 

@@ -2,7 +2,9 @@
 
 namespace App\Helpers;
 
-use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Logger\Logger;
 
 class GridHelper {
@@ -35,12 +37,18 @@ class GridHelper {
     private Logger $logger;
     private array $gridPageData;
     private string $currentUserId;
+    private CacheFactory $cacheFactory;
+
+    private Cache $gridPageDataCache;
 
     public function __construct(Logger $logger, string $currentUserId) {
         $this->logger = $logger;
         $this->currentUserId = $currentUserId;
 
         $this->gridPageData = [];
+
+        $this->cacheFactory = new CacheFactory($this->logger->getCfg());
+        $this->gridPageDataCache = $this->cacheFactory->getCache(CacheNames::GRID_PAGE_DATA);
     }
 
     public function getGridPage(string $gridName, int $gridPage, array $customParams = []) {
@@ -59,11 +67,7 @@ class GridHelper {
         $key = $this->createCacheKey($gridName, $customParams);
 
         if(!array_key_exists($key, $this->gridPageData)) {
-            $cm = new CacheManager($this->logger);
-
-            $page = $cm->loadCache($key, function() {
-                return 0;
-            }, CacheManager::NS_GRID_PAGE_DATA, __METHOD__);
+            $page = $this->gridPageDataCache->load($key, function() { return 0; });
 
             $this->gridPageData[$key] = $page;
         }
@@ -78,11 +82,7 @@ class GridHelper {
 
         $this->gridPageData[$key] = $page;
 
-        $cm = new CacheManager($this->logger);
-
-        return $cm->saveCache($key, function() use ($page) {
-            return $page;
-        }, CacheManager::NS_GRID_PAGE_DATA, __METHOD__);
+        return $this->gridPageDataCache->save($key, function() use ($page) { return $page; });
     }
 
     private function createCacheKey(string $gridName, array $customParams) {

@@ -42,17 +42,27 @@ class FileManager {
 
         $locked = $obj->flm->lock($filePath);
 
+        $success = true;
+
         if($locked) {
             $handle = $obj->flm->getHandle($filePath);
         
             if($handle === null) {
-                return false;
+                $success = false;
             }
 
-            $content = fread($handle, filesize($filePath));
+            if(filesize($filePath) == 0) {
+                $success = false;
+            }
 
-            $obj->flm->unlock($filePath);
-        } else {
+            if($success) {
+                $content = fread($handle, filesize($filePath));
+
+                $obj->flm->unlock($filePath);
+            }
+        }
+
+        if(!$locked || !$success) {
             $content = file_get_contents($filePath);
         }
 
@@ -155,12 +165,26 @@ class FileManager {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
                         self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
                     } else {
-                        unlink($dirPath. DIRECTORY_SEPARATOR .$object);
+                        self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
                     }
                 }
             }
 
             return rmdir($dirPath);
+        }
+
+        return false;
+    }
+
+    /**
+     * Deletes a file
+     * 
+     * @param string $filePath Path to the file
+     * @return bool True on success or false on failure
+     */
+    public static function deleteFile(string $filePath) {
+        if(self::fileExists($filePath)) {
+            return unlink($filePath);
         }
 
         return false;

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
@@ -98,8 +98,8 @@ class PostLikeEqualizerService extends AService {
     }
 
     private function invalidateCache() {
-        $cm = new CacheManager($this->logger);
-        $cm->invalidateCache(CacheManager::NS_POSTS);
+        $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+        $cache->invalidate();
     }
 }
 

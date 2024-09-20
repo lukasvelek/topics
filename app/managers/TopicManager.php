@@ -4,7 +4,7 @@ namespace App\Managers;
 
 use App\Authorizators\VisibilityAuthorizator;
 use App\Constants\TopicMemberRole;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
@@ -148,7 +148,8 @@ class TopicManager extends AManager {
         try {
             $this->com->updateTopic($topicId, ['isPrivate' => $isPrivate, 'isVisible' => $isVisible]);
 
-            $this->cache->invalidateCache(CacheManager::NS_TOPICS);
+            $topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+            $topicsCache->invalidate();
         } catch(Exception $e) {
             throw $e;
         }
@@ -166,7 +167,8 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId);
 
-            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+            $pinnedPostsCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -186,7 +188,8 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId, false);
 
-            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+            $pinnedPostsCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -245,10 +248,9 @@ class TopicManager extends AManager {
                     throw new GeneralException('Could not update topic rules.');
                 }
             }
-
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -272,9 +274,8 @@ class TopicManager extends AManager {
                 throw new GeneralException('Could not update topic rule.');
             }
 
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -298,9 +299,8 @@ class TopicManager extends AManager {
                 throw new GeneralException('Could not update topic rule.');
             }
 
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }

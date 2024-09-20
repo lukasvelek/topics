@@ -2,21 +2,23 @@
 
 namespace App\Modules\UserModule;
 
-use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
 use App\UI\LinkBuilder;
 
 class SearchPresenter extends AUserPresenter {
-    private CacheManager $cache;
+    private Cache $searchIndexCache;
 
     public function __construct() {
         parent::__construct('SearchPresenter', 'Search');
 
-        global $app;
+        $expiration = new DateTime();
+        $expiration->modify('+1h');
 
-        $this->cache = new CacheManager($app->logger);
+        $this->searchIndexCache = $this->cacheFactory->getCache(CacheNames::COMMON_SEARCH_INDEX, $expiration);
     }
 
     public function handleSearch() {
@@ -25,12 +27,9 @@ class SearchPresenter extends AUserPresenter {
         $query = $this->httpGet('q', true);
 
         // users
-        $expire = new DateTime();
-        $expire->modify('+1h');
-
-        $users = $this->cache->loadCache('users', function() use ($app, $query) {
+        $users = $this->searchIndexCache->load('users', function() use ($app, $query) {
             return $app->userRepository->searchUsersByUsername($query);
-        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
+        });
 
         $usersArray = [];
         foreach($users as $user) {
@@ -47,9 +46,9 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('users', $userResult);
 
         // topics
-        $topics = $this->cache->loadCache('topics', function() use ($app, $query) {
+        $topics = $this->searchIndexCache->load('topics', function() use ($app, $query) {
             return $app->topicRepository->searchTopics($query);
-        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
+        });
         
         $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
 
@@ -73,7 +72,7 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topics', $topicResult);
 
         // tags
-        $tags = $this->cache->loadCache('tags', function() use ($app, $query) {
+        $tags = $this->searchIndexCache->load('tags', function() use ($app, $query) {
             $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
 
             $topics = [];
@@ -89,7 +88,7 @@ class SearchPresenter extends AUserPresenter {
             }
     
             return $app->topicRepository->searchTags(ucfirst($query), $topicIds);
-        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
+        });
 
         $tagArray = [];
         foreach($tags as $t) {
@@ -130,13 +129,10 @@ class SearchPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $expire = new DateTime();
-        $expire->modify('+1h');
-
-        $topics = $this->cache->loadCache('topicTags', function() use ($app, $tag) {
+        $topics = $this->searchIndexCache->load('topicTags', function() use ($app, $tag) {
             $topics = $app->topicRepository->getTopicsWithTag($tag);
             return $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
-        }, CacheManager::NS_COMMON_SEARCH_INDEX, __METHOD__, $expire);
+        });
 
         $topicArray = [];
         foreach($topics as $t) {

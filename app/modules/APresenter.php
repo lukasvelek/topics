@@ -3,13 +3,14 @@
 namespace App\Modules;
 
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
-use App\Exceptions\StaticPageException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
@@ -27,7 +28,6 @@ abstract class APresenter extends AGUICore {
     private ArrayList $presenterCache;
     private ArrayList $scripts;
     private ?string $ajaxResponse;
-    private bool $isStatic;
     private ?string $defaultAction;
     public ?string $moduleName;
 
@@ -36,6 +36,12 @@ abstract class APresenter extends AGUICore {
 
     private ArrayList $beforeRenderCallbacks;
     private ArrayList $afterRenderCallbacks;
+
+    protected array $cfg;
+    protected ?CacheFactory $cacheFactory;
+
+    private array $flashMessages;
+    private array $specialRedirectUrlParams;
 
     /**
      * The class constructor
@@ -50,7 +56,6 @@ abstract class APresenter extends AGUICore {
         $this->action = null;
         $this->template = null;
         $this->ajaxResponse = null;
-        $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
         $this->moduleName = null;
@@ -62,6 +67,11 @@ abstract class APresenter extends AGUICore {
         $this->scripts = new ArrayList();
         $this->beforeRenderCallbacks = new ArrayList();
         $this->afterRenderCallbacks = new ArrayList();
+
+        $this->cacheFactory = null;
+
+        $this->flashMessages = [];
+        $this->specialRedirectUrlParams = [];
     }
 
     /**
@@ -202,8 +212,17 @@ abstract class APresenter extends AGUICore {
      * @param string $type Flash message type
      */
     protected function flashMessage(string $text, string $type = 'info') {
-        $cm = new CacheManager($this->logger);
-        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        if(empty($this->flashMessages)) {
+            $hash = HashManager::createHash(8, false);
+        } else {
+            $hash = $this->flashMessages[0]['hash'];
+        }
+
+        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash];
+        
+        if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
+            $this->specialRedirectUrlParams['_fm'] = $hash;
+        }
     }
 
     /**
@@ -256,6 +275,12 @@ abstract class APresenter extends AGUICore {
             if(!array_key_exists('page', $url)) {
                 $url['page'] = $this->httpGet('page');
             }
+
+            if(!empty($this->specialRedirectUrlParams)) {
+                $url = array_merge($url, $this->specialRedirectUrlParams);
+            }
+
+            $this->saveFlashMessagesToCache();
         }
 
         $app->redirect($url);
@@ -301,6 +326,7 @@ abstract class APresenter extends AGUICore {
      * 
      * @param string $moduleName Name of the current module
      * @param bool $isAjax True if this request is AJAX or false if not
+     * @return string Presenter template content
      */
     public function render(string $moduleName, bool $isAjax) {
         global $app;
@@ -350,7 +376,7 @@ abstract class APresenter extends AGUICore {
         
         $this->afterRender();
 
-        return [$this->template, $this->isStatic];
+        return $this->template;
     }
 
     /**
@@ -399,6 +425,8 @@ abstract class APresenter extends AGUICore {
      */
     private function beforeRender(string $moduleName, bool $isAjax) {
         global $app;
+
+        $this->cacheFactory = new CacheFactory($this->cfg);
 
         $ok = false;
         $templateContent = null;
@@ -484,6 +512,8 @@ abstract class APresenter extends AGUICore {
             $this->template->render();
         }
 
+        $this->saveFlashMessagesToCache();
+
         $this->presenterCache->reset();
 
         $this->afterRenderCallbacks->executeCallables();
@@ -564,29 +594,29 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Sets the current page as static
+     * Sets configuration
      * 
-     * @param bool $static True if the page is static and false if not
+     * @param array $cfg
      */
-    public function setStatic(bool $static = true) {
-        $methods = get_class_methods($this);
-
-        foreach($methods as $method) {
-            if(str_contains($method, 'action')) {
-                throw new StaticPageException('Presenter contains AJAX requests and thus cannot be set as static.');
-            }
-        }
-
-        $this->isStatic = $static;
+    public function setCfg(array $cfg) {
+        $this->cfg = $cfg;
     }
 
     /**
-     * Returns true if the page is static
-     * 
-     * @return bool True if the page is static or false if not
+     * Saves flash messages to cache and then saves the cache
      */
-    public function isStatic() {
-        return $this->isStatic;
+    private function saveFlashMessagesToCache() {
+        if(!empty($this->flashMessages)) {
+            $cache = $this->cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
+
+            $hash = $this->flashMessages[0]['hash'];
+
+            $cache->save($hash, function() {
+                return $this->flashMessages;
+            });
+        }
+
+        $this->cacheFactory->saveCaches();
     }
 }
 

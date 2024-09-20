@@ -153,24 +153,6 @@ class SidebarAuthorizator extends AAuthorizator {
     }
 
     /**
-     * Checks if given user is allowed to manage system caching
-     * 
-     * @param string $userId User ID
-     * @return bool True if user is allowed to see this sidebar link or false if not
-     */
-    public function canManageSystemCaching(string $userId) {
-        if(!$this->isUserAdmin($userId)) {
-            return false;
-        }
-
-        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_SYSTEM_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Checks if given user is allowed to manage post file uploads
      * 
      * @param string $userId User ID
@@ -195,7 +177,15 @@ class SidebarAuthorizator extends AAuthorizator {
      * @return bool True if user is allowed to see this sidebar link or false if not
      */
     public function canManageTransactions(string $userId) {
-        return $this->canManageSystemCaching($userId);
+        if(!$this->isUserAdmin($userId)) {
+            return false;
+        }
+
+        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_SYSTEM_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -205,7 +195,15 @@ class SidebarAuthorizator extends AAuthorizator {
      * @return bool True if user is allowed to see this sidebar link or false if not
      */
     public function canManageGridExports(string $userId) {
-        return $this->canManageSystemCaching($userId);
+        if(!$this->isUserAdmin($userId)) {
+            return false;
+        }
+
+        if(!$this->isUserMemberOfGroup($userId, AdministratorGroups::G_SYSTEM_ADMINISTRATOR) && !$this->isUserSuperAdministrator($userId)) {
+            return false;
+        }
+
+        return true;
     }
 }
 

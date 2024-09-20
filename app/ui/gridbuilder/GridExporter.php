@@ -2,7 +2,8 @@
 
 namespace App\UI\GridBuilder;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
@@ -16,12 +17,12 @@ use App\Logger\Logger;
  */
 class GridExporter {
     private string $hash;
-    private CacheManager $cache;
     private ArrayList $dataToSave;
     private array $cfg;
     private bool $exportAll;
     private int $exportedEntries;
     private ServiceManager $serviceManager;
+    private CacheFactory $cacheFactory;
 
     /**
      * Class constructor
@@ -31,13 +32,13 @@ class GridExporter {
      * @param array $cfg Application configuration array
      */
     public function __construct(?Logger $logger, string $hash, array $cfg, ServiceManager $serviceManager) {
-        $this->cache = new CacheManager($logger);
         $this->hash = $hash;
         $this->dataToSave = new ArrayList();
         $this->cfg = $cfg;
         $this->exportAll = false;
         $this->exportedEntries = 0;
         $this->serviceManager = $serviceManager;
+        $this->cacheFactory = new CacheFactory($logger->getCfg());
     }
 
     private function loadData() {
@@ -133,9 +134,8 @@ class GridExporter {
      * @return array Grid data
      */
     private function loadCache() {
-        return $this->cache->loadCache($this->hash, function() {
-            return [];
-        }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__);
+        $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORT_DATA);
+        $cache->load($this->hash, function() { return []; });
     }
 
     /**
@@ -163,11 +163,11 @@ class GridExporter {
         $now->format('Y-m-d_H-i-s');
         $now = $now->getResult();
 
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . CacheManager::NS_GRID_EXPORTS . '\\';
+        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . CacheNames::GRID_EXPORTS . '\\';
         $name = 'gridExport_' . $this->hash . '_' . $now . '.csv';
 
         if(FileManager::saveFile($path, $name, $this->dataToSave->getAll(), false, false) !== false) {
-            return 'cache\\' . CacheManager::NS_GRID_EXPORTS . '\\' . $name;
+            return 'cache\\' . CacheNames::GRID_EXPORTS . '\\' . $name;
         } else {
             return null;
         }

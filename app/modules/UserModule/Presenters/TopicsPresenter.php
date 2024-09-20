@@ -7,7 +7,7 @@ use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\PostConceptEntity;
 use App\Entities\PostEntity;
@@ -314,8 +314,8 @@ class TopicsPresenter extends AUserPresenter {
                 $app->postRepository->unlikePost($userId, $postId);
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
 
             $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
         } catch(AException $e) {
@@ -908,8 +908,8 @@ class TopicsPresenter extends AUserPresenter {
                 $app->topicMembershipManager->followTopic($topicId, $app->currentUser->getId());
                 $app->topicMembershipManager->changeRole($topicId, $app->currentUser->getId(), $app->currentUser->getId(), TopicMemberRole::OWNER);
 
-                $cm = new CacheManager($this->logger);
-                $cm->invalidateCache('topics');
+                $cache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+                $cache->invalidate();
                 
                 $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
 
@@ -1748,20 +1748,20 @@ class TopicsPresenter extends AUserPresenter {
         $returnGridPage = $this->httpGet('returnGridPage');
         $topicId = $this->httpGet('topicId');
 
-        $cm = new CacheManager($app->logger);
+        $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
 
         $text = '';
         try {
             switch($do) {
                 case 'disableSuggestion':
                     $app->postRepository->updatePost($postId, ['isSuggestable' => '0']);
-                    $cm->invalidateCache('posts');
+                    $cache->invalidate();
                     $text = 'Post suggestion disabled.';
                     break;
     
                 case 'enableSuggestion':
                     $app->postRepository->updatePost($postId, ['isSuggestable' => '1']);
-                    $cm->invalidateCache('posts');
+                    $cache->invalidate();
                     $text = 'Post suggestion enabled.';
                     break;
 

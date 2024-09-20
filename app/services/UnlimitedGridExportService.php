@@ -2,11 +2,9 @@
 
 namespace App\Services;
 
-use App\Core\CacheManager;
 use App\Core\Datetypes\DateTime;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
-use App\Exceptions\GeneralException;
 use App\Exceptions\ServiceException;
 use App\Logger\Logger;
 use App\Managers\NotificationManager;
