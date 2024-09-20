@@ -150,21 +150,21 @@ class TopicsPresenter extends AUserPresenter {
         $reportLink = '';
 
         if(!$topic->isDeleted() && $app->actionAuthorizator->canReportTopic($app->currentUser->getId(), $topicId)) {
-            $reportLink = '<div class="col-md col-lg"><a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a></div>';
+            $reportLink = '<div class="col-md col-lg" id="center"><a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a></div>';
         }
 
         $deleteLink = '';
 
         if($app->actionAuthorizator->canDeleteTopic($app->currentUser->getId(), $topic->getId()) && !$topic->isDeleted()) {
-            $deleteLink = '<div class="col-md col-lg"><p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
+            $deleteLink = '<div class="col-md col-lg" id="center"><p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
         } else if($topic->isDeleted()) {
-            $deleteLink = '<div class="col-md col-lg"><p class="post-data">Topic deleted</p></div>';
+            $deleteLink = '<div class="col-md col-lg" id="center"><p class="post-data">Topic deleted</p></div>';
         }
 
         $roleManagementLink = '';
 
         if($app->actionAuthorizator->canManageTopicRoles($topicId, $app->currentUser->getId()) && !$topic->isDeleted()) {
-            $roleManagementLink = '<div class="col-md col-lg"><p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a></div>';
+            $roleManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a></div>';
         }
 
         $tags = $topic->getTags();
@@ -194,17 +194,17 @@ class TopicsPresenter extends AUserPresenter {
 
         $inviteManagementLink = '';
         if($topic->isPrivate() && $app->actionAuthorizator->canManageTopicInvites($app->currentUser->getId(), $topicId)) {
-            $inviteManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $inviteManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $privacyManagementLink = '';
         if($app->actionAuthorizator->canManageTopicPrivacy($app->currentUser->getId(), $topicId)) {
-            $privacyManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $privacyManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $contentRegulationManagementLink = '';
         if($app->actionAuthorizator->canManageContentRegulation($app->currentUser->getId(), $topicId)) {
-            $contentRegulationManagementLink = '<div class="col-md col-lg"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $contentRegulationManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $followersLink = 'Followers';
@@ -286,7 +286,21 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
         }
 
-        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+        $code = '<div class="row">';
+        $i = 1;
+        foreach($links as $link) {
+            $code .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
+
+            if($i == 4) {
+                $code .= '</div><br><div class="row">';
+                $i = 1;
+            } else {
+                $i++;
+            }
+        }
+        $code .= '</div>';
+
+        $this->saveToPresenterCache('links', $code);
 
         if(!empty($links)) {
             $this->saveToPresenterCache('links_br', '<br>');
