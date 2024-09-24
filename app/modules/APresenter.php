@@ -433,21 +433,11 @@ abstract class APresenter extends AGUICore {
 
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
-        $actionAction = 'action' . ucfirst($this->action);
 
         if($isAjax) {
-            if(method_exists($this, $actionAction)) {
-                $result = $app->logger->stopwatch(function() use ($actionAction) {
-                    return $this->$actionAction();
-                }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
-
-                if($this->ajaxResponse !== null) {
-                    return new TemplateObject($this->ajaxResponse);
-                } else if($result !== null) {
-                    return new TemplateObject(json_encode($result));
-                } else {
-                    throw new NoAjaxResponseException();
-                }
+            $result = $this->processAction($moduleName);
+            if($result !== null) {
+                return $result;
             }
         }
 
@@ -482,7 +472,7 @@ abstract class APresenter extends AGUICore {
         if($ok === false) {
             if($isAjax) {
                 if($app->cfg['IS_DEV']) {
-                    throw new ActionDoesNotExistException($actionAction);
+                    throw new ActionDoesNotExistException($this->action);
                 } else {
                     $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
                 }
@@ -517,6 +507,34 @@ abstract class APresenter extends AGUICore {
         $this->presenterCache->reset();
 
         $this->afterRenderCallbacks->executeCallables();
+    }
+
+    /**
+     * Processes AJAX action
+     * 
+     * @param string $moduleName Module name
+     * @return TemplateObject|null Template object or null
+     */
+    private function processAction(string $moduleName) {
+        global $app;
+
+        $actionAction = 'action' . ucfirst($this->action);
+
+        if(method_exists($this, $actionAction)) {
+            $result = $app->logger->stopwatch(function() use ($actionAction) {
+                return $this->$actionAction();
+            }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
+
+            if($this->ajaxResponse !== null) {
+                return new TemplateObject($this->ajaxResponse);
+            } else if($result !== null) {
+                return new TemplateObject(json_encode($result));
+            } else {
+                throw new NoAjaxResponseException();
+            }
+        }
+
+        return null;
     }
 
     /**
