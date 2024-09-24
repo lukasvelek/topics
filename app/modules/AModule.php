@@ -96,7 +96,7 @@ abstract class AModule extends AGUICore {
      * @return string Rendered page content
      */
     public function render(string $presenterTitle, string $actionTitle) {
-        $this->beforePresenterRender($presenterTitle, $actionTitle);
+        $this->startup($presenterTitle, $actionTitle);
         
         $this->renderPresenter();
         $this->renderModule();
@@ -162,7 +162,7 @@ abstract class AModule extends AGUICore {
      * @param string $actionTitle Action title
      * @param bool $isAjax Is the request called from AJAX?
      */
-    private function beforePresenterRender(string $presenterTitle, string $actionTitle) {
+    private function startup(string $presenterTitle, string $actionTitle) {
         $this->template = $this->getTemplate();
 
         $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
@@ -176,6 +176,8 @@ abstract class AModule extends AGUICore {
         $this->presenter->setIsAjax($this->isAjax);
         $this->presenter->setApplication($this->app);
         $this->presenter->lock();
+        
+        $this->presenter->startup();
 
         /**
          * FLASH MESSAGES

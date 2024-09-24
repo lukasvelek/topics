@@ -17,11 +17,11 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
     
     public function __construct() {
         parent::__construct('ManagePostFileUploadsPresenter', 'Post file uploads management');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
+    public function startup() {
+        parent::startup();
+        
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 

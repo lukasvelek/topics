@@ -12,6 +12,18 @@ abstract class AAdminPresenter extends APresenter {
         $this->moduleName = 'AdminModule';
     }
 
+    public function startup() {
+        parent::startup();
+        
+        $this->addBeforeRenderCallback(function() {
+            if(str_contains($this->name, 'Manage')) {
+                $this->template->sidebar = $this->createManageSidebar();
+            } else {
+                $this->template->sidebar = $this->createFeedbackSidebar();
+            }
+        });
+    }
+
     protected function createFeedbackSidebar() {
         $dashboard = $this->checkPage('AdminModule:Feedback');
         $suggestions = $this->checkPage('AdminModule:FeedbackSuggestions');

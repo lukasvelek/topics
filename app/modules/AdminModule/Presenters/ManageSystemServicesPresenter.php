@@ -19,10 +19,10 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageSystemServicesPresenter', 'Manage system services');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 

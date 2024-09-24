@@ -14,15 +14,13 @@ class ManageTransactionsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
 
     public function __construct() {
-        
-
         parent::__construct('ManageTransactionsPresenter', 'Manage transactions');
+    }
+
+    public function startup() {
+        parent::startup();
 
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
     }
 
     public function handleList() {
@@ -112,7 +110,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         });
         $gb->addGridExport(function() {
             return $this->app->transactionLogRepository->getTransactionsForGrid(0, 0);
-        }, GridHelper::GRID_TRANSACTION_LOG);
+        }, GridHelper::GRID_TRANSACTION_LOG, $this->logger);
 
         return ['grid' => $gb->build()];
     }

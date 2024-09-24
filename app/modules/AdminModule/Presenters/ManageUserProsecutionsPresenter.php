@@ -20,10 +20,10 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageUserProsecutionsPresenter', 'Manage user prosecutions');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
@@ -100,7 +100,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         });
         $gb->addGridExport(function() {
             return $this->app->userProsecutionRepository->getActiveProsecutionsForGrid(0, 0);
-        }, GridHelper::GRID_USER_PROSECUTIONS);
+        }, GridHelper::GRID_USER_PROSECUTIONS, $this->logger);
 
         return ['grid' => $gb->build()];
     }

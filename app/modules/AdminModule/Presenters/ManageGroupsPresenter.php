@@ -21,11 +21,11 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageGroupsPresenter', 'Group management');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
+    public function startup() {
+        parent::startup();
+        
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 

@@ -8,10 +8,6 @@ use App\Core\AjaxRequestBuilder;
 class ManagePresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePresenter', 'Manage');
-
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
     }
 
     public function handleDashboard() {

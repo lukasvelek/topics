@@ -40,6 +40,10 @@ class TopicsPresenter extends AUserPresenter {
 
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
+    }
+    
+    public function startup() {
+        parent::startup();
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }

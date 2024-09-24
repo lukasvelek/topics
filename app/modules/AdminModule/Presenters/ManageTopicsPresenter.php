@@ -13,6 +13,10 @@ use Exception;
 class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageTopicsPresenter', 'Manage topics');
+    }
+
+    public function startup() {
+        parent::startup();
 
         $isFeedback = $this->httpGet('isFeedback');
      

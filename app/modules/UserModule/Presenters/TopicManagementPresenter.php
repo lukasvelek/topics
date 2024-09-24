@@ -26,7 +26,11 @@ class TopicManagementPresenter extends AUserPresenter {
 
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
-
+    }
+    
+    public function startup() {
+        parent::startup();
+        
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 

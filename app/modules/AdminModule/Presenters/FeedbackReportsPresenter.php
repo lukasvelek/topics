@@ -23,10 +23,10 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('FeedbackReportsPresenter', 'Reports');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createFeedbackSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
         if(!$this->app->sidebarAuthorizator->canManageReports($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');

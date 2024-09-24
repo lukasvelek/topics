@@ -16,11 +16,11 @@ class ManageGridExportsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageGridExportsPresenter', 'Manage grid exports');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
+    public function startup() {
+        parent::startup();
+        
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
@@ -121,7 +121,7 @@ class ManageGridExportsPresenter extends AAdminPresenter {
             } else {
                 return $this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), 0, 0);
             }
-        }, GridHelper::GRID_GRID_EXPORTS);
+        }, GridHelper::GRID_GRID_EXPORTS, $this->logger);
 
         return ['grid' => $gb->build()];
     }

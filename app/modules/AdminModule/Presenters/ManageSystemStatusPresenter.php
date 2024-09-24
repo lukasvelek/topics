@@ -15,10 +15,10 @@ use App\UI\LinkBuilder;
 class ManageSystemStatusPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageSystemStatusPresenter', 'Manage system status');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
         if(!$this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');

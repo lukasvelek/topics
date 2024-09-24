@@ -85,6 +85,11 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
+     * Everything in startup() method is called after an instance of Presenter has been created and before other functionality-handling methods are called.
+     */
+    public function startup() {}
+
+    /**
      * Returns current user's ID or null if no user is set
      * 
      * @return string|null Current user's ID or null if no user is set
@@ -109,8 +114,6 @@ abstract class APresenter extends AGUICore {
         if($this->app->currentUser !== null) {
             $this->currentUser = $this->app->currentUser;
         }
-
-        var_dump($this->app);
     }
 
     /**

@@ -14,6 +14,10 @@ class SearchPresenter extends AUserPresenter {
 
     public function __construct() {
         parent::__construct('SearchPresenter', 'Search');
+    }
+
+    public function startup() {
+        parent::startup();
 
         $expiration = new DateTime();
         $expiration->modify('+1h');

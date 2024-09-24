@@ -22,11 +22,11 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('FeedbackSuggestionsPresenter', 'Suggestions');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createFeedbackSidebar();
-        });
-
+    public function startup() {
+        parent::startup();
+        
         if(!$this->app->sidebarAuthorizator->canManageSuggestions($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);

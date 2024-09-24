@@ -12,9 +12,12 @@ use Exception;
 class ManagePostsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManagePostsPresenter', 'Manage posts');
-
+    }
+    
+    public function startup() {
+        parent::startup();
+        
         $isFeedback = $this->httpGet('isFeedback');
-     
         $this->addBeforeRenderCallback(function() use ($isFeedback) {
             if($isFeedback) {
                 $this->template->sidebar = $this->createFeedbackSidebar();

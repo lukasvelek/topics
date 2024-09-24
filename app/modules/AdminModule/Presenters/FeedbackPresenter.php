@@ -9,10 +9,6 @@ use App\Constants\SuggestionStatus;
 class FeedbackPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('FeedbackPresenter', 'Feedback');
-
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createFeedbackSidebar();
-        });
     }
 
     public function handleDashboard() {
