@@ -11,9 +11,7 @@ class StatusCheckPresenter extends APresenter {
     }
 
     public function handleList() {
-        global $app;
-
-        $statuses = $app->systemStatusRepository->getAllStatuses();
+        $statuses = $this->app->systemStatusRepository->getAllStatuses();
 
         $statusCode = [];
         foreach($statuses as $status) {

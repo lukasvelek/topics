@@ -24,25 +24,21 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
             $this->template->sidebar = $this->createManageSidebar();
         });
 
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
     
     public function actionListGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
         $filter = $this->httpGet('gridFilter');
 
-        $gridSize = $app->getGridSize();
+        $gridSize = $this->app->getGridSize();
         $lastPage = null;
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);
 
         $gb = new GridBuilder();
 
-        $reports = $app->reportRepository->getAllReports();
+        $reports = $this->app->reportRepository->getAllReports();
         $checkReport = function(int $entityId, string $entityType) use ($reports) {
             foreach($reports as $report) {
                 if($report->getEntityType() == $entityType && $report->getEntityId() == $entityId) {
@@ -57,8 +53,8 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
         switch($filter) {
             case 'topics':
-                $data = $app->topicRepository->getDeletedTopicsForGrid($gridSize, ($gridSize * $page));
-                $totalCount = $app->topicRepository->getDeletedTopicCount();
+                $data = $this->app->topicRepository->getDeletedTopicsForGrid($gridSize, ($gridSize * $page));
+                $totalCount = $this->app->topicRepository->getDeletedTopicCount();
                 $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
@@ -95,8 +91,8 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                 break;
 
             case 'posts':
-                $data = $app->postRepository->getDeletedPostsForGrid($gridSize, ($gridSize * $page));
-                $totalCount = $app->postRepository->getDeletedPostsCount();
+                $data = $this->app->postRepository->getDeletedPostsForGrid($gridSize, ($gridSize * $page));
+                $totalCount = $this->app->postRepository->getDeletedPostsCount();
                 $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
@@ -134,14 +130,14 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                 break;
 
             case 'comments':
-                $data = $app->postCommentRepository->getDeletedComments();
-                $totalCount = $app->postCommentRepository->getDeletedCommentCount();
+                $data = $this->app->postCommentRepository->getDeletedComments();
+                $totalCount = $this->app->postCommentRepository->getDeletedCommentCount();
                 $lastPage = ceil($totalCount / $gridSize);
 
                 $gb->addDataSource($data);
                 $gb->addColumns(['post' => 'Post', 'text' => 'Text', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
-                $gb->addOnColumnRender('post', function(Cell $cell, PostCommentEntity $comment) use ($app) {
-                    $post = $app->postRepository->getPostById($comment->getPostId());
+                $gb->addOnColumnRender('post', function(Cell $cell, PostCommentEntity $comment) {
+                    $post = $this->app->postRepository->getPostById($comment->getPostId());
                     return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
                 });
                 $gb->addOnColumnRender('text', function(Cell $cell, PostCommentEntity $comment) {

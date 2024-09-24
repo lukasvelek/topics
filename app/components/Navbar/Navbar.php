@@ -2,6 +2,7 @@
 
 namespace App\Components\Navbar;
 
+use App\Helpers\LinkHelper;
 use App\Managers\NotificationManager;
 use App\Modules\TemplateObject;
 use App\UI\IRenderable;
@@ -13,6 +14,7 @@ class Navbar implements IRenderable {
     private bool $hasCustomLinks;
     private NotificationManager $notificationManager;
     private ?string $currentUserId;
+    private bool $isCurrentUserAdmin;
 
     public function __construct(NotificationManager $notificationManager, ?string $currentUserId = null) {
         $this->links = [];
@@ -21,8 +23,13 @@ class Navbar implements IRenderable {
         $this->hasCustomLinks = false;
         $this->notificationManager = $notificationManager;
         $this->currentUserId = $currentUserId;
+        $this->isCurrentUserAdmin = false;
 
         $this->getLinks();
+    }
+
+    public function setIsCurrentUserIsAdmin(bool $isCurrentUserAdmin = true) {
+        $this->isCurrentUserAdmin = $isCurrentUserAdmin;
     }
 
     public function hideSearchBar(bool $hide = true) {
@@ -40,23 +47,21 @@ class Navbar implements IRenderable {
     }
 
     private function beforeRender() {
-        global $app;
-
         $linksCode = '';
 
         foreach($this->links as $title => $link) {
             $linksCode .= $this->createLink($link, $title);
         }
 
-        if($this->hasCustomLinks !== true && $app->currentUser->isAdmin()) {
+        if($this->hasCustomLinks !== true && $this->isCurrentUserAdmin) {
             $linksCode .= $this->createLink(NavbarLinks::ADMINISTRATION, 'administration');
         }
 
         $this->template->links = $linksCode;
 
-        if($app->currentUser !== null) {
+        if($this->currentUserId !== null) {
             $profileLinkArray = NavbarLinks::USER_PROFILE;
-            $profileLinkArray['userId'] = $app->currentUser->getId();
+            $profileLinkArray['userId'] = $this->currentUserId;
 
             $notificationLink = $this->createNotificationsLink();
 
@@ -65,7 +70,7 @@ class Navbar implements IRenderable {
             $this->template->user_info = '';
         }
         
-        if($this->hideSearchBar || $app->currentUser === null) {
+        if($this->hideSearchBar || $this->currentUserId === null) {
             $this->template->search_bar = '';
         } else {
             $this->template->search_bar = $this->createSearchBar();
@@ -87,8 +92,6 @@ class Navbar implements IRenderable {
     }
 
     private function createSearchBar() {
-        global $app;
-
         $query = '';
 
         if(isset($_GET['q'])) {
@@ -97,7 +100,7 @@ class Navbar implements IRenderable {
 
         $code = '
             <input type="text" name="searchQuery" id="searchQuery" placeholder="Search..."' . $query . '>
-            <button type="button" onclick="doSearch(\'' . $app->currentUser->getId() . '\')" id="searchQueryButton"><div style="-webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -o-transform: rotate(45deg); transform: rotate(45deg);">&#9906;</div></button>
+            <button type="button" onclick="doSearch(\'' . $this->currentUserId . '\')" id="searchQueryButton"><div style="-webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -o-transform: rotate(45deg); transform: rotate(45deg);">&#9906;</div></button>
             <script type="text/javascript" src="js/NavbarSearch.js"></script>
         ';
 
@@ -105,9 +108,7 @@ class Navbar implements IRenderable {
     }
 
     private function createLink(array $url, string $title) {
-        global $app;
-
-        return '<a class="navbar-link" href="' . $app->composeURL($url) . '">' . $title . '</a>';
+        return '<a class="navbar-link" href="' . LinkHelper::createUrlFromArray($url) . '">' . $title . '</a>';
     }
 
     public function render() {

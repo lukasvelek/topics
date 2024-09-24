@@ -18,9 +18,7 @@ class TopicInvitesPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('TopicInvitesPresenter', 'Topic invites');
 
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleList() {
@@ -41,22 +39,20 @@ class TopicInvitesPresenter extends AUserPresenter {
     public function renderList() {}
 
     public function actionGetInvitesGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES, $gridPage);
 
         $validOnly = true;
 
-        $invites = $app->topicInviteRepository->getInvitesForUserForGrid($app->currentUser->getId(), $gridSize, ($gridSize * $page), $validOnly);
-        $totalInviteCount = count($app->topicInviteRepository->getInvitesForUserForGrid($app->currentUser->getId(), 0, 0, $validOnly));
+        $invites = $this->app->topicInviteRepository->getInvitesForUserForGrid($this->getUserId(), $gridSize, ($gridSize * $page), $validOnly);
+        $totalInviteCount = count($this->app->topicInviteRepository->getInvitesForUserForGrid($this->getUserId(), 0, 0, $validOnly));
 
         $lastPage = ceil($totalInviteCount / $gridSize);
 
-        $topicIds = $app->topicInviteRepository->getAllTopicsInUserInvites($app->currentUser->getId(), $validOnly);
-        $topics = $app->topicRepository->bulkGetTopicsByIds($topicIds, true);
+        $topicIds = $this->app->topicInviteRepository->getAllTopicsInUserInvites($this->getUserId(), $validOnly);
+        $topics = $this->app->topicRepository->bulkGetTopicsByIds($topicIds, true);
 
         $gb = new GridBuilder();
 
@@ -110,20 +106,18 @@ class TopicInvitesPresenter extends AUserPresenter {
     }
 
     public function handleAcceptInvite() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->topicRepository->beginTransaction();
+            $this->app->topicRepository->beginTransaction();
 
-            $app->topicMembershipManager->acceptInvite($topicId, $app->currentUser->getId());
+            $this->app->topicMembershipManager->acceptInvite($topicId, $this->getUserId());
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Invite accepted.', 'success');
         } catch(AException $e) {
-            $app->topicRepository->rollback();
+            $this->app->topicRepository->rollback();
 
             $this->flashMessage('Could not accept invite. Reason: ' . $e->getMessage(), 'error');
         }
@@ -132,20 +126,18 @@ class TopicInvitesPresenter extends AUserPresenter {
     }
 
     public function handleRejectInvite() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->topicRepository->beginTransaction();
+            $this->app->topicRepository->beginTransaction();
 
-            $app->topicMembershipManager->rejectInvite($topicId, $app->currentUser->getId());
+            $this->app->topicMembershipManager->rejectInvite($topicId, $this->getUserId());
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Invite rejected.', 'success');
         } catch(AException $e) {
-            $app->topicRepository->rollback();
+            $this->app->topicRepository->rollback();
 
             $this->flashMessage('Could not reject invite. Reason: ' . $e->getMessage(), 'error');
         }
@@ -154,20 +146,18 @@ class TopicInvitesPresenter extends AUserPresenter {
     }
 
     public function handleDeleteInvite() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->topicRepository->beginTransaction();
+            $this->app->topicRepository->beginTransaction();
 
-            $app->topicMembershipManager->removeInvite($topicId, $app->currentUser->getId());
+            $this->app->topicMembershipManager->removeInvite($topicId, $this->getUserId());
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Invite deleted.', 'success');
         } catch(AException $e) {
-            $app->topicRepository->rollback();
+            $this->app->topicRepository->rollback();
             
             $this->flashMessage('Could not delete invite. Reason: ' . $e->getMessage(), 'error');
         }

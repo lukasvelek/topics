@@ -14,11 +14,11 @@ class ManageTransactionsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
 
     public function __construct() {
-        global $app;
+        
 
         parent::__construct('ManageTransactionsPresenter', 'Manage transactions');
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
         $this->addBeforeRenderCallback(function() {
             $this->template->sidebar = $this->createManageSidebar();
@@ -51,15 +51,13 @@ class ManageTransactionsPresenter extends AAdminPresenter {
     }
 
     public function actionGetGrid() {
-        global $app;
-
-        $gridSize = $app->getGridSize();
+        $gridSize = $this->app->getGridSize();
         $gridPage = $this->httpGet('gridPage');
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_TRANSACTION_LOG, $gridPage);
         
-        $transactions = $app->transactionLogRepository->getTransactionsForGrid($gridSize, ($page * $gridSize));
-        $totalCount = count($app->transactionLogRepository->getTransactionsForGrid(0, 0));
+        $transactions = $this->app->transactionLogRepository->getTransactionsForGrid($gridSize, ($page * $gridSize));
+        $totalCount = count($this->app->transactionLogRepository->getTransactionsForGrid(0, 0));
 
         $lastPage = ceil($totalCount / $gridSize);
 
@@ -72,12 +70,12 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('method', function(Cell $cell, TransactionEntity $te) {
             return $te->getMethod() . '()';
         });
-        $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) use ($app) {
+        $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) {
             if($te->getUserId() === null) {
                 return '-';
             }
             
-            $user = $app->userRepository->getUserById($te->getUserId());
+            $user = $this->app->userRepository->getUserById($te->getUserId());
 
             if($user === null) {
                 return '-';
@@ -99,11 +97,11 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnExportRender('method', function(TransactionEntity $te) {
             return $te->getMethod() . '()';
         });
-        $gb->addOnExportRender('user', function(TransactionEntity $te) use ($app) {
+        $gb->addOnExportRender('user', function(TransactionEntity $te) {
             if($te->getUserId() === null) {
                 return '-';
             } else {
-                $user = $app->userRepository->getUserById($te->getUserId());
+                $user = $this->app->userRepository->getUserById($te->getUserId());
 
                 if($user === null) {
                     return '-';
@@ -112,8 +110,8 @@ class ManageTransactionsPresenter extends AAdminPresenter {
                 }
             }
         });
-        $gb->addGridExport(function() use ($app) {
-            return $app->transactionLogRepository->getTransactionsForGrid(0, 0);
+        $gb->addGridExport(function() {
+            return $this->app->transactionLogRepository->getTransactionsForGrid(0, 0);
         }, GridHelper::GRID_TRANSACTION_LOG);
 
         return ['grid' => $gb->build()];

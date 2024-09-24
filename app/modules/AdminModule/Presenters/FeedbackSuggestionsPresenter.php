@@ -27,49 +27,45 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $this->template->sidebar = $this->createFeedbackSidebar();
         });
 
-        global $app;
-
-        if(!$app->sidebarAuthorizator->canManageSuggestions($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageSuggestions($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
         }
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionSuggestionsListGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_SUGGESTIONS, $gridPage, [$filterType]);
 
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $suggestions = [];
         $suggestionCount = 0;
 
         switch($filterType) {
             case 'null':
-                $suggestions = $app->suggestionRepository->getOpenSuggestionsForList($gridSize, ($gridSize * $page));
-                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForList(0, 0));
+                $suggestions = $this->app->suggestionRepository->getOpenSuggestionsForList($gridSize, ($gridSize * $page));
+                $suggestionCount = count($this->app->suggestionRepository->getOpenSuggestionsForList(0, 0));
                 break;
     
             case 'category':
-                $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
-                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
+                $suggestions = $this->app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($this->app->suggestionRepository->getOpenSuggestionsForListFilterCategory($filterKey, 0, 0));
                 break;
     
             case 'status':
-                $suggestions = $app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
-                $suggestionCount = count($app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
+                $suggestions = $this->app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($this->app->suggestionRepository->getSuggestionsForListFilterStatus($filterKey, 0, 0));
                 break;
     
             case 'user':
-                $suggestions = $app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
-                $suggestionCount = count($app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
+                $suggestions = $this->app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, $gridSize, ($gridSize * $page));
+                $suggestionCount = count($this->app->suggestionRepository->getOpenSuggestionsForListFilterAuthor($filterKey, 0, 0));
                 break;
         }
 
@@ -106,8 +102,8 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
-            $user = $app->userRepository->getUserById($e->getUserId());
+        $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) {
+            $user = $this->app->userRepository->getUserById($e->getUserId());
 
             $a = HTML::a();
 
@@ -119,12 +115,12 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) use ($app) {
+        $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) {
             $a = HTML::a();
 
             $a->text($e->getTitle())
                 ->class('grid-link')
-                ->href($app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
+                ->href($this->app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
             ;
 
             return $a->render();
@@ -178,8 +174,8 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                     break;
 
                 case 'user':
-                    $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
-                    $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+                    $usersInSuggestions = $this->app->suggestionRepository->getUsersInSuggestions();
+                    $users = $this->app->userRepository->getUsersByIdBulk($usersInSuggestions);
 
                     foreach($users as $user) {
                         if($user->getId() == $filterKey) {
@@ -253,8 +249,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function actionGetFilterCategorySuboptions() {
-        global $app;
-
         $category = $this->httpGet('category');
 
         $options = [];
@@ -272,8 +266,8 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
                 break;
 
             case 'user':
-                $usersInSuggestions = $app->suggestionRepository->getUsersInSuggestions();
-                $users = $app->userRepository->getUsersByIdBulk($usersInSuggestions);
+                $usersInSuggestions = $this->app->suggestionRepository->getUsersInSuggestions();
+                $users = $this->app->userRepository->getUsersByIdBulk($usersInSuggestions);
 
                 foreach($users as $user) {
                     $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
@@ -307,14 +301,12 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function actionLoadComments() {
-        global $app;
-
         $suggestionId = $this->httpGet('suggestionId');
         $limit = $this->httpGet('limit');
         $offset = $this->httpGet('offset');
 
-        $comments = $app->suggestionRepository->getCommentsForSuggestion($suggestionId, $limit, $offset);
-        $commentCount = $app->suggestionRepository->getCommentCountForSuggestion($suggestionId);
+        $comments = $this->app->suggestionRepository->getCommentsForSuggestion($suggestionId, $limit, $offset);
+        $commentCount = $this->app->suggestionRepository->getCommentCountForSuggestion($suggestionId);
 
         $loadMoreLink = '';
 
@@ -324,9 +316,9 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $commentCode = [];
         foreach($comments as $comment) {
-            if($comment->isAdminOnly() && !$app->currentUser->isAdmin()) continue;
+            if($comment->isAdminOnly() && !$this->getUser()->isAdmin()) continue;
             
-            $author = $app->userRepository->getUserById($comment->getUserId());
+            $author = $this->app->userRepository->getUserById($comment->getUserId());
             $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $comment->getUserId() . '">' . $author->getUsername() . '</a>';
 
             $hiddenLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=0&suggestionId=' . $suggestionId . '">Hidden</a>';
@@ -334,7 +326,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             $hide = $comment->isAdminOnly() ? $hiddenLink : $publicLink;
 
             $deleteLink = ' <a class="post-data-link" style="color: red" href="?page=AdminModule:FeedbackSuggestions&action=deleteComment&commentId=' . $comment->getId() . '&suggestionId=' . $suggestionId . '">Delete</a>';
-            $delete = ($app->currentUser->isAdmin() && !$comment->isStatusChange()) ? $deleteLink : '';
+            $delete = ($this->getUser()->isAdmin() && !$comment->isStatusChange()) ? $deleteLink : '';
 
             $tmp = '
                 <div id="comment-' . $comment->getId() . '">
@@ -354,14 +346,12 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleProfile() {
-        global $app;
-
         $suggestionId = $this->httpGet('suggestionId', true);
-        $suggestion = $app->suggestionRepository->getSuggestionById($suggestionId);
+        $suggestion = $this->app->suggestionRepository->getSuggestionById($suggestionId);
 
         $this->saveToPresenterCache('suggestion', $suggestion);
 
-        $author = $app->userRepository->getUserById($suggestion->getUserId());
+        $author = $this->app->userRepository->getUserById($suggestion->getUserId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $suggestion->getUserId() . '">' . $author->getUsername() . '</a>';
         $status = '<span style="color: ' . SuggestionStatus::getColorByStatus($suggestion->getStatus()) . '">' . SuggestionStatus::toString($suggestion->getStatus()) . '</span>';
         $category = '<span style="color: ' . SuggestionCategory::getColorByKey($suggestion->getCategory()) . '">' . SuggestionCategory::toString($suggestion->getCategory()) . '</span>';
@@ -389,7 +379,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             ->addTextArea('text', 'Text:', null, true)
         ;
 
-        if($app->currentUser->isAdmin()) {
+        if($this->getUser()->isAdmin()) {
             $fb->addCheckbox('adminOnly', 'Admin only?', true);
         }
 
@@ -399,7 +389,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $adminPart = '';
 
-        if($app->currentUser->isAdmin()) {
+        if($this->getUser()->isAdmin()) {
             $adminPart = '
                 <div class="row">
                     <div class="col-md">
@@ -429,31 +419,29 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleNewComment(?FormResponse $fr = null) {
-        global $app;
-
-        $userId = $app->currentUser->getId();
+        $userId = $this->getUserId();
         $suggestionId = $this->httpGet('suggestionId');
         $text = $fr->text;
         $adminOnly = false;
 
         if($this->httpPost('adminOnly') !== null &&
            $this->httpPost('adminOnly') == 'on' &&
-           $app->currentUser->isAdmin()) {
+           $this->getUser()->isAdmin()) {
             $adminOnly = true;
         }
 
         try {
-            $app->suggestionRepository->beginTransaction();
+            $this->app->suggestionRepository->beginTransaction();
 
-            $commentId = $app->entityManager->generateEntityId(EntityManager::SUGGESTION_COMMENTS);
+            $commentId = $this->app->entityManager->generateEntityId(EntityManager::SUGGESTION_COMMENTS);
 
-            $app->suggestionRepository->createNewComment($commentId, $userId, $suggestionId, $text, $adminOnly);
+            $this->app->suggestionRepository->createNewComment($commentId, $userId, $suggestionId, $text, $adminOnly);
 
-            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->suggestionRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Comment posted.', 'success');
         } catch(AException $e) {
-            $app->suggestionRepository->rollback();
+            $this->app->suggestionRepository->rollback();
 
             $this->flashMessage('Could not create comment. Reason: ' . $e->getMessage(), 'error');
         }
@@ -462,16 +450,14 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleEditForm(?FormResponse $fr = null) {
-        global $app;
-
         $suggestionId = $this->httpGet('suggestionId', true);
-        $suggestion = $app->suggestionRepository->getSuggestionById($suggestionId);
+        $suggestion = $this->app->suggestionRepository->getSuggestionById($suggestionId);
 
         $this->saveToPresenterCache('suggestion', $suggestion);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $userId = $app->currentUser->getId();
-            $user = $app->currentUser;
+            $userId = $this->getUserId();
+            $user = $this->getUser();
             $category = $fr->category;
             $status = $fr->status;
 
@@ -485,15 +471,15 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             }
             
             try {
-                $app->suggestionRepository->beginTransaction();
+                $this->app->suggestionRepository->beginTransaction();
 
-                $app->suggestionRepository->updateSuggestion($suggestionId, $userId, $values, $user);
+                $this->app->suggestionRepository->updateSuggestion($suggestionId, $userId, $values, $user);
 
-                $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->suggestionRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Updated suggestion.', 'success');
             } catch(AException $e) {
-                $app->suggestionRepository->rollback();
+                $this->app->suggestionRepository->rollback();
 
                 $this->flashMessage('Could not update suggestion. Reason: ' . $e->getMessage(), 'error');
             }
@@ -558,22 +544,22 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleUpdateComment() {
-        global $app;
+        
 
         $commentId = $this->httpGet('commentId');
         $hidden = $this->httpGet('hidden');
         $suggestionId = $this->httpGet('suggestionId');
 
         try {
-            $app->suggestionRepository->beginTransaction();
+            $this->app->suggestionRepository->beginTransaction();
 
-            $app->suggestionRepository->updateComment($commentId, ['adminOnly' => $hidden]);
+            $this->app->suggestionRepository->updateComment($commentId, ['adminOnly' => $hidden]);
 
-            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->suggestionRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Comment ' . (($hidden == '1') ? 'hidden' : 'made public') . '.', 'success');
         } catch(AException $e) {
-            $app->suggestionRepository->rollback();
+            $this->app->suggestionRepository->rollback();
 
             $this->flashMessage('Could not update comment. Reason: ' . $e->getMessage(), 'error');
         }
@@ -582,21 +568,21 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleDeleteComment() {
-        global $app;
+        
 
         $commentId = $this->httpGet('commentId');
         $suggestionId = $this->httpGet('suggestionId');
 
         try {
-            $app->suggestionRepository->beginTransaction();
+            $this->app->suggestionRepository->beginTransaction();
 
-            $app->suggestionRepository->deleteComment($commentId);
+            $this->app->suggestionRepository->deleteComment($commentId);
 
-            $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->suggestionRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Comment deleted.', 'success');
         } catch(AException $e) {
-            $app->suggestionRepository->rollback();
+            $this->app->suggestionRepository->rollback();
 
             $this->flashMessage('Could not delete comment. Reason: ' . $e->getMessage(), 'error');
         }

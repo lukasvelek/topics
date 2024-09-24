@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Helpers\LinkHelper;
 use App\Modules\APresenter;
 
 /**
@@ -111,9 +112,7 @@ class AjaxRequestBuilder {
      * @return string URL string
      */
     private function composeURLFromArray(array $url) {
-        global $app;
-
-        return $app->composeURL($url);
+        return LinkHelper::createUrlFromArray($url);
     }
 
     /**

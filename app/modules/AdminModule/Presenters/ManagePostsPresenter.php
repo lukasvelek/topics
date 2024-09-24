@@ -25,33 +25,30 @@ class ManagePostsPresenter extends AAdminPresenter {
     }
 
     public function handleDeleteComment(?FormResponse $fr = null) {
-        global $app;
-
         $commentId = $this->httpGet('commentId', true);
-        $comment = $app->postCommentRepository->getCommentById($commentId);
+        $comment = $this->app->postCommentRepository->getCommentById($commentId);
         $reportId = $this->httpGet('reportId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $post = $app->postRepository->getPostById($comment->getPostId());
+            $post = $this->app->postRepository->getPostById($comment->getPostId());
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
             
-            $report = $app->reportRepository->getReportById($reportId);
+            $report = $this->app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            
             try {
-                $app->postRepository->beginTransaction();
+                $this->app->postRepository->beginTransaction();
 
-                $app->contentManager->deleteComment($commentId);
+                $this->app->contentManager->deleteComment($commentId);
 
-                $app->notificationManager->createNewCommentDeleteDueToReportNotification($comment->getAuthorId(), $postLink, $userLink, $reason);
+                $this->app->notificationManager->createNewCommentDeleteDueToReportNotification($comment->getAuthorId(), $postLink, $userLink, $reason);
 
-                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Comment #' . $commentId . ' deleted.', 'success');
             } catch(Exception $e) {
-                $app->postRepository->rollback();
+                $this->app->postRepository->rollback();
 
                 $this->flashMessage('Comment #' . $commentId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
@@ -80,32 +77,29 @@ class ManagePostsPresenter extends AAdminPresenter {
     }
 
     public function handleDeletePost(?FormResponse $fr = null) {
-        global $app;
-
         $postId = $this->httpGet('postId', true);
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
             
-            $report = $app->reportRepository->getReportById($reportId);
+            $report = $this->app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            
             try {
-                $app->postRepository->beginTransaction();
+                $this->app->postRepository->beginTransaction();
 
-                $app->contentManager->deletePost($postId);
+                $this->app->contentManager->deletePost($postId);
 
-                $app->notificationManager->createNewPostDeleteDueToReportNotification($post->getAuthorId(), $postLink, $userLink, $reason);
+                $this->app->notificationManager->createNewPostDeleteDueToReportNotification($post->getAuthorId(), $postLink, $userLink, $reason);
 
-                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Post #' . $postId . ' deleted with all its comments.', 'success');
             } catch(Exception $e) {
-                $app->postRepository->rollback();
+                $this->app->postRepository->rollback();
 
                 $this->flashMessage('Could not delete post. Reason: ' . $e->getMessage(), 'error');
             }

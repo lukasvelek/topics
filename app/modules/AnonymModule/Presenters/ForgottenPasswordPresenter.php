@@ -16,25 +16,23 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
     }
 
     public function handleForm(?FormResponse $fr = null) {
-        global $app;
-
         if($this->httpGet('isFormSubmit') == '1') {
             $username = $fr->username;
 
             try {
-                $app->userRepository->beginTransaction();
+                $this->app->userRepository->beginTransaction();
 
-                $user = $app->userManager->getUserByUsername($username);
+                $user = $this->app->userManager->getUserByUsername($username);
 
                 if($user === null) {
                     throw new GeneralException('User with this username does not exist.');
                 }
 
-                $app->userManager->createNewForgottenPassword($user->getId());
+                $this->app->userManager->createNewForgottenPassword($user->getId());
 
-                $app->userRepository->commit(null, __METHOD__);
+                $this->app->userRepository->commit(null, __METHOD__);
             } catch(AException|Exception $e) {
-                $app->userRepository->rollback();
+                $this->app->userRepository->rollback();
             }
 
             $this->flashMessage('Email with instructions to reset your password sent.');
@@ -63,11 +61,9 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
     }
 
     public function handleChangePasswordForm(?FormResponse $fr = null) {
-        global $app;
-
         $linkId = $this->httpGet('linkId');
 
-        if(!$app->userManager->checkForgottenPasswordRequest($linkId)) {
+        if(!$this->app->userManager->checkForgottenPasswordRequest($linkId)) {
             $this->flashMessage('This request has expired. Please request again.', 'error');
             $this->redirect(['page' => 'AnonymModule:Home']);
         }
@@ -76,15 +72,15 @@ class ForgottenPasswordPresenter extends AAnonymPresenter {
             $password = HashManager::hashPassword($fr->password);
 
             try {
-                $app->userRepository->beginTransaction();
+                $this->app->userRepository->beginTransaction();
 
-                $app->userManager->processForgottenPasswordRequestPasswordChange($linkId, $password);
+                $this->app->userManager->processForgottenPasswordRequestPasswordChange($linkId, $password);
 
-                $app->userRepository->commit(null, __METHOD__);
+                $this->app->userRepository->commit(null, __METHOD__);
 
                 $this->flashMessage('Password updated. You may now log in.', 'success');
             } catch(AException|Exception $e) {
-                $app->userRepository->rollback();
+                $this->app->userRepository->rollback();
 
                 $this->flashMessage('Could not change password. Please try again.', 'error');
             }

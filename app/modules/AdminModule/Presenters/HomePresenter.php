@@ -23,9 +23,7 @@ class HomePresenter extends AAdminPresenter {
     }
 
     public function actionGetGraphData() {
-        global $app;
-        
-        $qb = $app->topicRepository->getQb();
+        $qb = $this->app->topicRepository->getQb();
         $qb ->select(['*'])
             ->from('admin_dashboard_widgets_graph_data')
             ->limit(1)
@@ -52,7 +50,7 @@ class HomePresenter extends AAdminPresenter {
 
             foreach($topics as $topicId => $postCount) {
                 try {
-                    $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+                    $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
                 } catch(AException $e) {
                     continue;
                 }
@@ -73,9 +71,9 @@ class HomePresenter extends AAdminPresenter {
             $resultData = [];
 
             foreach($posts as $postId => $commentCount) {
-                $post = $app->postRepository->getPostById($postId);
+                $post = $this->app->postRepository->getPostById($postId);
                 try {
-                    $topic = $app->topicManager->getTopicById($post->getTopicId(), $app->currentUser->getId());
+                    $topic = $this->app->topicManager->getTopicById($post->getTopicId(), $this->getUserId());
                 } catch(AException $e) {
                     continue;
                 }
@@ -96,7 +94,7 @@ class HomePresenter extends AAdminPresenter {
             $resultData = [];
 
             foreach($users as $userId => $commentCount) {
-                $user = $app->userRepository->getUserById($userId);
+                $user = $this->app->userRepository->getUserById($userId);
 
                 $labels[] = $user->getUsername();
                 $resultData[] = $commentCount;

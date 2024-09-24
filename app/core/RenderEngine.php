@@ -13,6 +13,7 @@ use App\Modules\AModule;
 class RenderEngine {
     private AModule $module;
     private Logger $logger;
+    private Application $application;
 
     private string $presenterTitle;
     private string $actionTitle;
@@ -28,13 +29,14 @@ class RenderEngine {
      * @param string $presenter Presenter name
      * @param string $action Action name
      */
-    public function __construct(Logger $logger, AModule $module, string $presenter, string $action) {
+    public function __construct(Logger $logger, AModule $module, string $presenter, string $action, Application $application) {
         $this->logger = $logger;
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
         $this->renderedContent = null;
         $this->isAjax = false;
+        $this->application = $application;
     }
 
     /**
@@ -67,9 +69,9 @@ class RenderEngine {
     private function beforeRender() {
         $this->module->loadPresenters();
 
-        $key = $this->module->getTitle() . '_' . $this->presenterTitle;
-
         $this->module->setAjax($this->isAjax);
+        $this->module->setApplication($this->application);
+        $this->module->setLogger($this->logger);
     }
 }
 

@@ -24,28 +24,24 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             $this->template->sidebar = $this->createManageSidebar();
         });
 
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionGridList() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_BANNED_WORDS, $gridPage);
 
-        $data = $app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
-        $totalCount = $app->contentRegulationRepository->getBannedWordsCount();
+        $data = $this->app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
+        $totalCount = $this->app->contentRegulationRepository->getBannedWordsCount();
         $lastPage = ceil($totalCount / $gridSize);
 
         $gb = new GridBuilder();
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
         $gb->addDataSource($data);
-        $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) use ($app) {
-            $user = $app->userRepository->getUserById($bwe->getAuthorId());
+        $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) {
+            $user = $this->app->userRepository->getUserById($bwe->getAuthorId());
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
@@ -88,23 +84,21 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
     }
 
     public function handleNewForm(?FormResponse $fr = null) {
-        global $app;
-
         if($this->httpGet('isSubmit') == '1') {
             $word = $fr->word;
 
             try {
-                $app->contentRegulationRepository->beginTransaction();
+                $this->app->contentRegulationRepository->beginTransaction();
 
-                $wordId = $app->entityManager->generateEntityId(EntityManager::BANNED_WORDS);
+                $wordId = $this->app->entityManager->generateEntityId(EntityManager::BANNED_WORDS);
 
-                $app->contentRegulationRepository->createNewBannedWord($wordId, $word, $app->currentUser->getId());
+                $this->app->contentRegulationRepository->createNewBannedWord($wordId, $word, $this->getUserId());
 
-                $app->contentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->contentRegulationRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Word banned.', 'success');
             } catch(AException $e) {
-                $app->contentRegulationRepository->rollback();
+                $this->app->contentRegulationRepository->rollback();
 
                 $this->flashMessage('Could not ban word. Reason: ' . $e->getMessage(), 'error');
             }
@@ -136,20 +130,18 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
     }
 
     public function handleDelete() {
-        global $app;
-
         $wordId = $this->httpGet('wordId', true);
 
         try {
-            $app->contentRegulationRepository->beginTransaction();
+            $this->app->contentRegulationRepository->beginTransaction();
 
-            $app->contentRegulationRepository->deleteBannedWord($wordId);
+            $this->app->contentRegulationRepository->deleteBannedWord($wordId);
 
-            $app->contentRegulationRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->contentRegulationRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Word unbanned.', 'success');
         } catch(AException $e) {
-            $app->contentRegulationRepository->rollback();
+            $this->app->contentRegulationRepository->rollback();
 
             $this->flashMessage('Could not unban word. Reason: ' . $e->getMessage(), 'error');
         }

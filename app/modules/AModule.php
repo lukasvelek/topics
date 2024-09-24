@@ -2,6 +2,7 @@
 
 namespace App\Modules;
 
+use App\Core\Application;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Exceptions\TemplateDoesNotExistException;
@@ -21,6 +22,7 @@ abstract class AModule extends AGUICore {
     protected ?TemplateObject $template;
     private ?APresenter $presenter;
     private ?Logger $logger;
+    protected ?Application $app;
 
     public array $cfg;
 
@@ -39,6 +41,16 @@ abstract class AModule extends AGUICore {
         $this->presenter = null;
         $this->logger = null;
         $this->isAjax = false;
+        $this->app = null;
+    }
+
+    /**
+     * Sets Application instance
+     * 
+     * @param Application $application Application instance
+     */
+    public function setApplication(Application $application) {
+        $this->app = $application;
     }
 
     /**
@@ -85,7 +97,6 @@ abstract class AModule extends AGUICore {
      */
     public function render(string $presenterTitle, string $actionTitle) {
         $this->beforePresenterRender($presenterTitle, $actionTitle);
-        
         
         $this->renderPresenter();
         $this->renderModule();
@@ -163,6 +174,8 @@ abstract class AModule extends AGUICore {
         $this->presenter->setLogger($this->logger);
         $this->presenter->setCfg($this->cfg);
         $this->presenter->setIsAjax($this->isAjax);
+        $this->presenter->setApplication($this->app);
+        $this->presenter->lock();
 
         /**
          * FLASH MESSAGES

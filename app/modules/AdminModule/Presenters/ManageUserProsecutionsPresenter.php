@@ -25,33 +25,29 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             $this->template->sidebar = $this->createManageSidebar();
         });
 
-        global $app;
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
-
-        if(!$app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageUserProsecutions($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
     }
 
     public function actionProsecutionGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_PROSECUTIONS, $gridPage);
 
-        $prosecutionCount = $app->userProsecutionRepository->getActiveProsecutionsCount();
+        $prosecutionCount = $this->app->userProsecutionRepository->getActiveProsecutionsCount();
         $lastPage = ceil($prosecutionCount / $gridSize);
-        $prosecutions = $app->userProsecutionRepository->getActiveProsecutionsForGrid($gridSize, ($page * $gridSize));
+        $prosecutions = $this->app->userProsecutionRepository->getActiveProsecutionsForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'reason' => 'Reason', 'type' => 'Type', 'dateFrom' => 'Date from', 'dateTo' => 'Date to']);
         $gb->addDataSource($prosecutions);
-        $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) use ($app) {
-            $user = $app->userRepository->getUserById($userProsecution->getUserId());
+        $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) {
+            $user = $this->app->userRepository->getUserById($userProsecution->getUserId());
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('type', function(Cell $cell, UserProsecutionEntity $userProsecution) {
@@ -81,8 +77,8 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
 
-        $gb->addOnExportRender('user', function(UserProsecutionEntity $userProsecution) use ($app) {
-            $user = $app->userRepository->getUserById($userProsecution->getUserId());
+        $gb->addOnExportRender('user', function(UserProsecutionEntity $userProsecution) {
+            $user = $this->app->userRepository->getUserById($userProsecution->getUserId());
             return $user->getUsername();
         });
         $gb->addOnExportRender('type', function(UserProsecutionEntity $userProsecution) {
@@ -102,8 +98,8 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
                 return '-';
             }
         });
-        $gb->addGridExport(function() use ($app) {
-            return $app->userProsecutionRepository->getActiveProsecutionsForGrid(0, 0);
+        $gb->addGridExport(function() {
+            return $this->app->userProsecutionRepository->getActiveProsecutionsForGrid(0, 0);
         }, GridHelper::GRID_USER_PROSECUTIONS);
 
         return ['grid' => $gb->build()];
@@ -136,8 +132,6 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     }
 
     public function handleRemoveProsecution(?FormResponse $fr = null) {
-        global $app;
-
         $prosecutionId = $this->httpGet('prosecutionId', true);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
@@ -145,25 +139,25 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             $password = $fr->password;
 
             try {
-                $app->userAuth->authUser($password);
+                $this->app->userAuth->authUser($password);
             } catch(AException $e) {
                 $this->flashMessage('Could not authenticate user. Reason: ' . $e->getMessage(), 'error');
                 $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
             }
 
-            $prosecution = $app->userProsecutionRepository->getProsecutionById($prosecutionId);
-            $user = $app->userRepository->getUserById($prosecution->getUserId());
+            $prosecution = $this->app->userProsecutionRepository->getProsecutionById($prosecutionId);
+            $user = $this->app->userRepository->getUserById($prosecution->getUserId());
 
             try {
-                $app->userProsecutionRepository->beginTransaction();
+                $this->app->userProsecutionRepository->beginTransaction();
 
-                $app->userProsecutionManager->removeBan($prosecution->getUserId(), $app->currentUser->getId(), $reason);
+                $this->app->userProsecutionManager->removeBan($prosecution->getUserId(), $this->getUserId(), $reason);
 
-                $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->userProsecutionRepository->commit($this->getUserId(), __METHOD__);
                 
                 $this->flashMessage('Removed ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . ').');
             } catch(AException $e) {
-                $app->userProsecutionRepository->rollback();
+                $this->app->userProsecutionRepository->rollback();
                 
                 $this->flashMessage('Could not remove ban for user \'' . $user->getUsername() . '\' (' . $user->getId() . '). Reason: ' . $e->getMessage(), 'error');
                 $this->redirect(['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list']);
@@ -192,22 +186,20 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     }
 
     public function actionProsecutionLogGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_PROSECUTION_LOG, $gridPage);
 
-        $historyEntriesCount = $app->userProsecutionRepository->getProsecutionHistoryEntryCount();
+        $historyEntriesCount = $this->app->userProsecutionRepository->getProsecutionHistoryEntryCount();
         $lastPage = ceil($historyEntriesCount / $gridSize);
-        $historyEntries = $app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($gridSize, ($page * $gridSize));
+        $historyEntries = $this->app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $gb->addDataSource($historyEntries);
-        $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) use ($app) {
-            $user = $app->userRepository->getUserById($entity->getUserId());
+        $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
+            $user = $this->app->userRepository->getUserById($entity->getUserId());
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, UserProsecutionHistoryEntryEntity $entity) {

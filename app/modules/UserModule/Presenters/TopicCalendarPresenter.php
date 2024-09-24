@@ -20,12 +20,10 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleCalendar() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         try {
-            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         } catch(AException $e) {
             $this->flashMessage($e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
@@ -50,7 +48,7 @@ class TopicCalendarPresenter extends AUserPresenter {
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
         ];
 
-        if($app->actionAuthorizator->canCreateTopicCalendarUserEvents($app->currentUser->getId(), $topicId)) {
+        if($this->app->actionAuthorizator->canCreateTopicCalendarUserEvents($this->getUserId(), $topicId)) {
             $links[] = LinkBuilder::createSimpleLink('New event', $this->createURL('newEventForm', ['topicId' => $topicId]), 'post-data-link');
         }
 
@@ -63,8 +61,6 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function actionGetCalendar() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         $month = $this->httpGet('month');
@@ -80,19 +76,19 @@ class TopicCalendarPresenter extends AUserPresenter {
         $dateTo = $year . '-' . $month . '-' . $lastDay . ' 00:00:00';
 
         // Scheduled posts
-        $posts = $app->postRepository->getScheduledPostsForTopicIdForDate($dateFrom, $dateTo, $topicId);
+        $posts = $this->app->postRepository->getScheduledPostsForTopicIdForDate($dateFrom, $dateTo, $topicId);
 
         $calendar->addEventsFromPosts($posts);
         // End of scheduled posts
 
         // Polls
-        $polls = $app->topicPollRepository->getActivePollsWithValidityForDateRangeForTopicId($topicId, $dateFrom, $dateTo);
+        $polls = $this->app->topicPollRepository->getActivePollsWithValidityForDateRangeForTopicId($topicId, $dateFrom, $dateTo);
 
         $calendar->addEventsFromPolls($polls);
         // End of polls
 
         // User events
-        $events = $app->topicCalendarEventRepository->getEventsForTopicIdForDateRange($topicId, $dateFrom, $dateTo);
+        $events = $this->app->topicCalendarEventRepository->getEventsForTopicIdForDateRange($topicId, $dateFrom, $dateTo);
 
         $calendar->addEventsFromUserEvents($events);
         // End of user events
@@ -101,8 +97,6 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleNewEventForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         if($this->httpGet('isFormSubmit') !== null) {
@@ -110,20 +104,20 @@ class TopicCalendarPresenter extends AUserPresenter {
             $description = $fr->description;
             $dateFrom = $fr->dateFrom;
             $dateTo = $fr->dateTo;
-            $userId = $app->currentUser->getId();
+            $userId = $this->getUserId();
 
             try {
-                $app->topicCalendarEventRepository->beginTransaction();
+                $this->app->topicCalendarEventRepository->beginTransaction();
 
-                $eventId = $app->topicCalendarEventRepository->createEntityId(EntityManager::TOPIC_CALENDAR_USER_EVENTS);
+                $eventId = $this->app->topicCalendarEventRepository->createEntityId(EntityManager::TOPIC_CALENDAR_USER_EVENTS);
 
-                $app->topicCalendarEventRepository->createEvent($eventId, $userId, $topicId, $title, $description, $dateFrom, $dateTo);
+                $this->app->topicCalendarEventRepository->createEvent($eventId, $userId, $topicId, $title, $description, $dateFrom, $dateTo);
 
-                $app->topicCalendarEventRepository->commit($userId, __METHOD__);
+                $this->app->topicCalendarEventRepository->commit($userId, __METHOD__);
 
                 $this->flashMessage('New event created.', 'success');
             } catch(AException $e) {
-                $app->topicCalendarEventRepository->rollback();
+                $this->app->topicCalendarEventRepository->rollback();
 
                 $this->flashMessage('Could not create a new event. Reason: ' . $e->getMessage(), 'error');
             }
@@ -161,16 +155,14 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleEvent() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
         $eventId = $this->httpGet('eventId', true);
 
-        $event = $app->topicCalendarEventRepository->getEventById($eventId);
+        $event = $this->app->topicCalendarEventRepository->getEventById($eventId);
 
         $dateRange = DateTimeFormatHelper::formatDateToUserFriendly($event->getDateFrom()) . ' - ' . DateTimeFormatHelper::formatDateToUserFriendly($event->getDateTo());
 
-        $author = $app->userRepository->getUserById($event->getUserId());
+        $author = $this->app->userRepository->getUserById($event->getUserId());
 
         if($author !== null) {
             $author = UserEntity::createUserProfileLink($author);
@@ -194,10 +186,10 @@ class TopicCalendarPresenter extends AUserPresenter {
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('calendar', ['topicId' => $topicId]), 'post-data-link')
         ];
 
-        if($app->actionAuthorizator->canEditUserCalendarEvent($app->currentUser->getId(), $topicId, $event)) {
+        if($this->app->actionAuthorizator->canEditUserCalendarEvent($this->getUserId(), $topicId, $event)) {
             $links[] = LinkBuilder::createSimpleLink('Edit', $this->createURL('editEventForm', ['topicId' => $topicId, 'eventId' => $eventId]), 'post-data-link');
         }
-        if($app->actionAuthorizator->canDeleteUserCalendarEvent($app->currentUser->getId(), $topicId, $event)) {
+        if($this->app->actionAuthorizator->canDeleteUserCalendarEvent($this->getUserId(), $topicId, $event)) {
             $links[] = LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteEvent', ['topicId' => $topicId, 'eventId' => $eventId]), 'post-data-link');
         }
 
@@ -210,15 +202,13 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleEditEventForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
         $eventId = $this->httpGet('eventId', true);
 
         try {
-            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
 
-            $event = $app->topicCalendarEventRepository->getEventById($eventId);
+            $event = $this->app->topicCalendarEventRepository->getEventById($eventId);
 
             if($event === null) {
                 throw new NonExistingEntityException('Event #' . $eventId . ' does not exist.');
@@ -233,10 +223,10 @@ class TopicCalendarPresenter extends AUserPresenter {
             $description = $fr->description;
             $dateFrom = $fr->dateFrom;
             $dateTo = $fr->dateTo;
-            $userId = $app->currentUser->getId();
+            $userId = $this->getUserId();
 
             try {
-                $app->topicCalendarEventRepository->beginTransaction();
+                $this->app->topicCalendarEventRepository->beginTransaction();
 
                 $data = [
                     'title' => $title,
@@ -245,13 +235,13 @@ class TopicCalendarPresenter extends AUserPresenter {
                     'dateTo' => $dateTo
                 ];
 
-                $app->topicCalendarEventRepository->updateEvent($eventId, $data);
+                $this->app->topicCalendarEventRepository->updateEvent($eventId, $data);
 
-                $app->topicCalendarEventRepository->commit($userId, __METHOD__);
+                $this->app->topicCalendarEventRepository->commit($userId, __METHOD__);
 
                 $this->flashMessage('Event updated.', 'success');
             } catch(AException $e) {
-                $app->topicCalendarEventRepository->rollback();
+                $this->app->topicCalendarEventRepository->rollback();
 
                 $this->flashMessage('Could not edit event. Reason: ' . $e->getMessage(), 'error');
             }
@@ -293,21 +283,21 @@ class TopicCalendarPresenter extends AUserPresenter {
     }
 
     public function handleDeleteEvent() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
         $eventId = $this->httpGet('eventId', true);
 
         try {
-            $app->topicCalendarEventRepository->beginTransaction();
+            $this->app->topicCalendarEventRepository->beginTransaction();
 
-            $app->topicCalendarEventRepository->deleteEvent($eventId);
+            $this->app->topicCalendarEventRepository->deleteEvent($eventId);
 
-            $app->topicCalendarEventRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicCalendarEventRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Event deleted.', 'success');
             $this->redirect($this->createUrl('calendar', ['topicId' => $topicId]));
         } catch(AException $e) {
+            $this->app->topicCalendarEventRepository->rollback();
+            
             $this->flashMessage('Could not delete event. Reason: ' . $e->getMessage(), 'error');
             $this->redirect($this->createURL('event', ['topicId' => $topicId, 'eventId' => $eventId]));
         }

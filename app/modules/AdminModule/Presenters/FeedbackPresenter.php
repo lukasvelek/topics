@@ -22,14 +22,12 @@ class FeedbackPresenter extends AAdminPresenter {
     public function renderDashboard() {}
 
     public function actionGetGraphData() {
-        global $app;
-
         $noDataAvailableMessage = 'No data currently available';
 
         $resultData = [];
 
         // suggestions
-        $suggestions = $app->suggestionRepository->getAllSuggestions();
+        $suggestions = $this->app->suggestionRepository->getAllSuggestions();
 
         if(empty($suggestions)) {
             $resultData['suggestions'] = [
@@ -61,7 +59,7 @@ class FeedbackPresenter extends AAdminPresenter {
         }
 
         // reports
-        $reports = $app->reportRepository->getAllReports();
+        $reports = $this->app->reportRepository->getAllReports();
 
         if(empty($reports)) {
             $resultData['reports'] = [

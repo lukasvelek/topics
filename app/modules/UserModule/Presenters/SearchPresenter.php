@@ -22,13 +22,11 @@ class SearchPresenter extends AUserPresenter {
     }
 
     public function handleSearch() {
-        global $app;
-
         $query = $this->httpGet('q', true);
 
         // users
-        $users = $this->searchIndexCache->load('users', function() use ($app, $query) {
-            return $app->userRepository->searchUsersByUsername($query);
+        $users = $this->searchIndexCache->load('users', function() use ($query) {
+            return $this->app->userRepository->searchUsersByUsername($query);
         });
 
         $usersArray = [];
@@ -46,11 +44,11 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('users', $userResult);
 
         // topics
-        $topics = $this->searchIndexCache->load('topics', function() use ($app, $query) {
-            return $app->topicRepository->searchTopics($query);
+        $topics = $this->searchIndexCache->load('topics', function() use ($query) {
+            return $this->app->topicRepository->searchTopics($query);
         });
         
-        $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+        $topics = $this->app->topicManager->checkTopicsVisibility($topics, $this->getUserId());
 
         $topicArray = [];
         if(!empty($topics)) {
@@ -72,22 +70,22 @@ class SearchPresenter extends AUserPresenter {
         $this->saveToPresenterCache('topics', $topicResult);
 
         // tags
-        $tags = $this->searchIndexCache->load('tags', function() use ($app, $query) {
-            $topicsDb = $app->topicRepository->composeQueryForTopics()->execute();
+        $tags = $this->searchIndexCache->load('tags', function() use ($query) {
+            $topicsDb = $this->app->topicRepository->composeQueryForTopics()->execute();
 
             $topics = [];
             while($row = $topicsDb->fetchAssoc()) {
                 $topics[] = TopicEntity::createEntityFromDbRow($row);
             }
     
-            $topics = $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+            $topics = $this->app->topicManager->checkTopicsVisibility($topics, $this->getUserId());
     
             $topicIds = [];
             foreach($topics as $topic) {
                 $topicIds[] = $topic->getId();
             }
     
-            return $app->topicRepository->searchTags(ucfirst($query), $topicIds);
+            return $this->app->topicRepository->searchTags(ucfirst($query), $topicIds);
         });
 
         $tagArray = [];
@@ -116,8 +114,6 @@ class SearchPresenter extends AUserPresenter {
     }
 
     public function handleTagTopics() {
-        global $app;
-
         $tag = $this->httpGet('tag', true);
         $backQuery = $this->httpGet('backQuery');
 
@@ -129,9 +125,9 @@ class SearchPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('links', $links);
 
-        $topics = $this->searchIndexCache->load('topicTags', function() use ($app, $tag) {
-            $topics = $app->topicRepository->getTopicsWithTag($tag);
-            return $app->topicManager->checkTopicsVisibility($topics, $app->currentUser->getId());
+        $topics = $this->searchIndexCache->load('topicTags', function() use ($tag) {
+            $topics = $this->app->topicRepository->getTopicsWithTag($tag);
+            return $this->app->topicManager->checkTopicsVisibility($topics, $this->getUserId());
         });
 
         $topicArray = [];

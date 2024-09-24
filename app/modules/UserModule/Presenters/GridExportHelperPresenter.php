@@ -12,8 +12,6 @@ class GridExportHelperPresenter extends AUserPresenter {
     }
 
     public function actionExportGrid() {
-        global $app;
-        
         $hash = $this->httpGet('hash', true);
         $exportAll = $this->httpGet('exportAll', true);
         $gridName = $this->httpGet('gridName', true);
@@ -21,22 +19,22 @@ class GridExportHelperPresenter extends AUserPresenter {
         $exportAll = ($exportAll == 'true');
 
         try {
-            $app->gridExportRepository->beginTransaction();
+            $this->app->gridExportRepository->beginTransaction();
 
-            $app->gridExportRepository->createNewExport($app->currentUser->getId(), $hash, $gridName);
+            $this->app->gridExportRepository->createNewExport($this->getUserId(), $hash, $gridName);
 
-            $app->gridExportRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
-            $app->gridExportRepository->rollback();
+            $this->app->gridExportRepository->rollback();
 
             return ['empty' => '1'];
         }
 
-        $ge = new GridExporter($app->logger, $hash, $app->cfg, $app->serviceManager);
+        $ge = new GridExporter($this->app->logger, $hash, $this->app->cfg, $this->app->serviceManager);
         $ge->setExportAll($exportAll);
 
         $count = $ge->getRowCount();
-        if($count >= $app->cfg['MAX_GRID_EXPORT_SIZE'] && $exportAll) {
+        if($count >= $this->app->cfg['MAX_GRID_EXPORT_SIZE'] && $exportAll) {
             $result = $ge->exportAsync();
         } else {
             $result = $ge->export();
@@ -56,13 +54,13 @@ class GridExportHelperPresenter extends AUserPresenter {
             }
     
             try {
-                $app->gridExportRepository->beginTransaction();
+                $this->app->gridExportRepository->beginTransaction();
     
-                $app->gridExportRepository->updateExportByHash($hash, $updateData);
+                $this->app->gridExportRepository->updateExportByHash($hash, $updateData);
     
-                $app->gridExportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
             } catch(AException $e) {
-                $app->gridExportRepository->rollback();
+                $this->app->gridExportRepository->rollback();
             }
         }
 

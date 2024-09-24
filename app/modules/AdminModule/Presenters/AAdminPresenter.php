@@ -13,8 +13,6 @@ abstract class AAdminPresenter extends APresenter {
     }
 
     protected function createFeedbackSidebar() {
-        global $app;
-
         $dashboard = $this->checkPage('AdminModule:Feedback');
         $suggestions = $this->checkPage('AdminModule:FeedbackSuggestions');
         $reports = $this->checkPage('AdminModule:FeedbackReports');
@@ -22,10 +20,10 @@ abstract class AAdminPresenter extends APresenter {
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Feedback', 'action' => 'dashboard'], $dashboard);
 
-        if($app->sidebarAuthorizator->canManageSuggestions($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageSuggestions($this->getUserId())) {
             $sb->addLink('Suggestions', ['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'list'], $suggestions);
         }
-        if($app->sidebarAuthorizator->canManageReports($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageReports($this->getUserId())) {
             $sb->addLink('Reports', ['page' => 'AdminModule:FeedbackReports', 'action' => 'list'], $reports);
         }
 
@@ -33,8 +31,6 @@ abstract class AAdminPresenter extends APresenter {
     }
 
     protected function createManageSidebar() {
-        global $app;
-
         $dashboard = $this->checkPage('AdminModule:Manage');
         $users = $this->checkPage('AdminModule:ManageUsers');
         $userProsecutions = $this->checkPage('AdminModule:ManageUserProsecutions');
@@ -50,30 +46,30 @@ abstract class AAdminPresenter extends APresenter {
         $sb = new Sidebar();
         $sb->addLink('Dashboard', ['page' => 'AdminModule:Manage', 'action' => 'dashboard'], $dashboard);
 
-        if($app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageUsers($this->getUserId())) {
             $sb->addLink('Users', ['page' => 'AdminModule:ManageUsers', 'action' => 'list'], $users);
             $sb->addLink('Groups', ['page' => 'AdminModule:ManageGroups', 'action' => 'list'], $groups);
         }
-        if($app->sidebarAuthorizator->canManageUserProsecutions($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageUserProsecutions($this->getUserId())) {
             $sb->addLink('User prosecution', ['page' => 'AdminModule:ManageUserProsecutions', 'action' => 'list'], $userProsecutions);
         }
-        if($app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $sb->addLink('System status', ['page' => 'AdminModule:ManageSystemStatus', 'action' => 'list'], $systemStatus);
             $sb->addLink('System services', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'list'], $systemServices);
         }
-        if($app->sidebarAuthorizator->canManageDeletedContent($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
             $sb->addLink('Deleted content', ['page' => 'AdminModule:ManageDeletedContent', 'action' => 'list'], $deletedContent);
         }
-        if($app->sidebarAuthorizator->canManageBannedWords($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageBannedWords($this->getUserId())) {
             $sb->addLink('Banned words', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'list'], $bannedWords);
         }
-        if($app->sidebarAuthorizator->canManagePostFileUploads($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManagePostFileUploads($this->getUserId())) {
             $sb->addLink('Post file uploads', ['page' => 'AdminModule:ManagePostFileUploads', 'action' => 'list'], $postFileUploads);
         }
-        if($app->sidebarAuthorizator->canManageTransactions($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageTransactions($this->getUserId())) {
             $sb->addLink('Transactions', ['page' => 'AdminModule:ManageTransactions', 'action' => 'list'], $transactions);
         }
-        if($app->sidebarAuthorizator->canManageGridExports($app->currentUser->getId())) {
+        if($this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
             $sb->addLink('Grid exports', ['page' => 'AdminModule:ManageGridExports', 'action' => 'list'], $gridExports);
         }
 

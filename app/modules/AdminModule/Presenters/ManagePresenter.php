@@ -15,9 +15,7 @@ class ManagePresenter extends AAdminPresenter {
     }
 
     public function handleDashboard() {
-        global $app;
-
-        $statuses = $app->systemStatusRepository->getAllStatuses();
+        $statuses = $this->app->systemStatusRepository->getAllStatuses();
 
         $statusCode = [];
         foreach($statuses as $status) {
@@ -63,11 +61,9 @@ class ManagePresenter extends AAdminPresenter {
     }
 
     public function actionLoadEntityCount() {
-        global $app;
-
-        $userCount = $app->userRepository->getUsersCount();
-        $postCount = $app->postRepository->getPostCount();
-        $topicCount = $app->topicRepository->getTopicCount();
+        $userCount = $this->app->userRepository->getUsersCount();
+        $postCount = $this->app->postRepository->getPostCount();
+        $topicCount = $this->app->topicRepository->getTopicCount();
 
         $widget = '<div class="row">
                     <div class="col-md">
