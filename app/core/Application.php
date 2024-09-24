@@ -312,7 +312,8 @@ class Application {
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction);
         $this->logger->info('Rendering page content.', __METHOD__);
-        return $re->render($this->isAjaxRequest);
+        $re->setAjax($this->isAjaxRequest);
+        return $re->render();
     }
 
     /**

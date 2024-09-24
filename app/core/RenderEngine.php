@@ -17,9 +17,9 @@ class RenderEngine {
     private string $presenterTitle;
     private string $actionTitle;
 
-    private array $cachedPages;
-
     private ?string $renderedContent;
+
+    private bool $isAjax;
 
     /**
      * Class constructor
@@ -33,21 +33,29 @@ class RenderEngine {
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
-        $this->cachedPages = [];
         $this->renderedContent = null;
+        $this->isAjax = false;
+    }
+
+    /**
+     * Does the call come from AJAX?
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setAjax(bool $isAjax = true) {
+        $this->isAjax = $isAjax;
     }
 
     /**
      * Renders the page content by rendering
      * 
-     * @param bool $isAjax Is the request called from AJAX?
-     * @param string HTML page code
+     * @return string HTML page code or null
      */
-    public function render(bool $isAjax) {
+    public function render() {
         $this->beforeRender();
 
         if($this->renderedContent === null) {
-            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle);
         }
 
         return $this->renderedContent;
@@ -61,9 +69,7 @@ class RenderEngine {
 
         $key = $this->module->getTitle() . '_' . $this->presenterTitle;
 
-        if(array_key_exists($key, $this->cachedPages)) {
-            $this->renderedContent = $this->cachedPages[$key];
-        }
+        $this->module->setAjax($this->isAjax);
     }
 }
 

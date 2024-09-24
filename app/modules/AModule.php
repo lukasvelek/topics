@@ -24,6 +24,8 @@ abstract class AModule extends AGUICore {
 
     public array $cfg;
 
+    private bool $isAjax;
+
     /**
      * The class constructor
      * 
@@ -36,6 +38,16 @@ abstract class AModule extends AGUICore {
         $this->template = null;
         $this->presenter = null;
         $this->logger = null;
+        $this->isAjax = false;
+    }
+
+    /**
+     * Does the call come from AJAX?
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setAjax(bool $isAjax) {
+        $this->isAjax = $isAjax;
     }
 
     /**
@@ -69,14 +81,13 @@ abstract class AModule extends AGUICore {
      * 
      * @param string $presenterTitle Presenter title
      * @param string $actionTitle Action title
-     * @param bool $isAjax Is request called from AJAX?
      * @return string Rendered page content
      */
-    public function render(string $presenterTitle, string $actionTitle, bool $isAjax) {
-        $this->beforePresenterRender($presenterTitle, $actionTitle, $isAjax);
+    public function render(string $presenterTitle, string $actionTitle) {
+        $this->beforePresenterRender($presenterTitle, $actionTitle);
         
         
-        $this->renderPresenter($isAjax);
+        $this->renderPresenter();
         $this->renderModule();
 
         return $this->template->render()->getRenderedContent();
@@ -89,13 +100,11 @@ abstract class AModule extends AGUICore {
 
     /**
      * Renders the presenter and fetches the TemplateObject instance. It also renders flash messages.
-     * 
-     * @param bool $isAjax Is request called from AJAX?
      */
-    public function renderPresenter(bool $isAjax) {
-        $this->template = $this->presenter->render($this->title, $isAjax);
+    public function renderPresenter() {
+        $this->template = $this->presenter->render($this->title);
 
-        if(!$isAjax) {
+        if(!$this->isAjax) {
             $this->fillFlashMessages();
         }
     }
@@ -142,17 +151,18 @@ abstract class AModule extends AGUICore {
      * @param string $actionTitle Action title
      * @param bool $isAjax Is the request called from AJAX?
      */
-    private function beforePresenterRender(string $presenterTitle, string $actionTitle, bool $isAjax) {
+    private function beforePresenterRender(string $presenterTitle, string $actionTitle) {
         $this->template = $this->getTemplate();
 
         $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
 
         $this->presenter = new $realPresenterTitle();
-        $this->presenter->setTemplate($isAjax ? null : $this->getTemplate());
+        $this->presenter->setTemplate($this->isAjax ? null : $this->getTemplate());
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
         $this->presenter->setLogger($this->logger);
         $this->presenter->setCfg($this->cfg);
+        $this->presenter->setIsAjax($this->isAjax);
 
         /**
          * FLASH MESSAGES

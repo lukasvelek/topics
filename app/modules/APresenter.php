@@ -30,6 +30,8 @@ abstract class APresenter extends AGUICore {
     private ?string $ajaxResponse;
     private ?string $defaultAction;
     public ?string $moduleName;
+    private bool $isAjax;
+    private bool $lock;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
@@ -59,6 +61,8 @@ abstract class APresenter extends AGUICore {
         $this->logger = null;
         $this->defaultAction = null;
         $this->moduleName = null;
+        $this->isAjax = false;
+        $this->lock = false;
 
         $this->presenterCache = new ArrayList();
         $this->presenterCache->setStringKeyType();
@@ -72,6 +76,40 @@ abstract class APresenter extends AGUICore {
 
         $this->flashMessages = [];
         $this->specialRedirectUrlParams = [];
+    }
+
+    /**
+     * Locks important variables so they are readonly
+     */
+    public function lock() {
+        $this->lock = true;
+    }
+
+    /**
+     * Unlocks important variables so they are not readonly
+     */
+    public function unlock() {
+        $this->lock = false;
+    }
+
+    /**
+     * Returns if the call comes from AJAX
+     * 
+     * @return bool Is AJAX?
+     */
+    protected function isAjax() {
+        return $this->isAjax;
+    }
+
+    /**
+     * Sets if the call comes from AJAX
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setIsAjax(bool $isAjax) {
+        if(!$this->lock) {
+            $this->isAjax = $isAjax;
+        }
     }
 
     /**
@@ -325,15 +363,14 @@ abstract class APresenter extends AGUICore {
      * Here are also the macros of the common template filled.
      * 
      * @param string $moduleName Name of the current module
-     * @param bool $isAjax True if this request is AJAX or false if not
      * @return string Presenter template content
      */
-    public function render(string $moduleName, bool $isAjax) {
+    public function render(string $moduleName) {
         global $app;
 
-        $contentTemplate = $this->beforeRender($moduleName, $isAjax);
+        $contentTemplate = $this->beforeRender($moduleName);
         
-        if(!$isAjax) {
+        if(!$this->isAjax) {
             if($contentTemplate !== null && $this->template !== null) {
                 $this->template->join($contentTemplate);
             }
@@ -420,10 +457,9 @@ abstract class APresenter extends AGUICore {
      * E.g. it calls the 'handleX()' operation that might not need to be rendered.
      * 
      * @param string $moduleName the module name
-     * @param bool $isAjax Is request called from AJAX?
      * @return null|TemplateObject Template content or null
      */
-    private function beforeRender(string $moduleName, bool $isAjax) {
+    private function beforeRender(string $moduleName) {
         global $app;
 
         $this->cacheFactory = new CacheFactory($this->cfg);
@@ -434,7 +470,7 @@ abstract class APresenter extends AGUICore {
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
 
-        if($isAjax) {
+        if($this->isAjax) {
             $result = $this->processAction($moduleName);
             if($result !== null) {
                 return $result;
@@ -458,7 +494,7 @@ abstract class APresenter extends AGUICore {
             return new TemplateObject($handleResult);
         }
 
-        if(method_exists($this, $renderAction) && !$isAjax) {
+        if(method_exists($this, $renderAction) && !$this->isAjax) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -470,7 +506,7 @@ abstract class APresenter extends AGUICore {
         }
 
         if($ok === false) {
-            if($isAjax) {
+            if($this->isAjax) {
                 if($app->cfg['IS_DEV']) {
                     throw new ActionDoesNotExistException($this->action);
                 } else {
