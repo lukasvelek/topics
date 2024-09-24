@@ -23,13 +23,11 @@ class LoginPresenter extends APresenter {
     }
 
     public function handleLoginForm(?FormResponse $fr = null) {
-        global $app;
-
         if($this->httpGet('isSubmit') == 'true') {
             try {
-                $app->userAuth->loginUser($fr->username, $fr->password);
+                $this->app->userAuth->loginUser($fr->username, $fr->password);
                 
-                $app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
+                $this->app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
             } catch (DatabaseExecutionException $e) {
                 $this->flashMessage('Could not log in due to internal error. [' . $e->getHash() . ']', 'error');

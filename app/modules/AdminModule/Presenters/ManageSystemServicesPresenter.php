@@ -19,16 +19,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageSystemServicesPresenter', 'Manage system services');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
-        global $app;
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
-
-        if(!$app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
@@ -51,14 +49,12 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function actionLoadServicesGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_SYSTEM_SERVICES, $gridPage);
 
-        $services = $app->systemServicesRepository->getAllServices();
+        $services = $this->app->systemServicesRepository->getAllServices();
         $count = count($services);
         $lastPage = ceil($count / $gridSize);
 
@@ -147,12 +143,10 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     }
 
     public function handleRun() {
-        global $app;
-
         $serviceId = $this->httpGet('serviceId', true);
-        $service = $app->systemServicesRepository->getServiceById($serviceId);
+        $service = $this->app->systemServicesRepository->getServiceById($serviceId);
 
-        $app->serviceManager->runService($service->getScriptPath());  
+        $this->app->serviceManager->runService($service->getScriptPath());  
         
         $this->flashMessage('Service started.', 'success');
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);

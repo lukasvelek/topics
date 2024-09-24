@@ -11,6 +11,7 @@ use App\Core\Caching\CacheNames;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\ModuleDoesNotExistException;
+use App\Helpers\LinkHelper;
 use App\Logger\Logger;
 use App\Managers\ContentManager;
 use App\Managers\EntityManager;
@@ -261,17 +262,7 @@ class Application {
      * @return string URL
      */
     public function composeURL(array $params) {
-        $url = '?';
-
-        $tmp = [];
-
-        foreach($params as $key => $value) {
-            $tmp[] = $key . '=' . $value;
-        }
-
-        $url .= implode('&', $tmp);
-
-        return $url;
+        return LinkHelper::createUrlFromArray($params);
     }
 
     /**
@@ -310,9 +301,10 @@ class Application {
         $moduleObject->setLogger($this->logger);
 
         $this->logger->info('Initializing render engine.', __METHOD__);
-        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction);
+        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
-        return $re->render($this->isAjaxRequest);
+        $re->setAjax($this->isAjaxRequest);
+        return $re->render();
     }
 
     /**

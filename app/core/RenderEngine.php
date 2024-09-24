@@ -13,13 +13,14 @@ use App\Modules\AModule;
 class RenderEngine {
     private AModule $module;
     private Logger $logger;
+    private Application $application;
 
     private string $presenterTitle;
     private string $actionTitle;
 
-    private array $cachedPages;
-
     private ?string $renderedContent;
+
+    private bool $isAjax;
 
     /**
      * Class constructor
@@ -28,26 +29,35 @@ class RenderEngine {
      * @param string $presenter Presenter name
      * @param string $action Action name
      */
-    public function __construct(Logger $logger, AModule $module, string $presenter, string $action) {
+    public function __construct(Logger $logger, AModule $module, string $presenter, string $action, Application $application) {
         $this->logger = $logger;
         $this->module = $module;
         $this->presenterTitle = $presenter;
         $this->actionTitle = $action;
-        $this->cachedPages = [];
         $this->renderedContent = null;
+        $this->isAjax = false;
+        $this->application = $application;
+    }
+
+    /**
+     * Does the call come from AJAX?
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setAjax(bool $isAjax = true) {
+        $this->isAjax = $isAjax;
     }
 
     /**
      * Renders the page content by rendering
      * 
-     * @param bool $isAjax Is the request called from AJAX?
-     * @param string HTML page code
+     * @return string HTML page code or null
      */
-    public function render(bool $isAjax) {
+    public function render() {
         $this->beforeRender();
 
         if($this->renderedContent === null) {
-            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle, $isAjax);
+            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle);
         }
 
         return $this->renderedContent;
@@ -59,11 +69,9 @@ class RenderEngine {
     private function beforeRender() {
         $this->module->loadPresenters();
 
-        $key = $this->module->getTitle() . '_' . $this->presenterTitle;
-
-        if(array_key_exists($key, $this->cachedPages)) {
-            $this->renderedContent = $this->cachedPages[$key];
-        }
+        $this->module->setAjax($this->isAjax);
+        $this->module->setApplication($this->application);
+        $this->module->setLogger($this->logger);
     }
 }
 

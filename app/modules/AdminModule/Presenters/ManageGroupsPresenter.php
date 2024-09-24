@@ -21,27 +21,23 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageGroupsPresenter', 'Group management');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+    public function startup() {
+        parent::startup();
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionLoadGroupGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_GROUPS, $gridPage);
 
-        $totalCount = $app->groupRepository->getGroupCount();
+        $totalCount = $this->app->groupRepository->getGroupCount();
         $lastPage = ceil($totalCount / $gridSize);
-        $groups = $app->groupRepository->getGroupsForGrid($gridSize, ($page * $gridSize));
+        $groups = $this->app->groupRepository->getGroupsForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
@@ -79,22 +75,20 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function actionGroupMemberGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
         $groupId = $this->httpGet('groupId');
 
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_GROUPS, $gridPage, [$groupId]);
 
-        $membersCount = $app->groupRepository->getGroupMembersCount($groupId);
+        $membersCount = $this->app->groupRepository->getGroupMembersCount($groupId);
         $lastPage = ceil($membersCount / $gridSize);
-        $members = $app->groupRepository->getGroupMembersForGrid($groupId, $gridSize, ($page * $gridSize));
+        $members = $this->app->groupRepository->getGroupMembersForGrid($groupId, $gridSize, ($page * $gridSize));
         $users = [];
 
         foreach($members as $member) {
-            $users[$member->getUserId()] = $app->userRepository->getUserById($member->getUserId());
+            $users[$member->getUserId()] = $this->app->userRepository->getUserById($member->getUserId());
         }
 
         $gb = new GridBuilder();
@@ -107,8 +101,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, GroupMembershipEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());
         });
-        $gb->addAction(function(GroupMembershipEntity $entity) use ($app) {
-            if($app->actionAuthorizator->canRemoveMemberFromGroup($app->currentUser->getId()) && $entity->getUserId() != $app->currentUser->getId()) {
+        $gb->addAction(function(GroupMembershipEntity $entity) {
+            if($this->app->actionAuthorizator->canRemoveMemberFromGroup($this->getUserId()) && $entity->getUserId() != $this->getUserId()) {
                 return LinkBuilder::createSimpleLink('Remove', ['page' => 'AdminModule:ManageGroups', 'action' => 'removeMember', 'groupId' => $entity->getGroupId(), 'userId' => $entity->getUserId()], 'grid-link');
             } else {
                 return '-';
@@ -120,10 +114,8 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function handleListMembers() {
-        global $app;
-
         $groupId = $this->httpGet('groupId', true);
-        $group = $app->groupRepository->getGroupById($groupId);
+        $group = $this->app->groupRepository->getGroupById($groupId);
 
         $this->saveToPresenterCache('group', $group);
 
@@ -143,7 +135,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link') . "&nbsp;"
         ];
 
-        if($app->actionAuthorizator->canAddMemberToGroup($app->currentUser->getId())) {
+        if($this->app->actionAuthorizator->canAddMemberToGroup($this->getUserId())) {
             $links[] = LinkBuilder::createSimpleLink('Add member', ['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'groupId' => $groupId], 'post-data-link');
         }
 
@@ -159,28 +151,26 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function handleNewMember(?FormResponse $fr = null) {
-        global $app;
-
         $groupId = $this->httpGet('groupId', true);
-        $group = $app->groupRepository->getGroupById($groupId);
+        $group = $this->app->groupRepository->getGroupById($groupId);
 
         if($this->httpGet('isSubmit') == '1') {
             $user = $fr->user;
-            $userEntity = $app->userRepository->getUserById($user);
+            $userEntity = $this->app->userRepository->getUserById($user);
             
             try {
-                $app->groupRepository->beginTransaction();
+                $this->app->groupRepository->beginTransaction();
 
-                $app->groupRepository->addGroupMember($groupId, $user);
+                $this->app->groupRepository->addGroupMember($groupId, $user);
 
-                $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->groupRepository->commit($this->getUserId(), __METHOD__);
 
                 $cache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
                 $cache->invalidate();
                 
                 $this->flashMessage('User <i>' . $userEntity->getUsername() . '</i> has been added to group <i>' . $group->getTitle() . '</i>', 'success');
             } catch(AException $e) {
-                $app->groupRepository->rollback();
+                $this->app->groupRepository->rollback();
 
                 $this->flashMessage('Could not added user to the group. Reason: ' . $e->getMessage(), 'error');
             }
@@ -191,7 +181,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
             $fb ->setAction(['page' => 'AdminModule:ManageGroups', 'action' => 'newMember', 'isSubmit' => '1', 'groupId' => $groupId])
                 ->addTextInput('usernameSearch', 'Username:', null, true)
-                ->addButton('Search', 'searchUsers(' . $app->currentUser->getId() . ', ' . $groupId . ')')
+                ->addButton('Search', 'searchUsers(' . $this->getUserId() . ', ' . $groupId . ')')
                 ->addSelect('user', 'User:', [], true)
                 ->addSubmit('Add user', false, true)
             ;
@@ -222,19 +212,17 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function actionSearchUsersForNewMemberForm() {
-        global $app;
-        
         $username = $this->httpGet('q');
         $groupId = $this->httpGet('groupId');
 
-        $groupMembers = $app->groupRepository->getGroupMemberUserIds($groupId);
+        $groupMembers = $this->app->groupRepository->getGroupMemberUserIds($groupId);
 
-        $qb = $app->userRepository->composeStandardQuery($username, __METHOD__);
+        $qb = $this->app->userRepository->composeStandardQuery($username, __METHOD__);
         $qb ->andWhere($qb->getColumnNotInValues('userId', $groupMembers))
             ->andWhere('isAdmin = 1')
         ;
 
-        $users = $app->userRepository->getUsersFromQb($qb);
+        $users = $this->app->userRepository->getUsersFromQb($qb);
 
         $options = [];
         foreach($users as $user) {
@@ -255,28 +243,26 @@ class ManageGroupsPresenter extends AAdminPresenter {
     }
 
     public function handleRemoveMember(?FormResponse $fr = null) {
-        global $app;
-
         $groupId = $this->httpGet('groupId');
-        $group = $app->groupRepository->getGroupById($groupId);
+        $group = $this->app->groupRepository->getGroupById($groupId);
         
         $userId = $this->httpGet('userId');
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') == '1') {
             try {
-                $app->groupRepository->beginTransaction();
+                $this->app->groupRepository->beginTransaction();
 
-                $app->groupRepository->removeGroupMember($groupId, $userId);
+                $this->app->groupRepository->removeGroupMember($groupId, $userId);
 
-                $app->groupRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->groupRepository->commit($this->getUserId(), __METHOD__);
 
                 $cache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
                 $cache->invalidate();
 
                 $this->flashMessage('Removed user <i>' . $user->getUsername() . '</i> from group <i>' . $group->getTitle() . '</i>.', 'success');
             } catch(AException $e) {
-                $app->groupRepository->rollback();
+                $this->app->groupRepository->rollback();
 
                 $this->flashMessage('Could not remove user from the group. Reason: ' . $e->getMessage(), 'error');
             }

@@ -13,6 +13,10 @@ use Exception;
 class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageTopicsPresenter', 'Manage topics');
+    }
+
+    public function startup() {
+        parent::startup();
 
         $isFeedback = $this->httpGet('isFeedback');
      
@@ -26,33 +30,31 @@ class ManageTopicsPresenter extends AAdminPresenter {
     }
 
     public function handleDeleteTopic(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
-        $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+        $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $topicLink = TopicEntity::createTopicProfileLink($topic, true);
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
             
-            $report = $app->reportRepository->getReportById($reportId);
+            $report = $this->app->reportRepository->getReportById($reportId);
             $reason = ReportCategory::toString($report->getCategory()) . ' (' . $report->getShortenedDescription(25) . '...)';
 
-            $topicOwner = $app->topicMembershipManager->getTopicOwnerId($topicId);
+            $topicOwner = $this->app->topicMembershipManager->getTopicOwnerId($topicId);
 
             try {
-                $app->topicRepository->beginTransaction();
+                $this->app->topicRepository->beginTransaction();
 
-                $app->topicManager->deleteTopic($topicId, $app->currentUser->getId());
+                $this->app->topicManager->deleteTopic($topicId, $this->getUserId());
 
-                $app->notificationManager->createNewTopicDeleteDueToReportNotification($topicOwner, $topicLink, $userLink, $reason);
+                $this->app->notificationManager->createNewTopicDeleteDueToReportNotification($topicOwner, $topicLink, $userLink, $reason);
 
-                $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Topic #' . $topicId . ' deleted with all its posts and comments.', 'success');
             } catch(AException $e) {
-                $app->topicRepository->rollback();
+                $this->app->topicRepository->rollback();
 
                 $this->flashMessage('Could not delete topic. Reason: ' . $e->getMessage(), 'error');
             }

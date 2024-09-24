@@ -16,14 +16,12 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function handleProfile() {
-        global $app;
-
         $userId = $this->httpGet('userId');
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
 
         $this->saveToPresenterCache('user', $user);
 
-        $postCount = $app->postRepository->getPostCountForUserId($userId);
+        $postCount = $this->app->postRepository->getPostCountForUserId($userId);
 
         $this->saveToPresenterCache('postCount', $postCount);
 
@@ -31,16 +29,16 @@ class UsersPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('reportLink', $reportLink);
         
-        $followerCount = $app->userFollowingManager->getFollowerCount($userId);
+        $followerCount = $this->app->userFollowingManager->getFollowerCount($userId);
         $this->saveToPresenterCache('followerCount', $followerCount);
 
-        $followingCount = $app->userFollowingManager->getFollowingCount($userId);
+        $followingCount = $this->app->userFollowingManager->getFollowingCount($userId);
         $this->saveToPresenterCache('followingCount', $followingCount);
 
         $followLink = '';
 
-        if($app->currentUser->getId() != $userId) {
-            if($app->userFollowingManager->canFollowUser($app->currentUser->getId(), $userId)) {
+        if($this->getUserId() != $userId) {
+            if($this->app->userFollowingManager->canFollowUser($this->getUserId(), $userId)) {
                 $followLink = LinkBuilder::createSimpleLink('Follow', $this->createURL('followUser', ['userId' => $userId]), 'post-data-link');
             } else {
                 $followLink = LinkBuilder::createSimpleLink('Unfollow', $this->createURL('unfollowUser', ['userId' => $userId]), 'post-data-link');
@@ -50,14 +48,14 @@ class UsersPresenter extends AUserPresenter {
         $this->saveToPresenterCache('followLink', $followLink);
 
         $manageFollowersLink = 'Followers';
-        if($app->currentUser->getId() == $userId) {
+        if($this->getUserId() == $userId) {
             $manageFollowersLink = LinkBuilder::createSimpleLinkObject('Followers', $this->createURL('manageFollowers'), 'post-data-link');
             $manageFollowersLink->setTitle('Manage followers');
         }
         $this->saveToPresenterCache('manageFollowersLink', $manageFollowersLink);
 
         $manageFollowingLink = 'Following';
-        if($app->currentUser->getId() == $userId) {
+        if($this->getUserId() == $userId) {
             $manageFollowingLink = LinkBuilder::createSimpleLinkObject('Following', $this->createURL('manageFollowing'), 'post-data-link');
             $manageFollowingLink->setTitle('Manage followings');
         }
@@ -99,19 +97,15 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function actionLoadUserActionHistory() {
-        global $app;
-
         $userId = $this->httpGet('userId');
 
-        $actionHistory = $app->contentManager->getUserActionHistory($userId, 10);
+        $actionHistory = $this->app->contentManager->getUserActionHistory($userId, 10);
 
         return ['actionHistory' => $actionHistory];
     }
 
     public function handleManageFollowers() {
-        global $app;
-
-        $totalFollowers = $app->userFollowingManager->getFollowerCount($app->currentUser->getId());
+        $totalFollowers = $this->app->userFollowingManager->getFollowerCount($this->getUserId());
 
         $arb = new AjaxRequestBuilder();
         $arb->setAction($this, 'getFollowersList')
@@ -125,9 +119,9 @@ class UsersPresenter extends AUserPresenter {
         $this->addScript($arb);
         $this->addScript('getFollowersList(0)');
 
-        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $app->currentUser->getId()]), 'post-data-link');
+        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $this->getUserId()]), 'post-data-link');
         
-        $this->saveToPresenterCache('username', $app->currentUser->getUsername());
+        $this->saveToPresenterCache('username', $this->getUser()?->getUsername());
         $this->saveToPresenterCache('totalFollowers', $totalFollowers);
         $this->saveToPresenterCache('backLink', $backLink);
     }
@@ -145,18 +139,16 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function actionGetFollowersList() {
-        global $app;
-
         $offset = $this->httpGet('offset');
         $limit = 10;
 
-        $followers = $app->userFollowingManager->getFollowersForUserWithOffset($app->currentUser->getId(), $limit, $offset);
+        $followers = $this->app->userFollowingManager->getFollowersForUserWithOffset($this->getUserId(), $limit, $offset);
 
-        $totalFollowers = $app->userFollowingManager->getFollowerCount($app->currentUser->getId());
+        $totalFollowers = $this->app->userFollowingManager->getFollowerCount($this->getUserId());
 
         $codeArray = [];
         foreach($followers as $follower) {
-            $user = $app->userRepository->getUserById($follower->getAuthorId());
+            $user = $this->app->userRepository->getUserById($follower->getAuthorId());
 
             $codeArray[] = '
                 <div class="row">
@@ -176,9 +168,7 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function handleManageFollowing() {
-        global $app;
-
-        $totalFollowers = $app->userFollowingManager->getFollowingCount($app->currentUser->getId());
+        $totalFollowers = $this->app->userFollowingManager->getFollowingCount($this->getUserId());
 
         $arb = new AjaxRequestBuilder();
         $arb->setAction($this, 'getFollowsList')
@@ -192,9 +182,9 @@ class UsersPresenter extends AUserPresenter {
         $this->addScript($arb);
         $this->addScript('getFollowsList(0)');
 
-        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $app->currentUser->getId()]), 'post-data-link');
+        $backLink = LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['userId' => $this->getUserId()]), 'post-data-link');
         
-        $this->saveToPresenterCache('username', $app->currentUser->getUsername());
+        $this->saveToPresenterCache('username', $this->getUser()?->getUsername());
         $this->saveToPresenterCache('totalFollows', $totalFollowers);
         $this->saveToPresenterCache('backLink', $backLink);
     }
@@ -212,18 +202,16 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function actionGetFollowsList() {
-        global $app;
-
         $offset = $this->httpGet('offset');
         $limit = 10;
 
-        $followers = $app->userFollowingManager->getFollowsForUserWithOffset($app->currentUser->getId(), $limit, $offset);
+        $followers = $this->app->userFollowingManager->getFollowsForUserWithOffset($this->getUserId(), $limit, $offset);
 
-        $totalFollows = $app->userFollowingManager->getFollowingCount($app->currentUser->getId());
+        $totalFollows = $this->app->userFollowingManager->getFollowingCount($this->getUserId());
 
         $codeArray = [];
         foreach($followers as $follower) {
-            $user = $app->userRepository->getUserById($follower->getUserId());
+            $user = $this->app->userRepository->getUserById($follower->getUserId());
 
             $codeArray[] = '
                 <div class="row">
@@ -249,20 +237,18 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function handleFollowUser() {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
 
         try {
-            $app->userFollowingRepository->beginTransaction();
+            $this->app->userFollowingRepository->beginTransaction();
 
-            $app->userFollowingManager->followUser($app->currentUser->getId(), $userId);
+            $this->app->userFollowingManager->followUser($this->getUserId(), $userId);
 
-            $app->userFollowingRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->userFollowingRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('User followed.', 'success');
         } catch(AException $e) {
-            $app->userFollowingRepository->rollback();
+            $this->app->userFollowingRepository->rollback();
 
             $this->flashMessage('Could not follow user. Reason: '. $e->getMessage(), 'error');
         }
@@ -271,20 +257,18 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function handleUnfollowUser() {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
 
         try {
-            $app->userFollowingRepository->beginTransaction();
+            $this->app->userFollowingRepository->beginTransaction();
 
-            $app->userFollowingManager->unfollowUser($app->currentUser->getId(), $userId);
+            $this->app->userFollowingManager->unfollowUser($this->getUserId(), $userId);
 
-            $app->userFollowingRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->userFollowingRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('User unfollowed.', 'success');
         } catch(AException $e) {
-            $app->userFollowingRepository->rollback();
+            $this->app->userFollowingRepository->rollback();
 
             $this->flashMessage('Could not unfollow user. Reason: '. $e->getMessage(), 'error');
         }
@@ -293,26 +277,24 @@ class UsersPresenter extends AUserPresenter {
     }
 
     public function handleReportUser(?FormResponse $fr = null) {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $category = $fr->category;
             $description = $fr->description;
-            $authorId = $app->currentUser->getId();
+            $authorId = $this->getUserId();
             
             try {
-                $app->reportRepository->beginTransaction();
+                $this->app->reportRepository->beginTransaction();
 
-                $app->reportRepository->createUserReport($authorId, $userId, $category, $description);
+                $this->app->reportRepository->createUserReport($authorId, $userId, $category, $description);
 
-                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->reportRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User reported.', 'success');
             } catch(AException $e) {
-                $app->reportRepository->rollback();
+                $this->app->reportRepository->rollback();
 
                 $this->flashMessage('User could not be reported. Reason: ' . $e->getMessage(), 'error');
             }

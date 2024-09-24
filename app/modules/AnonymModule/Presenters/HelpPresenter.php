@@ -18,8 +18,6 @@ class HelpPresenter extends APresenter {
     }
 
     public function handleForm(?FormResponse $fr = null) {
-        global $app;
-
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $title = $fr->title;
             $text = $fr->text;
@@ -29,19 +27,19 @@ class HelpPresenter extends APresenter {
             $fmHash = '';
 
             try {
-                $app->suggestionRepository->beginTransaction();
+                $this->app->suggestionRepository->beginTransaction();
 
-                $suggestionId = $app->entityManager->generateEntityId(EntityManager::SUGGESTIONS);
+                $suggestionId = $this->app->entityManager->generateEntityId(EntityManager::SUGGESTIONS);
 
-                $app->suggestionRepository->createNewSuggestion($suggestionId, $user, $title, $text, $category);
+                $this->app->suggestionRepository->createNewSuggestion($suggestionId, $user, $title, $text, $category);
 
-                $app->suggestionRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->suggestionRepository->commit($this->getUserId(), __METHOD__);
                 
-                $fmHash = $app->flashMessage('Suggestion created. Thank you :)', 'success');
+                $fmHash = $this->app->flashMessage('Suggestion created. Thank you :)', 'success');
             } catch(AException $e) {
-                $app->suggestionRepository->rollback();
+                $this->app->suggestionRepository->rollback();
 
-                $fmHash = $app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
+                $fmHash = $this->app->flashMessage('Could not create a suggestion. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin', '_fm' => $fmHash]);
@@ -53,7 +51,7 @@ class HelpPresenter extends APresenter {
                 $this->redirect(['page' => 'AnonymModule:Login', 'action' => 'checkLogin']);
             }
             
-            $user = $app->currentUser;
+            $user = $this->getUser();
 
             $categoryOptions = SuggestionCategory::createSelectOptionArray();
             $userOptions = [
