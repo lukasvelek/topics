@@ -23,7 +23,7 @@ class GridFactory implements IRenderable {
         $this->columnTitles = [];
     }
 
-    public function setColumnTitle(string $column, string $title) {
+    public function setColumn(string $column, string $title) {
         $this->columnTitles[$column] = $title;
     }
 

@@ -28,7 +28,10 @@ class Navbar implements IRenderable {
         $this->getLinks();
     }
 
-    public function setIsCurrentUserIsAdmin(bool $isCurrentUserAdmin = true) {
+    public function setIsCurrentUserIsAdmin(?bool $isCurrentUserAdmin = true) {
+        if($isCurrentUserAdmin === null) {
+            $isCurrentUserAdmin = false;
+        }
         $this->isCurrentUserAdmin = $isCurrentUserAdmin;
     }
 
