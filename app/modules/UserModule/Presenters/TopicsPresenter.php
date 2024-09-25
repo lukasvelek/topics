@@ -1825,7 +1825,7 @@ class TopicsPresenter extends AUserPresenter {
             return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
         });
 
-        $reducer = $this->app->getGridReducer();
+        $reducer = $this->getGridReducer();
         $reducer->applyReducer($grid);
 
         return ['grid' => $grid->build()];

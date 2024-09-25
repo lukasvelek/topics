@@ -698,7 +698,7 @@ class TopicManagementPresenter extends AUserPresenter {
             return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
         });
 
-        $this->app->getGridReducer()->applyReducer($grid);
+        $this->getGridReducer()->applyReducer($grid);
         
         $grid->addGridExport(function() use ($topicId) {
             return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
@@ -774,7 +774,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $grid->addGridPaging($page, $lastPage, $gridSize, $bannedWordsTotalCount, 'getBannedWordsGrid', [$topicId]);
 
-        $gr = $this->app->getGridReducer();
+        $gr = $this->getGridReducer();
         $gr->applyReducer($grid);
 
         return ['grid' => $grid->build()];

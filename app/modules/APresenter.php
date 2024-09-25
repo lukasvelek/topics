@@ -713,6 +713,15 @@ abstract class APresenter extends AGUICore {
 
         $this->cacheFactory->saveCaches();
     }
+
+    /**
+     * Returns DefaultGridReducer instance
+     * 
+     * @return DefaultGridReducer DefaultGridReducer instance
+     */
+    public function getGridReducer() {
+        return $this->app->getGridReducer();
+    }
 }
 
 ?>

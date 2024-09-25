@@ -87,7 +87,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
 
-        $gr = $this->app->getGridReducer();
+        $gr = $this->getGridReducer();
         $gr->applyReducer($gb);
 
         return ['grid' => $gb->build()];
