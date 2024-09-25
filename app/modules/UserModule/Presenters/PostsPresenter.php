@@ -315,6 +315,10 @@ class PostsPresenter extends AUserPresenter {
         $parentCommentId = $this->httpGet('parentCommentId');
         $authorId = $this->getUserId();
 
+        if($text == '') {
+            return ['error' => '1', 'errorMsg' => 'No comment text provided.'];
+        }
+
         $post = $this->app->postRepository->getPostById($postId);
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
@@ -351,7 +355,7 @@ class PostsPresenter extends AUserPresenter {
             }
             return $values;
         } else {
-            return [];
+            return ['error' => '1', 'errorMsg' => 'Could not post comment.'];
         }
     }
 

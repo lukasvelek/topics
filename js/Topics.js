@@ -130,18 +130,24 @@ async function sendPostComment(_postId, _parentCommentId) {
     .done(async function(data) {
         try {
             const obj = JSON.parse(data);
-            
-            const comment = obj.comment;
 
-            if(obj.parentComment) {
-                $("#post-comment-child-comments-" + _parentCommentId).prepend(comment);
+            if(!obj.comment) {
+                if(obj.errorMsg) {
+                    alert(obj.errorMsg);
+                }
             } else {
-                $("#post-comments").prepend(comment + "<br>");
-            }
+                const comment = obj.comment;
 
-            $("#" + _tmp).val("");
-            if(_parentCommentId) {
-                $("#post-comment-" + _parentCommentId + "-comment-form").html("");
+                if(obj.parentComment) {
+                    $("#post-comment-child-comments-" + _parentCommentId).prepend(comment);
+                } else {
+                    $("#post-comments").prepend(comment + "<br>");
+                }
+
+                $("#" + _tmp).val("");
+                if(_parentCommentId) {
+                    $("#post-comment-" + _parentCommentId + "-comment-form").html("");
+                }
             }
         } catch (error) {
             alert("Could not load data");
