@@ -3,28 +3,28 @@
 namespace App\Entities;
 
 class TransactionEntity extends AEntity {
-    private string $id;
+    private string $transactionId;
     private ?string $userId;
-    private string $method;
+    private string $methodName;
     private string $dateCreated;
 
-    public function __construct(string $id, ?string $userId, string $method, string $dateCreated) {
-        $this->id = $id;
+    public function __construct(string $transactionId, ?string $userId, string $methodName, string $dateCreated) {
+        $this->transactionId = $transactionId;
         $this->userId = $userId;
-        $this->method = $method;
+        $this->methodName = $methodName;
         $this->dateCreated = $dateCreated;
     }
 
-    public function getId() {
-        return $this->id;
+    public function getTransactionId() {
+        return $this->transactionId;
     }
 
     public function getUserId() {
         return $this->userId;
     }
 
-    public function getMethod() {
-        return $this->method;
+    public function getMethodName() {
+        return $this->methodName;
     }
 
     public function getDateCreated() {

@@ -65,6 +65,16 @@ class TransactionLogRepository {
         
         return $qb->fetchBool();
     }
+    
+    public function composeQueryForTransactions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('transaction_log')
+            ->orderBy('dateCreated', 'DESC');
+
+        return $qb;
+    }
 }
 
 ?>
