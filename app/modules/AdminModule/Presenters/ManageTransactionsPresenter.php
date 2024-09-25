@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Components\Grid\GridFactory;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\TransactionEntity;
 use App\Helpers\DateTimeFormatHelper;
@@ -66,7 +67,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addDataSource($transactions);
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid');
         $gb->addOnColumnRender('method', function(Cell $cell, TransactionEntity $te) {
-            return $te->getMethod() . '()';
+            return $te->getMethodName() . '()';
         });
         $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) {
             if($te->getUserId() === null) {
@@ -93,7 +94,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         });
 
         $gb->addOnExportRender('method', function(TransactionEntity $te) {
-            return $te->getMethod() . '()';
+            return $te->getMethodName() . '()';
         });
         $gb->addOnExportRender('user', function(TransactionEntity $te) {
             if($te->getUserId() === null) {
