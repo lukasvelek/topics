@@ -110,7 +110,7 @@ class GridBuilder {
     }
 
     /**
-     * Adds custom table cell value override. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity. The callback can return either the value itself or the modified Cell instance.
+     * Adds custom table cell value override. It calls the callback with parameters: Cell entity (see App\UI\GridBuilder\Cell), Table entity, value. The callback can return either the value itself or the modified Cell instance.
      * 
      * @param string $entityVarName Name of the column header
      * @param callable $func Method called when rendering
@@ -352,9 +352,26 @@ class GridBuilder {
                             }
                         }
 
+                        $defaultValue = '-';
+                        if(method_exists($entity, 'get' . $objectVarName)) {
+                            try {
+                                $result = $entity->{'get' . $objectVarName}();
+                                $defaultValue = $result;
+
+                                $cell->setValue($result);
+                            } catch(Exception $e) {
+                                throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                            }
+                        } else if(isset($entity->$varName)) {
+                            $cell->setValue($entity->$varName);
+                            $defaultValue = $entity->$varName;
+                        } else {
+                            $cell->setStyle('background-color: red');
+                        }
+
                         if(array_key_exists($varName, $this->callbacks)) {
                             try {
-                                $result = $this->callbacks[$varName]($cell, $entity);
+                                $result = $this->callbacks[$varName]($cell, $entity, $defaultValue);
 
                                 if($result instanceof Cell) {
                                     $cell = $result;
@@ -363,20 +380,6 @@ class GridBuilder {
                                 }
                             } catch(Exception $e) {
                                 throw new GridBuilderCustomMethodException($e->getMessage(), $e);
-                            }
-                        } else {
-                            if(method_exists($entity, 'get' . $objectVarName)) {
-                                try {
-                                    $result = $entity->{'get' . $objectVarName}();
-
-                                    $cell->setValue($result);
-                                } catch(Exception $e) {
-                                    throw new GridBuilderCustomMethodException($e->getMessage(), $e);
-                                }
-                            } else if(isset($entity->$varName)) {
-                                $cell->setValue($entity->$varName);
-                            } else {
-                                $cell->setStyle('background-color: red');
                             }
                         }
     
