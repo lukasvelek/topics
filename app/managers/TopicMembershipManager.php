@@ -247,6 +247,10 @@ class TopicMembershipManager extends AManager {
     public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(string $userId, int $limit) {
         $topicIds = $this->topicMembershipRepository->getTopicIdsForOwner($userId);
 
+        if(empty($topicIds)) {
+            return [];
+        }
+
         $qb = $this->topicRepository->composeQueryForTopics();
         $qb ->where($qb->getColumnInValues('topicId', $topicIds))
             ->orderBy('dateCreated', 'DESC');
