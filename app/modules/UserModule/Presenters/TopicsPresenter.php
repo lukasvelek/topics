@@ -748,7 +748,7 @@ class TopicsPresenter extends AUserPresenter {
         $tag = $fr->tag;
         $userId = $this->getUserId();
         $topicId = $this->httpGet('topicId');
-        $dateAvailable = $fr->dateAvailable;
+        $dateAvailable = isset($fr->dateAvailable) ? $fr->dateAvailable : DateTime::now();
         $availableNow = isset($fr->availableNow);
         $suggestable = isset($fr->suggestable);
 
