@@ -49,6 +49,12 @@ class UserRepository extends ARepository {
         return $qb;
     }
 
+    public function getUserByEmail(string $email) {
+        $qb = $this->getUserByEmailForAuthentication($email);
+
+        return UserEntity::createEntityFromDbRow($qb->fetch());
+    }
+
     public function getUserByEmailForAuthentication(string $email) {
         $qb = $this->qb(__METHOD__);
 

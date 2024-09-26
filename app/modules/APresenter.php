@@ -717,7 +717,7 @@ abstract class APresenter extends AGUICore {
     /**
      * Returns DefaultGridReducer instance
      * 
-     * @return DefaultGridReducer DefaultGridReducer instance
+     * @return \App\UI\GridBuilder\DefaultGridReducer DefaultGridReducer instance
      */
     public function getGridReducer() {
         return $this->app->getGridReducer();

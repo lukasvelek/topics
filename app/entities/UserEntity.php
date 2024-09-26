@@ -90,7 +90,11 @@ class UserEntity extends AEntity {
         return new self($row->userId, $row->username, $row->email, $row->dateCreated, $row->isAdmin, $row->canLogin);
     }
 
-    public static function createUserProfileLink(UserEntity $user, bool $object = false, string $linkClassName = 'post-data-link') {
+    public static function createUserProfileLink(?UserEntity $user, bool $object = false, string $linkClassName = 'post-data-link') {
+        if($user === null) {
+            return null;
+        }
+
         if($object) {
             return LinkBuilder::createSimpleLinkObject($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $linkClassName);
         } else {
