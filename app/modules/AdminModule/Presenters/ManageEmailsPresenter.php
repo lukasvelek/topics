@@ -3,10 +3,13 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Entities\EmailEntity;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\LinkBuilder;
 
 class ManageEmailsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
@@ -59,16 +62,44 @@ class ManageEmailsPresenter extends AAdminPresenter {
         $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid');
         $grid->addColumns(['title' => 'Title', 'recipient' => 'Recipient', 'dateCreated' => 'Date created']);
 
-        $grid->addOnColumnRender('recipient', function(Cell $cell, object $obj, mixed $value) {
-            $user = $this->app->userRepository->getUserByEmail($value);
+        $grid->addOnColumnRender('recipient', function(Cell $cell, EmailEntity $email) {
+            $user = $this->app->userRepository->getUserByEmail($email->getRecipient());
 
             return UserEntity::createUserProfileLink($user, false, 'grid-link');
+        });
+
+        $grid->addAction(function(EmailEntity $email) {
+            return LinkBuilder::createSimpleLink('Send now', $this->createURL('sendNow', ['mailId' => $email->getId()]), 'grid-link');
         });
         
         $gr = $this->getGridReducer();
         $gr->applyReducer($grid);
 
         return ['grid' => $grid->build()];
+    }
+
+    public function handleSendNow() {
+        $mailId = $this->httpGet('mailId', true);
+
+        try {
+            $mail = $this->app->mailRepository->getEntityById($mailId);
+
+            $this->app->mailManager->sendEmail($mail);
+
+            $this->app->mailRepository->beginTransaction();
+
+            $this->app->mailManager->deleteEmailEntry($mailId);
+
+            $this->app->mailRepository->commit($this->getUserId(), __METHOD__);
+
+            $this->flashMessage('Email sent.', 'success');
+        } catch(AException $e) {
+            $this->app->mailRepository->rollback();
+
+            $this->flashMessage('Could not send email. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('list'));
     }
 }
 

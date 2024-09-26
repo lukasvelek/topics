@@ -65,6 +65,17 @@ class MailRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getEntityById(string $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('mail_queue')
+            ->where('mailId = ?', [$id])
+            ->execute();
+
+        return EmailEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
