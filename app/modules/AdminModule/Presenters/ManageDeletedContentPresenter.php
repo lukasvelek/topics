@@ -39,7 +39,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
         $gb = new GridBuilder();
 
         $reports = $this->app->reportRepository->getAllReports();
-        $checkReport = function(int $entityId, string $entityType) use ($reports) {
+        $checkReport = function(string $entityId, string $entityType) use ($reports) {
             foreach($reports as $report) {
                 if($report->getEntityType() == $entityType && $report->getEntityId() == $entityId) {
                     return $report;
@@ -66,14 +66,18 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                         $cell->setTextColor('red');
                         $cell->setValue('No');
                     } else {
+                        $link = $this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]);
                         $a = HTML::a();
 
-                        $a->href($this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]))
-                            ->text('Yes')
-                            ->class('grid-link');
+                        $a->href($link)
+                        ->text('Yes')
+                        ->class('grid-link');
 
-                        return $a->render();
+                        $cell->setTextColor('green');
+                        $cell->setValue($a);
                     }
+
+                    return $cell;
                 });
                 $gb->addOnColumnRender('dateDeleted', function(Cell $cell, TopicEntity $topic) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted()) ?? '-';

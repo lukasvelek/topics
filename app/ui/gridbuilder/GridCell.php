@@ -29,6 +29,9 @@ class Cell implements IRenderable {
         if($value === NULL) {
             $value = '-';
         }
+        if($value instanceof IRenderable) {
+            $value = $value->render();
+        }
         $this->text = $value;
     }
 
