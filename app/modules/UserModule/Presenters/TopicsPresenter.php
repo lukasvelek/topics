@@ -535,6 +535,9 @@ class TopicsPresenter extends AUserPresenter {
                 $pinnedCode = '<div class="col-md-2" id="right" title="Post is pinned">&#128204;</div>';
             }
 
+            $dateCreated = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
+            $dateCreatedAtomic = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
+
             $tmp = '
                 <div class="row" id="post-id-' . $post->getId() . '">
                     <div class="col-md">
@@ -565,7 +568,7 @@ class TopicsPresenter extends AUserPresenter {
                         <div class="row">
                             <div class="col-md">
                                 <p class="post-data">Likes: <span id="post-' . $post->getId() . '-likes">' . $post->getLikes() . '</span> <span id="post-' . $post->getId() . '-link">' . $likeLink . '</span>
-                                 | Author: ' . $userProfileLink . ' | <span title="' . $post->getDateCreated() . '">Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated()) . '</span></p>
+                                 | Author: ' . $userProfileLink . ' | <span title="' . $dateCreatedAtomic . '">Date: ' . $dateCreated . '</span></p>
                             </div>
                         </div>
                     </div>

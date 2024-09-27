@@ -117,6 +117,7 @@ async function sendPostComment(_postId, _parentCommentId) {
         _tmp = _tmp + "-" + _parentCommentId;
     }
     const _text = $("#" + _tmp).val();
+    $("#formSubmit").attr('disabled', 'true');
 
     await sleep(100);
 
@@ -149,6 +150,8 @@ async function sendPostComment(_postId, _parentCommentId) {
                     $("#post-comment-" + _parentCommentId + "-comment-form").html("");
                 }
             }
+
+            $("#formSubmit").removeAttr('disabled');
         } catch (error) {
             alert("Could not load data");
         }

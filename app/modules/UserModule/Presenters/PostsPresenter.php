@@ -18,6 +18,7 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
+use DateTime;
 use Exception;
 
 class PostsPresenter extends AUserPresenter {
@@ -184,6 +185,7 @@ class PostsPresenter extends AUserPresenter {
         }
 
         $postedOn = DateTimeFormatHelper::formatDateToUserFriendly($postedOn);
+        $postedOnAtomic = DateTimeFormatHelper::formatDateToUserFriendly($postedOn, DateTimeFormatHelper::ATOM_FORMAT);
 
         $postData = '
             <div>
@@ -193,7 +195,7 @@ class PostsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md col-lg">
-                        <p class="post-data">' . $postedOnText . ': ' . $postedOn . '</p>
+                        <p class="post-data">' . $postedOnText . ': <span title="' . $postedOnAtomic . '">' . $postedOn . '</span></p>
                     </div>
 
                     <div class="col-md col-lg">
@@ -596,6 +598,9 @@ class PostsPresenter extends AUserPresenter {
 
         $text = preg_replace($pattern, $replacement, $text);
 
+        $dateCreated = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated());
+        $dateCreatedAtomic = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
+
         $code = '
             <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-id-' . $comment->getId() . '">
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
@@ -603,7 +608,7 @@ class PostsPresenter extends AUserPresenter {
                     <div>
                         <p class="post-comment-text">' . $text . '</p>
                         <p class="post-comment-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
+                                            | Author: ' . $userProfileLink . ' | Date: <span title="' . $dateCreatedAtomic . '">' . $dateCreated . '</span>
                         </p>
                         <p class="post-comment-data">
                             ' . $reportForm . $deleteLink . '
