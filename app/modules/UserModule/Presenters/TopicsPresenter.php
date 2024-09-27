@@ -754,7 +754,6 @@ class TopicsPresenter extends AUserPresenter {
         $dateAvailable = isset($fr->dateAvailable) ? $fr->dateAvailable : DateTime::now();
         $availableNow = isset($fr->availableNow);
         $suggestable = isset($fr->suggestable);
-
         
         if(isset($fr->submitPost)) {
             if($availableNow) {
