@@ -362,6 +362,15 @@ class GridBuilder {
                             } catch(Exception $e) {
                                 throw new GridBuilderCustomMethodException($e->getMessage(), $e);
                             }
+                        } else if(method_exists($entity, $objectVarName)) {
+                            try {
+                                $result = $entity->$objectVarName();
+                                $defaultValue = $result;
+
+                                $cell->setValue($result);
+                            } catch(Exception $e) {
+                                throw new GridBuilderCustomMethodException($e->getMessage(), $e);
+                            }
                         } else if(isset($entity->$varName)) {
                             $cell->setValue($entity->$varName);
                             $defaultValue = $entity->$varName;
