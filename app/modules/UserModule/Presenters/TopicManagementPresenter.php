@@ -89,11 +89,10 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $gb->addDataSource($members);
         $gb->addColumns(['userId' => 'User', 'role' => 'Role']);
-        $gb->addOnColumnRender('userId', function(Cell $cell, TopicMemberEntity $tme) {
-            $user = $this->app->userRepository->getUserById($tme->getUserId());
 
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserAdmin:Users', 'action' => 'profile', 'userId' => $tme->getUserId()], 'grid-link');
-        });
+        $gr = $this->getGridReducer();
+        $gr->applyReducer($gb);
+
         $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
             $text = TopicMemberRole::toString($tme->getRole());
 
@@ -112,6 +111,16 @@ class TopicManagementPresenter extends AUserPresenter {
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $allMembersCount, 'getUserRolesGrid', [$topicId]);
+
+        $gb->addOnExportRender('role', function(TopicMemberEntity $tme) {
+            $text = TopicMemberRole::toString($tme->getRole());
+
+            return $text;
+        });
+
+        $gb->addGridExport(function() use ($topicId) {
+            return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        }, GridHelper::GRID_USER_TOPIC_ROLES, $this->logger);
 
         return ['grid' => $gb->build()];
     }

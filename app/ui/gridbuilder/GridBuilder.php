@@ -379,6 +379,8 @@ class GridBuilder {
                         }
 
                         if(array_key_exists($varName, $this->callbacks)) {
+                            $cell->resetStyle();
+                            
                             try {
                                 $result = $this->callbacks[$varName]($cell, $entity, $defaultValue);
 
@@ -387,8 +389,6 @@ class GridBuilder {
                                 } else {
                                     $cell->setValue($result);
                                 }
-
-                                $cell->resetStyle();
                             } catch(Exception $e) {
                                 throw new GridBuilderCustomMethodException($e->getMessage(), $e);
                             }
