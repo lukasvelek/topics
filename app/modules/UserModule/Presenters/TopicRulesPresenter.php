@@ -43,9 +43,9 @@ class TopicRulesPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link');
 
             if($this->httpGet('userList') !== null) {
-                $links[] = LinkBuilder::createSimpleLink('Admin view', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
+                $links[] = LinkBuilder::createSimpleLink('Admin\'s perspective', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
             } else {
-                $links[] = LinkBuilder::createSimpleLink('User view', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
+                $links[] = LinkBuilder::createSimpleLink('User\'s perspective', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
             }
         }
 
