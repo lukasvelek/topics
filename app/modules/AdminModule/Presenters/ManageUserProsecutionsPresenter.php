@@ -55,17 +55,23 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         });
         $gb->addOnColumnRender('dateFrom', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getStartDate() !== null) {
-                return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate());
+                $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate()));
+                $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getStartDate(), DateTimeFormatHelper::ATOM_FORMAT));
             } else {
-                return '-';
+                $cell->setValue('-');
             }
+
+            return $cell;
         });
         $gb->addOnColumnRender('dateTo', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             if($userProsecution->getEndDate() !== null) {
-                return DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate());
+                $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate()));
+                $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($userProsecution->getEndDate(), DateTimeFormatHelper::ATOM_FORMAT));
             } else {
-                return '-';
+                $cell->setValue('-');
             }
+
+            return $cell;
         });
         $gb->addAction(function(UserProsecutionEntity $userProsecution) {
             if(($userProsecution->getType() == UserProsecutionType::PERMA_BAN || $userProsecution->getType() == UserProsecutionType::BAN) && 

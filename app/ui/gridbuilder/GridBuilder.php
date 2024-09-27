@@ -387,6 +387,8 @@ class GridBuilder {
                                 } else {
                                     $cell->setValue($result);
                                 }
+
+                                $cell->resetStyle();
                             } catch(Exception $e) {
                                 throw new GridBuilderCustomMethodException($e->getMessage(), $e);
                             }

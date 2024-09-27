@@ -45,7 +45,9 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addAction(function(BannedWordEntity $bwe) {
             return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'grid-link');

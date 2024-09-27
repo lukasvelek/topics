@@ -73,10 +73,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             return $cell;
         });
         $gb->addOnColumnRender('dateStarted', function(Cell $cell, SystemServiceEntity $sse) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
             $text = '-';

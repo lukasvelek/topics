@@ -112,7 +112,9 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             return $a->render();
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostImageFileEntity $pife) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('filepath', function(Cell $cell, PostImageFileEntity $pife) {
             $cell->setTitle($pife->getFilepath());

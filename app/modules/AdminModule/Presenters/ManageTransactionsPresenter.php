@@ -90,7 +90,9 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             return $a->render();
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TransactionEntity $te) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
 
         $gb->addOnExportRender('method', function(TransactionEntity $te) {

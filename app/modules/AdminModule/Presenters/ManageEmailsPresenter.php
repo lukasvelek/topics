@@ -6,6 +6,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\EmailEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
@@ -66,6 +67,11 @@ class ManageEmailsPresenter extends AAdminPresenter {
             $user = $this->app->userRepository->getUserByEmail($email->getRecipient());
 
             return UserEntity::createUserProfileLink($user, false, 'grid-link');
+        });
+        $grid->addOnColumnRender('dateCreated', function(Cell $cell, EmailEntity $ee) {
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($ee->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($ee->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
 
         $grid->addAction(function(EmailEntity $email) {

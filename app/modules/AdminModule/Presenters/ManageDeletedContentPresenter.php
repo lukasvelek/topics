@@ -80,7 +80,9 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                     return $cell;
                 });
                 $gb->addOnColumnRender('dateDeleted', function(Cell $cell, TopicEntity $topic) {
-                    return DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted()) ?? '-';
+                    $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted()));
+                    $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($topic->getDateDeleted(), DateTimeFormatHelper::ATOM_FORMAT));
+                    return $cell;
                 });
                 $gb->addOnColumnRender('title', function(Cell $cell, TopicEntity $topic) {
                     $a = HTML::a();

@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Entities\GridExportEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\DefaultGridReducer;
@@ -98,6 +99,17 @@ class ManageGridExportsPresenter extends AAdminPresenter {
         
         $gd = new DefaultGridReducer($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository);
         $gd->applyReducer($gb);
+
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, GridExportEntity $gee) {
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
+        });
+        $gb->addOnColumnRender('dateFinished', function(Cell $cell, GridExportEntity $gee) {
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
+        });
 
         $gb->addAction(function(GridExportEntity $gee) {
             if($gee->getFilename() !== null) {
