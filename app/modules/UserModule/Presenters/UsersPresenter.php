@@ -88,6 +88,7 @@ class UsersPresenter extends AUserPresenter {
         $this->template->username = $user->getUsername();
         $this->template->post_count = $postCount;
         $this->template->first_login_date = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated());
+        $this->template->first_login_date_atomic = DateTimeFormatHelper::formatDateToUserFriendly($user->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
         $this->template->report_link = $reportLink;
         $this->template->followers_count = $followerCount;
         $this->template->following_count = $followingCount;

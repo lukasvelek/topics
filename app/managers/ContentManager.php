@@ -222,7 +222,9 @@ class ContentManager extends AManager {
                     break;
             }
 
-            $codeArray[] = '<div id="user-action-history-' . $i . '"><p><span style="color: rgb(100, 100, 100)">' . $date . '</span> ' . $text . '</p></div>';
+            $dateAtomic = DateTimeFormatHelper::formatDateToUserFriendly($oal->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
+
+            $codeArray[] = '<div id="user-action-history-' . $i . '"><p><span style="color: rgb(100, 100, 100)" title="' . $dateAtomic . '">' . $date . '</span> ' . $text . '</p></div>';
             $i++;
         }
         $code .= implode('<br>', $codeArray) . '</div>';
