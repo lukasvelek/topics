@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\UI\GridBuilder\GridExporter;
 
 class GridExportHelperPresenter extends AUserPresenter {
@@ -21,7 +22,11 @@ class GridExportHelperPresenter extends AUserPresenter {
         try {
             $this->app->gridExportRepository->beginTransaction();
 
-            $this->app->gridExportRepository->createNewExport($this->getUserId(), $hash, $gridName);
+            $dbResult = $this->app->gridExportRepository->createNewExport($this->getUserId(), $hash, $gridName);
+
+            if($dbResult === false) {
+                throw new GeneralException('Could not save data to the database.');
+            }
 
             $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {

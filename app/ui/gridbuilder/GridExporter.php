@@ -16,6 +16,8 @@ use App\Logger\Logger;
  * @author Lukas Velek
  */
 class GridExporter {
+    private const LOG = false;
+
     private string $hash;
     private ArrayList $dataToSave;
     private array $cfg;
@@ -23,6 +25,7 @@ class GridExporter {
     private int $exportedEntries;
     private ServiceManager $serviceManager;
     private CacheFactory $cacheFactory;
+    private ?Logger $logger;
 
     /**
      * Class constructor
@@ -39,6 +42,7 @@ class GridExporter {
         $this->exportedEntries = 0;
         $this->serviceManager = $serviceManager;
         $this->cacheFactory = new CacheFactory($logger->getCfg());
+        $this->logger = $logger;
     }
 
     private function loadData() {
@@ -48,13 +52,16 @@ class GridExporter {
     }
 
     public function setExportAll(bool $exportAll = true) {
+        if(self::LOG) $this->logger->info('Setting export all to ' . var_export($exportAll, true), __METHOD__);
         $this->exportAll = $exportAll;
     }
 
     public function getRowCount() {
+        if(self::LOG) $this->logger->info('Loading data from cache', __METHOD__);
         $data = $this->loadData();
 
         if(empty($data)) {
+            if(self::LOG) $this->logger->warning('No data obtained from cache', __METHOD__);
             return 0;
         }
 
@@ -135,7 +142,7 @@ class GridExporter {
      */
     private function loadCache() {
         $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORT_DATA);
-        $cache->load($this->hash, function() { return []; });
+        return $cache->load($this->hash, function() { return []; });
     }
 
     /**
