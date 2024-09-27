@@ -755,9 +755,17 @@ class TopicsPresenter extends AUserPresenter {
         $availableNow = isset($fr->availableNow);
         $suggestable = isset($fr->suggestable);
 
+        
         if(isset($fr->submitPost)) {
             if($availableNow) {
                 $dateAvailable = DateTime::now();
+            }
+
+            // Users without permission to change post suggestability will create a post with suggesting implicitly enabled
+            if($suggestable === false) {
+                if(!$this->app->actionAuthorizator->canSetPostSuggestability($this->getUserId(), $topicId)) {
+                    $suggestable = true;
+                }
             }
 
             try {
