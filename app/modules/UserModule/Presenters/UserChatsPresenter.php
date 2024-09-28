@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -169,13 +170,59 @@ class UserChatsPresenter extends AUserPresenter {
     }
 
     public function handleChat() {
+        $chatId = $this->httpGet('chatId', true);
+        
+        try {
+            $chat = $this->app->chatManager->getChatEntityById($chatId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find this chat. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('list'));
+        }
+
+        $otherUserId = ($chat->getUser1Id() == $this->getUserId()) ? $chat->getUser2Id() : $chat->getUser1Id();
+        
+        try {
+            $otherUser = $this->app->userManager->getUserById($otherUserId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find this user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('list'));
+        }
+
+        $this->saveToPresenterCache('user_link', $otherUser->getUsername());
+
         $links = [];
 
         $this->saveToPresenterCache('links', $links);
+
+        $form = new FormBuilder();
+
+        $form->addTextArea('message', 'Message:', null, true)
+            ->addButton('Submit', 'processSubmitMessage(\'' . $chatId . '\')', 'formSubmit')
+        ;
+
+        $this->saveToPresenterCache('form', $form);
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setMethod()
+            ->setAction($this, 'submitMessage')
+            ->setHeader(['chatId' => '_chatId'])
+            ->setFunctionName('submitMessage')
+            ->setFunctionArguments(['_chatId'])
+            ->updateHTMLElement('content', 'message', true)
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('
+            async function processSubmitMessage(_chatId) {
+                return await submitMessage(_chatId);
+            }
+        ');
     }
 
     public function renderChat() {
         $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->user_link = $this->loadFromPresenterCache('user_link');
+        $this->template->form = $this->loadFromPresenterCache('form');
     }
 }
 

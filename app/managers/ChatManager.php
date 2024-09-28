@@ -4,6 +4,7 @@ namespace App\Managers;
 
 use App\Entities\UserChatEntity;
 use App\Exceptions\GeneralException;
+use App\Exceptions\NonExistingEntityException;
 use App\Logger\Logger;
 use App\Repositories\ChatRepository;
 
@@ -56,6 +57,16 @@ class ChatManager extends AManager {
         }
 
         return $chatId;
+    }
+
+    public function getChatEntityById(string $chatId) {
+        $entity = $this->cr->getChatEntityById($chatId);
+
+        if($entity === null) {
+            throw new NonExistingEntityException('Entity does not exist.');
+        }
+
+        return $entity;
     }
 }
 

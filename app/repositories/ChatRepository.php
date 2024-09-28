@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\UserChatEntity;
 use App\Entities\UserChatMessageEntity;
 use App\Logger\Logger;
 
@@ -57,6 +58,17 @@ class ChatRepository extends ARepository {
             ->execute();
 
         return UserChatMessageEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getChatEntityById(string $chatId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('user_chats')
+            ->where('chatId = ?', [$chatId])
+            ->execute();
+
+        return UserChatEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 
