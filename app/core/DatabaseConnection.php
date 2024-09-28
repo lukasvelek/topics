@@ -10,10 +10,20 @@ use Exception;
 use mysqli_sql_exception;
 use QueryBuilder\IDbQueriable;
 
+/**
+ * Class that defines the database connectoin
+ * 
+ * @author Lukas Velek
+ */
 class DatabaseConnection implements IDbQueriable {
     private \mysqli $conn;
     private array $cfg;
 
+    /**
+     * Class constructor
+     * 
+     * @param array $cfg Configuration array
+     */
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
 
@@ -25,23 +35,54 @@ class DatabaseConnection implements IDbQueriable {
         }
     }
 
+    /**
+     * Processes SQL query and returns the result
+     * 
+     * @param string $sql SQL query
+     * @param array $params Parameters
+     * @return mixed Query result
+     */
     public function query(string $sql, array $params = []) {
         return $this->conn->query($sql);
     }
 
+    /**
+     * Begins a transaction
+     * 
+     * @return bool True on success or false on failure
+     */
     public function beginTransaction() {
         return $this->conn->begin_transaction();
     }
 
+    /**
+     * Rolls back a transaction
+     * 
+     * @return bool True on success or false on failure
+     */
     public function rollback() {
         return $this->conn->rollback();
     }
 
+    /**
+     * Commits a transaction
+     * 
+     * @return bool True on success or false on failure
+     */
     public function commit() {
         return $this->conn->commit();
     }
 
-    private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName, string $dbPort = null) {
+    /**
+     * Establishes connection to the database server
+     * 
+     * @param string $dbServer Database server address
+     * @param string $dbUser Database server user's username
+     * @param string $dbPass Database server user's password
+     * @param string $dbName Database name
+     * @param string|null $dbPort Database server port
+     */
+    private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName, ?string $dbPort = null) {
         try {
             $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName, $dbPort);
         } catch (Exception $e) {
@@ -51,6 +92,11 @@ class DatabaseConnection implements IDbQueriable {
         }
     }
 
+    /**
+     * Installs the database - creates tables and default values
+     * 
+     * @return bool True on success or false on failure
+     */
     public function installDb() {
         $installer = new DatabaseInstaller($this, new Logger($this->cfg));
 
@@ -58,7 +104,13 @@ class DatabaseConnection implements IDbQueriable {
         
         $date = new DateTime();
         
-        FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
+        $result = FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
+
+        if($result !== false) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

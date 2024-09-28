@@ -10,6 +10,7 @@ use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Helpers\LinkHelper;
 use App\Logger\Logger;
@@ -174,7 +175,11 @@ class Application {
         $this->loadModules();
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
-            $this->db->installDb();
+            $result = $this->db->installDb();
+
+            if($result === false) {
+                throw new GeneralException('Could not install database.');
+            }
         }
     }
 
