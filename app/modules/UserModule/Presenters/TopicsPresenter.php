@@ -919,6 +919,10 @@ class TopicsPresenter extends AUserPresenter {
                 $this->app->topicRepository->createNewTopic($topicId, $title, $description, $tags, $isPrivate, $rawTags);
                 $this->app->topicMembershipManager->followTopic($topicId, $this->getUserId());
                 $this->app->topicMembershipManager->changeRole($topicId, $this->getUserId(), $this->getUserId(), TopicMemberRole::OWNER);
+                
+                if($isPrivate) {
+                    $this->app->topicRepository->updateTopic($topicId, ['isVisible' => '0']);
+                }
 
                 $cache = $this->cacheFactory->getCache(CacheNames::TOPICS);
                 $cache->invalidate();
