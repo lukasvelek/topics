@@ -18,7 +18,8 @@ class DatabaseConnection implements IDbQueriable {
         $this->cfg = $cfg;
 
         try {
-            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME']);
+            $dbPort = $this->cfg['DB_PORT'] ?? null;
+            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME'], $dbPort);
         } catch(AException $e) {
             throw $e;
         }
@@ -40,9 +41,9 @@ class DatabaseConnection implements IDbQueriable {
         return $this->conn->commit();
     }
 
-    private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName) {
+    private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName, string $dbPort = null) {
         try {
-            $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName);
+            $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName, $dbPort);
         } catch (Exception $e) {
             throw new DatabaseConnectionException($e->getMessage());
         } catch (mysqli_sql_exception $e) {

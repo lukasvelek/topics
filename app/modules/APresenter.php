@@ -87,7 +87,9 @@ abstract class APresenter extends AGUICore {
     /**
      * Everything in startup() method is called after an instance of Presenter has been created and before other functionality-handling methods are called.
      */
-    public function startup() {}
+    public function startup() {
+        $this->cacheFactory = new CacheFactory($this->cfg);
+    }
 
     /**
      * Returns current user's ID or null if no user is set
@@ -505,8 +507,6 @@ abstract class APresenter extends AGUICore {
      * @return null|TemplateObject Template content or null
      */
     private function beforeRender(string $moduleName) {
-        $this->cacheFactory = new CacheFactory($this->cfg);
-
         $ok = false;
         $templateContent = null;
 
