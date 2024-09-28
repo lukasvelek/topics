@@ -303,6 +303,19 @@ class DatabaseInstaller {
                 'word' => 'VARCHAR(256) NOT NULL',
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_chats' => [
+                'chatId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'user1Id' => 'VARCHAR(256) NOT NULL',
+                'user2Id' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_chat_messages' => [
+                'messageId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'chatId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
