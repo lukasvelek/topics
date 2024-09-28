@@ -27,7 +27,7 @@ class ChatManager extends AManager {
         if($offset > 0) {
             $query->offset($offset);
         }
-
+        
         $query->execute();
 
         $chats = [];

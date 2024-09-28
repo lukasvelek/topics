@@ -17,6 +17,8 @@ class QueryBuilder
     private const STATE_CLEAN = 1; // QB has not been used yet
     private const STATE_DIRTY = 2; // QB has been already used
 
+    private const USE_BACKTICKS = false;
+
     private IDbQueriable $conn;
     private ILoggerCallable $logger;
     private string $sql;
@@ -237,7 +239,7 @@ class QueryBuilder
      * @return self
      */
     public function join(string $tableName, ?string $alias = null, string $joinOn) {
-        $this->queryData['join'] = $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
+        $this->queryData['join'] = 'JOIN ' . $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
 
         return $this;
     }
@@ -267,7 +269,7 @@ class QueryBuilder
         $this->queryData['table'] = $tableName;
         
         if($tableNameAlias !== null) {
-            $this->queryData['table'] .= ' ' . $tableNameAlias;
+            $this->queryData['tableAlias'] = $tableNameAlias;
         }
 
         return $this;
@@ -436,9 +438,9 @@ class QueryBuilder
      */
     public function orderBy(string $key, string $order = 'ASC') {
         if(array_key_exists('order', $this->queryData)) {
-            $this->queryData['order'] .= ', `' . $key . '` ' . $order;
+            $this->queryData['order'] .= ', ' . (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ' ' . $order;
         } else {
-            $this->queryData['order'] = ' ORDER BY `' . $key . '` ' . $order;
+            $this->queryData['order'] = ' ORDER BY ' . (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ' ' . $order;
         }
 
         return $this;
@@ -731,9 +733,9 @@ class QueryBuilder
         $i = 0;
         foreach($this->queryData['keys'] as $key) {
             if(($i + 1) == count($this->queryData['keys'])) {
-                $sql .= '`' . $key . '`) VALUES (';
+                $sql .= (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ') VALUES (';
             } else {
-                $sql .= '`' . $key . '`, ';
+                $sql .= (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ', ';
             }
 
             $i++;
@@ -802,7 +804,7 @@ class QueryBuilder
 
         $keyArray = [];
         foreach($this->queryData['keys'] as $key) {
-            $keyArray[] = '`' . $key . '`';
+            $keyArray[] = (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '');
         }
 
         $sql .= implode(', ', $keyArray) . ') VALUES (';
@@ -835,16 +837,20 @@ class QueryBuilder
             if($key == '*' || str_starts_with($key, 'COUNT')) {
                 $keyArray[] = $key;
             } else {
-                $keyArray[] = '`' . $key . '`';
+                $keyArray[] = (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '');
             }
         }
 
         $sql .= implode(', ', $keyArray);
 
-        $sql .= ' FROM `' . $this->queryData['table'] . '`';
+        $sql .= ' FROM ' . (self::USE_BACKTICKS ? '`' : '') . $this->queryData['table'] . (self::USE_BACKTICKS ? '`' : '');
+
+        if(isset($this->queryData['tableAlias'])) {
+            $sql .= ' ' . $this->queryData['tableAlias'];
+        }
 
         if(isset($this->queryData['join'])) {
-            $sql .= $this->queryData['join'];
+            $sql .= ' ' . $this->queryData['join'];
         }
 
         if(isset($this->queryData['where'])) {
