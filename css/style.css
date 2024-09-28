@@ -382,7 +382,7 @@ div[class^="fm-"], div[class*="fm-"] {
     background-color: rgb(220, 220, 220);
 }
 
-div [id*="post-id-"], div [id*="poll-id-"] {
+div [id*="post-id-"], div [id*="poll-id-"], div [id*="chat-id-"] {
     background-color: rgba(255, 255, 255, 0.75);
 
     border-radius: 10px;
@@ -390,6 +390,12 @@ div [id*="post-id-"], div [id*="poll-id-"] {
     padding-top: 10px;
 
     backdrop-filter: blur(5px);
+}
+
+div [id*="chat-id-"] {
+    padding: 10px;
+
+    text-align: center;
 }
 
 #post-comment-form {

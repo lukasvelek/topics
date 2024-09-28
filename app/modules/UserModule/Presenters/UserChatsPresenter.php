@@ -48,7 +48,10 @@ class UserChatsPresenter extends AUserPresenter {
         $offset = $this->httpGet('offset', true);
         $limit = 25;
 
-        $chats = $this->app->chatManager->getChatsForUser($this->getUserId(), $limit, $offset);
+        $tmp = $this->app->chatManager->getChatsForUser($this->getUserId(), $limit, $offset);
+        $chats = $tmp['chats'];
+        /** @var array<UserChatMessageEntity> */
+        $lastMessages = $tmp['lastMessages'];
 
         $code = '<div>';
 
@@ -59,8 +62,15 @@ class UserChatsPresenter extends AUserPresenter {
                 $username = $this->app->userRepository->getUserById($chat->getUser1Id())->getUsername();
             }
 
-            $code .= '<a href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div id="chat-' . $chat->getChatId() . '">';
+            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div id="chat-id-' . $chat->getChatId() . '">';
             $code .= '<span>' . $username . '</span>';
+            
+            if(array_key_exists($chat->getChatId(), $lastMessages)) {
+                $message = $lastMessages[$chat->getChatId()];
+
+                $code .= $message->getMessage();
+            }
+
             $code .= '</div></a>';
         }
 
@@ -156,6 +166,16 @@ class UserChatsPresenter extends AUserPresenter {
         }
 
         return ['userList' => $results, 'empty' => (count($results) > 0) ? '0' : '1'];
+    }
+
+    public function handleChat() {
+        $links = [];
+
+        $this->saveToPresenterCache('links', $links);
+    }
+
+    public function renderChat() {
+        $this->template->links = $this->loadFromPresenterCache('links');
     }
 }
 

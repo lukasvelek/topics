@@ -19,9 +19,6 @@ class ChatManager extends AManager {
     public function getChatsForUser(string $userId, int $limit, int $offset) {
         $query = $this->cr->composeQueryForChatsForUser($userId);
 
-        $query->join('user_chat_messages', 'ucm', 'uc.chatId = ucm.chatId')
-            ->orderBy('ucm.dateCreated', 'DESC');
-
         if($limit > 0) {
             $query->limit($limit);
         }
@@ -32,11 +29,21 @@ class ChatManager extends AManager {
         $query->execute();
 
         $chats = [];
+        $lastMessages = [];
         while($row = $query->fetchAssoc()) {
-            $chats[] = UserChatEntity::createEntityFromDbRow($row);
+            $chat = UserChatEntity::createEntityFromDbRow($row);
+            $lastMessage = $this->cr->getLastChatMessageForChat($chat->getChatId());
+            if($lastMessage !== null) {
+                $chats[$lastMessage->getDateCreated()] = $chat;
+                $lastMessages[$chat->getChatId()] == $lastMessage;
+            } else {
+                $chats[] = $chat;
+            }
         }
 
-        return $chats;
+        rsort($chats, SORT_NUMERIC);
+
+        return ['chats' => $chats, 'lastMessages' => $lastMessages];
     }
 
     public function createNewChat(string $user1Id, string $user2Id) {

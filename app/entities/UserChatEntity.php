@@ -32,6 +32,7 @@ class UserChatEntity extends AEntity {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) return null;
         return new self($row['chatId'], $row['user1Id'], $row['user2Id'], $row['dateCreated']);
     }
 }

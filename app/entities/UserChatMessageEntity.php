@@ -38,6 +38,7 @@ class UserChatMessageEntity extends AEntity {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) return null;
         return new self($row['messageId'], $row['chatId'], $row['authorId'], $row['message'], $row['dateCreated']);
     }
 }

@@ -45,6 +45,19 @@ class ChatRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getLastChatMessageForChat(string $chatId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('user_chat_messages')
+            ->where('chatId = ?', [$chatId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return UserChatMessageEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
