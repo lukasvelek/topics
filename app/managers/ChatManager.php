@@ -3,6 +3,7 @@
 namespace App\Managers;
 
 use App\Entities\UserChatEntity;
+use App\Exceptions\GeneralException;
 use App\Logger\Logger;
 use App\Repositories\ChatRepository;
 
@@ -27,7 +28,7 @@ class ChatManager extends AManager {
         if($offset > 0) {
             $query->offset($offset);
         }
-        
+
         $query->execute();
 
         $chats = [];
@@ -36,6 +37,18 @@ class ChatManager extends AManager {
         }
 
         return $chats;
+    }
+
+    public function createNewChat(string $user1Id, string $user2Id) {
+        $chatId = $this->createId(EntityManager::USER_CHATS);
+
+        $result = $this->cr->createNewChat($chatId, $user1Id, $user2Id);
+
+        if($result === false) {
+            throw new GeneralException('Could not create a new chat');
+        }
+
+        return $chatId;
     }
 }
 

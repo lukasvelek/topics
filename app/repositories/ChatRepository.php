@@ -35,6 +35,16 @@ class ChatRepository extends ARepository {
             $entities[] = UserChatMessageEntity::createEntityFromDbRow($row);
         }
     }
+
+    public function createNewChat(string $chatId, string $user1Id, string $user2Id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->insert('user_chats', ['chatId', 'user1Id', 'user2Id'])
+            ->values([$chatId, $user1Id, $user2Id])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
 }
 
 ?>

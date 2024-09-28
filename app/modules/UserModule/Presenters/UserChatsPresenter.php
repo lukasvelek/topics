@@ -3,6 +3,10 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Exceptions\AException;
+use App\UI\FormBuilder\FormBuilder;
+use App\UI\FormBuilder\FormResponse;
+use App\UI\LinkBuilder;
 
 class UserChatsPresenter extends AUserPresenter {
     public function __construct() {
@@ -16,7 +20,9 @@ class UserChatsPresenter extends AUserPresenter {
     public function handleList() {
         $offset = $this->httpGet('offset') ?? '0';
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link')
+        ];
 
         $this->saveToPresenterCache('links', $links);
 
@@ -61,6 +67,95 @@ class UserChatsPresenter extends AUserPresenter {
         $code .= '</div>';
 
         return ['list' => $code];
+    }
+
+    public function handleNewChatForm(?FormResponse $fr = null) {
+        if($this->httpGet('isFormSubmit') == '1') {
+            $user = $fr->users;
+
+            try {
+                $this->app->chatRepository->beginTransaction();
+
+                $chatId = $this->app->chatManager->createNewChat($this->getUserId(), $user);
+
+                $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+
+                $this->flashMessage('New chat created.', 'success');
+            } catch(AException $e) {
+                $this->app->chatRepository->rollback();
+
+                $this->flashMessage('Could not create a new chat. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect($this->createURL('chat', ['chatId' => $chatId]));
+        } else {
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            ];
+    
+            $this->saveToPresenterCache('links', $links);
+    
+            $form = new FormBuilder();
+            $form->setAction($this->createURL('form'));
+
+            $form->addTextInput('userSearchQuery', 'Username:', null, true);
+            $form->addButton('Search', 'processSearchUser()', 'formSubmit');
+
+            $form->addSelect('users', 'Users:', [], true);
+            $form->addSubmit('Start a chat', true, false, 'formSubmit2');
+    
+            $this->saveToPresenterCache('form', $form);
+
+            $this->addScript('
+                async function processSearchUser() {
+                    const val = $("#userSearchQuery").val();
+                    if(!val) {
+                        alert("No username defined");
+                        return;
+                    }
+                    return await searchUser(val);
+                }
+            ');
+
+            $arb = new AjaxRequestBuilder();
+
+            $arb->setAction($this, 'searchUser')
+                ->setMethod()
+                ->setHeader(['query' => '_query'])
+                ->setFunctionName('searchUser')
+                ->setFunctionArguments(['_query'])
+                ->updateHTMLElementRaw('"#users"', 'userList')
+                ->addWhenDoneOperation('
+                    if(obj.empty == "0") {
+                        $(\'input[type="submit"]\').removeAttr("disabled");
+                    } else {
+                        $(\'input[type="submit"]\').attr("disabled", "disabled");
+                    }
+                ')
+            ;
+
+            $this->addScript($arb);
+        }
+    }
+
+    public function renderNewChatForm() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function actionSearchUser() {
+        $query = $this->httpGet('query', true);
+
+        $users = $this->app->userRepository->searchUsersByUsername($query);
+
+        $results = [];
+        foreach($users as $user) {
+            if($user->getId() == $this->getUserId()) continue;
+
+            $results[] = '<option value="' . $user->getId() . '">' . $user->getUsername() . '</option>';
+        }
+
+        return ['userList' => $results, 'empty' => (count($results) > 0) ? '0' : '1'];
     }
 }
 

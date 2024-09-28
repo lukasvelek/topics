@@ -33,6 +33,7 @@ class EntityManager extends AManager {
     public const GRID_EXPORTS = 'grid_exports';
     public const TOPIC_CALENDAR_USER_EVENTS = 'topic_calendar_user_events';
     public const TOPIC_BANNED_WORDS = 'topic_banned_words';
+    public const USER_CHATS = 'user_chats';
 
     private ContentRepository $cr;
 
