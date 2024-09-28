@@ -96,7 +96,7 @@ class UserChatsPresenter extends AUserPresenter {
             $this->saveToPresenterCache('links', $links);
     
             $form = new FormBuilder();
-            $form->setAction($this->createURL('form'));
+            $form->setAction($this->createURL('newChatForm'));
 
             $form->addTextInput('userSearchQuery', 'Username:', null, true);
             $form->addButton('Search', 'processSearchUser()', 'formSubmit');
