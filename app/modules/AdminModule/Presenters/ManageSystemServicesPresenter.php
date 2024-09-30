@@ -150,9 +150,13 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $serviceId = $this->httpGet('serviceId', true);
         $service = $this->app->systemServicesRepository->getServiceById($serviceId);
 
-        $this->app->serviceManager->runService($service->getScriptPath());  
+        try {
+            $this->app->serviceManager->runService($service->getScriptPath());
+            $this->flashMessage('Service started.', 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not start service. Reason: ' . $e->getMessage(), 'error');
+        }
         
-        $this->flashMessage('Service started.', 'success');
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);
     }
 }
