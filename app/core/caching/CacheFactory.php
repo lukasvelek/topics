@@ -8,7 +8,7 @@ use App\Core\FileLockManager;
 use App\Core\FileManager;
 
 /**
- * CacheFactory allows creating cache
+ * CacheFactory allows to create cache
  * 
  * @author Lukas Velek
  */

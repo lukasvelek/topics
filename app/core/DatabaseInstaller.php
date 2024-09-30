@@ -6,15 +6,29 @@ use App\Constants\AdministratorGroups;
 use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
+/**
+ * Installs the database - creates tables, indexes
+ * 
+ * @author Lukas Velek
+ */
 class DatabaseInstaller {
     private DatabaseConnection $db;
     private Logger $logger;
 
+    /**
+     * Class constructor
+     * 
+     * @param DatabaseConnection $db DatabaseConnection instance
+     * @param Logger $logger Logger instance
+     */
     public function __construct(DatabaseConnection $db, Logger $logger) {
         $this->db = $db;
         $this->logger = $logger;
     }
 
+    /**
+     * Performs the database installation
+     */
     public function install() {
         $this->logger->info('Database installation started.', __METHOD__);
 
@@ -29,6 +43,9 @@ class DatabaseInstaller {
         $this->logger->info('Database installation finished.', __METHOD__);
     }
 
+    /**
+     * Creates tables
+     */
     private function createTables() {
         $this->logger->info('Creating tables.', __METHOD__);
 
@@ -342,6 +359,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' tables.', __METHOD__);
     }
 
+    /**
+     * Creates indexes
+     */
     private function createIndexes() {
         $this->logger->info('Creating indexes.', __METHOD__);
 
@@ -481,6 +501,9 @@ class DatabaseInstaller {
         $this->logger->info('Created indexes.', __METHOD__);
     }
 
+    /**
+     * Creates default users
+     */
     private function createUsers() {
         $this->logger->info('Creating users.', __METHOD__);
 
@@ -518,6 +541,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' users.', __METHOD__);
     }
 
+    /**
+     * Creates default systems
+     */
     private function createSystems() {
         $this->logger->info('Creating systems.', __METHOD__);
 
@@ -541,6 +567,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' systems.', __METHOD__);
     }
 
+    /**
+     * Creates default groups
+     */
     private function createGroups() {
         $this->logger->info('Creating administrator groups.', __METHOD__);
 
@@ -577,6 +606,9 @@ class DatabaseInstaller {
         $this->logger->info('Created administrator groups.', __METHOD__);
     }
 
+    /**
+     * Adds administrator to default groups
+     */
     private function addAdminToGroups() {
         $this->logger->info('Adding admin to administrator groups.', __METHOD__);
 
@@ -614,6 +646,9 @@ class DatabaseInstaller {
         $this->logger->info('Added admin to administrator groups.', __METHOD__);
     }
 
+    /**
+     * Adds system services
+     */
     private function addSystemServices() {
         $this->logger->info('Adding system services.', __METHOD__);
 
