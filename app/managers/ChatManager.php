@@ -56,7 +56,7 @@ class ChatManager extends AManager {
             $lastMessage = $this->cr->getLastChatMessageForChat($chat->getChatId());
             if($lastMessage !== null) {
                 $chats[$lastMessage->getDateCreated()] = $chat;
-                $lastMessages[$chat->getChatId()] == $lastMessage;
+                $lastMessages[$chat->getChatId()] = $lastMessage;
             } else {
                 $chats[] = $chat;
             }
