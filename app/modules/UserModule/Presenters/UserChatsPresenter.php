@@ -193,7 +193,9 @@ class UserChatsPresenter extends AUserPresenter {
 
         $this->saveToPresenterCache('user_link', $otherUser->getUsername());
 
-        $links = [];
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+        ];
 
         $this->saveToPresenterCache('links', $links);
 
