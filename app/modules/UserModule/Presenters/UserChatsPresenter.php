@@ -228,17 +228,40 @@ class UserChatsPresenter extends AUserPresenter {
             }
         ');
 
+        $this->addScript('
+            async function autoUpdateMessages(_chatId) {
+                await sleep(5000);
+                await getChatMessages(_chatId, 0, \'html\');
+                await autoUpdateMessages(_chatId);
+            }
+        ');
+
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
             ->setAction($this, 'getChatMessages')
             ->setHeader(['chatId' => '_chatId', 'offset' => '_offset'])
             ->setFunctionName('getChatMessages')
-            ->setFunctionArguments(['_chatId', '_offset'])
-            ->updateHTMLElement('content', 'messages', null)
+            ->setFunctionArguments(['_chatId', '_offset', '_append'])
+            ->addWhenDoneOperation('
+                try {
+                    const obj = JSON.parse(data);
+                    if(_append == "append") {
+                        $("#content").append(obj.messages);
+                    } else if(_append == "prepend") {
+                        $("#content").prepend(obj.messages);
+                    } else {
+                        $("#content").html(obj.messages);
+                        $("#" + obj.lastMessage).get(0).scrollIntoView();
+                    }
+                } catch(error) {
+                    alert("Could not load data");
+                    console.log(error);
+                }
+            ')
         ;
         
         $this->addScript($arb);
-        $this->addScript('getChatMessages(\'' . $chatId . '\', 0)');
+        $this->addScript('getChatMessages(\'' . $chatId . '\', 0, \'html\'); autoUpdateMessages(\'' . $chatId . '\');');
     }
 
     public function renderChat() {
@@ -253,18 +276,27 @@ class UserChatsPresenter extends AUserPresenter {
 
         $messages = $this->app->chatManager->getChatMessages($chatId, 20, $offset);
 
+        $lastMessageId = '';
         $code = '';
         if(!empty($messages)) {
             $messageCode = [];
+            $i = 0;
             foreach($messages as $message) {
+                if(($i + 1) == count($messages)) {
+                    $lastMessageId = 'message-id-' . $message->getMessageId();
+                    if($message->getAuthorId() == $this->getUserId()) {
+                        $lastMessageId = 'my-' . $lastMessageId;
+                    }
+                }
                 $messageCode[] = $this->createMessageCode($message);
+                $i++;
             }
             $code .= implode('<br>', $messageCode);
         } else {
             $code .= 'No messages found.';
         }
 
-        return ['messages' => $code];
+        return ['messages' => $code, 'lastMessage' => $lastMessageId];
     }
 
     public function actionSubmitMessage() {
