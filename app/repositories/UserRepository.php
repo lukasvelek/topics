@@ -171,6 +171,7 @@ class UserRepository extends ARepository {
         $qb ->select(['*'])
             ->from('users')
             ->where('username LIKE ?', ['%' . $username . '%'])
+            ->andWhere('username <> ?', ['service_user'])
             ->execute();
 
         return $this->createUsersArrayFromQb($qb);
@@ -181,7 +182,8 @@ class UserRepository extends ARepository {
 
         $qb ->select(['*'])
             ->from('users')
-            ->where('username LIKE ?', ['%' . $username . '%']);
+            ->where('username LIKE ?', ['%' . $username . '%'])
+            ->andWhere('username <> ?', ['service_user']);
 
         return $qb;
     }

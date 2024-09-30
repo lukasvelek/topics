@@ -166,7 +166,7 @@ class Application {
         $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
-        $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository);
+        $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

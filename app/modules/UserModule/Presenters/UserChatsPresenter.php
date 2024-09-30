@@ -175,7 +175,7 @@ class UserChatsPresenter extends AUserPresenter {
     public function actionSearchUser() {
         $query = $this->httpGet('query', true);
 
-        $users = $this->app->userRepository->searchUsersByUsername($query);
+        $users = $this->app->chatManager->searchUsersForNewChat($query, $this->getUserId());
 
         $results = [];
         foreach($users as $user) {
@@ -209,10 +209,11 @@ class UserChatsPresenter extends AUserPresenter {
         $this->saveToPresenterCache('user_link', $otherUser->getUsername());
 
         $links = [
-            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link')
+            LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('list'), 'post-data-link'),
+            UserEntity::createUserProfileLink($otherUser)
         ];
 
-        $this->saveToPresenterCache('links', $links);
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         $form = new FormBuilder();
 

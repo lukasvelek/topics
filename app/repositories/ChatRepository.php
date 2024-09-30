@@ -15,9 +15,9 @@ class ChatRepository extends ARepository {
     public function composeQueryForChatsForUser(string $userId) {
         $qb = $this->qb(__METHOD__);
 
-        $qb->select(['uc.*'])
-            ->from('user_chats', 'uc')
-            ->where('(uc.user1Id = ? OR uc.user2Id = ?)', [$userId, $userId]);
+        $qb->select(['*'])
+            ->from('user_chats',)
+            ->where('user1Id = ? OR user2Id = ?', [$userId, $userId]);
 
         return $qb;
     }

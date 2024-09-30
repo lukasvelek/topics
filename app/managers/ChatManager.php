@@ -3,13 +3,14 @@
 namespace App\Managers;
 
 use App\Core\Caching\Cache;
-use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Entities\UserChatEntity;
+use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Logger\Logger;
 use App\Repositories\ChatRepository;
+use App\Repositories\UserRepository;
 
 /**
  * Chat manager is responsible for interactions with chats
@@ -19,6 +20,7 @@ use App\Repositories\ChatRepository;
 class ChatManager extends AManager {
     private ChatRepository $cr;
     private Cache $userChatsCache;
+    private UserRepository $ur;
 
     /**
      * Class constructor
@@ -27,10 +29,11 @@ class ChatManager extends AManager {
      * @param EntityManager $entityManager EntityManager instance
      * @param ChatRepository $cr ChatRepository instance
      */
-    public function __construct(Logger $logger, EntityManager $entityManager, ChatRepository $cr) {
+    public function __construct(Logger $logger, EntityManager $entityManager, ChatRepository $cr, UserRepository $ur) {
         parent::__construct($logger, $entityManager);
 
         $this->cr = $cr;
+        $this->ur = $ur;
     }
 
     /**
@@ -98,6 +101,8 @@ class ChatManager extends AManager {
         if($result === false) {
             throw new GeneralException('Could not create a new chat.');
         }
+
+        $this->invalidateCache($user1Id);
 
         return $chatId;
     }
@@ -186,6 +191,40 @@ class ChatManager extends AManager {
      */
     private function getUserChatsCacheNamespace(string $userId) {
         return CacheNames::USER_CHATS . '/' . $userId;
+    }
+
+    /**
+     * Searches users available for chatting. Returns only users for whose no chat history with given $userId exists.
+     * 
+     * @param string $query Username
+     * @param string $userId Current user ID
+     * @return array Users
+     */
+    public function searchUsersForNewChat(string $query, string $userId) {
+        $qb = $this->cr->composeQueryForChatsForUser($userId);
+        $qb->select(['user1Id', 'user2Id']);
+
+        $qb->execute();
+
+        $usersInChats = [$userId];
+        while($row = $qb->fetchAssoc()) {
+            if($row['user1Id'] == $userId) {
+                $usersInChats[] = $row['user2Id'];
+            } else {
+                $usersInChats[] = $row['user1Id'];
+            }
+        }
+
+        $qb = $this->ur->composeStandardQuery($query, __METHOD__);
+        $qb->andWhere($qb->getColumnNotInValues('userId', $usersInChats))
+            ->execute();
+
+        $users = [];
+        while($row = $qb->fetchAssoc()) {
+            $users[] = UserEntity::createEntityFromDbRow($row);
+        }
+
+        return $users;
     }
 }
 
