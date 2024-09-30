@@ -67,15 +67,29 @@ class UserChatsPresenter extends AUserPresenter {
                 $username = $this->app->userRepository->getUserById($chat->getUser1Id())->getUsername();
             }
 
-            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div id="chat-id-' . $chat->getChatId() . '">';
-            $code .= '<span>' . $username . '</span>';
+            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div class="row" id="chat-id-' . $chat->getChatId() . '">';
+            $code .= '<div class="col-md">';
+            $code .= '<div class="row">';
+            $code .= '<div class="col-md" id="left">';
+            $code .= '<span style="font-size: 18px">' . $username . '</span>';
+            $code .= '</div>';
+            $code .= '</div>';
             
             if(array_key_exists($chat->getChatId(), $lastMessages)) {
                 $message = $lastMessages[$chat->getChatId()];
 
-                $code .= $message->getMessage();
+                $tmp = '';
+                if($message->getAuthorId() != $this->getUserId()) {
+                    $otherUser = $this->app->userRepository->getUserById($message->getAuthorId());
+                    if($otherUser !== null) {
+                        $tmp = $otherUser->getUsername() . ': ';
+                    }
+                }
+
+                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $tmp . $message->getMessage() . '</span></div></div>';
             }
 
+            $code .= '</div>';
             $code .= '</div></a>';
         }
 
@@ -317,6 +331,8 @@ class UserChatsPresenter extends AUserPresenter {
             if($messageId === null) {
                 throw new GeneralException('Could not obtain last created message.');
             }
+
+            $this->app->chatManager->invalidateCache($this->getUserId());
 
             $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {

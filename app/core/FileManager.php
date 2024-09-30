@@ -129,7 +129,7 @@ class FileManager {
         }
 
         if(!self::folderExists($path)) {
-            self::createFolder($path);
+            self::createFolder($path, true);
         }
 
         if($overwrite === false) {

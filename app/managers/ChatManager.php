@@ -2,6 +2,9 @@
 
 namespace App\Managers;
 
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Entities\UserChatEntity;
 use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
@@ -15,6 +18,7 @@ use App\Repositories\ChatRepository;
  */
 class ChatManager extends AManager {
     private ChatRepository $cr;
+    private Cache $userChatsCache;
 
     /**
      * Class constructor
@@ -38,6 +42,7 @@ class ChatManager extends AManager {
      * @return array<string, array> Array with keys "chats" (contains a list of chats) and "last messages" (last messages for given chats)
      */
     public function getChatsForUser(string $userId, int $limit, int $offset) {
+        $this->userChatsCache = $this->cacheFactory->getCache($this->getUserChatsCacheNamespace($userId));
         $query = $this->cr->composeQueryForChatsForUser($userId);
 
         if($limit > 0) {
@@ -47,20 +52,31 @@ class ChatManager extends AManager {
             $query->offset($offset);
         }
 
-        $query->execute();
-
-        $chats = [];
         $lastMessages = [];
-        while($row = $query->fetchAssoc()) {
-            $chat = UserChatEntity::createEntityFromDbRow($row);
-            $lastMessage = $this->cr->getLastChatMessageForChat($chat->getChatId());
-            if($lastMessage !== null) {
-                $chats[$lastMessage->getDateCreated()] = $chat;
-                $lastMessages[$chat->getChatId()] = $lastMessage;
-            } else {
+
+        $chats = $this->userChatsCache->load('chats', function() use ($query) {
+            $query->execute();
+            $chats = [];
+            while($row = $query->fetchAssoc()) {
+                $chat = UserChatEntity::createEntityFromDbRow($row);
                 $chats[] = $chat;
             }
+
+            return $chats;
+        });
+
+        $tmp = [];
+        foreach($chats as $chat) {
+            $lastMessage = $this->cr->getLastChatMessageForChat($chat->getChatId());
+            if($lastMessage !== null) {
+                $tmp[$lastMessage->getDateCreated()] = $chat;
+                $lastMessages[$chat->getChatId()] = $lastMessage;
+            } else {
+                $tmp[] = $chat;
+            }
         }
+
+        $chats = $tmp;
 
         rsort($chats, SORT_NUMERIC);
 
@@ -115,6 +131,14 @@ class ChatManager extends AManager {
         return $messages;
     }
 
+    /**
+     * Creates a new message and saves it to the database
+     * 
+     * @param string $chatId Chat ID
+     * @param string $authorId Author ID
+     * @param string $text Message text
+     * @return string Message ID
+     */
     public function createNewMessage(string $chatId, string $authorId, string $text) {
         $messageId = $this->createId(EntityManager::USER_CHAT_MESSAGES);
 
@@ -127,6 +151,12 @@ class ChatManager extends AManager {
         return $messageId;
     }
 
+    /**
+     * Returns a UserChatMessageEntity for given $messageId
+     * 
+     * @param string $messageId Message ID
+     * @return \App\Entities\UserChatMessageEntity Message
+     */
     public function getChatMessageEntityById(string $messageId) {
         $entity = $this->cr->getChatMessageEntityById($messageId);
 
@@ -135,6 +165,27 @@ class ChatManager extends AManager {
         }
 
         return $entity;
+    }
+
+    /**
+     * Invalidates user chats cache
+     * 
+     * @param string $userId User ID
+     */
+    public function invalidateCache(string $userId) {
+        $userChatsCache = $this->cacheFactory->getCache($this->getUserChatsCacheNamespace($userId));
+
+        $userChatsCache->invalidate();
+    }
+
+    /**
+     * Creates a user chats cache namespace
+     * 
+     * @param string $userId User ID
+     * @return string Cache namespace
+     */
+    private function getUserChatsCacheNamespace(string $userId) {
+        return CacheNames::USER_CHATS . '/' . $userId;
     }
 }
 
