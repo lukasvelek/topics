@@ -248,11 +248,14 @@ class UserChatsPresenter extends AUserPresenter {
             }
         ');
 
+        $this->addScript('let _autoRun = true;');
         $this->addScript('
             async function autoUpdateMessages(_chatId) {
-                await sleep(5000);
-                await getChatMessages(_chatId, 0, \'html\');
-                await autoUpdateMessages(_chatId);
+                if(_autoRun) {
+                    await sleep(5000);
+                    await getChatMessages(_chatId, 0, \'html_noscroll\');
+                    await autoUpdateMessages(_chatId);
+                }
             }
         ');
 
@@ -264,14 +267,21 @@ class UserChatsPresenter extends AUserPresenter {
             ->setFunctionArguments(['_chatId', '_offset', '_append'])
             ->addWhenDoneOperation('
                 try {
+                    if(!_autoRun) return;
                     const obj = JSON.parse(data);
                     if(_append == "append") {
                         $("#content").append(obj.messages);
                     } else if(_append == "prepend") {
                         $("#content").prepend(obj.messages);
+                    } else if(_append == "html_noscroll") {
+                        $("#content").html(obj.messages);
                     } else {
                         $("#content").html(obj.messages);
                         $("#" + obj.lastMessage).get(0).scrollIntoView();
+                    }
+                    
+                    if(obj.loadMore == 1) {
+                        _autoRun = false;
                     }
                 } catch(error) {
                     alert("Could not load data. See console for more information.");
@@ -294,10 +304,13 @@ class UserChatsPresenter extends AUserPresenter {
         $chatId = $this->httpGet('chatId', true);
         $offset = $this->httpGet('offset', true);
 
-        $messages = $this->app->chatManager->getChatMessages($chatId, 20, $offset);
+        $limit = 10;
+
+        $messages = $this->app->chatManager->getChatMessages($chatId, ($limit + $offset), $offset);
 
         $lastMessageId = '';
         $code = '';
+        $ok = true;
         if(!empty($messages)) {
             $messageCode = [];
             $i = 0;
@@ -313,10 +326,26 @@ class UserChatsPresenter extends AUserPresenter {
             }
             $code .= implode('<br>', $messageCode);
         } else {
-            $code .= 'No messages found.';
+            $ok = false;
+            if($offset == 0) {
+                $code .= 'No messages found.';
+            }
         }
 
-        return ['messages' => $code, 'lastMessage' => $lastMessageId];
+        if($ok) {
+            $loadNextLink = '
+                <div class="row">
+                    <div class="col-md-3"></div>
+                    <div class="col-md" id="form">
+                        <button type="button" class="formSubmit" id="load-more-offset-' . ($offset + $limit) . '" onclick="getChatMessages(\'' . $chatId . '\', ' . ($offset + $limit) . ', \'prepend\'); $(\'#load-more-offset-' . ($offset + $limit) . '\').remove();">Load more</button>
+                    </div>
+                    <div class="col-md-3"></div>
+                </div>
+                ';
+            $code = $loadNextLink . '<br>' . $code;
+        }
+
+        return ['messages' => $code, 'lastMessage' => $lastMessageId, 'loadMore' => (($offset > 0) ? '1' : '0')];
     }
 
     public function actionSubmitMessage() {
