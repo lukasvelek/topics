@@ -7,6 +7,7 @@ use App\Entities\UserChatMessageEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
@@ -330,6 +331,12 @@ class UserChatsPresenter extends AUserPresenter {
     private function createMessageCode(UserChatMessageEntity $message) {
         $isAuthor = ($message->getAuthorId() == $this->getUserId());
 
+        $messageContent = '
+            <span style="font-size: 16px">' . $message->getMessage() . '<span>
+            <br>
+            <span style="font-size: 12px" title="' . DateTimeFormatHelper::formatDateToUserFriendly($message->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($message->getDateCreated()) . '</span>
+        ';
+
         $code = '';
         if($isAuthor) {
             $code = '
@@ -337,7 +344,7 @@ class UserChatsPresenter extends AUserPresenter {
                     <div class="col-md"></div>
                     <div class="col-md-5">
                         <div id="my-message-id-' . $message->getMessageId() . '">
-                            <span>' . $message->getMessage() . '<span>
+                            ' . $messageContent . '
                         </div>
                     </div>
                 </div>
@@ -347,7 +354,7 @@ class UserChatsPresenter extends AUserPresenter {
                 <div class="row">
                     <div class="col-md-5">
                         <div id="message-id-' . $message->getMessageId() . '">
-                            <span>' . $message->getMessage() . '<span>
+                            ' . $messageContent . '
                         </div>
                     </div>
                     <div class="col-md"></div>
