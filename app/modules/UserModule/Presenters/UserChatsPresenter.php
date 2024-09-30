@@ -3,6 +3,7 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Core\Datetypes\DateTime;
 use App\Entities\UserChatMessageEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -86,7 +87,18 @@ class UserChatsPresenter extends AUserPresenter {
                     }
                 }
 
-                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $tmp . $message->getMessage() . '</span></div></div>';
+                $do = new DateTime(strtotime($message->getDateCreated()));
+                $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
+
+                $dt = clone($do);
+                $dt->format('Y-m-d');
+                if($dt->getResult() == date('Y-m-d')) {
+                    $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+                }
+
+                $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
+
+                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $tmp . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
             }
 
             $code .= '</div>';
