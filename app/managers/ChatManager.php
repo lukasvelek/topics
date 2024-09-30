@@ -19,8 +19,9 @@ use App\Repositories\UserRepository;
  */
 class ChatManager extends AManager {
     private ChatRepository $cr;
-    private Cache $userChatsCache;
     private UserRepository $ur;
+    
+    private Cache $userChatsCache;
 
     /**
      * Class constructor
