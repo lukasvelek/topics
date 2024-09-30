@@ -114,7 +114,8 @@ class FileManager {
     }
 
     /**
-     * Saves file
+     * Writes (or if $overwrite is true, then appends) content to given file. If file exists and the content is supposed to be appended, 
+     * then a file lock is created and after successful the file is sucessfully saved, the file is unlocked.
      * 
      * @param string $path Path to the directory where the file will be saved
      * @param string $filename Filename
@@ -153,6 +154,8 @@ class FileManager {
                 if(fwrite($handle, $fileContent) === false) {
                     throw new FileWriteException($path . $filename);
                 }
+
+                $fm->flm->unlock($path . $filename);
             } catch(AException $e) {
                 $result = false;
 
