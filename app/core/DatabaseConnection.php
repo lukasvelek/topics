@@ -104,13 +104,7 @@ class DatabaseConnection implements IDbQueriable {
         
         $date = new DateTime();
         
-        $result = FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
-
-        if($result !== false) {
-            return true;
-        } else {
-            return false;
-        }
+        FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
     }
 }
 

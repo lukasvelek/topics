@@ -180,10 +180,10 @@ class Application {
         $this->loadModules();
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
-            $result = $this->db->installDb();
-
-            if($result === false) {
-                throw new GeneralException('Could not install database.');
+            try {
+                $this->db->installDb();
+            } catch(AException $e) {
+                throw new GeneralException('Could not install database. Reason: ' . $e->getMessage(), $e);
             }
         }
     }
