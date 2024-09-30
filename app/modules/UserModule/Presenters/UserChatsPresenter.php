@@ -217,6 +217,9 @@ class UserChatsPresenter extends AUserPresenter {
             ->setFunctionName('submitMessage')
             ->setFunctionArguments(['_chatId', '_message'])
             ->updateHTMLElement('content', 'message', true)
+            ->addWhenDoneOperation('
+                $("#" + obj.messageId).get(0).scrollIntoView();
+            ')
         ;
 
         $this->addScript($arb);
@@ -254,7 +257,7 @@ class UserChatsPresenter extends AUserPresenter {
                         $("#" + obj.lastMessage).get(0).scrollIntoView();
                     }
                 } catch(error) {
-                    alert("Could not load data");
+                    alert("Could not load data. See console for more information.");
                     console.log(error);
                 }
             ')
@@ -319,7 +322,7 @@ class UserChatsPresenter extends AUserPresenter {
 
         $message = $this->app->chatManager->getChatMessageEntityById($messageId);
 
-        return ['message' => '<br>' . $this->createMessageCode($message)];
+        return ['message' => '<br>' . $this->createMessageCode($message), 'messageId' => 'my-message-id-' . $messageId];
     }
 
     private function createMessageCode(UserChatMessageEntity $message) {

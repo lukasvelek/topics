@@ -284,7 +284,8 @@ class AjaxRequestBuilder {
             }
 
             $code[] = '} catch (error) {';
-            $code[] = 'alert("Could not load data");';
+            $code[] = 'alert("Could not load data. See console for more information.");';
+            $code[] = 'console.log(error);';
             $code[] = '}';
 
             $code[] = '});';
