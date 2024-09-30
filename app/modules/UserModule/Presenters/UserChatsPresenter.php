@@ -3,10 +3,13 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Entities\UserChatMessageEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 
 class UserChatsPresenter extends AUserPresenter {
@@ -200,29 +203,122 @@ class UserChatsPresenter extends AUserPresenter {
             ->addButton('Submit', 'processSubmitMessage(\'' . $chatId . '\')', 'formSubmit')
         ;
 
+        $form->updateElement('message', function(TextArea $ta) {
+            $ta->setId('message');
+            return $ta;
+        });
+
         $this->saveToPresenterCache('form', $form);
 
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
             ->setAction($this, 'submitMessage')
-            ->setHeader(['chatId' => '_chatId'])
+            ->setHeader(['chatId' => '_chatId', 'message' => '_message'])
             ->setFunctionName('submitMessage')
-            ->setFunctionArguments(['_chatId'])
+            ->setFunctionArguments(['_chatId', '_message'])
             ->updateHTMLElement('content', 'message', true)
         ;
 
         $this->addScript($arb);
         $this->addScript('
             async function processSubmitMessage(_chatId) {
-                return await submitMessage(_chatId);
+                const message = $("#message").val();
+                await submitMessage(_chatId, message);
+                $("#message").val("");
             }
         ');
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setMethod()
+            ->setAction($this, 'getChatMessages')
+            ->setHeader(['chatId' => '_chatId', 'offset' => '_offset'])
+            ->setFunctionName('getChatMessages')
+            ->setFunctionArguments(['_chatId', '_offset'])
+            ->updateHTMLElement('content', 'messages', null)
+        ;
+        
+        $this->addScript($arb);
+        $this->addScript('getChatMessages(\'' . $chatId . '\', 0)');
     }
 
     public function renderChat() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->user_link = $this->loadFromPresenterCache('user_link');
         $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function actionGetChatMessages() {
+        $chatId = $this->httpGet('chatId', true);
+        $offset = $this->httpGet('offset', true);
+
+        $messages = $this->app->chatManager->getChatMessages($chatId, 20, $offset);
+
+        $code = '';
+        if(!empty($messages)) {
+            $messageCode = [];
+            foreach($messages as $message) {
+                $messageCode[] = $this->createMessageCode($message);
+            }
+            $code .= implode('<br>', $messageCode);
+        } else {
+            $code .= 'No messages found.';
+        }
+
+        return ['messages' => $code];
+    }
+
+    public function actionSubmitMessage() {
+        $chatId = $this->httpGet('chatId', true);
+        $message = $this->httpGet('message', true);
+
+        try {
+            $this->app->chatRepository->beginTransaction();
+
+            $messageId = $this->app->chatManager->createNewMessage($chatId, $this->getUserId(), $message);
+
+            if($messageId === null) {
+                throw new GeneralException('Could not obtain last created message.');
+            }
+
+            $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+        } catch(AException $e) {
+            $this->app->chatRepository->rollback();
+        }
+
+        $message = $this->app->chatManager->getChatMessageEntityById($messageId);
+
+        return ['message' => '<br>' . $this->createMessageCode($message)];
+    }
+
+    private function createMessageCode(UserChatMessageEntity $message) {
+        $isAuthor = ($message->getAuthorId() == $this->getUserId());
+
+        $code = '';
+        if($isAuthor) {
+            $code = '
+                <div class="row">
+                    <div class="col-md"></div>
+                    <div class="col-md-5">
+                        <div id="my-message-id-' . $message->getMessageId() . '">
+                            <span>' . $message->getMessage() . '<span>
+                        </div>
+                    </div>
+                </div>
+            ';
+        } else {
+            $code = '
+                <div class="row">
+                    <div class="col-md-5">
+                        <div id="message-id-' . $message->getMessageId() . '">
+                            <span>' . $message->getMessage() . '<span>
+                        </div>
+                    </div>
+                    <div class="col-md"></div>
+                </div>
+            ';
+        }
+
+        return $code;
     }
 }
 

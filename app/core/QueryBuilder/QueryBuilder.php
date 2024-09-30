@@ -611,6 +611,10 @@ class QueryBuilder
      * @return mixed Associative array
      */
     public function fetchAssoc() {
+        if($this->currentState != self::STATE_CLEAN && $this->queryResult === null) {
+            throw new QueryBuilderException('No query has been created.');
+        }
+
         return $this->queryResult->fetch_assoc();
     }
 

@@ -27,14 +27,19 @@ class ChatRepository extends ARepository {
         
         $qb->select(['*'])
             ->from('user_chat_messages')
-            ->where('chatId = ?', [$chatId]);
+            ->where('chatId = ?', [$chatId])
+            ->orderBy('dateCreated');
 
         $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
 
         $entities = [];
         while($row = $qb->fetchAssoc()) {
             $entities[] = UserChatMessageEntity::createEntityFromDbRow($row);
         }
+
+        return $entities;
     }
 
     public function createNewChat(string $chatId, string $user1Id, string $user2Id) {
@@ -69,6 +74,27 @@ class ChatRepository extends ARepository {
             ->execute();
 
         return UserChatEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function createNewChatMessage(string $messageId, string $chatId, string $authorId, string $message) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->insert('user_chat_messages', ['messageId', 'chatId', 'authorId', 'message'])
+            ->values([$messageId, $chatId, $authorId, $message])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getChatMessageEntityById(string $messageId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('user_chat_messages')
+            ->where('messageId = ?', [$messageId])
+            ->execute();
+
+        return UserChatMessageEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 
