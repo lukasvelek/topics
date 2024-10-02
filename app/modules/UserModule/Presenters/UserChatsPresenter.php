@@ -15,6 +15,8 @@ use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
 
 class UserChatsPresenter extends AUserPresenter {
+    private const CHATS_LIMIT = 25;
+
     public function __construct() {
         parent::__construct('UserChatsPresenter', 'Chats');
     }
@@ -23,12 +25,82 @@ class UserChatsPresenter extends AUserPresenter {
         parent::startup();
     }
 
+    public function handleListTopicChannels() {
+        $offset = $this->httpGet('offset') ?? '0';
+
+        $links = [
+            LinkBuilder::createSimpleLink('User chats', $this->createURL('list'), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getTopicChannelList')
+            ->setHeader(['offset' => '_offset'])
+            ->setFunctionName('getTopicChannelList')
+            ->setFunctionArguments(['_offset'])
+            ->updateHTMLElement('content', 'list', true);
+
+        $this->addScript($arb);
+        $this->addScript('getTopicChannelList(' . $offset . ')');
+    }
+
+    public function renderListTopicChannels() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetTopicChannelList() {
+        $offset = $this->httpGet('offset', true);
+        
+        $tmp = $this->app->chatManager->getTopicBroadcastChannelsForUser($this->getUserId(), self::CHATS_LIMIT, $offset);
+        $channels = $tmp['channels'];
+        /** @var array<\App\Entities\TopicBroadcastChannelMessageEntity> */
+        $lastMessages = $tmp['lastMessages'];
+
+        $code = '<div>';
+        foreach($channels as $channel) {
+            $topic = $this->app->topicManager->getTopicById($channel->getTopicId(), $this->getUserId());
+            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserMOdule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
+            $code .= '<div class="col-md">';
+            $code .= '<div class="row">';
+            $code .= '<div class="col-md" id="left">';
+            $code .= '<span style="font-size: 18px">' . $topic->getTitle() . '</span>';
+            $code .= '</div>';
+            $code .= '</div>';
+
+            if(array_key_exists($channel->getChannelId(), $lastMessages)) {
+                $message = $lastMessages[$channel->getChannelId()];
+
+                $do = new DateTime(strtotime($message->getDateCreated()));
+                $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
+
+                $dt = clone($do);
+                $dt->format('Y-m-d');
+                if($dt->getResult() == date('Y-m-d')) {
+                    $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+                }
+
+                $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
+                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
+            }
+
+            $code .= '</div>';
+            $code .= '</div></a>';
+        }
+
+        $code .= '</div>';
+        
+        return ['list' => $code];
+    }
+
     public function handleList() {
         $offset = $this->httpGet('offset') ?? '0';
 
         $links = [
-            LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link'),
-            LinkBuilder::createSimpleLink('Topic channels', $this->createURL('listTopicChannels'), 'post-data-link')
+            LinkBuilder::createSimpleLink('Topic channels', $this->createURL('listTopicChannels'), 'post-data-link'),
+            LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link')
         ];
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -53,9 +125,8 @@ class UserChatsPresenter extends AUserPresenter {
 
     public function actionGetChatList() {
         $offset = $this->httpGet('offset', true);
-        $limit = 25;
 
-        $tmp = $this->app->chatManager->getChatsForUser($this->getUserId(), $limit, $offset);
+        $tmp = $this->app->chatManager->getChatsForUser($this->getUserId(), self::CHATS_LIMIT, $offset);
         $chats = $tmp['chats'];
         /** @var array<UserChatMessageEntity> */
         $lastMessages = $tmp['lastMessages'];

@@ -4,6 +4,7 @@ namespace App\Managers;
 
 use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
+use App\Entities\TopicBroadcastChannelEntity;
 use App\Entities\UserChatEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
@@ -274,6 +275,51 @@ class ChatManager extends AManager {
         $messages = $this->cr->getTopicBroadcastChannelMessages($channelId, $limit, $offset);
 
         return $messages;
+    }
+
+    public function getTopicBroadcastChannelsForUser(string $userId, int $limit, int $offset) {
+        $subscriptions = $this->cr->getTopicChannelSubscriptionsForUser($userId);
+
+        $query = $this->cr->composeQueryForTopicChannelsForUser();
+
+        $channelIdsUserIsSubscriberOf = [];
+        foreach($subscriptions as $sub) {
+            $channelIdsUserIsSubscriberOf[] = $sub->getChannelId();
+        }
+
+        $query->where($query->getColumnInValues('channelId', $channelIdsUserIsSubscriberOf));
+
+        if($limit > 0) {
+            $query->limit($limit);
+        }
+        if($offset > 0) {
+            $query->offset($offset);
+        }
+
+        $query->execute();
+
+        $channels = [];
+        while($row = $query->fetchAssoc()) {
+            $channels[] = TopicBroadcastChannelEntity::createEntityFromDbRow($row);
+        }
+
+        $lastMessages = [];
+        $tmp = [];
+        foreach($channels as $channel) {
+            $lastMessage = $this->cr->getLastMessageForTopicBroadcastChannel($channel->getChannelId());
+            if($lastMessage !== null) {
+                $tmp[$lastMessage->getDateCreated()] = $channel;
+                $lastMessages[$channel->getChannelId()] = $lastMessage;
+            } else {
+                $tmp[] = $channel;
+            }
+        }
+
+        $channels = $tmp;
+
+        rsort($channels, SORT_NUMERIC);
+
+        return ['channels' => $channels, 'lastMessages' => $lastMessages];
     }
 }
 

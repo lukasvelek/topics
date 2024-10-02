@@ -176,6 +176,44 @@ class ChatRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getTopicChannelSubscriptionsForUser(string $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channel_subscribers')
+            ->where('userId = ?', [$userId])
+            ->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = TopicBroadcastChannelSubscriberEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+    
+    public function composeQueryForTopicChannelsForUser() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channels');
+
+        return $qb;
+    }
+
+    public function getLastMessageForTopicBroadcastChannel(string $channelId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channel_messages')
+            ->where('channelId = ?', [$channelId])
+            ->orderBy('dateCreated', 'DESC')
+            ->limit(1)
+            ->execute();
+
+        return TopicBroadcastChannelMessageEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>
