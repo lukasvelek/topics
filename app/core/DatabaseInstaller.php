@@ -333,6 +333,24 @@ class DatabaseInstaller {
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'message' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channels' => [
+                'channelId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channel_subscribers' => [
+                'subscribeId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'channelId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channel_messages' => [
+                'messageId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'channelId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
