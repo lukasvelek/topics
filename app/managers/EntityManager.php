@@ -40,6 +40,9 @@ class EntityManager extends AManager {
     public const TOPIC_BANNED_WORDS = 'topic_banned_words';
     public const USER_CHATS = 'user_chats';
     public const USER_CHAT_MESSAGES = 'user_chat_messages';
+    public const TOPIC_BROADCAST_CHANNELS = 'topic_broadcast_channels';
+    public const TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS = 'topic_broadcast_channel_subscribers';
+    public const TOPIC_BROADCAST_CHANNEL_MESSAGES = 'topic_broadcast_channel_messages';
 
     private ContentRepository $cr;
 
@@ -116,7 +119,10 @@ class EntityManager extends AManager {
             self::TOPIC_CALENDAR_USER_EVENTS => 'eventId',
             self::TOPIC_BANNED_WORDS => 'wordId',
             self::USER_CHATS => 'chatId',
-            self::USER_CHAT_MESSAGES => 'messageId'
+            self::USER_CHAT_MESSAGES => 'messageId',
+            self::TOPIC_BROADCAST_CHANNEL_MESSAGES => 'messageId',
+            self::TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS => 'subscribeId',
+            self::TOPIC_BROADCAST_CHANNELS => 'channelId'
         };
     }
 }

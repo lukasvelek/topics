@@ -3,6 +3,9 @@
 namespace App\Repositories;
 
 use App\Core\DatabaseConnection;
+use App\Entities\TopicBroadcastChannelEntity;
+use App\Entities\TopicBroadcastChannelMessageEntity;
+use App\Entities\TopicBroadcastChannelSubscriberEntity;
 use App\Entities\UserChatEntity;
 use App\Entities\UserChatMessageEntity;
 use App\Logger\Logger;
@@ -95,6 +98,83 @@ class ChatRepository extends ARepository {
             ->execute();
 
         return UserChatMessageEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function createNewTopicBroadcastChannel(string $channelId, string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->insert('topic_broadcast_channels', ['channelId', 'topicId'])
+            ->values([$channelId, $topicId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function getTopicBroadcastChannelById(string $channelId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channels')
+            ->where('channelId = ?', [$channelId])
+            ->execute();
+
+        return TopicBroadcastChannelEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getTopicBroadcastChannelSubscribers(string $channelId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channel_subscribers')
+            ->where('channelId = ?', [$channelId])
+            ->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = TopicBroadcastChannelSubscriberEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+
+    public function getTopicBroadcastChannelMessages(string $channelId, int $limit, int $offset) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channel_messages')
+            ->where('channelId = ?', [$channelId])
+            ->orderBy('dateCreated', 'DESC');
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
+
+        $qb->execute();
+
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entities[] = TopicBroadcastChannelMessageEntity::createEntityFromDbRow($row);
+        }
+
+        return $entities;
+    }
+
+    public function createNewTopicBroadcastChannelSubscribe(string $subscribeId, string $channelId, string $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->insert('topic_broadcast_channel_subscribers', ['subscribeId', 'channelId', 'userId'])
+            ->values([$subscribeId, $channelId, $userId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function createNewTopicBroadcastChannelMessage(string $messageId, string $channelId, string $authorId, string $message) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->insert('topic_broadcast_channel_messages', ['messageId', 'channelId', 'authorId', 'message'])
+            ->values([$messageId, $channelId, $authorId, $message])
+            ->execute();
+
+        return $qb->fetchBool();
     }
 }
 

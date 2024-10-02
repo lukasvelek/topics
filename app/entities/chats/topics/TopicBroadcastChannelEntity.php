@@ -26,6 +26,7 @@ class TopicBroadcastChannelEntity extends AEntity {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
+        if($row === null) return null;
         return new self($row['channelId'], $row['topicId'], $row['dateCreated']);
     }
 }

@@ -227,6 +227,54 @@ class ChatManager extends AManager {
 
         return $users;
     }
+
+    /**
+     * Creates a new topic channel
+     * 
+     * @param string $topicId Topic ID
+     * @param string $userId User ID
+     * @return string Channel ID
+     */
+    public function createNewTopicBroadcastChannel(string $topicId) {
+        $channelId = $this->createId(EntityManager::TOPIC_BROADCAST_CHANNELS);
+        
+        if(!$this->cr->createNewTopicBroadcastChannel($channelId, $topicId)) {
+            throw new GeneralException('Could not create a new broadcast channel.');
+        }
+
+        return $channelId;
+    }
+
+    /**
+     * Create a new topic channel subscription
+     * 
+     * @param string $channelId Channel ID
+     * @param string $userId User ID
+     * @return string Subscription ID
+     */
+    public function createNewTopicBroadcastChannelSubscribe(string $channelId, string $userId) {
+        $subscribeId = $this->createId(EntityManager::TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS);
+
+        if(!$this->cr->createNewTopicBroadcastChannelSubscribe($subscribeId, $channelId, $userId)) {
+            throw new GeneralException('Could not subscribe to the newly created broadcast channel.');
+        }
+
+        return $subscribeId;
+    }
+
+    /**
+     * Gets messages for a topic broadcast channel
+     * 
+     * @param string $channelId Channel ID
+     * @param int $limit Limit
+     * @param int $offset Offset
+     * @return array<TopicBroadcastChannelMessageEntity> Messages
+     */
+    public function getTopicBroadcastChannelMessages(string $channelId, int $limit, int $offset) {
+        $messages = $this->cr->getTopicBroadcastChannelMessages($channelId, $limit, $offset);
+
+        return $messages;
+    }
 }
 
 ?>
