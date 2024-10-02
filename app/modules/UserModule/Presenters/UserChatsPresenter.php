@@ -27,10 +27,11 @@ class UserChatsPresenter extends AUserPresenter {
         $offset = $this->httpGet('offset') ?? '0';
 
         $links = [
-            LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link')
+            LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link'),
+            LinkBuilder::createSimpleLink('Topic broadcast channels', $this->createURL('listTopicChannels'), 'post-data-link')
         ];
 
-        $this->saveToPresenterCache('links', $links);
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
 
         $arb = new AjaxRequestBuilder();
         
