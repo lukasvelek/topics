@@ -3,7 +3,7 @@
 namespace App\UI\FormBuilder;
 
 class SubmitButton extends AInput {
-    public function __construct(string $text = 'Submit', bool $disabled = false, string $name) {
+    public function __construct(string $text = 'Submit', bool $disabled = false, string $name = '') {
         parent::__construct('submit');
         $this->name = $name;
 

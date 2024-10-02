@@ -238,7 +238,7 @@ class QueryBuilder
      * @param string $joinOn On section of JOIN
      * @return self
      */
-    public function join(string $tableName, ?string $alias = null, string $joinOn) {
+    public function join(string $tableName, string $joinOn, ?string $alias = null) {
         $this->queryData['join'] = 'JOIN ' . $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
 
         return $this;
