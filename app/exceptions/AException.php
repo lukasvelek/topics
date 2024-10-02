@@ -88,7 +88,7 @@ abstract class AException extends Exception {
 
         $filePath = 'exception_' . $date . '_' . $this->hash . '.html';
 
-        FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $this->html);
+        FileManager::saveFile($app->cfg['LOG_DIR'], $filePath, $this->html);
     }
 }
 

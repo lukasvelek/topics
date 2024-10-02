@@ -85,7 +85,7 @@ class CacheFactory {
      * @return mixed|null Loaded content or null
      */
     private function loadDataFromCache(string $namespace) {
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
         $date->format('Y-m-d');
@@ -152,7 +152,7 @@ class CacheFactory {
      * @return int|false Number of bytes written or false if error occured
      */
     private function saveDataToCache(string $namespace, array $data) {
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
         $date->format('Y-m-d');
@@ -184,7 +184,7 @@ class CacheFactory {
      * @return bool True on success or false on failure
      */
     private function deleteCache(string $namespace) {
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
 
         return FileManager::deleteFolderRecursively($path);
     }

@@ -170,7 +170,7 @@ class GridExporter {
         $now->format('Y-m-d_H-i-s');
         $now = $now->getResult();
 
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . CacheNames::GRID_EXPORTS . '\\';
+        $path = $this->cfg['CACHE_DIR'] . CacheNames::GRID_EXPORTS . '\\';
         $name = 'gridExport_' . $this->hash . '_' . $now . '.csv';
 
         if(FileManager::saveFile($path, $name, $this->dataToSave->getAll(), false, false) !== false) {
