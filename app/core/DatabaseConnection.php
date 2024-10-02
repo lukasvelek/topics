@@ -28,7 +28,7 @@ class DatabaseConnection implements IDbQueriable {
         $this->cfg = $cfg;
 
         try {
-            $dbPort = $this->cfg['DB_PORT'] ?? null;
+            $dbPort = (empty($this->cfg['DB_PORT']) ? null : $this->cfg['DB_PORT']);
             $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME'], $dbPort);
         } catch(AException $e) {
             throw $e;
