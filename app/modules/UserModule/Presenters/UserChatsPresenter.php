@@ -28,7 +28,7 @@ class UserChatsPresenter extends AUserPresenter {
 
         $links = [
             LinkBuilder::createSimpleLink('New chat', $this->createURL('newChatForm'), 'post-data-link'),
-            LinkBuilder::createSimpleLink('Topic broadcast channels', $this->createURL('listTopicChannels'), 'post-data-link')
+            LinkBuilder::createSimpleLink('Topic channels', $this->createURL('listTopicChannels'), 'post-data-link')
         ];
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
