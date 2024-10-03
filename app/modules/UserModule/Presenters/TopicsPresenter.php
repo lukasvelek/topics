@@ -286,9 +286,9 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
         }
 
-        $topicBroadcastChannelId = $this->app->chatManager->getTopicBroadcastChannelForTopic($topicId);
-        if($topicBroadcastChannelId !== null) {
-            $links[] = LinkBuilder::createSimpleLink('Broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'channel', 'channelId' => $topicBroadcastChannelId], 'post-data-link');
+        $topicBroadcastChannel = $this->app->chatManager->getTopicBroadcastChannelForTopic($topicId);
+        if($topicBroadcastChannel !== null) {
+            $links[] = LinkBuilder::createSimpleLink('Broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'channel', 'channelId' => $topicBroadcastChannel->getChannelId()], 'post-data-link');
         } else {
             if($this->app->actionAuthorizator->canCreateTopicBroadcastChannel($this->getUserId(), $topicId)) {
                 $links[] = LinkBuilder::createSimpleLink('Create a broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'createTopicBroadcastChannel', 'topicId' => $topicId], 'post-data-link');

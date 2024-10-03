@@ -494,6 +494,28 @@ class UserChatsPresenter extends AUserPresenter {
 
         return $code;
     }
+
+    public function handleCreateTopicBroadcastChannel() {
+        $topicId = $this->httpGet('topicId', true);
+
+        try {
+            $this->app->chatRepository->beginTransaction();
+
+            $channelId = $this->app->chatManager->createNewTopicBroadcastChannel($topicId);
+
+            $this->app->chatManager->createNewTopicBroadcastChannelSubscribe($channelId, $this->getUserId());
+
+            $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+
+            $this->flashMessage('New topic broadcast channel created.', 'success');
+            $this->redirect($this->createURL('channel', ['channelId' => $channelId]));
+        } catch(AException $e) {
+            $this->app->chatRepository->rollback();
+
+            $this->flashMessage('Could not create a new topic broadcast channel. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
+    }
 }
 
 ?>
