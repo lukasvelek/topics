@@ -516,6 +516,27 @@ class UserChatsPresenter extends AUserPresenter {
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
         }
     }
+
+    public function handleChannel() {
+        $channelId = $this->httpGet('channelId');
+        $channel = $this->app->chatRepository->getTopicBroadcastChannelById($channelId);
+
+        if($channel === null) {
+            $this->redirect($this->createURL('list'));
+        }
+
+        $links = [];
+
+        if($this->app->actionAuthorizator->canCreateTopicBroadcastChannelMessage($this->getUserId(), $channel->getTopicId())) {
+            $links[] = LinkBuilder::createSimpleLink('New message', $this->createURL('channelNewMessageForm', ['channelId' => $channelId]), 'post-data-link');
+        }
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+    }
+
+    public function renderChannel() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
 }
 
 ?>

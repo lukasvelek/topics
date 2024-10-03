@@ -570,6 +570,21 @@ class ActionAuthorizator extends AAuthorizator {
 
         return true;
     }
+
+    /**
+     * Checks if given user is allowed to craete a message in a topic broadcast channel for a given topic
+     * 
+     * @param string $userId User ID
+     * @param string $topicId Topic ID
+     * @return bool True if user is allowed to perform this action or false if not
+     */
+    public function canCreateTopicBroadcastChannelMessage(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::COMMUNITY_HELPER) {
+            return false;
+        }
+
+        return true;
+    }
 }
 
 ?>
