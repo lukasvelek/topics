@@ -286,21 +286,30 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
         }
 
-        $code = '<div class="row">';
-        $i = 1;
-        foreach($links as $link) {
-            $code .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
-
-            if($i == 4) {
-                $code .= '</div><br><div class="row">';
-                $i = 1;
-            } else {
-                $i++;
+        $topicBroadcastChannelId = $this->app->chatManager->getTopicBroadcastChannelForTopic($topicId);
+        if($topicBroadcastChannelId !== null) {
+            $links[] = LinkBuilder::createSimpleLink('Broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'channel', 'channelId' => $topicBroadcastChannelId], 'post-data-link');
+        } else {
+            if($this->app->actionAuthorizator->canCreateTopicBroadcastChannel($this->getUserId(), $topicId)) {
+                $links[] = LinkBuilder::createSimpleLink('Create a broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'createTopicBroadcastChannel', 'topicId' => $topicId], 'post-data-link');
             }
+        }
+        
+        /** LINKS CODE GENERATOR */
+        $code = '<div class="row">';
+        for($i = 0; $i < count($links); $i++) {
+            $link = $links[$i];
+
+            if(($i % 4) == 0 && $i > 0) {
+                $code .= '</div><br><div class="row">';
+            }
+
+            $code .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
         }
         $code .= '</div>';
 
         $this->saveToPresenterCache('links', $code);
+        /** END OF LINKS CODE GENERATOR */
 
         if(!empty($links)) {
             $this->saveToPresenterCache('links_br', '<br>');

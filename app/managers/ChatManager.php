@@ -321,6 +321,10 @@ class ChatManager extends AManager {
 
         return ['channels' => $channels, 'lastMessages' => $lastMessages];
     }
+
+    public function getTopicBroadcastChannelForTopic(string $topicId) {
+        return $this->cr->getTopicBroadcastChannelForTopicId($topicId);
+    }
 }
 
 ?>

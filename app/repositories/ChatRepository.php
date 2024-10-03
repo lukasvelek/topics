@@ -214,6 +214,17 @@ class ChatRepository extends ARepository {
 
         return TopicBroadcastChannelMessageEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getTopicBroadcastChannelForTopicId(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channels')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        return TopicBroadcastChannelEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>

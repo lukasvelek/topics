@@ -11,6 +11,7 @@ use App\Entities\TopicCalendarUserEventEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicPollEntity;
 use App\Logger\Logger;
+use App\Managers\ChatManager;
 use App\Managers\TopicMembershipManager;
 use App\Repositories\GroupRepository;
 use App\Repositories\PostRepository;
@@ -35,7 +36,14 @@ class ActionAuthorizator extends AAuthorizator {
      * @param TopicMembershipManager $tpm TopicMembershipManager instance
      * @param PostRepository $pr PostRepository instance
      */
-    public function __construct(DatabaseConnection $db, Logger $logger, UserRepository $userRepository, GroupRepository $groupRepository, TopicMembershipManager $tpm, PostRepository $pr) {
+    public function __construct(
+        DatabaseConnection $db,
+        Logger $logger,
+        UserRepository $userRepository,
+        GroupRepository $groupRepository,
+        TopicMembershipManager $tpm,
+        PostRepository $pr
+    ) {
         parent::__construct($db, $logger, $groupRepository, $userRepository);
 
         $this->tpm = $tpm;
@@ -542,6 +550,21 @@ class ActionAuthorizator extends AAuthorizator {
      */
     public function canManageContentRegulation(string $userId, string $topicId) {
         if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER && !$this->commonContentManagement($userId)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if given user is allowed to create a topic broadcast channel in given topic
+     * 
+     * @param string $userId User ID
+     * @param string $topicId Topic ID
+     * @return bool True if user is allowed to perform this action or false if not
+     */
+    public function canCreateTopicBroadcastChannel(string $userId, string $topicId) {
+        if($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) {
             return false;
         }
 
