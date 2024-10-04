@@ -31,7 +31,7 @@ class ChatRepository extends ARepository {
         $qb->select(['*'])
             ->from('user_chat_messages')
             ->where('chatId = ?', [$chatId])
-            ->orderBy('dateCreated');
+            ->orderBy('dateCreated', 'DESC');
 
         $this->applyGridValuesToQb($qb, $limit, $offset);
 
@@ -39,7 +39,11 @@ class ChatRepository extends ARepository {
 
         $entities = [];
         while($row = $qb->fetchAssoc()) {
-            $entities[] = UserChatMessageEntity::createEntityFromDbRow($row);
+            $entity = UserChatMessageEntity::createEntityFromDbRow($row);
+
+            if($entity !== null) {
+                $entities[] = $entity;
+            }
         }
 
         return $entities;

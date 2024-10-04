@@ -51,15 +51,18 @@ class ChatManager extends AManager {
         if($offset > 0) {
             $query->offset($offset);
         }
-
-        $lastMessages = [];
-
+        
         $query->execute();
         $chats = [];
         while($row = $query->fetchAssoc()) {
-            $chats[] = UserChatEntity::createEntityFromDbRow($row);
-        }
+            $chat = UserChatEntity::createEntityFromDbRow($row);
 
+            if($chat !== null) {
+                $chats[] = $chat;
+            }
+        }
+        
+        $lastMessages = [];
         $tmp = [];
         foreach($chats as $chat) {
             $lastMessage = $this->cr->getLastChatMessageForChat($chat->getChatId());
@@ -122,6 +125,7 @@ class ChatManager extends AManager {
      */
     public function getChatMessages(string $chatId, int $limit, int $offset) {
         $messages = $this->cr->getMessagesForChat($chatId, $limit, $offset);
+        $messages = array_reverse($messages);
 
         return $messages;
     }
