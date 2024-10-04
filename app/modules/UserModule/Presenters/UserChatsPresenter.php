@@ -527,10 +527,19 @@ class UserChatsPresenter extends AUserPresenter {
             $this->redirect($this->createURL('list'));
         }
 
+        if(!$this->app->chatManager->isUserSubscribedToTopicBroadcastChannel($this->getUserId(), $channelId)) {
+            $this->flashMessage('You are not subscribed to the topic\'s broadcast channel.', 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $channel->getTopicId()]);
+        }
+
         $links = [];
 
         if($this->app->actionAuthorizator->canCreateTopicBroadcastChannelMessage($this->getUserId(), $channel->getTopicId())) {
             $links[] = LinkBuilder::createSimpleLink('New message', $this->createURL('channelNewMessageForm', ['channelId' => $channelId]), 'post-data-link');
+        }
+
+        if($this->app->chatManager->isUserSubscribedToTopicBroadcastChannel($this->getUserId(), $channelId) && (!$this->app->actionAuthorizator->canCreateTopicBroadcastChannelMessage($this->getUserId(), $channel->getTopicId()))) {
+            $links[] = LinkBuilder::createSimpleLink('Unsubscribe', $this->createURL('unsubscribeFromTopicChannel', ['channelId' => $channelId, 'topicId' => $channel->getTopicId()]), 'post-data-link');
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -699,6 +708,48 @@ class UserChatsPresenter extends AUserPresenter {
     public function renderChannelNewMessageForm() {
         $this->template->links = $this->loadFromPresenterCache('links');
         $this->template->form = $this->loadFromPresenterCache('form');
+    }
+
+    public function handleJoinTopicChannel() {
+        $channelId = $this->httpGet('channelId', true);
+        $topicId = $this->httpGet('topicId', true);
+
+        try {
+            $this->app->chatRepository->beginTransaction();
+
+            $this->app->chatManager->createNewTopicBroadcastChannelSubscribe($channelId, $this->getUserId());
+
+            $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+
+            $this->flashMessage('Successfully subscribed to the topic broadcast channel.', 'success');
+            $this->redirect($this->createURL('channel', ['channelId' => $channelId]));
+        } catch(AException $e) {
+            $this->app->chatRepository->rollback();
+
+            $this->flashMessage('Could not subscribe to the topic broadcast channel. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
+    }
+
+    public function handleUnsubscribeFromTopicChannel() {
+        $channelId = $this->httpGet('channelId', true);
+        $topicId = $this->httpGet('topicId', true);
+
+        try {
+            $this->app->chatRepository->beginTransaction();
+
+            $this->app->chatManager->removeTopicBroadcastChannelSubscribe($channelId, $this->getUserId());
+
+            $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+
+            $this->flashMessage('Successfully unsubscribed from the topic broadcast channel.', 'success');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        } catch(AException $e) {
+            $this->app->chatRepository->rollback();
+
+            $this->flashMessage('Could not unsubscribe from the topic broadcast channel. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('channel', ['channelId' => $channelId]));
+        }
     }
 }
 

@@ -263,6 +263,14 @@ class ChatManager extends AManager {
         return $subscribeId;
     }
 
+    public function removeTopicBroadcastChannelSubscribe(string $channelId, string $userId) {
+        if(!$this->cr->removeTopicBroadcastChannelSubscribe($channelId, $userId)) {
+            throw new GeneralException('Could not remove subscription from the topic broadcast channel.');
+        }
+
+        return true;
+    }
+
     /**
      * Create a new topic channel message
      * 
@@ -356,6 +364,19 @@ class ChatManager extends AManager {
      */
     public function getTopicBroadcastChannelForTopic(string $topicId) {
         return $this->cr->getTopicBroadcastChannelForTopicId($topicId);
+    }
+
+    /**
+     * Returns if user is subscribed to a topic broadcast channel
+     * 
+     * @param string $userId User ID
+     * @param string $channelId Channel ID
+     * @return bool True if user is subscribed or false if not
+     */
+    public function isUserSubscribedToTopicBroadcastChannel(string $userId, string $channelId) {
+        $subscription = $this->cr->getTopicChannelSubscriptionForUserAndChannel($userId, $channelId);
+
+        return $subscription !== null;
     }
 }
 

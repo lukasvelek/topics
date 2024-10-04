@@ -167,6 +167,18 @@ class ChatRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function removeTopicBroadcastChannelSubscribe(string $channelId, string $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->delete()
+            ->from('topic_broadcast_channel_subscribers')
+            ->where('channelId = ?', [$channelId])
+            ->andWhere('userId = ?', [$userId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
     public function createNewTopicBroadcastChannelMessage(string $messageId, string $channelId, string $authorId, string $message) {
         $qb = $this->qb(__METHOD__);
 
@@ -191,6 +203,18 @@ class ChatRepository extends ARepository {
         }
 
         return $entities;
+    }
+
+    public function getTopicChannelSubscriptionForUserAndChannel(string $userId, string $channelId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['*'])
+            ->from('topic_broadcast_channel_subscribers')
+            ->where('userId = ?', [$userId])
+            ->andWhere('channelId = ?', [$channelId])
+            ->execute();
+
+        return TopicBroadcastChannelSubscriberEntity::createEntityFromDbRow($qb->fetch());
     }
     
     public function composeQueryForTopicChannelsForUser() {
