@@ -623,6 +623,14 @@ div [id*="user-action-history-"] {
     text-align: center;
 }
 
+#user-title-section a {
+    color: black;
+}
+
+#user-title-section a:hover {
+    color: rgba(0, 0, 0, 0.75);
+}
+
 #user-list {
     background-color: rgba(255, 255, 255, 0.75);
 

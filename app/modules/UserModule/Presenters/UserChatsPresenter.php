@@ -4,6 +4,8 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicBroadcastChannelMessageEntity;
+use App\Entities\TopicEntity;
 use App\Entities\UserChatMessageEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -62,7 +64,7 @@ class UserChatsPresenter extends AUserPresenter {
         $code = '<div>';
         foreach($channels as $channel) {
             $topic = $this->app->topicManager->getTopicById($channel->getTopicId(), $this->getUserId());
-            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserMOdule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
+            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
             $code .= '<div class="col-md">';
             $code .= '<div class="row">';
             $code .= '<div class="col-md" id="left">';
@@ -532,10 +534,171 @@ class UserChatsPresenter extends AUserPresenter {
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+
+        $topic = $this->app->topicRepository->getTopicById($channel->getTopicId());
+
+        $topicLink = TopicEntity::createTopicProfileLink($topic, false, '');
+
+        $this->saveToPresenterCache('topicLink', $topicLink);
+
+        $arb = new AjaxRequestBuilder();
+        $arb->setMethod()
+            ->setAction($this, 'getChannelMessages')
+            ->setHeader(['channelId' => '_channelId', 'offset' => '_offset'])
+            ->setFunctionName('getChannelMessages')
+            ->setFunctionArguments(['_channelId', '_offset', '_append'])
+            ->addWhenDoneOperation('
+                if(_append == "append") {
+                    $("#content").append(obj.messages);
+                } else if(_append == "prepend") {
+                    $("#content").prepend(obj.messages);
+                } else if(_append == "html_noscroll") {
+                    $("#content").html(obj.messages);
+                } else {
+                    $("#content").html(obj.messages);
+                    if(obj.lastMessage) {
+                        $("#" + obj.lastMessage).get(0).scrollIntoView();
+                    }
+                }
+            ')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getChannelMessages(\'' . $channelId . '\', 0, \'html\');');
     }
 
     public function renderChannel() {
         $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->topic_link = $this->loadFromPresenterCache('topicLink');
+    }
+
+    public function actionGetChannelMessages() {
+        $channelId = $this->httpGet('channelId', true);
+        $offset = $this->httpGet('offset', true);
+
+        $limit = 10;
+
+        $messages = $this->app->chatManager->getTopicBroadcastChannelMessages($channelId, ($limit + $offset), $offset);
+
+        $lastMessageId = '';
+        $code = '';
+        $ok = true;
+        if(!empty($messages)) {
+            $messageCode = [];
+            $i = 0;
+            foreach($messages as $message) {
+                if(($i + 1) == count($messages)) {
+                    $lastMessageId = 'message-id-' . $message->getMessageId();
+                    if($message->getAuthorId() == $this->getUserId()) {
+                        $lastMessageId = 'my-' . $lastMessageId;
+                    }
+                }
+                $messageCode[] = $this->createChannelMessageCode($message);
+                $i++;
+            }
+            $code .= implode('<br>', $messageCode);
+        } else {
+            $ok = false;
+            if($offset == 0) {
+                $code .= 'No messages found.';
+            }
+        }
+
+        if($ok && count($messages) >= 10) {
+            $loadNextLink = '
+                <div class="row">
+                    <div class="col-md-3"></div>
+                    <div class="col-md" id="form">
+                        <button type="button" class="formSubmit" id="load-more-offset-' . ($offset + $limit) . '" onclick="getChannelMessages(\'' . $channelId . '\', ' . ($offset + $limit) . ', \'prepend\'); $(\'#load-more-offset-' . ($offset + $limit) . '\').remove();">Load more</button>
+                    </div>
+                    <div class="col-md-3"></div>
+                </div>
+                ';
+            $code = $loadNextLink . '<br>' . $code;
+        }
+
+        return ['messages' => $code, 'lastMessage' => $lastMessageId, 'loadMore' => (($offset > 0) ? '1' : '0')];
+    }
+
+    private function createChannelMessageCode(TopicBroadcastChannelMessageEntity $message) {
+        $isAuthor = ($message->getAuthorId() == $this->getUserId());
+
+        $messageContent = '
+            <span style="font-size: 16px">' . $message->getMessage() . '<span>
+            <br>
+            <span style="font-size: 12px" title="' . DateTimeFormatHelper::formatDateToUserFriendly($message->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($message->getDateCreated()) . '</span>
+        ';
+
+        $code = '';
+        if($isAuthor) {
+            $code = '
+                <div class="row">
+                    <div class="col-md"></div>
+                    <div class="col-md-5">
+                        <div id="my-message-id-' . $message->getMessageId() . '">
+                            ' . $messageContent . '
+                        </div>
+                    </div>
+                </div>
+            ';
+        } else {
+            $code = '
+                <div class="row">
+                    <div class="col-md-5">
+                        <div id="message-id-' . $message->getMessageId() . '">
+                            ' . $messageContent . '
+                        </div>
+                    </div>
+                    <div class="col-md"></div>
+                </div>
+            ';
+        }
+
+        return $code;
+    }
+
+    public function handleChannelNewMessageForm(?FormResponse $fr = null) {
+        $channelId = $this->httpGet('channelId', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            try {
+                $this->app->chatRepository->beginTransaction();
+
+                $message = $fr->message;
+
+                $this->app->chatManager->createNewTopicBroadcastChannelMessage($channelId, $this->getUserId(), $message);
+
+                $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
+
+                $this->flashMessage('New message posted.', 'success');
+            } catch(AException $e) {
+                $this->app->chatRepository->rollback();
+
+                $this->flashMessage('Could not create a new message. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect($this->createURL('channel', ['channelId' => $channelId]));
+        } else {
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('channel', ['channelId' => $channelId]), 'post-data-link')
+            ];
+    
+            $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+    
+            $form = new FormBuilder();
+            $form->setMethod()
+                ->setAction($this->createURL('channelNewMessageForm', ['channelId' => $channelId]))
+                ->addTextArea('message', 'Message:', null, true)
+                ->addSubmit('Post new message', false, true)
+            ;
+    
+            $this->saveToPresenterCache('form', $form);
+        }
+    }
+
+    public function renderChannelNewMessageForm() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->form = $this->loadFromPresenterCache('form');
     }
 }
 

@@ -264,12 +264,30 @@ class ChatManager extends AManager {
     }
 
     /**
+     * Create a new topic channel message
+     * 
+     * @param string $channelId Channel ID
+     * @param string $userId User ID
+     * @param string $message Message
+     * @return string Message ID
+     */
+    public function createNewTopicBroadcastChannelMessage(string $channelId, string $userId, string $message) {
+        $messageId = $this->createId(EntityManager::TOPIC_BROADCAST_CHANNEL_MESSAGES);
+
+        if(!$this->cr->createNewTopicBroadcastChannelMessage($messageId, $channelId, $userId, $message)) {
+            throw new GeneralException('Could not create a new message.');
+        }
+
+        return $messageId;
+    }
+
+    /**
      * Gets messages for a topic broadcast channel
      * 
      * @param string $channelId Channel ID
      * @param int $limit Limit
      * @param int $offset Offset
-     * @return array<TopicBroadcastChannelMessageEntity> Messages
+     * @return array<\App\Entities\TopicBroadcastChannelMessageEntity> Messages
      */
     public function getTopicBroadcastChannelMessages(string $channelId, int $limit, int $offset) {
         $messages = $this->cr->getTopicBroadcastChannelMessages($channelId, $limit, $offset);
@@ -277,6 +295,14 @@ class ChatManager extends AManager {
         return $messages;
     }
 
+    /**
+     * Gets topic broadcast channels user is a member of
+     * 
+     * @param string $userId User ID
+     * @param int $limit Limit
+     * @param int $offset Offset
+     * @param array Channels and last messages
+     */
     public function getTopicBroadcastChannelsForUser(string $userId, int $limit, int $offset) {
         $subscriptions = $this->cr->getTopicChannelSubscriptionsForUser($userId);
 
@@ -322,6 +348,12 @@ class ChatManager extends AManager {
         return ['channels' => $channels, 'lastMessages' => $lastMessages];
     }
 
+    /**
+     * Returns a topic broadcast channel for given topic
+     * 
+     * @param string $topicId Topic ID
+     * @return null|\App\Entities\TopicBroadcastChannelEntity Topic broadcast channel
+     */
     public function getTopicBroadcastChannelForTopic(string $topicId) {
         return $this->cr->getTopicBroadcastChannelForTopicId($topicId);
     }
