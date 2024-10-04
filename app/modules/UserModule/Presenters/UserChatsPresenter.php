@@ -61,7 +61,7 @@ class UserChatsPresenter extends AUserPresenter {
         /** @var array<\App\Entities\TopicBroadcastChannelMessageEntity> */
         $lastMessages = $tmp['lastMessages'];
 
-        $code = '<div>';
+        $code = '<div id="topic-followed-section">';
         foreach($channels as $channel) {
             $topic = $this->app->topicManager->getTopicById($channel->getTopicId(), $this->getUserId());
             $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
@@ -133,7 +133,7 @@ class UserChatsPresenter extends AUserPresenter {
         /** @var array<UserChatMessageEntity> */
         $lastMessages = $tmp['lastMessages'];
 
-        $code = '<div>';
+        $code = '<div id="topic-followed-section">';
 
         foreach($chats as $chat) {
             if($this->getUserId() == $chat->getUser1Id()) {
