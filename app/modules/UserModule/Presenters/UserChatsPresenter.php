@@ -353,26 +353,22 @@ class UserChatsPresenter extends AUserPresenter {
             ->setFunctionName('getChatMessages')
             ->setFunctionArguments(['_chatId', '_offset', '_append'])
             ->addWhenDoneOperation('
-                try {
-                    if(!_autoRun) return;
-                    const obj = JSON.parse(data);
-                    if(_append == "append") {
-                        $("#content").append(obj.messages);
-                    } else if(_append == "prepend") {
-                        $("#content").prepend(obj.messages);
-                    } else if(_append == "html_noscroll") {
-                        $("#content").html(obj.messages);
-                    } else {
-                        $("#content").html(obj.messages);
+                if(!_autoRun) return;
+                if(_append == "append") {
+                    $("#content").append(obj.messages);
+                } else if(_append == "prepend") {
+                    $("#content").prepend(obj.messages);
+                } else if(_append == "html_noscroll") {
+                    $("#content").html(obj.messages);
+                } else {
+                    $("#content").html(obj.messages);
+                    if(obj.lastMessage) {
                         $("#" + obj.lastMessage).get(0).scrollIntoView();
                     }
-                    
-                    if(obj.loadMore == 1) {
-                        _autoRun = false;
-                    }
-                } catch(error) {
-                    alert("Could not load data. See console for more information.");
-                    console.log(error);
+                }
+                
+                if(obj.loadMore == 1) {
+                    _autoRun = false;
                 }
             ')
         ;
@@ -415,11 +411,11 @@ class UserChatsPresenter extends AUserPresenter {
         } else {
             $ok = false;
             if($offset == 0) {
-                $code .= 'No messages found.';
+                $code .= '<p style="text-align: center">No messages found.</p>';
             }
         }
 
-        if($ok) {
+        if($ok && count($messages) >= 10) {
             $loadNextLink = '
                 <div class="row">
                     <div class="col-md-3"></div>
@@ -609,7 +605,7 @@ class UserChatsPresenter extends AUserPresenter {
         } else {
             $ok = false;
             if($offset == 0) {
-                $code .= 'No messages found.';
+                $code .= '<p style="text-align: center">No messages found.</p>';
             }
         }
 
