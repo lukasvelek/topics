@@ -444,8 +444,6 @@ class UserChatsPresenter extends AUserPresenter {
                 throw new GeneralException('Could not obtain last created message.');
             }
 
-            $this->app->chatManager->invalidateCache($this->getUserId());
-
             $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
             $this->app->chatRepository->rollback();
