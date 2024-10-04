@@ -17,6 +17,7 @@ $cfg['IS_DEV'] = false; // true if this version is development or false if not
 $cfg['APP_REAL_DIR'] = '';
 
 $cfg['DB_SERVER'] = ''; // database server address
+$cfg['DB_PORT'] = ''; // database server port
 $cfg['DB_USER'] = ''; // database user
 $cfg['DB_PASS'] = ''; // database user password
 $cfg['DB_NAME'] = ''; // database name

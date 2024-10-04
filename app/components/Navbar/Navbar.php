@@ -68,7 +68,7 @@ class Navbar implements IRenderable {
 
             $notificationLink = $this->createNotificationsLink();
 
-            $this->template->user_info = [$notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invites'), $this->createLink($profileLinkArray, /*$app->currentUser->getUsername()*/ 'me'), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+            $this->template->user_info = [$this->createLink(NavbarLinks::USER_CHATS, 'chats'), $notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invites'), $this->createLink($profileLinkArray, 'me'), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
         } else {
             $this->template->user_info = '';
         }

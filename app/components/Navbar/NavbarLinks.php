@@ -11,6 +11,7 @@ class NavbarLinks {
     public const ADMINISTRATION = ['page' => 'AdminModule:Home', 'action' => 'dashboard'];
     public const USER_INVITES = ['page' => 'UserModule:TopicInvites', 'action' => 'list'];
     public const USER_NOTIFICATIONS = ['page' => 'UserModule:Notifications', 'action' => 'list'];
+    public const USER_CHATS = ['page' => 'UserModule:UserChats', 'action' => 'list'];
 
     public static function toArray() {
         return [

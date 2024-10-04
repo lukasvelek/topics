@@ -244,7 +244,7 @@ class FormBuilder implements IFormRenderable {
         return $this;
     }
 
-    public function addRadios(string $name, ?string $label = null, array $choices, mixed $value = null, bool $required = true) {
+    public function addRadios(string $name, ?string $label = null, array $choices = [], mixed $value = null, bool $required = true) {
         $rig = new RadioInputGroup($name);
 
         foreach($choices as $choiceKey => $choiceText) {

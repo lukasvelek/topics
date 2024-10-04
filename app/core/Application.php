@@ -14,6 +14,7 @@ use App\Exceptions\GeneralException;
 use App\Exceptions\ModuleDoesNotExistException;
 use App\Helpers\LinkHelper;
 use App\Logger\Logger;
+use App\Managers\ChatManager;
 use App\Managers\ContentManager;
 use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
@@ -27,6 +28,7 @@ use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
 use App\Managers\UserRegistrationManager;
 use App\Modules\ModuleManager;
+use App\Repositories\ChatRepository;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
@@ -103,6 +105,7 @@ class Application {
     public GridExportRepository $gridExportRepository;
     public TopicCalendarEventRepository $topicCalendarEventRepository;
     public TopicContentRegulationRepository $topicContentRegulationRepository;
+    public ChatRepository $chatRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -117,6 +120,7 @@ class Application {
     public UserManager $userManager;
     public EntityManager $entityManager;
     public ReportManager $reportManager;
+    public ChatManager $chatManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -162,6 +166,7 @@ class Application {
         $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
+        $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
@@ -175,10 +180,10 @@ class Application {
         $this->loadModules();
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
-            $result = $this->db->installDb();
-
-            if($result === false) {
-                throw new GeneralException('Could not install database.');
+            try {
+                $this->db->installDb();
+            } catch(AException $e) {
+                throw new GeneralException('Could not install database. Reason: ' . $e->getMessage(), $e);
             }
         }
     }

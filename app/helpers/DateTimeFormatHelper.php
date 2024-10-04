@@ -10,6 +10,7 @@ class DateTimeFormatHelper {
     public const EUROPEAN_FORMAT = 'd.m.Y H:i';
     public const AMERICAN_FORMAT = 'Y/m/d H:i';
     public const ATOM_FORMAT = GlobalDateTime::ATOM;
+    public const TIME_ONLY_FORMAT = 'H:i';
 
     public static function formatDateToUserFriendly(?string $date, string $format = self::EUROPEAN_FORMAT) {
         if($date === null) {

@@ -383,7 +383,7 @@ class TopicManagementPresenter extends AUserPresenter {
             ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(-1, ' . $topicId . ')');
+        $this->addScript('getInvitesGrid(-1, \'' . $topicId . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link') . '&nbsp;',
@@ -497,7 +497,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $invites = $this->app->topicMembershipManager->getInvitesForTopic($topicId);
 
-        $checkInvite = function(int $userId) use ($invites) {
+        $checkInvite = function(string $userId) use ($invites) {
             $result = false;
             foreach($invites as $invite) {
                 if($invite->getUserId() == $userId) {
@@ -510,7 +510,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $members = $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
 
-        $checkMembership = function(int $userId) use ($members) {
+        $checkMembership = function(string $userId) use ($members) {
             $result = false;
             foreach($members as $member) {
                 if($member->getUserId() == $userId) {

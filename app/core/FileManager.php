@@ -2,7 +2,11 @@
 
 namespace App\Core;
 
+use App\Exceptions\AException;
 use App\Exceptions\FileDoesNotExistException;
+use App\Exceptions\FileLockException;
+use App\Exceptions\FileLockHandleObtainException;
+use App\Exceptions\FileWriteException;
 
 /**
  * FileManager allows manipulating with files.
@@ -110,7 +114,8 @@ class FileManager {
     }
 
     /**
-     * Saves file
+     * Writes (or if $overwrite is true, then appends) content to given file. If file exists and the content is supposed to be appended, 
+     * then a file lock is created and after successful the file is sucessfully saved, the file is unlocked.
      * 
      * @param string $path Path to the directory where the file will be saved
      * @param string $filename Filename
@@ -129,11 +134,42 @@ class FileManager {
         }
 
         if(!self::folderExists($path)) {
-            self::createFolder($path);
+            self::createFolder($path, true);
         }
 
         if($overwrite === false) {
-            return file_put_contents($path . $filename, $fileContent, FILE_APPEND);
+            $result = true;
+            try {
+                $fm = new self();
+                if(!$fm->flm->lock($path . $filename)) {
+                    throw new FileLockException($path . $filename);
+                }
+
+                $handle = $fm->flm->getHandle($path . $filename);
+
+                if($handle === null) {
+                    throw new FileLockHandleObtainException($path . $filename);
+                }
+
+                if(fwrite($handle, $fileContent) === false) {
+                    throw new FileWriteException($path . $filename);
+                }
+
+                $fm->flm->unlock($path . $filename);
+            } catch(AException $e) {
+                $result = false;
+
+                try {
+                    if(file_put_contents($path . $filename, $fileContent, FILE_APPEND) === false) {
+                        throw new FileWriteException($path . $filename);
+                    }
+                    $result = true;
+                } catch(AException $e) {
+                    $result = false;
+                }
+            }
+            
+            return $result;
         } else {
             return file_put_contents($path . $filename, $fileContent);
         }

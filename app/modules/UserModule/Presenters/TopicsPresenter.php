@@ -286,21 +286,34 @@ class TopicsPresenter extends AUserPresenter {
             $links[] = LinkBuilder::createSimpleLink('Calendar', ['page' => 'UserModule:TopicCalendar', 'action' => 'calendar', 'topicId' => $topicId], 'post-data-link');
         }
 
-        $code = '<div class="row">';
-        $i = 1;
-        foreach($links as $link) {
-            $code .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
-
-            if($i == 4) {
-                $code .= '</div><br><div class="row">';
-                $i = 1;
+        $topicBroadcastChannel = $this->app->chatManager->getTopicBroadcastChannelForTopic($topicId);
+        if($topicBroadcastChannel !== null) {
+            if($this->app->chatManager->isUserSubscribedToTopicBroadcastChannel($this->getUserId(), $topicBroadcastChannel->getChannelId())) {
+                $links[] = LinkBuilder::createSimpleLink('Broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'channel', 'channelId' => $topicBroadcastChannel->getChannelId()], 'post-data-link');
             } else {
-                $i++;
+                $links[] = LinkBuilder::createSimpleLink('Join the broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'joinTopicChannel', 'channelId' => $topicBroadcastChannel->getChannelId(), 'topicId' => $topicId], 'post-data-link');
             }
+        } else {
+            if($this->app->actionAuthorizator->canCreateTopicBroadcastChannel($this->getUserId(), $topicId)) {
+                $links[] = LinkBuilder::createSimpleLink('Create a broadcast channel', ['page' => 'UserModule:UserChats', 'action' => 'createTopicBroadcastChannel', 'topicId' => $topicId], 'post-data-link');
+            }
+        }
+        
+        /** LINKS CODE GENERATOR */
+        $code = '<div class="row">';
+        for($i = 0; $i < count($links); $i++) {
+            $link = $links[$i];
+
+            if(($i % 4) == 0 && $i > 0) {
+                $code .= '</div><br><div class="row">';
+            }
+
+            $code .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
         }
         $code .= '</div>';
 
         $this->saveToPresenterCache('links', $code);
+        /** END OF LINKS CODE GENERATOR */
 
         if(!empty($links)) {
             $this->saveToPresenterCache('links_br', '<br>');
@@ -919,6 +932,10 @@ class TopicsPresenter extends AUserPresenter {
                 $this->app->topicRepository->createNewTopic($topicId, $title, $description, $tags, $isPrivate, $rawTags);
                 $this->app->topicMembershipManager->followTopic($topicId, $this->getUserId());
                 $this->app->topicMembershipManager->changeRole($topicId, $this->getUserId(), $this->getUserId(), TopicMemberRole::OWNER);
+                
+                if($isPrivate) {
+                    $this->app->topicRepository->updateTopic($topicId, ['isVisible' => '0']);
+                }
 
                 $cache = $this->cacheFactory->getCache(CacheNames::TOPICS);
                 $cache->invalidate();
