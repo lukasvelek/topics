@@ -19,7 +19,6 @@ class CacheNames {
     public const TOPIC_MEMBERSHIPS = 'topicMemberships';
     public const GRID_EXPORT_DATA = 'gridExportData';
     public const GRID_EXPORTS = 'gridExports';
-    public const USER_CHATS = 'userChats';
 }
 
 ?>
