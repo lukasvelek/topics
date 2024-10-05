@@ -3,9 +3,12 @@
 namespace App\Components\PostLister;
 
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Managers\FileUploadManager;
+use App\Managers\ReportManager;
+use App\Managers\TopicManager;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\FileUploadRepository;
 use App\Repositories\PostRepository;
@@ -25,14 +28,18 @@ class PostLister {
     private ?ContentRegulationRepository $crr;
     private FileUploadRepository $fur;
     private FileUploadManager $fum;
+    private ReportManager $reportManager;
+    private TopicManager $topicManager;
 
-    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr, FileUploadRepository $fur, FileUploadManager $fum) {
+    public function __construct(UserRepository $userRepository, TopicRepository $topicRepository, PostRepository $postRepository, ?ContentRegulationRepository $crr, FileUploadRepository $fur, FileUploadManager $fum, ReportManager $reportManager, TopicManager $topicManager) {
         $this->userRepository = $userRepository;
         $this->topicRepository = $topicRepository;
         $this->postRepository = $postRepository;
         $this->crr = $crr;
         $this->fur = $fur;
         $this->fum = $fum;
+        $this->reportManager = $reportManager;
+        $this->topicManager = $topicManager;
 
         $this->posts = [];
         $this->topics = [];
@@ -162,11 +169,33 @@ class PostLister {
                     $text = $post->getShortenedText(100);
                     if($bwh !== null) {
                         $text = $bwh->checkText($text);
+
+                        if(!empty($bwh->getBannedWordsUsed())) {
+                            try {
+                                foreach($bwh->getBannedWordsUsed() as $word) {
+                                    $this->reportManager->reportUserForUsingBannedWord($word, $post->getAuthorId());
+                                }
+                            } catch(AException) {}
+            
+                            $bwh->cleanBannedWordsUsed();
+                        }
                     }
 
                     $topicTitle = $topics[$post->getTopicId()]->getTitle();
                     if($bwh !== null) {
                         $topicTitle = $bwh->checkText($topicTitle);
+
+                        if(!empty($bwh->getBannedWordsUsed())) {
+                            try {
+                                $topicOwnerId = $this->topicManager->getTopicOwner($topic->getId());
+                
+                                foreach($bwh->getBannedWordsUsed() as $word) {
+                                    $this->reportManager->reportUserForUsingBannedWord($word, $topicOwnerId);
+                                }
+                            } catch(AException) {}
+                
+                            $bwh->cleanBannedWordsUsed();
+                        }
                     }
     
                     $postLink = '<a class="post-title-link" href="?page=UserModule:Posts&action=profile&postId=' . $post->getId() . '">' . $title . '</a>';

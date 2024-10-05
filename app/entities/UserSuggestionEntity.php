@@ -2,9 +2,9 @@
 
 namespace App\Entities;
 
-class UserSuggestionEntity implements ICreatableFromRow {
-    private int $id;
-    private int $userId;
+class UserSuggestionEntity extends AEntity {
+    private string $id;
+    private string $userId;
     private string $title;
     private string $text;
     private string $category;
@@ -61,7 +61,11 @@ class UserSuggestionEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['suggestionId'], $row['userId'], $row['title'], $row['description'], $row['category'], $row['status'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['suggestionId' => 'string', 'userId' => 'string', 'title' => 'string', 'description' => 'string', 'status' => 'int', 'dateCreated' => 'string']);
+
+        return new self($row->suggestionId, $row->userId, $row->title, $row->description, $row->category, $row->status, $row->dateCreated);
     }
 }
 

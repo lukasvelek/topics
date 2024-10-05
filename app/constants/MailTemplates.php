@@ -16,7 +16,8 @@ class MailTemplates {
                     'New topic invite - Topics',
                     "Dear \$USER_NAME$," . self::newLine($html) . "
                     you have been invited to topic \$TOPIC_TITLE$. Click \$LINK$ to view your pending invites." . self::newLine($html, 2) . "
-                    Topics team"
+                    Topics team" . self::newLine($html, 2) . "
+                    #\$MAIL_ID$"
                 ];
 
                 break;
@@ -27,7 +28,8 @@ class MailTemplates {
                     "Dear \$USER_NAME$," . self::newLine($html) . "
                     you have created a registration and it must be confirmed. " . self::newLine($html) . "
                     Please click \$LINK$ to confirm registration." . self::newLine($html, 2) . "
-                    Topics team"
+                    Topics team" . self::newLine($html, 2) . "
+                    #\$MAIL_ID$"
                 ];
 
                 break;
@@ -37,7 +39,8 @@ class MailTemplates {
                     'Forgotten password - Topics',
                     "Dear \$USER_NAME$," . self::newLine($html) . "
                     you have requested resetting your password. Please click \$LINK$ to reset your password." . self::newLine($html, 2) . "
-                    Topics team"
+                    Topics team" . self::newLine($html, 2) . "
+                    #\$MAIL_ID$"
                 ];
 
                 break;

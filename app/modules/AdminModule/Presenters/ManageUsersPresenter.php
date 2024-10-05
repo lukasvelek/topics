@@ -4,7 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Entities\UserEntity;
@@ -23,42 +23,38 @@ class ManageUsersPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
-     
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    }
 
-        global $app;
+    public function startup() {
+        parent::startup();
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
-        if(!$app->sidebarAuthorizator->canManageUsers($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageUsers($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
     }
 
     public function actionLoadUsersGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_USERS, $gridPage);
 
-        $userCount = $app->userRepository->getUsersCount();
+        $userCount = $this->app->userRepository->getUsersCount();
         $lastPage = ceil($userCount / $gridSize);
-        $users = $app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
+        $users = $this->app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
         $gb = new GridBuilder();
         $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?', 'canLogin' => 'Can login?']);
         $gb->addDataSource($users);
         $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
             if($entity->isAdmin()) {
-                $cell->setValue('Yes');
+                $cell->setValue('&check;');
                 $cell->setTextColor('green');
             } else {
-                $cell->setValue('No');
+                $cell->setValue('&times;');
                 $cell->setTextColor('red');
             }
 
@@ -66,10 +62,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
         $gb->addOnColumnRender('canLogin', function(Cell $cell, UserEntity $entity) {
             if($entity->canLogin()) {
-                $cell->setValue('Yes');
+                $cell->setValue('&check;');
                 $cell->setTextColor('green');
             } else {
-                $cell->setValue('No');
+                $cell->setValue('&times;');
                 $cell->setTextColor('red');
             }
 
@@ -78,8 +74,8 @@ class ManageUsersPresenter extends AAdminPresenter {
         $gb->addAction(function (UserEntity $user) {
             return LinkBuilder::createSimpleLink('Profile', ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
         });
-        $gb->addAction(function (UserEntity $user) use ($app) {
-            if($user->getId() == $app->currentUser->getId()) {
+        $gb->addAction(function (UserEntity $user) {
+            if($user->getId() == $this->getUserId()) {
                 return '-';
             }
 
@@ -91,7 +87,10 @@ class ManageUsersPresenter extends AAdminPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        $gr = $this->getGridReducer();
+        $gr->applyReducer($gb);
+
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {
@@ -121,38 +120,36 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function handleUnsetAdmin(?FormResponse $fr = null) {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $password = $fr->password;
 
             try {
-                $app->userAuth->authUser($password);
+                $this->app->userAuth->authUser($password);
             } catch (AException $e) {
                 $this->flashMessage('You entered bad credentials. Please try again.', 'error');
                 $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'unsetAdmin', 'userId' => $userId]);
             }
 
             try {
-                $app->userRepository->beginTransaction();
+                $this->app->userRepository->beginTransaction();
 
-                if(!$app->userRepository->updateUser($userId, ['isAdmin' => '0'])) {
+                if(!$this->app->userRepository->updateUser($userId, ['isAdmin' => '0'])) {
                     throw new GeneralException('User could not be updated.');
                 }
 
-                $app->logger->warning('User #' . $userId . ' is not administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+                $this->app->logger->warning('User #' . $userId . ' is not administrator. User #' . $this->getUserId() . ' is responsible for this action.', __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('users');
+                $cache = $this->cacheFactory->getCache(CacheNames::USERS);
+                $cache->invalidate();
 
-                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->userRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User ' . $user->getUsername() . ' is not an administrator.', 'info');
             } catch(AException $e) {
-                $app->userRepository->rollback();
+                $this->app->userRepository->rollback();
 
                 $this->flashMessage('Could not unset user as administrator. Reason: ' . $e->getMessage(), 'error');
             }
@@ -178,38 +175,36 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function handleSetAdmin(?FormResponse $fr = null) {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $password = $fr->password;
 
             try {
-                $app->userAuth->authUser($password);
+                $this->app->userAuth->authUser($password);
             } catch (AException $e) {
                 $this->flashMessage('You entered bad credentials. Please try again.', 'error');
                 $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'setAdmin', 'userId' => $userId]);
             }
 
             try {
-                $app->userRepository->beginTransaction();
+                $this->app->userRepository->beginTransaction();
 
-                if(!$app->userRepository->updateUser($userId, ['isAdmin' => '1'])) {
+                if(!$this->app->userRepository->updateUser($userId, ['isAdmin' => '1'])) {
                     throw new GeneralException('User could not be updated.');
                 }
 
-                $app->logger->warning('User #' . $userId . ' is now administrator. User #' . $app->currentUser->getId() . ' is responsible for this action.', __METHOD__);
+                $this->app->logger->warning('User #' . $userId . ' is now administrator. User #' . $this->getUserId() . ' is responsible for this action.', __METHOD__);
 
-                $cm = new CacheManager($app->logger);
-                $cm->invalidateCache('users');
+                $cache = $this->cacheFactory->getCache(CacheNames::USERS);
+                $cache->invalidate();
 
-                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->userRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User ' . $user->getUsername() . ' is now an administrator.', 'info');
             } catch(AException $e) {
-                $app->userRepository->rollback();
+                $this->app->userRepository->rollback();
                 
                 $this->flashMessage('Could not set user as administrator. Reason: ' . $e->getMessage(), 'error');
             }
@@ -235,29 +230,27 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
     
     public function handleWarnUser(?FormResponse $fr = null) {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
         $reportId = $this->httpGet('reportId', true);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;
 
             try {
-                $app->userProsecutionRepository->beginTransaction();
+                $this->app->userProsecutionRepository->beginTransaction();
 
                 $expire = new DateTime();
                 $expire->modify('+7d');
                 $expire = $expire->getResult();
 
-                $app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, DateTime::now(), $expire);
+                $this->app->userProsecutionRepository->createNewProsecution($userId, UserProsecutionType::WARNING, $reason, DateTime::now(), $expire);
 
-                $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->userProsecutionRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User \'' . $user->getUsername() . '\' has been warned.');
             } catch(AException $e) {
-                $app->userProsecutionRepository->rollback();
+                $this->app->userProsecutionRepository->rollback();
 
                 $this->flashMessage('Could not warn user. Reason: ' . $e->getMessage(), 'error');
             }
@@ -283,10 +276,8 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function handleBanUser(?FormResponse $fr = null) {
-        global $app;
-
         $userId = $this->httpGet('userId', true);
-        $user = $app->userRepository->getUserById($userId);
+        $user = $this->app->userRepository->getUserById($userId);
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
@@ -297,22 +288,22 @@ class ManageUsersPresenter extends AAdminPresenter {
 
             if($type == UserProsecutionType::PERMA_BAN) {
                 try {
-                    $app->userProsecutionRepository->beginTransaction();
+                    $this->app->userProsecutionRepository->beginTransaction();
 
-                    $app->userProsecutionManager->permaBanUser($userId, $app->currentUser->getId(), $reason);
+                    $this->app->userProsecutionManager->permaBanUser($userId, $this->getUserId(), $reason);
 
-                    $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+                    $this->app->userProsecutionRepository->commit($this->getUserId(), __METHOD__);
                 } catch(AException $e) {
                     $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
                 }
             } else {
                 try {
-                    $app->userProsecutionRepository->beginTransaction();
+                    $this->app->userProsecutionRepository->beginTransaction();
 
-                    $app->userProsecutionManager->banUser($userId, $app->currentUser->getId(), $reason, $startDate, $endDate);
+                    $this->app->userProsecutionManager->banUser($userId, $this->getUserId(), $reason, $startDate, $endDate);
 
-                    $app->userProsecutionRepository->commit($app->currentUser->getId(), __METHOD__);
+                    $this->app->userProsecutionRepository->commit($this->getUserId(), __METHOD__);
                 } catch(AException $e) {
                     $this->flashMessage('Could not ban user \'' . $user->getUsername() . '\'. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
@@ -347,8 +338,6 @@ class ManageUsersPresenter extends AAdminPresenter {
     }
 
     public function handleNewForm(?FormResponse $fr = null) {
-        global $app;
-
         if($this->httpGet('isSubmit') == '1') {
             $username = $fr->username;
             $password = $fr->password;
@@ -362,17 +351,17 @@ class ManageUsersPresenter extends AAdminPresenter {
             $password = HashManager::hashPassword($password);
 
             try {
-                $app->userRepository->beginTransaction();
+                $this->app->userRepository->beginTransaction();
 
-                $userId = $app->userRepository->createEntityId(EntityManager::USERS);
+                $userId = $this->app->userRepository->createEntityId(EntityManager::USERS);
 
-                $app->userRepository->createNewUser($userId, $username, $password, $email, $isAdmin);
+                $this->app->userRepository->createNewUser($userId, $username, $password, $email, $isAdmin);
 
-                $app->userRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->userRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User <i>' . $username . '</i> has been created.', 'success');
             } catch(AException $e) {
-                $app->userRepository->rollback();
+                $this->app->userRepository->rollback();
 
                 $this->flashMessage('Could not create user. Reason: ' . $e->getMessage(), 'error');
             }

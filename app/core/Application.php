@@ -6,15 +6,21 @@ use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\ModuleDoesNotExistException;
+use App\Helpers\LinkHelper;
 use App\Logger\Logger;
+use App\Managers\ChatManager;
 use App\Managers\ContentManager;
 use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
+use App\Managers\ReportManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserFollowingManager;
@@ -22,6 +28,7 @@ use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
 use App\Managers\UserRegistrationManager;
 use App\Modules\ModuleManager;
+use App\Repositories\ChatRepository;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
@@ -35,6 +42,7 @@ use App\Repositories\SuggestionRepository;
 use App\Repositories\SystemServicesRepository;
 use App\Repositories\SystemStatusRepository;
 use App\Repositories\TopicCalendarEventRepository;
+use App\Repositories\TopicContentRegulationRepository;
 use App\Repositories\TopicInviteRepository;
 use App\Repositories\TopicMembershipRepository;
 use App\Repositories\TopicPollRepository;
@@ -47,6 +55,7 @@ use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
 use App\UI\GridBuilder\DefaultGridReducer;
+use ReflectionClass;
 
 /**
  * Application class that contains all objects and useful functions.
@@ -95,6 +104,8 @@ class Application {
     public TopicRulesRepository $topicRulesRepository;
     public GridExportRepository $gridExportRepository;
     public TopicCalendarEventRepository $topicCalendarEventRepository;
+    public TopicContentRegulationRepository $topicContentRegulationRepository;
+    public ChatRepository $chatRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -108,6 +119,8 @@ class Application {
     public UserRegistrationManager $userRegistrationManager;
     public UserManager $userManager;
     public EntityManager $entityManager;
+    public ReportManager $reportManager;
+    public ChatManager $chatManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -127,7 +140,7 @@ class Application {
         
         $this->currentUser = null;
 
-        $this->moduleManager = new ModuleManager();
+        $this->moduleManager = new ModuleManager($this->cfg);
 
         $this->logger = new Logger($this->cfg);
         $this->logger->info('Logger initialized.', __METHOD__);
@@ -137,31 +150,8 @@ class Application {
             throw $e;
         }
         $this->logger->info('Database connection established', __METHOD__);
-        
-        $this->userRepository = new UserRepository($this->db, $this->logger);
-        $this->topicRepository = new TopicRepository($this->db, $this->logger);
-        $this->postRepository = new PostRepository($this->db, $this->logger);
-        $this->postCommentRepository = new PostCommentRepository($this->db, $this->logger);
-        $this->systemStatusRepository = new SystemStatusRepository($this->db, $this->logger);
-        $this->suggestionRepository = new SuggestionRepository($this->db, $this->logger);
-        $this->reportRepository = new ReportRepository($this->db, $this->logger);
-        $this->userProsecutionRepository = new UserProsecutionRepository($this->db, $this->logger);
-        $this->groupRepository = new GroupRepository($this->db, $this->logger);
-        $this->contentRegulationRepository = new ContentRegulationRepository($this->db, $this->logger);
-        $this->topicMembershipRepository = new TopicMembershipRepository($this->db, $this->logger);
-        $this->systemServicesRepository = new SystemServicesRepository($this->db, $this->logger);
-        $this->topicPollRepository = new TopicPollRepository($this->db, $this->logger);
-        $this->topicInviteRepository = new TopicInviteRepository($this->db, $this->logger);
-        $this->notificationRepository = new NotificationRepository($this->db, $this->logger);
-        $this->fileUploadRepository = new FileUploadRepository($this->db, $this->logger);
-        $this->transactionLogRepository = new TransactionLogRepository($this->db, $this->logger);
-        $this->userFollowingRepository = new UserFollowingRepository($this->db, $this->logger);
-        $this->mailRepository = new MailRepository($this->db, $this->logger);
-        $this->userRegistrationRepository = new UserRegistrationRepository($this->db, $this->logger);
-        $this->contentRepository = new ContentRepository($this->db, $this->logger);
-        $this->topicRulesRepository = new TopicRulesRepository($this->db, $this->logger);
-        $this->gridExportRepository = new GridExportRepository($this->db, $this->logger);
-        $this->topicCalendarEventRepository = new TopicCalendarEventRepository($this->db, $this->logger);
+
+        $this->initRepositories();
 
         $this->userAuth = new UserAuthenticator($this->userRepository, $this->logger, $this->userProsecutionRepository);
 
@@ -175,12 +165,14 @@ class Application {
         $this->contentManager = new ContentManager($this->topicRepository, $this->postRepository, $this->postCommentRepository, $this->cfg['FULL_DELETE'], $this->logger, $this->topicMembershipManager, $this->topicPollRepository, $this->entityManager);
         $this->userRegistrationManager = new UserRegistrationManager($this->logger, $this->userRegistrationRepository, $this->userRepository, $this->mailManager, $this->entityManager);
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
+        $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
+        $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
 
-        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository);
+        $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository, $this->topicContentRegulationRepository, $this->topicCalendarEventRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
 
         $this->isAjaxRequest = false;
@@ -188,7 +180,31 @@ class Application {
         $this->loadModules();
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
-            $this->db->installDb();
+            try {
+                $this->db->installDb();
+            } catch(AException $e) {
+                throw new GeneralException('Could not install database. Reason: ' . $e->getMessage(), $e);
+            }
+        }
+    }
+
+    /**
+     * Initializes *Repository classes
+     */
+    private function initRepositories() {
+        $rc = new ReflectionClass($this);
+
+        $rpa = $rc->getProperties();
+
+        foreach($rpa as $rp) {
+            $rt = $rp->getType();
+
+            if(str_contains($rt, 'Repository')) {
+                $name = $rp->getName();
+                $className = (string)$rt;
+
+                $this->$name = new $className($this->db, $this->logger);
+            }
         }
     }
 
@@ -219,7 +235,7 @@ class Application {
                 $this->redirect(['page' => 'UserModule:Logout', 'action' => 'logout']);
 
                 if($message != '') {
-                    $this->flashMessage($message);
+                    $fmHash = $this->flashMessage($message);
                 }
             }
         }
@@ -256,17 +272,7 @@ class Application {
      * @return string URL
      */
     public function composeURL(array $params) {
-        $url = '?';
-
-        $tmp = [];
-
-        foreach($params as $key => $value) {
-            $tmp[] = $key . '=' . $value;
-        }
-
-        $url .= implode('&', $tmp);
-
-        return $url;
+        return LinkHelper::createUrlFromArray($params);
     }
 
     /**
@@ -276,8 +282,16 @@ class Application {
      * @param string $type Flash message type
      */
     public function flashMessage(string $text, string $type = 'info') {
-        $cm = new CacheManager($this->logger);
-        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        $cacheFactory = new CacheFactory($this->cfg);
+        $cache = $cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
+
+        $hash = HashManager::createHash(8, false);
+
+        $cache->save($hash, function() use ($type, $text) {
+            return ['type' => $type, 'text' => $text];
+        });
+
+        return $hash;
     }
     
     /**
@@ -297,9 +311,10 @@ class Application {
         $moduleObject->setLogger($this->logger);
 
         $this->logger->info('Initializing render engine.', __METHOD__);
-        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction);
+        $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
-        return $re->render($this->isAjaxRequest);
+        $re->setAjax($this->isAjaxRequest);
+        return $re->render();
     }
 
     /**

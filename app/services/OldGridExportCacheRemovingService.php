@@ -2,10 +2,9 @@
 
 namespace App\Services;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\ServiceManager;
 use App\Exceptions\AException;
-use App\Exceptions\GeneralException;
 use App\Logger\Logger;
 use Exception;
 
@@ -34,11 +33,11 @@ class OldGridExportCacheRemovingService extends AService {
 
     private function innerRun() {
         // Service executes all commands here
-        $cache = new CacheManager($this->logger);
-
-        if(!$cache->invalidateCacheBulk([CacheManager::NS_GRID_EXPORT_DATA, CacheManager::NS_GRID_EXPORTS])) {
-            throw new GeneralException('Could not invalidate cache.');
-        }
+        $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORT_DATA);
+        $cache->invalidate();
+        
+        $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORTS);
+        $cache->invalidate();
     }
 }
 

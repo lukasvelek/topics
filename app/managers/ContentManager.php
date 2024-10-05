@@ -2,7 +2,7 @@
 
 namespace App\Managers;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserActionEntity;
@@ -41,16 +41,29 @@ class ContentManager extends AManager {
     }
 
     public function deleteTopic(string $topicId, bool $deleteCache = true) {
+        // posts
         $posts = $this->postRepository->getLatestPostsForTopicId($topicId, 0);
 
         foreach($posts as $post) {
             $this->deletePost($post->getId(), false);
         }
 
+        // polls
+        $polls = $this->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0);
+
+        foreach($polls as $poll) {
+            $this->deletePoll($poll->getId());
+        }
+
         $this->topicRepository->deleteTopic($topicId, $this->isHide());
 
         $this->afterDelete(self::T_TOPIC, $deleteCache);
         $this->afterDelete(self::T_POST, $deleteCache);
+    }
+
+    public function deletePoll(string $pollId) {
+        $this->topicPollRepository->deletePollResponsesForPollId($pollId);
+        $this->topicPollRepository->deletePoll($pollId);
     }
 
     public function deletePost(string $postId, bool $deleteCache = true) {
@@ -76,17 +89,25 @@ class ContentManager extends AManager {
     }
 
     private function afterDelete(int $type, bool $deleteCache) {
-        $cm = new CacheManager($this->postRepository->getLogger());
-
         if($deleteCache) {
             switch($type) {
                 case self::T_POST:
-                    $cm->invalidateCache('posts');
+                    $postsCache = $this->cacheFactory->getCache(CacheNames::POSTS);
+                    $postsCache->invalidate();
+
+                    $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+                    $pinnedPostsCache->invalidate();
                     break;
                 
                 case self::T_TOPIC:
-                    $cm->invalidateCache('topics');
-                    $cm->invalidateCache('topicMemberships');
+                    $topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+                    $topicsCache->invalidate();
+
+                    $topicMembershipsCache = $this->cacheFactory->getCache(CacheNames::TOPIC_MEMBERSHIPS);
+                    $topicMembershipsCache->invalidate();
+
+                    $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+                    $topicRulesCache->invalidate();
                     break;
             }
         }
@@ -201,7 +222,9 @@ class ContentManager extends AManager {
                     break;
             }
 
-            $codeArray[] = '<div id="user-action-history-' . $i . '"><p><span style="color: rgb(100, 100, 100)">' . $date . '</span> ' . $text . '</p></div>';
+            $dateAtomic = DateTimeFormatHelper::formatDateToUserFriendly($oal->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
+
+            $codeArray[] = '<div id="user-action-history-' . $i . '"><p><span style="color: rgb(100, 100, 100)" title="' . $dateAtomic . '">' . $date . '</span> ' . $text . '</p></div>';
             $i++;
         }
         $code .= implode('<br>', $codeArray) . '</div>';

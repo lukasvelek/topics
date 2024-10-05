@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Entities\GridExportEntity;
+use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\DefaultGridReducer;
@@ -16,14 +17,12 @@ class ManageGridExportsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageGridExportsPresenter', 'Manage grid exports');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+    public function startup() {
+        parent::startup();
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleList() {
@@ -61,23 +60,21 @@ class ManageGridExportsPresenter extends AAdminPresenter {
     }
 
     public function actionGetGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage', true);
         $filter = $this->httpGet('gridFilter', true);
 
-        $gridSize = $app->getGridSize();
+        $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_GRID_EXPORTS, $gridPage, [$filter]);
 
         $exports = [];
         $totalCount = 0;
         if($filter == 'all') {
-            $exports = $app->gridExportRepository->getExportsForGrid($gridSize, ($page * $gridSize));
-            $totalCount = count($app->gridExportRepository->getExportsForGrid(0, 0));
+            $exports = $this->app->gridExportRepository->getExportsForGrid($gridSize, ($page * $gridSize));
+            $totalCount = count($this->app->gridExportRepository->getExportsForGrid(0, 0));
         } else {
-            $exports = $app->gridExportRepository->getUserExportsForGrid($app->currentUser->getId(), $gridSize, ($page * $gridSize));
-            $totalCount = count($app->gridExportRepository->getUserExportsForGrid($app->currentUser->getId(), 0, 0));
+            $exports = $this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), $gridSize, ($page * $gridSize));
+            $totalCount = count($this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), 0, 0));
         }
 
         $lastPage = ceil($totalCount / $gridSize);
@@ -100,8 +97,19 @@ class ManageGridExportsPresenter extends AAdminPresenter {
         $gb->addColumns($columns);
         $gb->addDataSource($exports);
         
-        $gd = new DefaultGridReducer($app->userRepository, $app->topicRepository, $app->postRepository);
+        $gd = new DefaultGridReducer($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository);
         $gd->applyReducer($gb);
+
+        $gb->addOnColumnRender('dateCreated', function(Cell $cell, GridExportEntity $gee) {
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
+        });
+        $gb->addOnColumnRender('dateFinished', function(Cell $cell, GridExportEntity $gee) {
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
+        });
 
         $gb->addAction(function(GridExportEntity $gee) {
             if($gee->getFilename() !== null) {
@@ -119,15 +127,15 @@ class ManageGridExportsPresenter extends AAdminPresenter {
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filter]);
         
-        $gb->addGridExport(function() use ($app, $filter) {
+        $gb->addGridExport(function() use ($filter) {
             if($filter == 'all') {
-                return $app->gridExportRepository->getExportsForGrid(0, 0);
+                return $this->app->gridExportRepository->getExportsForGrid(0, 0);
             } else {
-                return $app->gridExportRepository->getUserExportsForGrid($app->currentUser->getId(), 0, 0);
+                return $this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), 0, 0);
             }
-        }, GridHelper::GRID_GRID_EXPORTS);
+        }, GridHelper::GRID_GRID_EXPORTS, $this->logger);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 }
 

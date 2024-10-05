@@ -6,15 +6,29 @@ use App\Constants\AdministratorGroups;
 use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
+/**
+ * Installs the database - creates tables, indexes
+ * 
+ * @author Lukas Velek
+ */
 class DatabaseInstaller {
     private DatabaseConnection $db;
     private Logger $logger;
 
+    /**
+     * Class constructor
+     * 
+     * @param DatabaseConnection $db DatabaseConnection instance
+     * @param Logger $logger Logger instance
+     */
     public function __construct(DatabaseConnection $db, Logger $logger) {
         $this->db = $db;
         $this->logger = $logger;
     }
 
+    /**
+     * Performs the database installation
+     */
     public function install() {
         $this->logger->info('Database installation started.', __METHOD__);
 
@@ -29,6 +43,9 @@ class DatabaseInstaller {
         $this->logger->info('Database installation finished.', __METHOD__);
     }
 
+    /**
+     * Creates tables
+     */
     private function createTables() {
         $this->logger->info('Creating tables.', __METHOD__);
 
@@ -153,7 +170,7 @@ class DatabaseInstaller {
             ],
             'banned_words' => [
                 'wordId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
-                'word' => 'VARCHAR(256)',
+                'word' => 'VARCHAR(256) NOT NULL',
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
@@ -296,6 +313,44 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateFrom' => 'DATETIME NOT NULL',
                 'dateTo' => 'DATETIME NOT NULL'
+            ],
+            'topic_banned_words' => [
+                'wordId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'word' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_chats' => [
+                'chatId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'user1Id' => 'VARCHAR(256) NOT NULL',
+                'user2Id' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'user_chat_messages' => [
+                'messageId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'chatId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channels' => [
+                'channelId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'topicId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channel_subscribers' => [
+                'subscribeId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'channelId' => 'VARCHAR(256) NOT NULL',
+                'userId' => 'VARCHAR(256) NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'topic_broadcast_channel_messages' => [
+                'messageId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'channelId' => 'VARCHAR(256) NOT NULL',
+                'authorId' => 'VARCHAR(256) NOT NULL',
+                'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 
@@ -322,6 +377,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' tables.', __METHOD__);
     }
 
+    /**
+     * Creates indexes
+     */
     private function createIndexes() {
         $this->logger->info('Creating indexes.', __METHOD__);
 
@@ -419,6 +477,15 @@ class DatabaseInstaller {
             ],
             'topic_rules' => [
                 'topicId'
+            ],
+            'topic_calendar_user_events' => [
+                'dateFrom',
+                'dateTo',
+                'topicId'
+            ],
+            'topic_banned_words' => [
+                'authorId',
+                'topicId'
             ]
         ];
 
@@ -452,6 +519,9 @@ class DatabaseInstaller {
         $this->logger->info('Created indexes.', __METHOD__);
     }
 
+    /**
+     * Creates default users
+     */
     private function createUsers() {
         $this->logger->info('Creating users.', __METHOD__);
 
@@ -489,6 +559,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' users.', __METHOD__);
     }
 
+    /**
+     * Creates default systems
+     */
     private function createSystems() {
         $this->logger->info('Creating systems.', __METHOD__);
 
@@ -512,6 +585,9 @@ class DatabaseInstaller {
         $this->logger->info('Created ' . $i . ' systems.', __METHOD__);
     }
 
+    /**
+     * Creates default groups
+     */
     private function createGroups() {
         $this->logger->info('Creating administrator groups.', __METHOD__);
 
@@ -521,7 +597,8 @@ class DatabaseInstaller {
             AdministratorGroups::toString(AdministratorGroups::G_SUPERADMINISTRATOR) => AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_SYSTEM_ADMINISTRATOR) => AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
             AdministratorGroups::toString(AdministratorGroups::G_USER_ADMINISTRATOR) => AdministratorGroups::G_USER_ADMINISTRATOR,
-            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+            AdministratorGroups::toString(AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR) => AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR,
+            AdministratorGroups::toString(AdministratorGroups::G_BETA_TESTER) => AdministratorGroups::G_BETA_TESTER
         ];
 
         $descriptions = [
@@ -530,7 +607,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUPERADMINISTRATOR => 'Administrator group that allows performing all operations without limit',
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR => 'Administrator group whose members manage system status',
             AdministratorGroups::G_USER_ADMINISTRATOR => 'Administrator group whose members manage users',
-            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content'
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR => 'Administrator group whose members manage user content',
+            AdministratorGroups::G_BETA_TESTER => 'Group of beta testers'
         ];
 
         foreach($groups as $title => $id) {
@@ -546,6 +624,9 @@ class DatabaseInstaller {
         $this->logger->info('Created administrator groups.', __METHOD__);
     }
 
+    /**
+     * Adds administrator to default groups
+     */
     private function addAdminToGroups() {
         $this->logger->info('Adding admin to administrator groups.', __METHOD__);
 
@@ -566,7 +647,8 @@ class DatabaseInstaller {
             AdministratorGroups::G_SUPERADMINISTRATOR,
             AdministratorGroups::G_SYSTEM_ADMINISTRATOR,
             AdministratorGroups::G_USER_ADMINISTRATOR,
-            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR
+            AdministratorGroups::G_CONTENT_MANAGER_AND_ADMINISTRATOR,
+            AdministratorGroups::G_BETA_TESTER
         ];
 
         foreach($groups as $groupId) {
@@ -582,6 +664,9 @@ class DatabaseInstaller {
         $this->logger->info('Added admin to administrator groups.', __METHOD__);
     }
 
+    /**
+     * Adds system services
+     */
     private function addSystemServices() {
         $this->logger->info('Adding system services.', __METHOD__);
 
@@ -591,7 +676,8 @@ class DatabaseInstaller {
             'OldNotificationRemoving' => 'OldNotificationRemoving.php',
             'Mail' => 'MailService.php',
             'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
-            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php'
+            'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php',
+            'UnlimitedGridExport' => 'UnlimitedGridExport.php'
         ];
 
         foreach($services as $title => $path) {

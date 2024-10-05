@@ -3,13 +3,16 @@
 namespace App\Modules;
 
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Application;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
+use App\Core\HashManager;
+use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
-use App\Exceptions\StaticPageException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
@@ -27,15 +30,24 @@ abstract class APresenter extends AGUICore {
     private ArrayList $presenterCache;
     private ArrayList $scripts;
     private ?string $ajaxResponse;
-    private bool $isStatic;
     private ?string $defaultAction;
     public ?string $moduleName;
+    private bool $isAjax;
+    private bool $lock;
+    protected ?Application $app;
+    private ?UserEntity $currentUser;
 
     protected ?TemplateObject $template;
     protected ?Logger $logger;
 
     private ArrayList $beforeRenderCallbacks;
     private ArrayList $afterRenderCallbacks;
+
+    protected array $cfg;
+    protected ?CacheFactory $cacheFactory;
+
+    private array $flashMessages;
+    private array $specialRedirectUrlParams;
 
     /**
      * The class constructor
@@ -50,10 +62,13 @@ abstract class APresenter extends AGUICore {
         $this->action = null;
         $this->template = null;
         $this->ajaxResponse = null;
-        $this->isStatic = false;
         $this->logger = null;
         $this->defaultAction = null;
         $this->moduleName = null;
+        $this->isAjax = false;
+        $this->lock = false;
+        $this->app = null;
+        $this->currentUser = null;
 
         $this->presenterCache = new ArrayList();
         $this->presenterCache->setStringKeyType();
@@ -62,8 +77,99 @@ abstract class APresenter extends AGUICore {
         $this->scripts = new ArrayList();
         $this->beforeRenderCallbacks = new ArrayList();
         $this->afterRenderCallbacks = new ArrayList();
+
+        $this->cacheFactory = null;
+
+        $this->flashMessages = [];
+        $this->specialRedirectUrlParams = [];
     }
 
+    /**
+     * Everything in startup() method is called after an instance of Presenter has been created and before other functionality-handling methods are called.
+     */
+    public function startup() {
+        $this->cacheFactory = new CacheFactory($this->cfg);
+    }
+
+    /**
+     * Returns current user's ID or null if no user is set
+     * 
+     * @return string|null Current user's ID or null if no user is set
+     */
+    public function getUserId() {
+        return $this->currentUser?->getId();
+    }
+
+    /**
+     * Returns current user's UserEntity instance or null if no user is set
+     * 
+     * @return UserEntity|null Current user's UserEntity instance or null if no user is set
+     */
+    public function getUser() {
+        return $this->currentUser;
+    }
+
+    /**
+     * Sets variables from Application instance
+     */
+    private function procesApplicationSet() {
+        if($this->app->currentUser !== null) {
+            $this->currentUser = $this->app->currentUser;
+        }
+    }
+
+    /**
+     * Sets Application instance
+     * 
+     * @param Application $app Application instance
+     */
+    public function setApplication(Application $app) {
+        $this->app = $app;
+
+        $this->procesApplicationSet();
+    }
+
+    /**
+     * Locks important variables so they are readonly
+     */
+    public function lock() {
+        $this->lock = true;
+    }
+
+    /**
+     * Unlocks important variables so they are not readonly
+     */
+    public function unlock() {
+        $this->lock = false;
+    }
+
+    /**
+     * Returns if the call comes from AJAX
+     * 
+     * @return bool Is AJAX?
+     */
+    protected function isAjax() {
+        return $this->isAjax;
+    }
+
+    /**
+     * Sets if the call comes from AJAX
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setIsAjax(bool $isAjax) {
+        if(!$this->lock) {
+            $this->isAjax = $isAjax;
+        }
+    }
+
+    /**
+     * Returns a URL with parameters saved in the presenter class as a string (e.g. "?page=UserModule:Users&action=profile&userId=...")
+     * 
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return string URL as string
+     */
     public function createURLString(string $action, array $params = []) {
         $urlParts = $this->createURL($action, $params);
 
@@ -75,6 +181,14 @@ abstract class APresenter extends AGUICore {
         return '?' . implode('&', $tmp);
     }
 
+    /**
+     * Creates a full URL with parameters and returns it as a string
+     * 
+     * @param string $modulePresenter Module and presenter name
+     * @param string $action Action name
+     * @param array $params Custom URL params
+     * @return string URL as string
+     */
     public function createFullURLString(string $modulePresenter, string $action, array $params = []) {
         $urlParts = $this->createFullURL($modulePresenter, $action, $params);
 
@@ -92,7 +206,7 @@ abstract class APresenter extends AGUICore {
      * @param string $modulePresenter Module and presenter name
      * @param string $action Action name
      * @param array $params Custom URL params
-     * @return array $url
+     * @return array URL
      */
     public function createFullURL(string $modulePresenter, string $action, array $params = []) {
         $url = ['page' => $modulePresenter, 'action' => $action];
@@ -187,8 +301,17 @@ abstract class APresenter extends AGUICore {
      * @param string $type Flash message type
      */
     protected function flashMessage(string $text, string $type = 'info') {
-        $cm = new CacheManager($this->logger);
-        $cm->saveFlashMessageToCache(['type' => $type, 'text' => $text]);
+        if(empty($this->flashMessages)) {
+            $hash = HashManager::createHash(8, false);
+        } else {
+            $hash = $this->flashMessages[0]['hash'];
+        }
+
+        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash];
+        
+        if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
+            $this->specialRedirectUrlParams['_fm'] = $hash;
+        }
     }
 
     /**
@@ -235,15 +358,19 @@ abstract class APresenter extends AGUICore {
      * @param array $url URL params
      */
     protected function redirect(array $url = []) {
-        global $app;
-
         if(!empty($url)) {
             if(!array_key_exists('page', $url)) {
                 $url['page'] = $this->httpGet('page');
             }
+
+            if(!empty($this->specialRedirectUrlParams)) {
+                $url = array_merge($url, $this->specialRedirectUrlParams);
+            }
+
+            $this->saveFlashMessagesToCache();
         }
 
-        $app->redirect($url);
+        $this->app->redirect($url);
     }
 
     /**
@@ -285,14 +412,12 @@ abstract class APresenter extends AGUICore {
      * Here are also the macros of the common template filled.
      * 
      * @param string $moduleName Name of the current module
-     * @param bool $isAjax True if this request is AJAX or false if not
+     * @return string Presenter template content
      */
-    public function render(string $moduleName, bool $isAjax) {
-        global $app;
-
-        $contentTemplate = $this->beforeRender($moduleName, $isAjax);
+    public function render(string $moduleName) {
+        $contentTemplate = $this->beforeRender($moduleName);
         
-        if(!$isAjax) {
+        if(!$this->isAjax) {
             if($contentTemplate !== null && $this->template !== null) {
                 $this->template->join($contentTemplate);
             }
@@ -300,7 +425,7 @@ abstract class APresenter extends AGUICore {
             $renderAction = 'render' . ucfirst($this->action);
             
             if(method_exists($this, $renderAction)) {
-                $app->logger->stopwatch(function() use ($renderAction) {
+                $this->logger->stopwatch(function() use ($renderAction) {
                     return $this->$renderAction();
                 }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $renderAction);
             }
@@ -319,12 +444,12 @@ abstract class APresenter extends AGUICore {
     
             if($this->template !== null) {
                 $this->template->sys_page_title = $this->title;
-                $this->template->sys_app_name = $app->cfg['APP_NAME'];
+                $this->template->sys_app_name = $this->cfg['APP_NAME'];
                 $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
                 $this->template->sys_scripts = $this->scripts->getAll();
             
-                if($app->currentUser !== null) {
-                    $this->template->sys_user_id = $app->currentUser->getId();
+                if($this->currentUser !== null) {
+                    $this->template->sys_user_id = $this->currentUser->getId();
                 } else {
                     $this->template->sys_user_id = '';
                 }
@@ -335,7 +460,7 @@ abstract class APresenter extends AGUICore {
         
         $this->afterRender();
 
-        return [$this->template, $this->isStatic];
+        return $this->template;
     }
 
     /**
@@ -379,37 +504,26 @@ abstract class APresenter extends AGUICore {
      * E.g. it calls the 'handleX()' operation that might not need to be rendered.
      * 
      * @param string $moduleName the module name
-     * @param bool $isAjax Is request called from AJAX?
      * @return null|TemplateObject Template content or null
      */
-    private function beforeRender(string $moduleName, bool $isAjax) {
-        global $app;
-
+    private function beforeRender(string $moduleName) {
         $ok = false;
         $templateContent = null;
 
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
-        $actionAction = 'action' . ucfirst($this->action);
 
-        if($isAjax) {
-            if(method_exists($this, $actionAction)) {
-                $app->logger->stopwatch(function() use ($actionAction) {
-                    return $this->$actionAction();
-                }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
-
-                if($this->ajaxResponse !== null) {
-                    return new TemplateObject($this->ajaxResponse);
-                } else {
-                    throw new NoAjaxResponseException();
-                }
+        if($this->isAjax) {
+            $result = $this->processAction($moduleName);
+            if($result !== null) {
+                return $result;
             }
         }
 
         if(method_exists($this, $handleAction)) {
             $ok = true;
             $params = $this->getQueryParams();
-            $handleResult = $app->logger->stopwatch(function() use ($handleAction, $params) {
+            $handleResult = $this->logger->stopwatch(function() use ($handleAction, $params) {
                 if(isset($params['isFormSubmit']) == '1') {
                     $fr = $this->createFormResponse();
                     return $this->$handleAction($fr);
@@ -423,7 +537,7 @@ abstract class APresenter extends AGUICore {
             return new TemplateObject($handleResult);
         }
 
-        if(method_exists($this, $renderAction) && !$isAjax) {
+        if(method_exists($this, $renderAction) && !$this->isAjax) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -435,9 +549,9 @@ abstract class APresenter extends AGUICore {
         }
 
         if($ok === false) {
-            if($isAjax) {
-                if($app->cfg['IS_DEV']) {
-                    throw new ActionDoesNotExistException($actionAction);
+            if($this->isAjax) {
+                if($this->cfg['IS_DEV']) {
+                    throw new ActionDoesNotExistException($this->action);
                 } else {
                     $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
                 }
@@ -446,7 +560,7 @@ abstract class APresenter extends AGUICore {
                     $this->redirect(['page' => $moduleName . ':' . $this->title, 'action' => $this->defaultAction]);
                 }
 
-                if($app->cfg['IS_DEV']) {
+                if($this->cfg['IS_DEV']) {
                     throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
                 } else {
                     $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
@@ -467,9 +581,37 @@ abstract class APresenter extends AGUICore {
             $this->template->render();
         }
 
+        $this->saveFlashMessagesToCache();
+
         $this->presenterCache->reset();
 
         $this->afterRenderCallbacks->executeCallables();
+    }
+
+    /**
+     * Processes AJAX action
+     * 
+     * @param string $moduleName Module name
+     * @return TemplateObject|null Template object or null
+     */
+    private function processAction(string $moduleName) {
+        $actionAction = 'action' . ucfirst($this->action);
+
+        if(method_exists($this, $actionAction)) {
+            $result = $this->logger->stopwatch(function() use ($actionAction) {
+                return $this->$actionAction();
+            }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
+
+            if($this->ajaxResponse !== null) {
+                return new TemplateObject($this->ajaxResponse);
+            } else if($result !== null) {
+                return new TemplateObject(json_encode($result));
+            } else {
+                throw new NoAjaxResponseException();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -547,38 +689,38 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Sends AJAX response encoded to JSON
+     * Sets configuration
      * 
-     * @param array $data The response data.
+     * @param array $cfg
      */
-    protected function ajaxSendResponse(array $data) {
-        $this->ajaxResponse = json_encode($data);
+    public function setCfg(array $cfg) {
+        $this->cfg = $cfg;
     }
 
     /**
-     * Sets the current page as static
-     * 
-     * @param bool $static True if the page is static and false if not
+     * Saves flash messages to cache and then saves the cache
      */
-    public function setStatic(bool $static = true) {
-        $methods = get_class_methods($this);
+    private function saveFlashMessagesToCache() {
+        if(!empty($this->flashMessages)) {
+            $cache = $this->cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
 
-        foreach($methods as $method) {
-            if(str_contains($method, 'action')) {
-                throw new StaticPageException('Presenter contains AJAX requests and thus cannot be set as static.');
-            }
+            $hash = $this->flashMessages[0]['hash'];
+
+            $cache->save($hash, function() {
+                return $this->flashMessages;
+            });
         }
 
-        $this->isStatic = $static;
+        $this->cacheFactory->saveCaches();
     }
 
     /**
-     * Returns true if the page is static
+     * Returns DefaultGridReducer instance
      * 
-     * @return bool True if the page is static or false if not
+     * @return \App\UI\GridBuilder\DefaultGridReducer DefaultGridReducer instance
      */
-    public function isStatic() {
-        return $this->isStatic;
+    public function getGridReducer() {
+        return $this->app->getGridReducer();
     }
 }
 

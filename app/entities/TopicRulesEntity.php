@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicRulesEntity implements ICreatableFromRow {
+class TopicRulesEntity extends AEntity {
     private string $rulesetId;
     private string $topicId;
     private array $rules;
@@ -47,8 +47,12 @@ class TopicRulesEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        $rules = json_decode($row['rules']);
-        return new self($row['rulesetId'], $row['topicId'], $rules, $row['lastUpdateUserId'], $row['dateCreated'], $row['dateUpdated']);
+
+        $row = self::createRow($row);
+        $row->rules = json_decode($row->rules);
+        self::checkTypes($row, ['rulesetId' => 'string', 'topicId' => 'string', 'rules' => 'array', 'lastUpdateUserId' => 'string', 'dateCreated' => 'string', 'dateUpdated' => '?string']);
+
+        return new self($row->rulesetId, $row->topicId, $row->rules, $row->lastUpdateUserId, $row->dateCreated, $row->dateUpdated);
     }
 }
 

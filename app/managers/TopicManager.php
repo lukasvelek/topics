@@ -4,7 +4,7 @@ namespace App\Managers;
 
 use App\Authorizators\VisibilityAuthorizator;
 use App\Constants\TopicMemberRole;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
@@ -12,6 +12,8 @@ use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
 use App\Logger\Logger;
+use App\Repositories\TopicCalendarEventRepository;
+use App\Repositories\TopicContentRegulationRepository;
 use App\Repositories\TopicRepository;
 use App\Repositories\TopicRulesRepository;
 use Exception;
@@ -22,8 +24,10 @@ class TopicManager extends AManager {
     private VisibilityAuthorizator $va;
     private ContentManager $com;
     private TopicRulesRepository $trr;
+    private TopicContentRegulationRepository $tcrr;
+    private TopicCalendarEventRepository $tcer;
 
-    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr) {
+    public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr, TopicCalendarEventRepository $tcer) {
         parent::__construct($logger, $entityManager);
         
         $this->tr = $topicRepository;
@@ -31,6 +35,8 @@ class TopicManager extends AManager {
         $this->va = $va;
         $this->com = $com;
         $this->trr = $trr;
+        $this->tcrr = $tcrr;
+        $this->tcer = $tcer;
     }
 
     public function getTopicById(string $topicId, string $userId) {
@@ -118,6 +124,7 @@ class TopicManager extends AManager {
 
         $this->com->deleteTopic($topicId);
 
+        // memberships
         $members = $this->tmm->getTopicMembers($topicId, 0, 0, false);
 
         foreach($members as $member) {
@@ -125,6 +132,12 @@ class TopicManager extends AManager {
 
             $this->tmm->unfollowTopic($topicId, $memberId);
         }
+
+        // banned words
+        $this->tcrr->deleteBannedWordsForTopicId($topicId);
+
+        // user calendar events
+        $this->tcer->deleteUserEventsForTopicId($topicId);
     }
 
     public function updateTopicPrivacy(string $userId, string $topicId, bool $isPrivate, bool $isVisible) {
@@ -135,7 +148,8 @@ class TopicManager extends AManager {
         try {
             $this->com->updateTopic($topicId, ['isPrivate' => $isPrivate, 'isVisible' => $isVisible]);
 
-            $this->cache->invalidateCache(CacheManager::NS_TOPICS);
+            $topicsCache = $this->cacheFactory->getCache(CacheNames::TOPICS);
+            $topicsCache->invalidate();
         } catch(Exception $e) {
             throw $e;
         }
@@ -153,7 +167,8 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId);
 
-            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+            $pinnedPostsCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -173,7 +188,8 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId, false);
 
-            $this->cache->invalidateCache(CacheManager::NS_PINNED_POSTS);
+            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
+            $pinnedPostsCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -232,10 +248,9 @@ class TopicManager extends AManager {
                     throw new GeneralException('Could not update topic rules.');
                 }
             }
-
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -259,9 +274,8 @@ class TopicManager extends AManager {
                 throw new GeneralException('Could not update topic rule.');
             }
 
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -277,7 +291,6 @@ class TopicManager extends AManager {
 
             $rules = $entity->getRules();
 
-
             unset($rules[$ruleIndex]);
 
             $rulesJson = json_encode($rules);
@@ -286,12 +299,15 @@ class TopicManager extends AManager {
                 throw new GeneralException('Could not update topic rule.');
             }
 
-            if(!$this->cache->invalidateCache(CacheManager::NS_TOPIC_RULES)) {
-                throw new GeneralException('Could not invalidate cache.');
-            }
+            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
+            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
+    }
+
+    public function getTopicOwner(string $topicId) {
+        return $this->tmm->getTopicOwnerId($topicId);
     }
 }
 

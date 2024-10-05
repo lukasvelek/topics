@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class SystemServiceEntity implements ICreatableFromRow {
+class SystemServiceEntity extends AEntity {
     private string $id;
     private string $title;
     private string $scriptPath;
@@ -47,7 +47,11 @@ class SystemServiceEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['serviceId'], $row['title'], $row['scriptPath'], $row['dateStarted'], $row['dateEnded'], $row['status']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['serviceId' => 'string', 'title' => 'string', 'scriptPath' => 'string', 'dateStarted' => '?string', 'dateEnded' => '?string', 'status' => 'int']);
+
+        return new self($row->serviceId, $row->title, $row->scriptPath, $row->dateStarted, $row->dateEnded, $row->status);
     }
 }
 

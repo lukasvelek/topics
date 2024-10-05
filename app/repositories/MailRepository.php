@@ -22,19 +22,17 @@ class MailRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getAllEntriesLimited(int $limit, int $offset) {
+    public function getAllEntriesLimited(int $limit, int $offset, bool $notSentOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
-            ->from('mail_queue')
-            ->where('isSent = 0');
+            ->from('mail_queue');
 
-        if($limit > 0) {
-            $qb->limit($limit);
+        if($notSentOnly) {
+            $qb->where('isSent = 0');
         }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -66,6 +64,17 @@ class MailRepository extends ARepository {
             ->execute();
 
         return $qb->fetchBool();
+    }
+
+    public function getEntityById(string $id) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('mail_queue')
+            ->where('mailId = ?', [$id])
+            ->execute();
+
+        return EmailEntity::createEntityFromDbRow($qb->fetch());
     }
 }
 

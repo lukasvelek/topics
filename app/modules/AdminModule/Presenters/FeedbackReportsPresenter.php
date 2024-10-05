@@ -23,54 +23,50 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('FeedbackReportsPresenter', 'Reports');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createFeedbackSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
-        global $app;
-
-        if(!$app->sidebarAuthorizator->canManageReports($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageReports($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
         }
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionReportGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_REPORTS, $gridPage, [$filterType]);
 
-        $gridSize = $app->getGridSize();
+        $gridSize = $this->app->getGridSize();
 
         $reports = [];
         $reportCount = 0;
 
         switch($filterType) {
             case 'null':
-                $reports = $app->reportRepository->getOpenReportsForList($gridSize, ($page * $gridSize));
-                $reportCount = count($app->reportRepository->getOpenReportsForList(0, 0));
+                $reports = $this->app->reportRepository->getOpenReportsForList($gridSize, ($page * $gridSize));
+                $reportCount = count($this->app->reportRepository->getOpenReportsForList(0, 0));
                 break;
     
             case 'user':
-                $reports = $app->reportRepository->getOpenReportsForListFilterUser($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($app->reportRepository->getOpenReportsForListFilterUser($filterKey, 0, 0));
+                $reports = $this->app->reportRepository->getOpenReportsForListFilterUser($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($this->app->reportRepository->getOpenReportsForListFilterUser($filterKey, 0, 0));
                 break;
     
             case 'category':
-                $reports = $app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($app->reportRepository->getOpenReportsForListFilterCategory($filterKey, 0, 0));
+                $reports = $this->app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($this->app->reportRepository->getOpenReportsForListFilterCategory($filterKey, 0, 0));
                 break;
     
             case 'status':
-                $reports = $app->reportRepository->getReportsForListFilterStatus($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($app->reportRepository->getReportsForListFilterStatus($filterKey, 0, 0));
+                $reports = $this->app->reportRepository->getReportsForListFilterStatus($filterKey, $gridSize, ($page * $gridSize));
+                $reportCount = count($this->app->reportRepository->getReportsForListFilterStatus($filterKey, 0, 0));
                 break;
         }
 
@@ -105,8 +101,8 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) use ($app) {
-            $user = $app->userRepository->getUserById($re->getUserId());
+        $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) {
+            $user = $this->app->userRepository->getUserById($re->getUserId());
 
             $a = HTML::a();
 
@@ -177,8 +173,8 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
     
                 case 'user':
-                    $usersInReports = $app->reportRepository->getUsersInReports();
-                    $users = $app->userRepository->getUsersByIdBulk($usersInReports);
+                    $usersInReports = $this->app->reportRepository->getUsersInReports();
+                    $users = $this->app->userRepository->getUsersByIdBulk($usersInReports);
     
                     foreach($users as $user) {
                         if($user->getId() == $filterKey) {
@@ -248,12 +244,10 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
+        return ['grid' => $gb->build(), 'filterControl' => $filterControl];
     }
 
     public function actionGetFilterCategorySuboptions() {
-        global $app;
-
         $category = $this->httpGet('category');
 
         $options = [];
@@ -270,8 +264,8 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 break;
 
             case 'user':
-                $usersInReports = $app->reportRepository->getUsersInReports();
-                $users = $app->userRepository->getUsersByIdBulk($usersInReports);
+                $usersInReports = $this->app->reportRepository->getUsersInReports();
+                $users = $this->app->userRepository->getUsersByIdBulk($usersInReports);
 
                 foreach($users as $user) {
                     $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
@@ -280,7 +274,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 break;
         }
 
-        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
+        return ['options' => $options, 'empty' => (empty($options))];
     }
 
     public function handleList() {
@@ -305,34 +299,32 @@ class FeedbackReportsPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function handleProfile() {
-        global $app;
-
         $reportId = $this->httpGet('reportId', true);
-        $report = $app->reportRepository->getReportById($reportId);
+        $report = $this->app->reportRepository->getReportById($reportId);
 
         $this->saveToPresenterCache('report', $report);
 
-        $author = $app->userRepository->getUserById($report->getUserId());
+        $author = $this->app->userRepository->getUserById($report->getUserId());
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $report->getUserId() . '">' . $author->getUsername() . '</a>';
         $entityTypeText = ReportEntityType::toString($report->getEntityType());
         $entityLink = '<a class="post-data-link" href="?page=UserModule:';
 
         switch($report->getEntityType()) {
             case ReportEntityType::COMMENT:
-                $comment = $app->postCommentRepository->getCommentById($report->getEntityId());
-                $post = $app->postRepository->getPostById($comment->getPostId());
-                $author = $app->userRepository->getUserById($comment->getAuthorId());
+                $comment = $this->app->postCommentRepository->getCommentById($report->getEntityId());
+                $post = $this->app->postRepository->getPostById($comment->getPostId());
+                $author = $this->app->userRepository->getUserById($comment->getAuthorId());
                 $entityLink .= 'Posts&action=profile&postId=' . $comment->getPostId() . '">Comment on post \'' . $post->getTitle() . '\' from user \'' . $author->getUsername() . '\' created on \'' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) .'\'</a>';
                 break;
 
             case ReportEntityType::POST:
-                $post = $app->postRepository->getPostById($report->getEntityId());
+                $post = $this->app->postRepository->getPostById($report->getEntityId());
                 $entityLink .= 'Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
                 break;
 
             case ReportEntityType::TOPIC:
                 try {
-                    $topic = $app->topicManager->getTopicById($report->getEntityId(), $app->currentUser->getId());
+                    $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                 } catch(AException $e) {
                     $this->flashMessage($e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
@@ -341,7 +333,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 break;
 
             case ReportEntityType::USER:
-                $reportUser = $app->userRepository->getUserById($report->getEntityId());
+                $reportUser = $this->app->userRepository->getUserById($report->getEntityId());
                 $entityLink .= 'Users&action=profile&userId=' . $report->getEntityId() . '">' . $reportUser->getUsername() . '</a>';
                 break;
         }
@@ -373,7 +365,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
             switch($report->getEntityType()) {
                 case ReportEntityType::COMMENT:
-                    $comment = $app->postCommentRepository->getCommentById($report->getEntityId());
+                    $comment = $this->app->postCommentRepository->getCommentById($report->getEntityId());
 
                     if($comment->isDeleted() !== true) {
                         $adminLinks[] = LinkBuilder::createSimpleLink('Delete comment', ['page' => 'AdminModule:ManagePosts', 'action' => 'deleteComment', 'commentId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
@@ -382,7 +374,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
 
                 case ReportEntityType::USER:
-                    $userProsecution = $app->userProsecutionRepository->getLastProsecutionForUserId($report->getEntityId());
+                    $userProsecution = $this->app->userProsecutionRepository->getLastProsecutionForUserId($report->getEntityId());
 
                     if($userProsecution !== null) {
                         if($userProsecution->getType() == UserProsecutionType::PERMA_BAN) break;
@@ -401,7 +393,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
 
                 case ReportEntityType::POST:
-                    $post = $app->postRepository->getPostById($report->getEntityId());
+                    $post = $this->app->postRepository->getPostById($report->getEntityId());
 
                     if($post->isDeleted() !== true) {
                         $adminLinks[] = LinkBuilder::createSimpleLink('Delete post', ['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
@@ -411,7 +403,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
                 case ReportEntityType::TOPIC:
                     try {
-                        $topic = $app->topicManager->getTopicById($report->getEntityId(), $app->currentUser->getId());
+                        $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                     } catch(AException $e) {
                         $this->flashMessage($e->getMessage(), 'error');
                         $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
@@ -444,15 +436,13 @@ class FeedbackReportsPresenter extends AAdminPresenter {
     }
 
     public function handleResolutionForm(?FormResponse $fr = null) {
-        global $app;
-
         $reportId = $this->httpGet('reportId', true);
-        $report = $app->reportRepository->getReportById($reportId);
+        $report = $this->app->reportRepository->getReportById($reportId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             /** SELECTED REPORT */
             $comment = $fr->comment;
-            $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $app->currentUser->getId() . '">' . $app->currentUser->getUsername() . '</a>';
+            $userLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $this->getUserId() . '">' . $this->getUser()->getUsername() . '</a>';
             $text = 'User ' . $userLink . ' closed this report with comment: ' . $comment;
             /** END OF SELECTED REPORT */
             
@@ -460,7 +450,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $reportLink = '<a class="post-data-link" href="?page=AdminModule:FeedbackReports&action=profile&reportId=' . $reportId . '">' . ReportEntityType::toString($report->getEntityType()) . ' report</a>';
             $relevantText = 'User ' . $userLink . ' closed report ' . $reportLink . ' that is relevant to this. Thus this report has been closed as well.';
             
-            $relevantReports = $app->reportRepository->getRelevantReports($reportId);
+            $relevantReports = $this->app->reportRepository->getRelevantReports($reportId);
             $idRelevantReports = [];
             foreach($relevantReports as $rr) {
                 $idRelevantReports[] = $rr->getId();
@@ -468,22 +458,22 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             /** END OF RELEVANT REPORTS */
             
             try {
-                $app->reportRepository->beginTransaction();
+                $this->app->reportRepository->beginTransaction();
 
-                $app->reportRepository->updateReport($reportId, ['statusComment' => $text, 'status' => ReportStatus::RESOLVED]);
+                $this->app->reportRepository->updateReport($reportId, ['statusComment' => $text, 'status' => ReportStatus::RESOLVED]);
                 
                 if(!empty($idReleveantReports)) {
-                    $app->reportRepository->updateRelevantReports($reportId, $report->getEntityType(), $report->getEntityId(), ['statusComment' => $relevantText, 'status' => ReportStatus::RESOLVED]);
+                    $this->app->reportRepository->updateRelevantReports($reportId, $report->getEntityType(), $report->getEntityId(), ['statusComment' => $relevantText, 'status' => ReportStatus::RESOLVED]);
                 }
                 
-                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->reportRepository->commit($this->getUserId(), __METHOD__);
                 $this->flashMessage('Closed report #' . $reportId . '.');
 
                 if(!empty($idRelevantReports)) {
                     $this->flashMessage('Closed relevant reports: #' . implode(', #', $idRelevantReports));
                 }
             } catch(AException $e) {
-                $app->reportRepository->rollback();
+                $this->app->reportRepository->rollback();
 
                 if(empty($idRelevantReports)) {
                     $this->flashMessage('Could not close report. Reason: ' . $e->getMessage(), 'error');

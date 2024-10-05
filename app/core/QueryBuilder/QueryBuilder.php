@@ -3,7 +3,6 @@
 namespace QueryBuilder;
 
 use App\Exceptions\AException;
-use App\Exceptions\DatabaseConnectionException;
 use App\Exceptions\DatabaseExecutionException;
 use Exception;
 
@@ -17,6 +16,8 @@ class QueryBuilder
 {
     private const STATE_CLEAN = 1; // QB has not been used yet
     private const STATE_DIRTY = 2; // QB has been already used
+
+    private const USE_BACKTICKS = false;
 
     private IDbQueriable $conn;
     private ILoggerCallable $logger;
@@ -237,8 +238,8 @@ class QueryBuilder
      * @param string $joinOn On section of JOIN
      * @return self
      */
-    public function join(string $tableName, ?string $alias = null, string $joinOn) {
-        $this->queryData['join'] = $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
+    public function join(string $tableName, string $joinOn, ?string $alias = null) {
+        $this->queryData['join'] = 'JOIN ' . $tableName . ($alias !== null ? ' ' . $alias : '') . ' ON ' . $joinOn;
 
         return $this;
     }
@@ -268,7 +269,7 @@ class QueryBuilder
         $this->queryData['table'] = $tableName;
         
         if($tableNameAlias !== null) {
-            $this->queryData['table'] .= ' ' . $tableNameAlias;
+            $this->queryData['tableAlias'] = $tableNameAlias;
         }
 
         return $this;
@@ -437,9 +438,9 @@ class QueryBuilder
      */
     public function orderBy(string $key, string $order = 'ASC') {
         if(array_key_exists('order', $this->queryData)) {
-            $this->queryData['order'] .= ', `' . $key . '` ' . $order;
+            $this->queryData['order'] .= ', ' . (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ' ' . $order;
         } else {
-            $this->queryData['order'] = ' ORDER BY `' . $key . '` ' . $order;
+            $this->queryData['order'] = ' ORDER BY ' . (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ' ' . $order;
         }
 
         return $this;
@@ -610,6 +611,10 @@ class QueryBuilder
      * @return mixed Associative array
      */
     public function fetchAssoc() {
+        if($this->currentState != self::STATE_CLEAN && $this->queryResult === null) {
+            throw new QueryBuilderException('No query has been created.');
+        }
+
         return $this->queryResult->fetch_assoc();
     }
 
@@ -732,9 +737,9 @@ class QueryBuilder
         $i = 0;
         foreach($this->queryData['keys'] as $key) {
             if(($i + 1) == count($this->queryData['keys'])) {
-                $sql .= '`' . $key . '`) VALUES (';
+                $sql .= (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ') VALUES (';
             } else {
-                $sql .= '`' . $key . '`, ';
+                $sql .= (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '') . ', ';
             }
 
             $i++;
@@ -803,7 +808,7 @@ class QueryBuilder
 
         $keyArray = [];
         foreach($this->queryData['keys'] as $key) {
-            $keyArray[] = '`' . $key . '`';
+            $keyArray[] = (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '');
         }
 
         $sql .= implode(', ', $keyArray) . ') VALUES (';
@@ -836,16 +841,20 @@ class QueryBuilder
             if($key == '*' || str_starts_with($key, 'COUNT')) {
                 $keyArray[] = $key;
             } else {
-                $keyArray[] = '`' . $key . '`';
+                $keyArray[] = (self::USE_BACKTICKS ? '`' : '') . $key . (self::USE_BACKTICKS ? '`' : '');
             }
         }
 
         $sql .= implode(', ', $keyArray);
 
-        $sql .= ' FROM `' . $this->queryData['table'] . '`';
+        $sql .= ' FROM ' . (self::USE_BACKTICKS ? '`' : '') . $this->queryData['table'] . (self::USE_BACKTICKS ? '`' : '');
+
+        if(isset($this->queryData['tableAlias'])) {
+            $sql .= ' ' . $this->queryData['tableAlias'];
+        }
 
         if(isset($this->queryData['join'])) {
-            $sql .= $this->queryData['join'];
+            $sql .= ' ' . $this->queryData['join'];
         }
 
         if(isset($this->queryData['where'])) {

@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
+use App\Entities\TopicBannedWordEntity;
 use App\Entities\TopicInviteEntity;
 use App\Entities\TopicMemberEntity;
 use App\Entities\TopicPollEntity;
@@ -12,6 +13,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
+use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
@@ -24,19 +26,19 @@ class TopicManagementPresenter extends AUserPresenter {
 
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
-
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+    }
+    
+    public function startup() {
+        parent::startup();
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleManageRoles() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         try {
-            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         } catch(AException $e) {
             $this->flashMessage($e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
@@ -73,27 +75,24 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionUserRolesGrid() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_TOPIC_ROLES, $gridPage, [$topicId]);
 
-        $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
-        $allMembersCount = count($app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
+        $members = $this->app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
+        $allMembersCount = count($this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
         $lastPage = ceil($allMembersCount / $gridSize);
 
         $gb = new GridBuilder();
 
         $gb->addDataSource($members);
         $gb->addColumns(['userId' => 'User', 'role' => 'Role']);
-        $gb->addOnColumnRender('userId', function(Cell $cell, TopicMemberEntity $tme) use ($app) {
-            $user = $app->userRepository->getUserById($tme->getUserId());
 
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserAdmin:Users', 'action' => 'profile', 'userId' => $tme->getUserId()], 'grid-link');
-        });
+        $gr = $this->getGridReducer();
+        $gr->applyReducer($gb);
+
         $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
             $text = TopicMemberRole::toString($tme->getRole());
 
@@ -102,10 +101,10 @@ class TopicManagementPresenter extends AUserPresenter {
 
             return $cell;
         });
-        $gb->addAction(function(TopicMemberEntity $tme) use ($app) {
+        $gb->addAction(function(TopicMemberEntity $tme) {
             $link = LinkBuilder::createSimpleLink('Change role', ['page' => 'UserModule:TopicManagement', 'action' => 'changeRoleForm', 'topicId' => $tme->getTopicId(), 'userId' => $tme->getUserId()], 'grid-link');
 
-            if($app->actionAuthorizator->canChangeUserTopicRole($tme->getTopicId(), $app->currentUser->getId(), $tme->getUserId())) {
+            if($this->app->actionAuthorizator->canChangeUserTopicRole($tme->getTopicId(), $this->getUserId(), $tme->getUserId())) {
                 return $link;
             } else {
                 return '-';
@@ -113,16 +112,24 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $allMembersCount, 'getUserRolesGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        $gb->addOnExportRender('role', function(TopicMemberEntity $tme) {
+            $text = TopicMemberRole::toString($tme->getRole());
+
+            return $text;
+        });
+
+        $gb->addGridExport(function() use ($topicId) {
+            return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        }, GridHelper::GRID_USER_TOPIC_ROLES, $this->logger);
+
+        return ['grid' => $gb->build()];
     }
 
     public function handleChangeRoleForm() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
         $userId = $this->httpGet('userId');
         
-        if(!$app->actionAuthorizator->canChangeUserTopicRole($topicId, $app->currentUser->getId(), $userId)) {
+        if(!$this->app->actionAuthorizator->canChangeUserTopicRole($topicId, $this->getUserId(), $userId)) {
             $this->flashMessage('You are not authorized to change role of the selected user in this topic.', 'error');
             $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
         }
@@ -130,37 +137,37 @@ class TopicManagementPresenter extends AUserPresenter {
         if($this->httpGet('isSubmit') == '1') {
             $role = $this->httpPost('role');
 
-            $oldRole = $app->topicMembershipManager->getFollowRole($topicId, $userId);
+            $oldRole = $this->app->topicMembershipManager->getFollowRole($topicId, $userId);
             $oldRole = '<span style="color: ' . TopicMemberRole::getColorByKey($oldRole) . '">' . TopicMemberRole::toString($oldRole) . '</span>';
 
             $newRole = '<span style="color: ' . TopicMemberRole::getColorByKey($role) . '">' . TopicMemberRole::toString($role) . '</span>';
 
             try {
-                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
             } catch(AException $e) {
                 $this->flashMessage('Could not change role of the selected user. Reason: ' . $e->getMessage(), 'error');
                 $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
             }
 
             try {
-                $app->topicMembershipRepository->beginTransaction();
+                $this->app->topicMembershipRepository->beginTransaction();
 
-                $app->topicMembershipManager->changeRole($topicId, $userId, $app->currentUser->getId(), $role);
+                $this->app->topicMembershipManager->changeRole($topicId, $userId, $this->getUserId(), $role);
 
-                $app->notificationManager->createNewTopicRoleChangedNotification($userId, LinkBuilder::createSimpleLinkObject($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'), $oldRole, $newRole);
+                $this->app->notificationManager->createNewTopicRoleChangedNotification($userId, LinkBuilder::createSimpleLinkObject($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'), $oldRole, $newRole);
 
-                $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicMembershipRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Role of the selected user changed.', 'success');
             } catch(AException $e) {
-                $app->topicMembershipRepository->rollback();
+                $this->app->topicMembershipRepository->rollback();
                 $this->flashMessage('Could not change role of the selected user. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['page' => 'UserModule:TopicManagement', 'action' => 'manageRoles', 'topicId' => $topicId]);
         } else {
             try {
-                $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
             } catch(AException $e) {
                 $this->flashMessage($e->getMessage(), 'error');
                 $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
@@ -168,7 +175,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
             $this->saveToPresenterCache('topic', $topic);
 
-            $memberRole = $app->topicMembershipManager->getFollowRole($topicId, $userId);
+            $memberRole = $this->app->topicMembershipManager->getFollowRole($topicId, $userId);
 
             $roleArray = TopicMemberRole::getAll();
 
@@ -244,30 +251,28 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionGetPollGrid() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
 
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POLLS, $gridPage, [$topicId]);
 
-        if($app->actionAuthorizator->canSeeAllTopicPolls($app->currentUser->getId(), $topicId)) {
-            $polls = $app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
-            $pollCount = count($app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
+        if($this->app->actionAuthorizator->canSeeAllTopicPolls($this->getUserId(), $topicId)) {
+            $polls = $this->app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
+            $pollCount = count($this->app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
             $lastPage = ceil($pollCount / $gridSize);
         } else {
-            $polls = $app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $app->currentUser->getId(), $gridSize, ($gridSize * $page));
-            $pollCount = count($app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $app->currentUser->getId(), 0, 0));
+            $polls = $this->app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $this->getUserId(), $gridSize, ($gridSize * $page));
+            $pollCount = count($this->app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $this->getUserId(), 0, 0));
             $lastPage = ceil($pollCount / $gridSize);
         }
 
         $gb = new GridBuilder();
         $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
         $gb->addDataSource($polls);
-        $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) use ($app) {
-            $user = $app->userRepository->getUserById($tpe->getAuthorId());
+        $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) {
+            $user = $this->app->userRepository->getUserById($tpe->getAuthorId());
 
             return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getID()], 'grid-link');
         });
@@ -292,20 +297,20 @@ class TopicManagementPresenter extends AUserPresenter {
 
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateValid());
         });
-        $gb->addOnColumnRender('votes', function(Cell $cell, TopicPollEntity $tpe) use ($app) {
-            $votes = $app->topicPollRepository->getPollResponses($tpe->getId());
+        $gb->addOnColumnRender('votes', function(Cell $cell, TopicPollEntity $tpe) {
+            $votes = $this->app->topicPollRepository->getPollResponses($tpe->getId());
 
             return count($votes);
         });
-        $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
-            if($app->actionAuthorizator->canSeePollAnalytics($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
+        $gb->addAction(function(TopicPollEntity $tpe) {
+            if($this->app->actionAuthorizator->canSeePollAnalytics($this->getUserId(), $tpe->getTopicId(), $tpe)) {
                 return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'grid-link');
             } else {
                 return '-';
             }
         });
-        $gb->addAction(function(TopicPollEntity $tpe) use ($app) {
-            if($app->actionAuthorizator->canDeactivePoll($app->currentUser->getId(), $tpe->getTopicId(), $tpe)) {
+        $gb->addAction(function(TopicPollEntity $tpe) {
+            if($this->app->actionAuthorizator->canDeactivePoll($this->getUserId(), $tpe->getTopicId(), $tpe)) {
                 if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
                     return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'grid-link');
                 } else {
@@ -317,25 +322,23 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $pollCount, 'getPollGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleDeactivatePoll() {
-        global $app;
-
         $pollId = $this->httpGet('pollId');
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->topicPollRepository->beginTransaction();
+            $this->app->topicPollRepository->beginTransaction();
 
-            $app->topicPollRepository->closePoll($pollId);
+            $this->app->topicPollRepository->closePoll($pollId);
 
-            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicPollRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Poll deactivated.', 'success');
         } catch(AException $e) {
-            $app->topicPollRepository->rollback();
+            $this->app->topicPollRepository->rollback();
 
             $this->flashMessage('Poll could not be deactivated. Reason: ' . $e->getMessage(), 'error');
         }
@@ -344,8 +347,6 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function handleReactivatePoll() {
-        global $app;
-
         $pollId = $this->httpGet('pollId');
         $topicId = $this->httpGet('topicId');
 
@@ -354,15 +355,15 @@ class TopicManagementPresenter extends AUserPresenter {
         $tomorrow = $tomorrow->getResult();
 
         try {
-            $app->topicPollRepository->beginTransaction();
+            $this->app->topicPollRepository->beginTransaction();
 
-            $app->topicPollRepository->openPoll($pollId, $tomorrow);
+            $this->app->topicPollRepository->openPoll($pollId, $tomorrow);
 
-            $app->topicPollRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicPollRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Poll reactivated.', 'success');
         } catch(AException $e) {
-            $app->topicPollRepository->rollback();
+            $this->app->topicPollRepository->rollback();
 
             $this->flashMessage('Poll could not be reactivated. Reason: ' . $e->getMessage(), 'error');
         }
@@ -371,8 +372,6 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function handleListInvites() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         $arb = new AjaxRequestBuilder();
@@ -384,7 +383,7 @@ class TopicManagementPresenter extends AUserPresenter {
             ->updateHTMLElement('grid-content', 'grid');
 
         $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(-1, ' . $topicId . ')');
+        $this->addScript('getInvitesGrid(-1, \'' . $topicId . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link') . '&nbsp;',
@@ -401,17 +400,15 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionGetInvitesGrid() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
         
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES_ALL, $gridPage, [$topicId]);
 
-        $invites = $app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
-        $inviteCount = count($app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
+        $invites = $this->app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
+        $inviteCount = count($this->app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
 
         $lastPage = ceil($inviteCount / $gridSize);
 
@@ -422,7 +419,7 @@ class TopicManagementPresenter extends AUserPresenter {
             }
         }
 
-        $users = $app->userRepository->getUsersByIdBulk($userIds, true);
+        $users = $this->app->userRepository->getUsersByIdBulk($userIds, true);
 
         $gb = new GridBuilder();
         $gb->addDataSource($invites);
@@ -442,27 +439,25 @@ class TopicManagementPresenter extends AUserPresenter {
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $inviteCount, 'getInvitesGrid', [$topicId]);
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleInviteForm() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         if($this->httpGet('isFormSubmit') == '1') {
             $userId = $this->httpPost('userSelect');
 
             try {
-                $app->topicMembershipRepository->beginTransaction();
+                $this->app->topicMembershipRepository->beginTransaction();
 
-                $app->topicMembershipManager->inviteUser($topicId, $userId, $app->currentUser->getId());
+                $this->app->topicMembershipManager->inviteUser($topicId, $userId, $this->getUserId());
 
-                $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicMembershipRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('User invited.', 'success');
             } catch(AException $e) {
-                $app->topicMembershipRepository->rollback();
+                $this->app->topicMembershipRepository->rollback();
 
                 $this->flashMessage('Could not invite user. Reason: ' . $e->getMessage(), 'error');
             }
@@ -495,16 +490,14 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionSearchUser() {
-        global $app;
-
         $username = $this->httpGet('query');
         $topicId = $this->httpGet('topicId');
 
-        $users = $app->userRepository->searchUsersByUsername($username);
+        $users = $this->app->userRepository->searchUsersByUsername($username);
 
-        $invites = $app->topicMembershipManager->getInvitesForTopic($topicId);
+        $invites = $this->app->topicMembershipManager->getInvitesForTopic($topicId);
 
-        $checkInvite = function(int $userId) use ($invites) {
+        $checkInvite = function(string $userId) use ($invites) {
             $result = false;
             foreach($invites as $invite) {
                 if($invite->getUserId() == $userId) {
@@ -515,9 +508,9 @@ class TopicManagementPresenter extends AUserPresenter {
             return $result;
         };
 
-        $members = $app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        $members = $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
 
-        $checkMembership = function(int $userId) use ($members) {
+        $checkMembership = function(string $userId) use ($members) {
             $result = false;
             foreach($members as $member) {
                 if($member->getUserId() == $userId) {
@@ -540,25 +533,23 @@ class TopicManagementPresenter extends AUserPresenter {
             $usersOptions[] = '<option value="' . $user->getId() . '">' . $user->getUsername() . '</option>';
         }
 
-        $this->ajaxSendResponse(['users' => $usersOptions, 'empty' => empty($usersOptions)]);
+        return ['users' => $usersOptions, 'empty' => empty($usersOptions)];
     }
 
     public function handleRemoveInvite() {
-        global $app;
-
         $userId = $this->httpGet('userId');
         $topicId = $this->httpGet('topicId');
 
         try {
-            $app->topicMembershipRepository->beginTransaction();
+            $this->app->topicMembershipRepository->beginTransaction();
 
-            $app->topicMembershipManager->removeInvite($topicId, $userId);
+            $this->app->topicMembershipManager->removeInvite($topicId, $userId);
 
-            $app->topicMembershipRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicMembershipRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Invitation removed.', 'success');
         } catch(AException $e) {
-            $app->topicMembershipRepository->rollback();
+            $this->app->topicMembershipRepository->rollback();
 
             $this->flashMessage('Could not remove invite. Reason: ' . $e->getMessage(), 'error');
         }
@@ -567,12 +558,10 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function handleManagePrivacy() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         try {
-            $topic = $app->topicManager->getTopicById($topicId, $app->currentUser->getId());
+            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         } catch(AException $e) {
             $this->flashMessage('Could not retrieve information about this topic. Reason: ' . $e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
@@ -609,8 +598,6 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function handleManagePrivacyForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
         if($fr === null) {
@@ -631,15 +618,15 @@ class TopicManagementPresenter extends AUserPresenter {
         }
 
         try {
-            $app->topicRepository->beginTransaction();
+            $this->app->topicRepository->beginTransaction();
 
-            $app->topicManager->updateTopicPrivacy($app->currentUser->getId(), $topicId, $private, $visible);
+            $this->app->topicManager->updateTopicPrivacy($this->getUserId(), $topicId, $private, $visible);
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('Settings updated successfully.', 'success');
         } catch(Exception $e) {
-            $app->topicRepository->rollback();
+            $this->app->topicRepository->rollback();
             
             $this->flashMessage('Could not update settings. Reason: ' . $e->getMessage(), 'error');
         }
@@ -675,19 +662,17 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionGetFollowersGrid() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
 
-        $gridSize = $app->getGridSize();
+        $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_FOLLOWERS, $gridPage, [$topicId]);
 
         $offset = $page * $gridSize;
 
-        $members = $app->topicMembershipManager->getTopicMembers($topicId, $gridSize, $offset, false);
-        $totalCount = $app->topicMembershipManager->getTopicMemberCount($topicId);
+        $members = $this->app->topicMembershipManager->getTopicMembers($topicId, $gridSize, $offset, false);
+        $totalCount = $this->app->topicMembershipManager->getTopicMemberCount($topicId);
 
         $lastPage = ceil($totalCount / $gridSize);
 
@@ -722,14 +707,180 @@ class TopicManagementPresenter extends AUserPresenter {
             return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
         });
 
-        $app->getGridReducer()->applyReducer($grid);
+        $this->getGridReducer()->applyReducer($grid);
         
-        $grid->addGridExport(function() use ($app, $topicId) {
-            return $app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
-        }, GridHelper::GRID_TOPIC_FOLLOWERS, $app->logger);
+        $grid->addGridExport(function() use ($topicId) {
+            return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
+        }, GridHelper::GRID_TOPIC_FOLLOWERS, $this->logger);
         
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
+    }
+
+    public function handleBannedWordsList() {
+        $topicId = $this->httpGet('topicId', true);
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getBannedWordsGrid')
+            ->setFunctionName('getBannedWordsGrid')
+            ->setFunctionArguments(['_page', '_topicId'])
+            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
+            ->updateHTMLElement('grid-content', 'grid')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getBannedWordsGrid(0, \'' . $topicId . '\')');
+
+        $links = [
+            LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'),
+            LinkBuilder::createSimpleLink('New word', $this->createURL('bannedWordForm', ['topicId' => $topicId]), 'post-data-link')
+        ];
+
+        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+    }
+
+    public function renderBannedWordsList() {
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function actionGetBannedWordsGrid() {
+        
+
+        $topicId = $this->httpGet('topicId');
+        $gridPage = $this->httpGet('gridPage');
+
+        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_BANNED_WORDS, $gridPage, ['topicId' => $topicId]);
+
+        $gridSize = $this->app->getGridSize();
+
+        $bannedWords = $this->app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, $gridSize, ($page * $gridSize));
+        $bannedWordsTotalCount = count($this->app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, 0, 0));
+
+        $lastPage = ceil($bannedWordsTotalCount / $gridSize);
+
+        $grid = new GridBuilder();
+        $grid->addColumns(['authorId' => 'Author', 'text' => 'Text', 'dateCreated' => 'Date created']);
+        $grid->addDataSource($bannedWords);
+
+        $grid->addOnColumnRender('authorId', function(Cell $cell, TopicBannedWordEntity $tbwe) {
+            $user = $this->app->userRepository->getUserById($tbwe->getAuthorId());
+
+            if($user !== null) {
+                return UserEntity::createUserProfileLink($user);
+            } else {
+                return '-';
+            }
+        });
+
+        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
+            return LinkBuilder::createSimpleLink('Edit', $this->createURL('bannedWordForm', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
+        });
+        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteBannedWord', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
+        });
+
+        $grid->addGridPaging($page, $lastPage, $gridSize, $bannedWordsTotalCount, 'getBannedWordsGrid', [$topicId]);
+
+        $gr = $this->getGridReducer();
+        $gr->applyReducer($grid);
+
+        return ['grid' => $grid->build()];
+    }
+
+    public function handleBannedWordForm(?FormResponse $fr = null) {
+        $topicId = $this->httpGet('topicId', true);
+
+        if($this->httpGet('isFormSubmit') == '1') {
+            $word = $fr->word;
+
+            try {
+                $this->app->topicContentRegulationRepository->beginTransaction();
+
+                if($this->httpGet('wordId') !== null) {
+                    // update
+                    $wordId = $this->httpGet('wordId');
+
+                    $this->app->topicContentRegulationRepository->updateBannedWord($wordId, ['word' => $word]);
+                } else {
+                    // create
+                    $wordId = $this->app->topicContentRegulationRepository->createEntityId(EntityManager::TOPIC_BANNED_WORDS);
+
+                    $this->app->topicContentRegulationRepository->createNewBannedWord($wordId, $topicId, $this->getUserId(), $word);
+                }
+
+                $this->app->topicContentRegulationRepository->commit($this->getUserId(), __METHOD__);
+
+                $this->flashMessage('Banned new word.', 'success');
+            } catch(AException $e) {
+                $this->app->topicContentRegulationRepository->rollback();
+
+                $this->flashMessage('Could not create new banned word. Reason: ' . $e->getMessage(), 'error');
+            }
+
+            $this->redirect($this->createURL('bannedWordsList', ['topicId' => $topicId]));
+        } else {
+            $params = [
+                'topicId' => $topicId
+            ];
+
+            $submitText = 'Create';
+            $word = null;
+
+            if($this->httpGet('wordId') !== null) {
+                $wordId = $this->httpGet('wordId');
+                $bannedWord = $this->app->topicContentRegulationRepository->getBannedWordById($wordId);
+
+                $word = $bannedWord->getText();
+
+                $params['wordId'] = $wordId;
+
+                $submitText = 'Save';
+            }
+
+            $form = new FormBuilder();
+
+            $form->setMethod()
+                ->setAction($this->createURL('bannedWordForm', $params))
+                ->addTextInput('word', 'Word:', $word, true)
+                ->addSubmit($submitText)
+            ;
+
+            $this->saveToPresenterCache('form', $form);
+
+            $links = [
+                LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('bannedWordsList', ['topicId' => $topicId]), 'post-data-link')
+            ];
+
+            $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
+        }
+    }
+
+    public function renderBannedWordForm() {
+        $this->template->form = $this->loadFromPresenterCache('form');
+        $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    public function handleDeleteBannedWord() {
+        $topicId = $this->httpGet('topicId', true);
+        $wordId = $this->httpGet('wordId', true);
+
+        try {
+            $this->app->topicContentRegulationRepository->beginTransaction();
+
+            $this->app->topicContentRegulationRepository->deleteBannedWord($wordId);
+
+            $this->app->topicContentRegulationRepository->commit($this->getUserId(), __METHOD__);
+
+            $this->flashMessage('Banned word deleted.', 'success');
+        } catch(AException $e) {
+            $this->app->topicContentRegulationRepository->rollback();
+
+            $this->flashMessage('Could not delete banned word. Reason: ' . $e->getMessage(), 'error');
+        }
+
+        $this->redirect($this->createURL('bannedWordsList', ['topicId' => $topicId]));
     }
 }
 

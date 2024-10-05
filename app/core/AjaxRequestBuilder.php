@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Helpers\LinkHelper;
 use App\Modules\APresenter;
 
 /**
@@ -111,9 +112,7 @@ class AjaxRequestBuilder {
      * @return string URL string
      */
     private function composeURLFromArray(array $url) {
-        global $app;
-
-        return $app->composeURL($url);
+        return LinkHelper::createUrlFromArray($url);
     }
 
     /**
@@ -145,14 +144,22 @@ class AjaxRequestBuilder {
      * 
      * @param string $htmlElementId ID of the HTML element
      * @param string $jsonResultName JSON object parameter name
-     * @param bool $append True if the JSON result should be appended or false if it should overwrite the currrent content
+     * @param null|bool $append True if the JSON result should be appended or false if it should overwrite the currrent content or null if the JSON result should be prepended
      * @return self
      */
-    public function updateHTMLElement(string $htmlElementId, string $jsonResultName, bool $append = false) {
+    public function updateHTMLElement(string $htmlElementId, string $jsonResultName, null|bool $append = false) {
         if(!$append) {
             $this->elements[] = $htmlElementId;
         }
-        $this->addWhenDoneOperation('$("#' . $htmlElementId . '").' . ($append ? 'append' : 'html') . '(obj.' . $jsonResultName . ');');
+
+        $action = 'html';
+        if($append) {
+            $action = 'append';
+        } else if($append === null) {
+            $action = 'prepend';
+        }
+
+        $this->addWhenDoneOperation('$("#' . $htmlElementId . '").' . $action . '(obj.' . $jsonResultName . ');');
 
         return $this;
     }
@@ -277,7 +284,8 @@ class AjaxRequestBuilder {
             }
 
             $code[] = '} catch (error) {';
-            $code[] = 'alert("Could not load data");';
+            $code[] = 'alert("Could not load data. See console for more information.");';
+            $code[] = 'console.log(error);';
             $code[] = '}';
 
             $code[] = '});';

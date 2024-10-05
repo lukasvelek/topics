@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicInviteEntity implements ICreatableFromRow {
+class TopicInviteEntity extends AEntity {
     private string $topicId;
     private string $userId;
     private string $dateCreated;
@@ -35,7 +35,11 @@ class TopicInviteEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['topicId'], $row['userId'], $row['dateCreated'], $row['dateValid']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['topicId' => 'string', 'userId' => 'string', 'dateCreated' => 'string', 'dateValid' => 'string']);
+
+        return new self($row->topicId, $row->userId, $row->dateCreated, $row->dateValid);
     }
 }
 

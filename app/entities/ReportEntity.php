@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class ReportEntity implements ICreatableFromRow {
+class ReportEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $entityId;
@@ -69,7 +69,12 @@ class ReportEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['reportId'], $row['userId'], $row['entityId'], $row['entityType'], $row['category'], $row['description'], $row['status'], $row['statusComment'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['reportId' => 'string', 'userId' => 'string', 'entityId' => 'string', 'entityType' => 'int', 'category' => 'int', 'description' => 'string', 'status' => 'int',
+                                'statusComment' => '?string', 'dateCreated' => 'string']);
+
+        return new self($row->reportId, $row->userId, $row->entityId, $row->entityType, $row->category, $row->description, $row->status, $row->statusComment, $row->dateCreated);
     }
 }
 

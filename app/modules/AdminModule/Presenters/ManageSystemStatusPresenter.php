@@ -15,25 +15,21 @@ use App\UI\LinkBuilder;
 class ManageSystemStatusPresenter extends AAdminPresenter {
     public function __construct() {
         parent::__construct('ManageSystemStatusPresenter', 'Manage system status');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
-        global $app;
-
-        if(!$app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
     }
 
     public function actionCreateGrid() {
-        global $app;
-
         $gb = new GridBuilder();
 
-        $statuses = $app->systemStatusRepository->getAllStatuses();
+        $statuses = $this->app->systemStatusRepository->getAllStatuses();
 
         $gb->addDataSource($statuses);
         $gb->addColumns(['name' => 'Name', 'status' => 'Status', 'description' => 'Description']);
@@ -46,7 +42,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
         });
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleList() {
@@ -64,10 +60,8 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function handleForm(?FormResponse $fr = null) {
-        global $app;
-
         $systemId = $this->httpGet('systemId');
-        $system = $app->systemStatusRepository->getSystemStatusById($systemId);
+        $system = $this->app->systemStatusRepository->getSystemStatusById($systemId);
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $status = $fr->status;
@@ -78,18 +72,18 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
             }
 
             try {
-                $app->systemStatusRepository->beginTransaction();
+                $this->app->systemStatusRepository->beginTransaction();
                 
-                $app->systemStatusRepository->updateStatus($systemId, $status, $description);
+                $this->app->systemStatusRepository->updateStatus($systemId, $status, $description);
 
-                $app->logger->warning('User #' . $app->currentUser->getId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
-                $app->logger->warning('User #' . $app->currentUser->getId() . ' changed description for system #' . $systemId . ' from \'' . $system->getDescription() . '\' to \'' . $description . '\'.', __METHOD__);
+                $this->app->logger->warning('User #' . $this->getUserId() . ' changed status for system #' . $systemId . ' from \'' . SystemStatus::toString($system->getStatus()) . '\' to \'' . SystemStatus::toString($status) . '\'.', __METHOD__);
+                $this->app->logger->warning('User #' . $this->getUserId() . ' changed description for system #' . $systemId . ' from \'' . $system->getDescription() . '\' to \'' . $description . '\'.', __METHOD__);
 
-                $app->systemStatusRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->systemStatusRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('System status updated.', 'success');
             } catch(AException $e) {
-                $app->systemStatusRepository->rollback();
+                $this->app->systemStatusRepository->rollback();
 
                 $this->flashMessage('Could not update system status. Reason: ' . $e->getMessage(), 'error');
             }

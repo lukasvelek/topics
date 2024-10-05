@@ -16,8 +16,6 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function handleList() {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         $arb = new AjaxRequestBuilder();
@@ -30,7 +28,7 @@ class TopicRulesPresenter extends AUserPresenter {
             ->updateHTMLElement('grid-content', 'grid')
         ;
 
-        if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId) && ($this->httpGet('userList') === null)) {
+        if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId) && ($this->httpGet('userList') === null)) {
             $arb->setAction($this, 'getTopicRulesList');
         }
 
@@ -41,13 +39,13 @@ class TopicRulesPresenter extends AUserPresenter {
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
         ];
 
-        if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
+        if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId)) {
             $links[] = LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link');
 
             if($this->httpGet('userList') !== null) {
-                $links[] = LinkBuilder::createSimpleLink('Admin view', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
+                $links[] = LinkBuilder::createSimpleLink('Admin\'s perspective', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
             } else {
-                $links[] = LinkBuilder::createSimpleLink('User view', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
+                $links[] = LinkBuilder::createSimpleLink('User\'s perspective', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
             }
         }
 
@@ -59,11 +57,9 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function actionGetTopicRulesListForUser() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
-        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
+        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
 
         $code = ['<ol>'];
 
@@ -76,15 +72,13 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $code[] = '</ol>';
 
-        $this->ajaxSendResponse(['grid' => implode('', $code)]);
+        return ['grid' => implode('', $code)];
     }
 
     public function actionGetTopicRulesList() {
-        global $app;
-
         $topicId = $this->httpGet('topicId');
 
-        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
+        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
 
         $grid = new GridBuilder();
 
@@ -123,7 +117,7 @@ class TopicRulesPresenter extends AUserPresenter {
             return $tmp;
         });
     
-        if($app->actionAuthorizator->canManageTopicRules($app->currentUser->getId(), $topicId)) {
+        if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId)) {
             $grid->addAction(function(object $obj) use ($topicId) {
                 return LinkBuilder::createSimpleLink('Edit', $this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
             });
@@ -132,27 +126,25 @@ class TopicRulesPresenter extends AUserPresenter {
             });
         }
 
-        $this->ajaxSendResponse(['grid' => $grid->build()]);
+        return ['grid' => $grid->build()];
     }
 
     public function handleNewRuleForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
 
         if($this->httpGet('isFormSubmit') == '1') {
             $ruleText = $fr->ruleText;
 
             try {
-                $app->topicRulesRepository->beginTransaction();
+                $this->app->topicRulesRepository->beginTransaction();
 
-                $app->topicManager->addRuleTextToTopicRules($topicId, $ruleText, $app->currentUser->getId());
+                $this->app->topicManager->addRuleTextToTopicRules($topicId, $ruleText, $this->getUserId());
 
-                $app->topicRulesRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicRulesRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('New rule added.', 'success');
             } catch(AException $e) {
-                $app->topicRulesRepository->rollback();
+                $this->app->topicRulesRepository->rollback();
 
                 $this->flashMessage('Could not add new rule.', 'error');
             }
@@ -184,12 +176,10 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function handleEditRuleForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
         $index = $this->httpGet('index', true);
 
-        $rules = $app->topicManager->getTopicRulesForTopicId($topicId);
+        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
 
         if($index > (count($rules) - 1) || $rules < 0) {
             $this->flashMessage('Incorrect rule selected.', 'error');
@@ -202,15 +192,15 @@ class TopicRulesPresenter extends AUserPresenter {
             $ruleText = $fr->ruleText;
 
             try {
-                $app->topicRulesRepository->beginTransaction();
+                $this->app->topicRulesRepository->beginTransaction();
 
-                $app->topicManager->updateTopicRule($topicId, $app->currentUser->getId(), $index, $ruleText);
+                $this->app->topicManager->updateTopicRule($topicId, $this->getUserId(), $index, $ruleText);
 
-                $app->topicRulesRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicRulesRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('New rule added.', 'success');
             } catch(AException $e) {
-                $app->topicRulesRepository->rollback();
+                $this->app->topicRulesRepository->rollback();
 
                 $this->flashMessage('Could not add new rule.', 'error');
             }
@@ -242,22 +232,20 @@ class TopicRulesPresenter extends AUserPresenter {
     }
 
     public function handleDeleteRuleForm(?FormResponse $fr = null) {
-        global $app;
-
         $topicId = $this->httpGet('topicId', true);
         $index = $this->httpGet('index', true);
 
         if($this->httpGet('isFormSubmit') == '1') {
             try {
-                $app->topicRulesRepository->beginTransaction();
+                $this->app->topicRulesRepository->beginTransaction();
 
-                $app->topicManager->deleteTopicRule($topicId, $app->currentUser->getId(), $index);
+                $this->app->topicManager->deleteTopicRule($topicId, $this->getUserId(), $index);
 
-                $app->topicRulesRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->topicRulesRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Rule deleted.', 'success');
             } catch(AException $e) {
-                $app->topicRulesRepository->rollback();
+                $this->app->topicRulesRepository->rollback();
 
                 $this->flashMessage('Could not delete rule.', 'error');
             }

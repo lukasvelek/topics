@@ -101,20 +101,45 @@ function getContainer() {
  * 
  * @param array $files File array
  */
-function requireFiles(array $files) {
-    foreach($files as $realPath => $file) {
-        require_once($realPath);
+function requireFiles(array $files, bool $createContainer) {
+    $filesOrdered = [];
+    $skipped = [];
+    while(true) {
+        if(empty($skipped)) {
+            $files2 = $files;
+        } else {
+            $files2 = $skipped;
+            $skipped = [];
+        }
+
+        foreach($files2 as $realPath => $file) {
+            try {
+                require_once($realPath);
+                $filesOrdered[$realPath] = $file;
+            } catch(Error $e) {
+                $skipped[$realPath] = $file;
+            }
+        }
+
+        if(empty($skipped)) {
+            break;
+        }
+    }
+
+    if($createContainer) {
+        createContainer($filesOrdered);
     }
 }
 
 $files = getContainer();
 
+$createContainer = false;
 if(empty($files)) {
+    $createContainer = true;
     getFilesInFolderRecursively(__DIR__, $files, [], ['app_loader.php'], ['html', 'distrib', 'bak']);
     sortFilesByPriority($files);
-    createContainer($files);
 }
 
-requireFiles($files);
+requireFiles($files, $createContainer);
 
 ?>

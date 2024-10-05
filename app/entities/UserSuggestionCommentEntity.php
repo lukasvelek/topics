@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserSuggestionCommentEntity implements ICreatableFromRow {
+class UserSuggestionCommentEntity extends AEntity {
     private string $id;
     private string $suggestionId;
     private string $userId;
@@ -53,7 +53,11 @@ class UserSuggestionCommentEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['commentId'], $row['suggestionId'], $row['userId'], $row['commentText'], $row['adminOnly'], $row['dateCreated'], $row['statusChange']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['commentId' => 'string', 'suggestionId' => 'string', 'userId' => 'userId', 'text' => 'string', 'adminOnly' => 'bool', 'dateCreated' => 'string', 'statusChange' => 'bool']);
+
+        return new self($row->commentId, $row->suggestionId, $row->userId, $row->commentText, $row->adminOnly, $row->dateCreated, $row->statusChange);
     }
 }
 

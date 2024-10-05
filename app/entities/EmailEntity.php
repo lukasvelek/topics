@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class EmailEntity implements ICreatableFromRow {
+class EmailEntity extends AEntity {
     private string $id;
     private string $recipient;
     private string $title;
@@ -38,7 +38,14 @@ class EmailEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['mailId'], $row['recipient'], $row['title'], $row['content'], $row['dateCreated']);
+        if($row === null) {
+            return null;
+        }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['mailId' => 'string', 'recipient' => 'string', 'title' => 'string', 'content' => 'string', 'dateCreated' => 'string']);
+
+        return new self($row->mailId, $row->recipient, $row->title, $row->content, $row->dateCreated);
     }
 }
 

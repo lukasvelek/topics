@@ -3,7 +3,8 @@
 namespace App\Managers;
 
 use App\Constants\TopicMemberRole;
-use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
@@ -25,6 +26,8 @@ class TopicMembershipManager extends AManager {
     private NotificationManager $notificationManager;
     private MailManager $mailManager;
     private UserRepository $userRepository;
+    
+    private Cache $groupMembershipsCache;
 
     public function __construct(TopicRepository $topicRepository,
                                 TopicMembershipRepository $topicMembershipRepository,
@@ -42,6 +45,8 @@ class TopicMembershipManager extends AManager {
         $this->notificationManager = $notificationManager;
         $this->mailManager = $mailManager;
         $this->userRepository = $userRepository;
+
+        $this->groupMembershipsCache = $this->cacheFactory->getCache(CacheNames::GROUP_MEMBERSHIPS);
     }
 
     public function followTopic(string $topicId, string $userId,) {
@@ -138,13 +143,13 @@ class TopicMembershipManager extends AManager {
     private function loadMembershipDataFromCache(string $topicId, string $userId) {
         $key = $topicId . '_' . $userId;
 
-        return $this->cache->loadCache($key, function () use ($userId, $topicId) {
+        return $this->groupMembershipsCache->load($key, function() use ($userId, $topicId) {
             return $this->topicMembershipRepository->getMembershipForUserInTopic($userId, $topicId);
-        }, CacheManager::NS_GROUP_MEMBERSHIPS, __METHOD__);
+        });
     }
 
     private function invalidateMembershipCache() {
-        $this->cache->invalidateCache(CacheManager::NS_GROUP_MEMBERSHIPS);
+        $this->groupMembershipsCache->invalidate();
     }
 
     public function getUserMembershipsInTopics(string $userId) {
@@ -241,6 +246,10 @@ class TopicMembershipManager extends AManager {
 
     public function getTopicsWhereUserIsOwnerOrderByTopicDateCreated(string $userId, int $limit) {
         $topicIds = $this->topicMembershipRepository->getTopicIdsForOwner($userId);
+
+        if(empty($topicIds)) {
+            return [];
+        }
 
         $qb = $this->topicRepository->composeQueryForTopics();
         $qb ->where($qb->getColumnInValues('topicId', $topicIds))

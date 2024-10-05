@@ -11,12 +11,11 @@ class AnonymModule extends AModule {
     }
 
     public function renderModule() {
-        global $app;
-
-        $navbar = new Navbar($app->notificationManager);
+        $navbar = new Navbar($this->app->notificationManager);
         $navbar->hideSearchBar();
+        $navbar->setIsCurrentUserIsAdmin($this->app->currentUser?->isAdmin());
         
-        if($app->currentUser == null) {
+        if($this->app->currentUser === null) {
             $navbar->setCustomLinks(['topics' => ['page' => 'AnonymModule:Home'], 'login' => ['page' => 'AnonymModule:Login', 'action' => 'loginForm'], 'register' => ['page' => 'AnonymModule:Register', 'action' => 'form']]);
         }
 

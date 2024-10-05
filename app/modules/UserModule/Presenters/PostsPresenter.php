@@ -5,8 +5,7 @@ namespace App\Modules\UserModule;
 use App\Constants\PostTags;
 use App\Constants\ReportCategory;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
-use App\Core\Datetypes\DateTime;
+use App\Core\Caching\CacheNames;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
@@ -15,12 +14,11 @@ use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Managers\EntityManager;
-use App\UI\FormBuilder\Button;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\FormBuilder\SubmitButton;
 use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
+use DateTime;
 use Exception;
 
 class PostsPresenter extends AUserPresenter {
@@ -29,21 +27,30 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleProfile() {
-        global $app;
-
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($this->app->contentRegulationRepository, $this->app->topicContentRegulationRepository);
 
         $postId = $this->httpGet('postId');
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
-        if($post->isDeleted() && !$app->visibilityAuthorizator->canViewDeletedPost($app->currentUser->getId())) {
+        if($post->isDeleted() && !$this->app->visibilityAuthorizator->canViewDeletedPost($this->getUserId())) {
             $this->flashMessage('This post does not exist.', 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $post->getTopicId()]);
         }
 
         $this->saveToPresenterCache('post', $post);
         
-        $postTitle = $bwh->checkText($post->getTitle());
+        $postTitle = $bwh->checkText($post->getTitle(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $this->app->reportManager->reportUserForUsingBannedWord($word, $post->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('postTitle', $postTitle);
 
         $arb = new AjaxRequestBuilder();
@@ -86,22 +93,16 @@ class PostsPresenter extends AUserPresenter {
         $this->addScript($arb->build());
         
         // new comment form
-        $parentCommentId = $this->httpGet('parentCommentId');
         $fb = new FormBuilder();
 
-        $newCommentFormUrl = ['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId];
-
-        if($parentCommentId !== null) {
-            $newCommentFormUrl['parentCommentId'] = $parentCommentId;
-        }
-
-        $fb ->setAction($newCommentFormUrl)
+        $fb ->setAction([])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment', false, true)
+            ->addButton('Post comment', 'sendPostComment(\'' . $postId . '\')', 'formSubmit')
         ;
 
         $fb->updateElement('text', function(TextArea $ta) {
             $ta->setPlaceholder('Your comment...');
+            $ta->setId('postCommentText');
 
             return $ta;
         });
@@ -109,7 +110,7 @@ class PostsPresenter extends AUserPresenter {
         $this->saveToPresenterCache('form', $fb);
 
         try {
-            $topic = $app->topicManager->getTopicById($post->getTopicId(), $app->currentUser->getId());
+            $topic = $this->app->topicManager->getTopicById($post->getTopicId(), $this->getUserId());
         } catch (AException $e) {
             $this->flashMessage($e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
@@ -117,34 +118,57 @@ class PostsPresenter extends AUserPresenter {
 
         $topicTitle = $bwh->checkText($topic->getTitle());
 
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                $topicOwnerId = $this->app->topicManager->getTopicOwner($topic->getId());
+
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $this->app->reportManager->reportUserForUsingBannedWord($word, $topicOwnerId);
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $topicLink = '<a class="post-title-link" href="?page=UserModule:Topics&action=profile&topicId=' . $topic->getId() . '">' . $topicTitle . '</a>';
         $this->saveToPresenterCache('topic', $topicLink);
 
-        $postDescription = $bwh->checkText($post->getText());
+        $postDescription = $bwh->checkText($post->getText(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $this->app->reportManager->reportUserForUsingBannedWord($word, $post->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
+
         $this->saveToPresenterCache('postDescription', $postDescription);
 
         // post data
         $likes = $post->getLikes();
         $likeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=like&postId=' . $postId . '">Like</a>';
         $unlikeLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=unlike&postId=' . $postId . '">Unlike</a>';
-        $liked = $app->postRepository->checkLike($app->currentUser->getId(), $postId);
+        $liked = $this->app->postRepository->checkLike($this->getUserId(), $postId);
         $finalLikeLink = '';
 
         if(!$post->isDeleted()) {
             $finalLikeLink = ' ' . ($liked ? $unlikeLink : $likeLink);
         }
 
-        $author = $app->userRepository->getUserById($post->getAuthorId());
-        $authorLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
+        $author = $this->app->userRepository->getUserById($post->getAuthorId());
+        $authorLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
         $reportLink = '';
-        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $topic->getId())) {
+        if(!$post->isDeleted() && $this->app->actionAuthorizator->canReportPost($this->getUserId(), $topic->getId())) {
             $reportLink = '<a class="post-data-link" href="?page=UserModule:Posts&action=reportForm&postId=' . $postId . '">Report post</a>';
         }
 
         $deleteLink = '';
 
-        if($app->actionAuthorizator->canDeletePost($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
+        if($this->app->actionAuthorizator->canDeletePost($this->getUserId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = '<p class="post-data"><a class="post-data-link" href="?page=UserModule:Posts&action=deletePost&postId=' . $postId . '">Delete post</a></p>';
         } else if($post->isDeleted()) {
             $deleteLink = '<p class="post-data">Post deleted</p>';
@@ -161,6 +185,7 @@ class PostsPresenter extends AUserPresenter {
         }
 
         $postedOn = DateTimeFormatHelper::formatDateToUserFriendly($postedOn);
+        $postedOnAtomic = DateTimeFormatHelper::formatDateToUserFriendly($postedOn, DateTimeFormatHelper::ATOM_FORMAT);
 
         $postData = '
             <div>
@@ -170,7 +195,7 @@ class PostsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md col-lg">
-                        <p class="post-data">' . $postedOnText . ': ' . $postedOn . '</p>
+                        <p class="post-data">' . $postedOnText . ': <span title="' . $postedOnAtomic . '">' . $postedOn . '</span></p>
                     </div>
 
                     <div class="col-md col-lg">
@@ -203,10 +228,10 @@ class PostsPresenter extends AUserPresenter {
 
         $imagesCode = [];
 
-        $postImages = $app->fileUploadRepository->getFilesForPost($postId);
+        $postImages = $this->app->fileUploadRepository->getFilesForPost($postId);
         if(!empty($postImages)) {
             foreach($postImages as $postImage) {
-                $imagePath = $app->fileUploadManager->createPostImageSourceLink($postImage);
+                $imagePath = $this->app->fileUploadManager->createPostImageSourceLink($postImage);
                 $imageLink = '<a href="#" onclick="openImage(\'' . $imagePath . '\')"><img src="' . $imagePath . '" class="limited"></a>';
 
                 $imagesCode[] = $imageLink;
@@ -223,7 +248,7 @@ class PostsPresenter extends AUserPresenter {
 
             <br>';
 
-        if(!$app->actionAuthorizator->canUploadFileForPost($app->currentUser->getId(), $post)) {
+        if(!$this->app->actionAuthorizator->canUploadFileForPost($this->getUserId(), $post)) {
             $newImageUploadSection = '';
         }
 
@@ -286,6 +311,56 @@ class PostsPresenter extends AUserPresenter {
         $this->template->post_images = $postImages;
     }
 
+    public function actionAsyncPostComment() {
+        $postId = $this->httpGet('postId', true);
+        $text = $this->httpGet('text', true);
+        $parentCommentId = $this->httpGet('parentCommentId');
+        $authorId = $this->getUserId();
+
+        if($text == '') {
+            return ['error' => '1', 'errorMsg' => 'No comment text provided.'];
+        }
+
+        $post = $this->app->postRepository->getPostById($postId);
+        $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
+
+        $authorLink = UserEntity::createUserProfileLink($this->getUser(), true);
+
+        $success = false;
+
+        try {
+            $this->app->postCommentRepository->beginTransaction();
+
+            $commentId = $this->app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
+
+            $this->app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
+
+            if($post->getAuthorId() != $authorId) {
+                $this->app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+            }
+
+            $this->app->postCommentRepository->commit($authorId, __METHOD__);
+
+            $commentEntity = $this->app->postCommentRepository->getCommentById($commentId);
+
+            $success = true;
+        } catch (AException) {
+            $this->app->postCommentRepository->rollback();
+        }
+
+        if($success) {
+            $bwh = new BannedWordsHelper($this->app->contentRegulationRepository, $this->app->topicContentRegulationRepository);
+            $comment = $this->createPostComment($postId, $commentEntity, [], $bwh, [], ($parentCommentId === null));
+            $values = ['comment' => $comment];
+            if($parentCommentId !== null) {
+                $values['parentComment'] = true;
+            }
+            return $values;
+        } else {
+            return ['error' => '1', 'errorMsg' => 'Could not post comment.'];
+        }
+    }
+
     public function handleUploadImageForm() {
         $postId = $this->httpGet('postId');
 
@@ -314,25 +389,22 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleUploadImage() {
-        global $app;
-
         $postId = $this->httpGet('postId');
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
-        
         try {
-            $app->topicRepository->beginTransaction();
+            $this->app->topicRepository->beginTransaction();
             
             if(isset($_FILES['image']['name'])) {
-                $app->fileUploadManager->uploadPostImage($app->currentUser->getId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
+                $this->app->fileUploadManager->uploadPostImage($this->getUserId(), $postId, $post->getTopicId(), $_FILES['image']['name'], $_FILES['image']['tmp_name'], $_FILES['image']);
             } else {
                 throw new FileUploadException('No file selected.');
             }
 
-            $app->topicRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->topicRepository->commit($this->getUserId(), __METHOD__);
             $this->flashMessage('Image uploaded.', 'success');
         } catch(Exception $e) {
-            $app->topicRepository->rollback();
+            $this->app->topicRepository->rollback();
             $this->flashMessage('Image could not be uploaded. Reason: ' . $e->getMessage(), 'error');
         }
 
@@ -345,96 +417,93 @@ class PostsPresenter extends AUserPresenter {
 
         $fb = new FormBuilder();
 
-        $fb ->setAction(['page' => 'UserModule:Posts', 'action' => 'newComment', 'postId' => $postId, 'parentCommentId' => $parentCommentId, 'isFormSubmit' => '1'])
+        $fb ->setAction([])
             ->addTextArea('text', 'Comment:', null, true)
-            ->addSubmit('Post comment')
+            ->addButton('Post comment', 'sendPostComment(\'' . $postId . '\', \'' . $parentCommentId . '\')', 'formSubmit')
         ;
 
-        $fb->updateElement('text', function(TextArea $ta) {
+        $fb->updateElement('text', function(TextArea $ta) use ($parentCommentId) {
             $ta->setPlaceholder('Your comment...');
+            $ta->setId('postCommentText-' . $parentCommentId);
 
             return $ta;
         });
 
-        $this->ajaxSendResponse(['form' => '<div id="post-comment-form">' . $fb->render() . '</div>']);
+        return ['form' => '<div id="post-comment-form">' . $fb->render() . '</div>'];
     }
 
     public function actionLikePostComment() {
-        global $app;
-
         $commentId = $this->httpGet('commentId');
         $toLike = $this->httpGet('toLike');
-        $userId = $app->currentUser->getId();
+        $userId = $this->getUserId();
 
-        $comment = $app->postCommentRepository->getCommentById($commentId);
+        $comment = $this->app->postCommentRepository->getCommentById($commentId);
 
-        $post = $app->postRepository->getPostById($comment->getPostId());
+        $post = $this->app->postRepository->getPostById($comment->getPostId());
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $post->getId()]), 'post-data-link');
 
-        $authorLink = LinkBuilder::createSimpleLinkObject($app->currentUser->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $app->currentUser->getId()], 'post-data-link');
+        $authorLink = LinkBuilder::createSimpleLinkObject($this->getUser()?->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $userId], 'post-data-link');
 
         $liked = false;
         
         try {
-            $app->postCommentRepository->beginTransaction();
+            $this->app->postCommentRepository->beginTransaction();
 
             if($toLike == 'true') {
-                $app->postCommentRepository->likeComment($userId, $commentId);
+                $this->app->postCommentRepository->likeComment($userId, $commentId);
                 $liked = true;
 
-                if($app->currentUser->getId() != $comment->getAuthorId()) {
-                    $app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
+                if($userId != $comment->getAuthorId()) {
+                    $this->app->notificationManager->createNewCommentLikeNotification($comment->getAuthorId(), $postLink, $authorLink);
                 }
             } else {
-                $app->postCommentRepository->unlikeComment($userId, $commentId);
+                $this->app->postCommentRepository->unlikeComment($userId, $commentId);
             }
 
-            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->postCommentRepository->commit($userId, __METHOD__);
         } catch(AException $e) {
-            $app->postCommentRepository->rollback();
+            $this->app->postCommentRepository->rollback();
             
             $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
             
             $liked = false;
         }
             
-        $likes = $app->postCommentRepository->getLikes($commentId);
+        $likes = $this->app->postCommentRepository->getLikes($commentId);
         
         $link = '<a class="post-comment-link" style="cursor: pointer" onclick="likePostComment(\'' . $commentId .'\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
 
-        $this->ajaxSendResponse(['link' => $link, 'likes' => $likes]);
+        return ['link' => $link, 'likes' => $likes];
     }
 
     public function actionLoadCommentsForPost() {
-        global $app;
-        
         $postId = $this->httpGet('postId');
         $limit = $this->httpGet('limit');
         $offset = $this->httpGet('offset');
 
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
-        $comments = $app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
-        $commentCount = $app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
+        $comments = $this->app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
+        $commentCount = $this->app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
 
-        $allComments = $app->postCommentRepository->getCommentsForPostId($postId);
+        $allComments = $this->app->postCommentRepository->getCommentsForPostId($postId);
 
         $commentIds = [];
         foreach($allComments as $comment) {
             $commentIds[] = $comment->getId();
         }
 
-        $likedComments = $app->postCommentRepository->getLikedCommentsForUser($app->currentUser->getId(), $commentIds);
+        $likedComments = $this->app->postCommentRepository->getLikedCommentsForUser($this->getUserId(), $commentIds);
 
-        $childrenComments = $app->postCommentRepository->getCommentsThatHaveAParent($postId, true);
+        $childrenComments = $this->app->postCommentRepository->getCommentsThatHaveAParent($postId, true);
 
         $code = [];
 
         if(empty($comments)) {
-            return $this->ajaxSendResponse(['comments' => 'No comments found', 'loadMoreLink' => '']);
+            return ['comments' => 'No comments found', 'loadMoreLink' => ''];
         }
 
-        $bwh = new BannedWordsHelper($app->contentRegulationRepository);
+        $bwh = new BannedWordsHelper($this->app->contentRegulationRepository, $this->app->topicContentRegulationRepository);
 
         foreach($comments as $comment) {
             $code[] = $this->createPostComment($postId, $comment, $likedComments, $bwh, $childrenComments);
@@ -451,16 +520,14 @@ class PostsPresenter extends AUserPresenter {
             $c = '<br>';
         }
 
-        $this->ajaxSendResponse(['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink]);
+        return ['comments' => $c . implode('<br>', $code), 'loadMoreLink' => $loadMoreLink];
     }
 
     private function createPostComment(string $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
-        global $app;
+        $post = $this->app->postRepository->getPostById($postId);
 
-        $post = $app->postRepository->getPostById($postId);
-
-        $author = $app->userRepository->getUserById($comment->getAuthorId());
-        $userProfileLink = $app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId(), '', 'post-comment-link');
+        $author = $this->app->userRepository->getUserById($comment->getAuthorId());
+        $userProfileLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId(), '', 'post-comment-link');
 
         $liked = in_array($comment->getId(), $likedComments);
         if(!$post->isDeleted()) {
@@ -479,34 +546,44 @@ class PostsPresenter extends AUserPresenter {
             }
         }
 
-        if(!$post->isDeleted() && $app->actionAuthorizator->canReportPost($app->currentUser->getId(), $post->getTopicId())) {
+        if(!$post->isDeleted() && $this->app->actionAuthorizator->canReportPost($this->getUserId(), $post->getTopicId())) {
             $reportForm = '<a class="post-comment-link" href="?page=UserModule:Posts&action=reportComment&commentId=' . $comment->getId() . '">Report</a>';
         } else {
             $reportForm = '';
         }
         $deleteLink = '';
         
-        if($app->actionAuthorizator->canDeleteComment($app->currentUser->getId(), $post->getTopicId()) && !$post->isDeleted()) {
+        if($this->app->actionAuthorizator->canDeleteComment($this->getUserId(), $post->getTopicId()) && !$post->isDeleted()) {
             $deleteLink = ' | <a class="post-comment-link" href="?page=UserModule:Posts&action=deleteComment&commentId=' . $comment->getId() . '&postId=' . $postId . '">Delete</a>';
         }
 
-        $text = $bwh->checkText($comment->getText());
+        $text = $bwh->checkText($comment->getText(), $post->getTopicId());
+
+        if(!empty($bwh->getBannedWordsUsed())) {
+            try {
+                foreach($bwh->getBannedWordsUsed() as $word) {
+                    $this->app->reportManager->reportUserForUsingBannedWord($word, $comment->getAuthorId());
+                }
+            } catch(AException) {}
+
+            $bwh->cleanBannedWordsUsed();
+        }
 
         $matches = [];
         preg_match_all("/[@]\w*/m", $text, $matches);
 
         $matches = $matches[0];
 
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
         $users = [];
         foreach($matches as $match) {
             $username = substr($match, 1);
-            $user = $app->userRepository->getUserByUsername($username);
+            $user = $this->app->userRepository->getUserByUsername($username);
             if($user === null) {
                 $users[$match] = '@' . $username;
             } else {
-                $link = $app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                $link = $this->app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
                 
                 $users[$match] = $link;
             }
@@ -521,6 +598,9 @@ class PostsPresenter extends AUserPresenter {
 
         $text = preg_replace($pattern, $replacement, $text);
 
+        $dateCreated = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated());
+        $dateCreatedAtomic = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
+
         $code = '
             <div class="row' . ($parent ? '' : ' post-comment-border') . '" id="post-comment-id-' . $comment->getId() . '">
                 ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
@@ -528,7 +608,7 @@ class PostsPresenter extends AUserPresenter {
                     <div>
                         <p class="post-comment-text">' . $text . '</p>
                         <p class="post-comment-data">Likes: <span id="post-comment-' . $comment->getId() . '-likes">' . $comment->getLikes() . '</span> <span id="post-comment-' . $comment->getId() . '-link">' . $likeLink . '</span>
-                                            | Author: ' . $userProfileLink . ' | Date: ' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) . '
+                                            | Author: ' . $userProfileLink . ' | Date: <span title="' . $dateCreatedAtomic . '">' . $dateCreated . '</span>
                         </p>
                         <p class="post-comment-data">
                             ' . $reportForm . $deleteLink . '
@@ -544,7 +624,9 @@ class PostsPresenter extends AUserPresenter {
                         
                         <div class="col-md-2"></div>
                     </div>
+                    <div id="post-comment-child-comments-' . $comment->getId() . '">
                     ' . implode('', $childCommentsCode) .  '
+                    </div>
                     ' . ($parent ? '' : '<div class="col-md-1"></div>') . '
                 </div>
             </div>
@@ -554,34 +636,32 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleNewComment(FormResponse $fr) {
-        global $app;
-
         $text = $fr->text;
         $postId = $this->httpGet('postId');
-        $authorId = $app->currentUser->getId();
+        $authorId = $this->getUserId();
         $parentCommentId = $this->httpGet('parentCommentId');
 
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
-        $authorLink = UserEntity::createUserProfileLink($app->currentUser, true);
+        $authorLink = UserEntity::createUserProfileLink($this->getUser(), true);
         
         try {
-            $app->postCommentRepository->beginTransaction();
+            $this->app->postCommentRepository->beginTransaction();
 
-            $commentId = $app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
+            $commentId = $this->app->entityManager->generateEntityId(EntityManager::POST_COMMENTS);
 
-            $app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
+            $this->app->postCommentRepository->createNewComment($commentId, $postId, $authorId, $text, $parentCommentId);
 
             if($post->getAuthorId() != $authorId) {
-                $app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
+                $this->app->notificationManager->createNewPostCommentNotification($post->getAuthorId(), $postLink, $authorLink);
             }
 
-            $app->postCommentRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->postCommentRepository->commit($authorId, __METHOD__);
 
             $this->flashMessage('Comment posted.', 'success');
         } catch (AException $e) {
-            $app->postCommentRepository->rollback();
+            $this->app->postCommentRepository->rollback();
 
             $this->flashMessage('Comment could not be created. Reason: ' . $e->getMessage(), 'error');
         }
@@ -590,32 +670,30 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleReportForm(?FormResponse $fr = null) {
-        global $app;
-
         $postId = $this->httpGet('postId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $category = $fr->category;
             $description = $fr->description;
-            $userId = $app->currentUser->getId();
+            $userId = $this->getUserId();
 
             try {
-                $app->reportRepository->beginTransaction();
+                $this->app->reportRepository->beginTransaction();
 
-                $app->reportRepository->createPostReport($userId, $postId, $category, $description);
+                $this->app->reportRepository->createPostReport($userId, $postId, $category, $description);
 
-                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->reportRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Post reported.', 'success');
             } catch(AException $e) {
-                $app->reportRepository->rollback();
+                $this->app->reportRepository->rollback();
 
                 $this->flashMessage('Post could not be reported. Reason: ' . $e->getMessage());
             }
 
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
         } else {
-            $post = $app->postRepository->getPostById($postId);
+            $post = $this->app->postRepository->getPostById($postId);
             $this->saveToPresenterCache('post', $post);
 
             $categories = ReportCategory::getArray();
@@ -655,26 +733,24 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleReportComment(?FormResponse $fr = null) {
-        global $app;
-
         $commentId = $this->httpGet('commentId');
-        $comment = $app->postCommentRepository->getCommentById($commentId);
+        $comment = $this->app->postCommentRepository->getCommentById($commentId);
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $category = $fr->category;
             $description = $fr->description;
-            $userId = $app->currentUser->getId();
+            $userId = $this->getUserId();
 
             try {
-                $app->reportRepository->beginTransaction();
+                $this->app->reportRepository->beginTransaction();
 
-                $app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
+                $this->app->reportRepository->createCommentReport($userId, $commentId, $category, $description);
 
-                $app->reportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->reportRepository->commit($userId, __METHOD__);
 
                 $this->flashMessage('Comment reported.', 'success');
             } catch(AException $e) {
-                $app->reportRepository->rollback();
+                $this->app->reportRepository->rollback();
 
                 $this->flashMessage('Comment could not be reported. Reason: ' . $e->getMessage(), __METHOD__);
             }
@@ -716,29 +792,27 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleDeleteComment(?FormResponse $fr = null) {
-        global $app;
-
         $commentId = $this->httpGet('commentId');
         $postId = $this->httpGet('postId');
         
         if($this->httpGet('isSubmit') == '1') {
-            $post = $app->postRepository->getPostById($postId);
-            $comment = $app->postCommentRepository->getCommentById($commentId);
+            $post = $this->app->postRepository->getPostById($postId);
+            $comment = $this->app->postCommentRepository->getCommentById($commentId);
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
             
             try {
-                $app->postRepository->beginTransaction();
+                $this->app->postRepository->beginTransaction();
                 
-                $app->contentManager->deleteComment($commentId);
+                $this->app->contentManager->deleteComment($commentId);
 
-                $app->notificationManager->createNewCommentDeletedNotification($comment->getAuthorId(), $postLink, $userLink);
+                $this->app->notificationManager->createNewCommentDeletedNotification($comment->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
             } catch(Exception $e) {
-                $app->postRepository->rollback();
+                $this->app->postRepository->rollback();
 
                 $this->flashMessage('Comment #' . $commentId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
@@ -763,33 +837,31 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleDeletePost(?FormResponse $fr = null) {
-        global $app;
-
         $postId = $this->httpGet('postId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $post = $app->postRepository->getPostById($postId);
+            $post = $this->app->postRepository->getPostById($postId);
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
-            $userLink = UserEntity::createUserProfileLink($app->currentUser, true);
+            $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
 
             try {
                 if($fr->postTitle != $post->getTitle()) {
                     throw new GeneralException('Post titles do not match.');
                 }
 
-                $app->userAuth->authUser($fr->getHashedPassword($fr->userPassword));
+                $this->app->userAuth->authUser($fr->getHashedPassword($fr->userPassword));
 
-                $app->postRepository->beginTransaction();
+                $this->app->postRepository->beginTransaction();
 
-                $app->contentManager->deletePost($postId);
+                $this->app->contentManager->deletePost($postId);
 
-                $app->notificationManager->createNewPostDeletedNotification($post->getAuthorId(), $postLink, $userLink);
+                $this->app->notificationManager->createNewPostDeletedNotification($post->getAuthorId(), $postLink, $userLink);
 
-                $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
                 $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
             } catch(Exception $e) {
-                $app->postRepository->rollback();
+                $this->app->postRepository->rollback();
 
                 $this->flashMessage('Post #' . $postId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
@@ -816,29 +888,27 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleLike() {
-        global $app;
-
         $postId = $this->httpGet('postId', true);
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
         
         try {
-            $app->postRepository->beginTransaction();
+            $this->app->postRepository->beginTransaction();
             
-            $app->postRepository->likePost($app->currentUser->getId(), $postId);
-            $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
+            $this->app->postRepository->likePost($this->getUserId(), $postId);
+            $this->app->postRepository->updatePost($postId, ['likes' => $post->getLikes() + 1]);
 
-            if($app->currentUser->getId() != $post->getAuthorId()) {
-                $app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($app->currentUser, true));
+            if($this->getUserId() != $post->getAuthorId()) {
+                $this->app->notificationManager->createNewPostLikeNotification($post->getAuthorId(), $postLink, UserEntity::createUserProfileLink($this->getUser(), true));
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
 
-            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->postRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
-            $app->postRepository->rollback();
+            $this->app->postRepository->rollback();
             $this->flashMessage('Could not like post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
         }
 
@@ -846,23 +916,21 @@ class PostsPresenter extends AUserPresenter {
     }
 
     public function handleUnlike() {
-        global $app;
-
         $postId = $this->httpGet('postId', true);
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
         try {
-            $app->postRepository->beginTransaction();
+            $this->app->postRepository->beginTransaction();
 
-            $app->postRepository->unlikePost($app->currentUser->getId(), $postId);
-            $app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
+            $this->app->postRepository->unlikePost($this->getUserId(), $postId);
+            $this->app->postRepository->updatePost($postId, ['likes' => $post->getLikes() - 1]);
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
             
-            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->postRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
-            $app->postRepository->rollback();
+            $this->app->postRepository->rollback();
 
             $this->flashMessage('Could not unlike post #' . $postId . '. Reason: ' . $e->getMessage(), 'error');
         }

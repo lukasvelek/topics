@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class GridExportEntity implements ICreatableFromRow {
+class GridExportEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $hash;
@@ -56,7 +56,14 @@ class GridExportEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['exportId'], $row['userId'], $row['hash'], $row['filename'], $row['gridName'], $row['entryCount'], $row['dateCreated'], $row['dateFinished']);
+        if($row === null) {
+            return null;
+        }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['exportId' => 'string', 'userId' => 'string', 'hash' => 'string', 'filename' => '?string', 'gridName' => 'string', 'entryCount' => 'int', 'dateCreated' => 'string', 'dateFinished' => '?string']);
+
+        return new self($row->exportId, $row->userId, $row->hash, $row->filename, $row->gridName, $row->entryCount, $row->dateCreated, $row->dateFinished);
     }
 }
 

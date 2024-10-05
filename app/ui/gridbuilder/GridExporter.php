@@ -2,10 +2,12 @@
 
 namespace App\UI\GridBuilder;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Core\FileManager;
+use App\Core\ServiceManager;
 use App\Logger\Logger;
 
 /**
@@ -14,12 +16,16 @@ use App\Logger\Logger;
  * @author Lukas Velek
  */
 class GridExporter {
+    private const LOG = false;
+
     private string $hash;
-    private CacheManager $cache;
     private ArrayList $dataToSave;
     private array $cfg;
     private bool $exportAll;
     private int $exportedEntries;
+    private ServiceManager $serviceManager;
+    private CacheFactory $cacheFactory;
+    private ?Logger $logger;
 
     /**
      * Class constructor
@@ -28,17 +34,46 @@ class GridExporter {
      * @param string $hash Grid export hash
      * @param array $cfg Application configuration array
      */
-    public function __construct(?Logger $logger, string $hash, array $cfg) {
-        $this->cache = new CacheManager($logger);
+    public function __construct(?Logger $logger, string $hash, array $cfg, ServiceManager $serviceManager) {
         $this->hash = $hash;
         $this->dataToSave = new ArrayList();
         $this->cfg = $cfg;
         $this->exportAll = false;
         $this->exportedEntries = 0;
+        $this->serviceManager = $serviceManager;
+        $this->cacheFactory = new CacheFactory($logger->getCfg());
+        $this->logger = $logger;
+    }
+
+    private function loadData() {
+        $data = $this->loadCache();
+
+        return $data;
     }
 
     public function setExportAll(bool $exportAll = true) {
+        if(self::LOG) $this->logger->info('Setting export all to ' . var_export($exportAll, true), __METHOD__);
         $this->exportAll = $exportAll;
+    }
+
+    public function getRowCount() {
+        if(self::LOG) $this->logger->info('Loading data from cache', __METHOD__);
+        $data = $this->loadData();
+
+        if(empty($data)) {
+            if(self::LOG) $this->logger->warning('No data obtained from cache', __METHOD__);
+            return 0;
+        }
+
+        if(isset($data['dataAll'])) {
+            return count($data['dataAll']);
+        } else {
+            return count($data['data']);   
+        }
+    }
+
+    public function exportAsync() {
+        return 'async';
     }
 
     /**
@@ -47,7 +82,7 @@ class GridExporter {
      * @return string|null Generated filename or null if not successful
      */
     public function export() {
-        $data = $this->loadCache();
+        $data = $this->loadData();
 
         if(empty($data)) {
             return null;
@@ -106,9 +141,8 @@ class GridExporter {
      * @return array Grid data
      */
     private function loadCache() {
-        return $this->cache->loadCache($this->hash, function() {
-            return [];
-        }, CacheManager::NS_GRID_EXPORT_DATA, __METHOD__);
+        $cache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORT_DATA);
+        return $cache->load($this->hash, function() { return []; });
     }
 
     /**
@@ -136,11 +170,11 @@ class GridExporter {
         $now->format('Y-m-d_H-i-s');
         $now = $now->getResult();
 
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . CacheManager::NS_GRID_EXPORTS . '\\';
+        $path = $this->cfg['CACHE_DIR'] . CacheNames::GRID_EXPORTS . '\\';
         $name = 'gridExport_' . $this->hash . '_' . $now . '.csv';
 
         if(FileManager::saveFile($path, $name, $this->dataToSave->getAll(), false, false) !== false) {
-            return 'cache\\' . CacheManager::NS_GRID_EXPORTS . '\\' . $name;
+            return 'cache\\' . CacheNames::GRID_EXPORTS . '\\' . $name;
         } else {
             return null;
         }

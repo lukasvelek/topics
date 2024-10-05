@@ -6,6 +6,11 @@ use App\Core\HashManager;
 use App\Logger\Logger;
 use App\Repositories\ContentRepository;
 
+/**
+ * EntityManager contains useful methods for working with entities saved to database
+ * 
+ * @author Lukas Velek
+ */
 class EntityManager extends AManager {
     public const TOPIC_POLL_RESPONSES = 'topic_polls_responses';
     public const USERS = 'users';
@@ -32,15 +37,33 @@ class EntityManager extends AManager {
     public const TOPIC_RULES = 'topic_rules';
     public const GRID_EXPORTS = 'grid_exports';
     public const TOPIC_CALENDAR_USER_EVENTS = 'topic_calendar_user_events';
+    public const TOPIC_BANNED_WORDS = 'topic_banned_words';
+    public const USER_CHATS = 'user_chats';
+    public const USER_CHAT_MESSAGES = 'user_chat_messages';
+    public const TOPIC_BROADCAST_CHANNELS = 'topic_broadcast_channels';
+    public const TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS = 'topic_broadcast_channel_subscribers';
+    public const TOPIC_BROADCAST_CHANNEL_MESSAGES = 'topic_broadcast_channel_messages';
 
     private ContentRepository $cr;
 
+    /**
+     * Class constructor
+     * 
+     * @param Logger $logger Logger instance
+     * @param ContentRepository $cr ContentRepository instance
+     */
     public function __construct(Logger $logger, ContentRepository $cr) {
         parent::__construct($logger, null);
 
         $this->cr = $cr;
     }
 
+    /**
+     * Generates unique entity ID for given category
+     * 
+     * @param string $category (see constants in \App\Managers\EntityManager)
+     * @return null|string Generated unique entity ID or null
+     */
     public function generateEntityId(string $category) {
         $unique = true;
         $run = true;
@@ -62,6 +85,11 @@ class EntityManager extends AManager {
         return $entityId;
     }
 
+    /**
+     * Returns primary key for given category (database table)
+     * 
+     * @return string Primary key
+     */
     private function getPrimaryKeyNameByCategory(string $category) {
         return match($category) {
             self::TOPIC_POLL_RESPONSES => 'responseId',
@@ -88,7 +116,13 @@ class EntityManager extends AManager {
             self::POST_CONCEPTS => 'conceptId',
             self::TOPIC_RULES => 'rulesetId',
             self::GRID_EXPORTS => 'exportId',
-            self::TOPIC_CALENDAR_USER_EVENTS => 'eventId'
+            self::TOPIC_CALENDAR_USER_EVENTS => 'eventId',
+            self::TOPIC_BANNED_WORDS => 'wordId',
+            self::USER_CHATS => 'chatId',
+            self::USER_CHAT_MESSAGES => 'messageId',
+            self::TOPIC_BROADCAST_CHANNEL_MESSAGES => 'messageId',
+            self::TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS => 'subscribeId',
+            self::TOPIC_BROADCAST_CHANNELS => 'channelId'
         };
     }
 }

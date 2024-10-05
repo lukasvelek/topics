@@ -29,6 +29,9 @@ class Cell implements IRenderable {
         if($value === NULL) {
             $value = '-';
         }
+        if($value instanceof IRenderable) {
+            $value = $value->render();
+        }
         $this->text = $value;
     }
 
@@ -59,8 +62,14 @@ class Cell implements IRenderable {
         $this->addStyle('color: ' . $color);
     }
 
-    public function setTitle(string $title) {
-        $this->attributes['title'] = $title;
+    public function setTitle(mixed $title) {
+        if($title !== NULL) {
+            $this->attributes['title'] = $title;
+        }
+    }
+
+    public function resetStyle() {
+        unset($this->attributes['style']);
     }
 
     public function render() {

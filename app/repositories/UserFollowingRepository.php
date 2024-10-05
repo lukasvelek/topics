@@ -99,12 +99,7 @@ class UserFollowingRepository extends ARepository {
             ->from('user_following')
             ->where('userId = ?', [$userId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 
@@ -139,12 +134,7 @@ class UserFollowingRepository extends ARepository {
             ->from('user_following')
             ->where('authorId = ?', [$userId]);
 
-        if($limit > 0) {
-            $qb->limit($limit);
-        }
-        if($offset > 0) {
-            $qb->offset($offset);
-        }
+        $this->applyGridValuesToQb($qb, $limit, $offset);
 
         $qb->execute();
 

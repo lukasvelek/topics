@@ -73,6 +73,35 @@ class GridExportRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function getWaitingUnlimitedExports(int $maxCount) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['hash'])
+            ->from('grid_exports')
+            ->where('entryCount >= ?', [$maxCount])
+            ->andWhere('filename IS NULL')
+            ->andWhere('dateFinished IS NULL')
+            ->execute();
+
+        $hashes = [];
+        while($row = $qb->fetchAssoc()) {
+            $hashes[] = $row['hash'];
+        }
+
+        return $hashes;
+    }
+
+    public function getExportByHash(string $hash) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('grid_exports')
+            ->where('hash = ?', [$hash])
+            ->execute();
+
+        return GridExportEntity::createEntityFromDbRow($qb->fetch());
+    }
 }
 
 ?>

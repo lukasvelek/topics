@@ -4,7 +4,7 @@ namespace App\Entities;
 
 use App\UI\LinkBuilder;
 
-class TopicEntity implements ICreatableFromRow {
+class TopicEntity extends AEntity {
     private string $topicId;
     private string $title;
     private string $description;
@@ -73,8 +73,14 @@ class TopicEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        $tags = unserialize($row['tags']);
-        return new self($row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['isDeleted'], $row['dateDeleted'], $tags, $row['isPrivate'], $row['isVisible'], explode(',', $row['rawTags']));
+
+        $row = self::createRow($row);
+        $row->tags = unserialize($row->tags);
+        $row->rawTags = explode(',', $row->rawTags);
+        self::checkTypes($row, ['topicId' => 'string', 'title' => 'string', 'description' => 'string', 'dateCreated' => 'string', 'isDeleted' => 'bool', 'dateDeleted' => '?string', 'tags' => 'array', 'isPrivate' => 'bool',
+                                'isVisible' => 'bool', 'rawTags' => 'array']);
+
+        return new self($row->topicId, $row->title, $row->description, $row->dateCreated, $row->isDeleted, $row->dateDeleted, $row->tags, $row->isPrivate, $row->isVisible, $row->rawTags);
     }
 
     public static function createTopicProfileLink(TopicEntity $topic, bool $object = false, string $class = 'post-data-link') {

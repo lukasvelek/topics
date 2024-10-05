@@ -5,7 +5,7 @@ namespace App\Modules\UserModule;
 use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
 use App\Exceptions\AException;
 
 class HomePresenter extends AUserPresenter {
@@ -16,25 +16,23 @@ class HomePresenter extends AUserPresenter {
     }
 
     public function handleDashboard() {
-        global $app;
+        $topicIdsUserIsMemberOf = $this->app->topicMembershipManager->getUserMembershipsInTopics($this->getUserId());
+        $followedTopics = $this->app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
 
-        $topicIdsUserIsMemberOf = $app->topicMembershipManager->getUserMembershipsInTopics($app->currentUser->getId());
-        $followedTopics = $app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
+        $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
 
-        $posts = $app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
-
-        $postLister = new PostLister($app->userRepository, $app->topicRepository, $app->postRepository, $app->contentRegulationRepository, $app->fileUploadRepository, $app->fileUploadManager);
+        $postLister = new PostLister($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository, $this->app->contentRegulationRepository, $this->app->fileUploadRepository, $this->app->fileUploadManager, $this->app->reportManager, $this->app->topicManager);
 
         $postLister->setPosts($posts);
         $postLister->setTopics($followedTopics);
         $postLister->shufflePosts();
-        $postLister->setCurrentUser($app->currentUser);
+        $postLister->setCurrentUser($this->getUser());
         
         $this->saveToPresenterCache('postLister', $postLister);
         
         $permaFlashMessages = [];
 
-        $userProsecution = $app->userProsecutionRepository->getLastProsecutionForUserId($app->currentUser->getId());
+        $userProsecution = $this->app->userProsecutionRepository->getLastProsecutionForUserId($this->getUserId());
 
         if($userProsecution !== null) {
             if($userProsecution->getType() == UserProsecutionType::WARNING) {
@@ -81,37 +79,34 @@ class HomePresenter extends AUserPresenter {
     }
 
     public function actionLikePost() {
-        global $app;
-
         $postId = $this->httpGet('postId');
-        $userId = $app->currentUser->getId();
+        $userId = $this->getUserId();
         $toLike = $this->httpGet('toLike');
 
         $link = PostLister::createLikeLink($postId, ($toLike == 'true'));
 
         try {
-            $app->postRepository->beginTransaction();
+            $this->app->postRepository->beginTransaction();
 
             if($toLike == 'true') {
-                $app->postRepository->likePost($userId, $postId);
+                $this->app->postRepository->likePost($userId, $postId);
             } else {
-                $app->postRepository->unlikePost($userId, $postId);
+                $this->app->postRepository->unlikePost($userId, $postId);
             }
 
-            $cm = new CacheManager($app->logger);
-            $cm->invalidateCache('posts');
+            $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
+            $cache->invalidate();
 
-            $app->postRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->postRepository->commit($userId, __METHOD__);
         } catch(AException $e) {
-            $app->postRepository->rollback();
+            $this->app->postRepository->rollback();
 
             $this->flashMessage('Could not like post. Reason: ' . $e->getMessage(), 'error');
         }
 
-        $post = $app->postRepository->getPostById($postId);
+        $post = $this->app->postRepository->getPostById($postId);
 
-        $this->ajaxSendResponse(['likes' => $post->getLikes(), 'link' => $link]);
-
+        return ['likes' => $post->getLikes(), 'link' => $link];
     }
 }
 

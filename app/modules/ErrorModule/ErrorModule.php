@@ -11,18 +11,17 @@ class ErrorModule extends AModule {
     }
 
     public function renderModule() {
-        global $app;
-
         $currentUserId = null;
 
-        if($app->currentUser !== null) {
-            $currentUserId = $app->currentUser->getId();
+        if($this->app->currentUser !== null) {
+            $currentUserId = $this->app->currentUser->getId();
         }
 
-        $navbar = new Navbar($app->notificationManager, $currentUserId);
+        $navbar = new Navbar($this->app->notificationManager, $currentUserId);
         $navbar->hideSearchBar();
+        $navbar->setIsCurrentUserIsAdmin($this->app->currentUser?->isAdmin());
         
-        if($app->currentUser == null) {
+        if($this->app->currentUser === null) {
             $navbar->setCustomLinks(['topics' => ['page' => 'AnonymModule:Home'], 'login' => ['page' => 'AnonymModule:Login', 'action' => 'loginForm'], 'register' => ['page' => 'AnonymModule:Register', 'action' => 'form']]);
         }
 

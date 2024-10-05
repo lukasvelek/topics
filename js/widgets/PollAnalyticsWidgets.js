@@ -9,7 +9,7 @@ async function createWidgets(_pollId) {
             pollId: _pollId
         }
     ).done(function(data) {
-        $("#widget1-data").html('<div style="width: 95%"><canvas id="responsesGraph"></canvas></div>');
+        $("#widget1-data").html('<div style="width: 50%; margin: auto"><canvas id="responsesGraph"></canvas></div>');
 
         const obj = JSON.parse(data);
 
@@ -27,5 +27,22 @@ async function createWidgets(_pollId) {
                 }]
             }
         })
+
+        $("#poll-total-count").html(obj.totalCount);
     });
+}
+
+async function autoRefreshWidgets(_pollId) {
+    await createWidgets(_pollId);
+
+    $("#poll-auto-refresh").html("Next refresh in: 1 min");
+
+    const timeToWait = 60;
+
+    for(let x = 0; x < timeToWait; x++) {
+        $("#poll-auto-refresh").html("Next refresh in: " + (timeToWait - x) + " sec");
+        await sleep(1000);
+    }
+
+    await autoRefreshWidgets(_pollId);
 }

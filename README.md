@@ -13,18 +13,18 @@ Topics is a website that allows people to chat about different topics. Each topi
     - Word filtering
     - User mentioning
     - Images in posts
+    - Automatic user reporting
+        - If users use a banned word in a comment or a post, they will automatically be reported
+    - Common search indexing
+        - Searched terms and their results should be cached, so next users can get the information faster
+    - Word banning on topic-level
+        - Currently words are banned on the application-level
 
 ## Current version
-    - v1.4 (09/10/2024)
+    - v1.5 (10/5/2024)
 
 ## Future plans
     - Videos in posts
-    - Automatic user reporting
-        - If users use a banned word in a comment or a post, they will automatically be reported
-    - Word banning on topic-level
-        - Currently words are banned on the application-level
-    - Common search indexing
-        - Searched terms and their results should be cached, so next users can get the information faster
     - Topic tags grouping
         - When topics are created, their tags are custom written by the topic author. These tags can be misspelled or just similar to other already existing tags - e.g. "tech" and "technology".
         - There problems should be analyzed and available in a management overview

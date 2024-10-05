@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class PostConceptEntity implements ICreatableFromRow {
+class PostConceptEntity extends AEntity {
     private string $conceptId;
     private string $authorId;
     private string $topicId;
@@ -51,7 +51,11 @@ class PostConceptEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['conceptId'], $row['authorId'], $row['topicId'], $row['postData'], $row['dateCreated'], $row['dateUpdated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['conceptId' => 'string', 'authorId' => 'string', 'topicId' => 'string', 'postData' => 'string', 'dateCreated' => 'string', 'dateUpdated' => '?string']);
+        
+        return new self($row->conceptId, $row->authorId, $row->topicId, $row->postData, $row->dateCreated, $row->dateUpdated);
     }
 }
 

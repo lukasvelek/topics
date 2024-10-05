@@ -2,14 +2,19 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
+use App\Core\Caching\CacheNames;
+use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
 use App\Entities\TopicRulesEntity;
 use App\Logger\Logger;
 
 class TopicRulesRepository extends ARepository {
+    private Cache $topicRulesCache;
+
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+
+        $this->topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
     }
 
     public function getTopicRulesForTopicId(string $topicId): TopicRulesEntity|null {
@@ -19,11 +24,11 @@ class TopicRulesRepository extends ARepository {
             ->from('topic_rules')
             ->where('topicId = ?', [$topicId]);
 
-        return $this->cache->loadCache($topicId, function () use ($qb) {
+        return $this->topicRulesCache->load($topicId, function() use ($qb) {
             $qb->execute();
 
             return TopicRulesEntity::createEntityFromDbRow($qb->fetch());
-        }, CacheManager::NS_TOPIC_RULES, __METHOD__);
+        });
     }
 
     public function insertTopicRules(string $rulesetId, string $topicId, string $rulesJson, string $userId) {

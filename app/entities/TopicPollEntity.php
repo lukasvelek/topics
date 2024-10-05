@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicPollEntity implements ICreatableFromRow {
+class TopicPollEntity extends AEntity {
     private string $id;
     private string $title;
     private string $description;
@@ -65,9 +65,13 @@ class TopicPollEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        $choices = unserialize($row['choices']);
-        
-        return new self($row['pollId'], $row['title'], $row['description'], $row['authorId'], $row['topicId'], $choices, $row['dateCreated'], $row['dateValid'], $row['timeElapsedForNextVote']);
+
+        $row = self::createRow($row);
+        $row->choices = unserialize($row->choices);
+        self::checkTypes($row, ['pollId' => 'string', 'title' => 'string', 'description' => 'string', 'authorId' => 'string', 'topicId' => 'string', 'choices' => 'array', 'dateCreated' => 'string',
+                                'dateValid' => '?string', 'timeElapsedForNextVote' => 'string']);
+
+        return new self($row->pollId, $row->title, $row->description, $row->authorId, $row->topicId, $row->choices, $row->dateCreated, $row->dateValid, $row->timeElapsedForNextVote);
     }
 }
 

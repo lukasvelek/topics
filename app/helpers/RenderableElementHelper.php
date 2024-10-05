@@ -2,8 +2,6 @@
 
 namespace App\Helpers;
 
-use App\UI\IRenderable;
-
 class RenderableElementHelper {
     public static function implodeAndRender(string $separator, array $renderableElements) {
         $callbacks = [];

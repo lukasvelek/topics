@@ -2,14 +2,23 @@
 
 namespace App\Repositories;
 
-use App\Core\CacheManager;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;
+use App\Core\Datetypes\DateTime;
 use App\Entities\NotificationEntity;
 use App\Logger\Logger;
 
 class NotificationRepository extends ARepository {
+    private Cache $cache;
+
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
+
+        $expiration = new DateTime();
+        $expiration->modify('+1i'); // 1 minute
+
+        $this->cache = $this->cacheFactory->getCache(CacheNames::NOTIFICATIONS);
     }
 
     public function createNotification(string $notificationId, string $userId, int $type, string $title, string $message) {
@@ -35,7 +44,7 @@ class NotificationRepository extends ARepository {
 
         $qb ->orderBy('dateCreated', 'DESC');
 
-        return $this->cache->loadCache($userId, function() use ($qb) {
+        return $this->cache->load($userId, function() use ($qb) {
             $qb->execute();
 
             $notifications = [];
@@ -44,7 +53,7 @@ class NotificationRepository extends ARepository {
             }
 
             return $notifications;
-        }, CacheManager::NS_USER_NOTIFICATIONS, __METHOD__, CacheManager::EXPIRATION_MINUTES(1));
+        });
     }
 
     public function updateNotification(string $notificationId, array $data) {

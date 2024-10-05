@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicCalendarUserEventEntity implements ICreatableFromRow {
+class TopicCalendarUserEventEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $topicId;
@@ -56,7 +56,14 @@ class TopicCalendarUserEventEntity implements ICreatableFromRow {
     }
 
     public static function createEntityFromDbRow(mixed $row) {
-        return new self($row['eventId'], $row['userId'], $row['topicId'], $row['title'], $row['description'], $row['dateCreated'], $row['dateFrom'], $row['dateTo']);
+        if($row === null) {
+            return null;
+        }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['eventId' => 'string', 'userId' => 'string', 'topicId' => 'string', 'title' => 'string', 'description' => 'string', 'dateCreated' => 'string', 'dateFrom' => 'string', 'dateTo' => 'string']);
+
+        return new self($row->eventId, $row->userId, $row->topicId, $row->title, $row->description, $row->dateCreated, $row->dateFrom, $row->dateTo);
     }
 }
 

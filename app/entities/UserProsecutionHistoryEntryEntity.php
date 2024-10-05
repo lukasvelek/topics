@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class UserProsecutionHistoryEntryEntity implements ICreatableFromRow {
+class UserProsecutionHistoryEntryEntity extends AEntity {
     private string $id;
     private string $prosecutionId;
     private string $userId;
@@ -41,7 +41,11 @@ class UserProsecutionHistoryEntryEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['historyId'], $row['prosecutionId'], $row['userId'], $row['commentText'], $row['dateCreated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['historyid' => 'string', 'prosecutionId' => 'string', 'userId' => 'string', 'text' => 'commentText', 'dateCreated' => 'string']);
+
+        return new self($row->historyId, $row->prosecutionId, $row->userId, $row->commentText, $row->dateCreated);
     }
 }
 

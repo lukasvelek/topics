@@ -17,6 +17,7 @@ $cfg['IS_DEV'] = false; // true if this version is development or false if not
 $cfg['APP_REAL_DIR'] = '';
 
 $cfg['DB_SERVER'] = ''; // database server address
+$cfg['DB_PORT'] = ''; // database server port
 $cfg['DB_USER'] = ''; // database user
 $cfg['DB_PASS'] = ''; // database user password
 $cfg['DB_NAME'] = ''; // database name
@@ -38,5 +39,7 @@ $cfg['ID_SERVICE_USER'] = 1; // service user ID
 $cfg['APP_URL_BASE'] = ''; // base URL of application - e.g. "topics.com" or "localhost"
 
 $cfg['MAX_TOPIC_POST_PINS'] = 5; // maximum of topic post pins
+
+$cfg['MAX_GRID_EXPORT_SIZE'] = 100; // grid row count for export, must be greater than GRID_SIZE
 
 ?>

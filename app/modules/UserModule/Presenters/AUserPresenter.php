@@ -15,17 +15,15 @@ abstract class AUserPresenter extends APresenter {
     }
 
     private function checkNotification() {
-        global $app;
-
         if($this->httpGet('notificationId') !== null && $this->httpGet('removeNotification') == '1') {
             try {
-                $app->notificationRepository->beginTransaction();
+                $this->app->notificationRepository->beginTransaction();
 
-                $app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
+                $this->app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
 
-                $app->notificationRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->notificationRepository->commit($this->getUserId(), __METHOD__);
             } catch(AException $e) {
-                $app->notificationRepository->rollback();
+                $this->app->notificationRepository->rollback();
                 
                 $this->flashMessage('Could not set notification as seen. Reason: ' . $e->getMessage(), 'error');
             }

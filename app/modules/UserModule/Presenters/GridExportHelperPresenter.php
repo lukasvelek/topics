@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\UI\GridBuilder\GridExporter;
 
 class GridExportHelperPresenter extends AUserPresenter {
@@ -12,8 +13,6 @@ class GridExportHelperPresenter extends AUserPresenter {
     }
 
     public function actionExportGrid() {
-        global $app;
-        
         $hash = $this->httpGet('hash', true);
         $exportAll = $this->httpGet('exportAll', true);
         $gridName = $this->httpGet('gridName', true);
@@ -21,39 +20,52 @@ class GridExportHelperPresenter extends AUserPresenter {
         $exportAll = ($exportAll == 'true');
 
         try {
-            $app->gridExportRepository->beginTransaction();
+            $this->app->gridExportRepository->beginTransaction();
 
-            $app->gridExportRepository->createNewExport($app->currentUser->getId(), $hash, $gridName);
+            $dbResult = $this->app->gridExportRepository->createNewExport($this->getUserId(), $hash, $gridName);
 
-            $app->gridExportRepository->commit($app->currentUser->getId(), __METHOD__);
+            if($dbResult === false) {
+                throw new GeneralException('Could not save data to the database.');
+            }
+
+            $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
-            $app->gridExportRepository->rollback();
+            $this->app->gridExportRepository->rollback();
 
-            $this->ajaxSendResponse(['empty' => '1']);
-
-            return;
+            return ['empty' => '1'];
         }
 
-
-        $ge = new GridExporter($app->logger, $hash, $app->cfg);
+        $ge = new GridExporter($this->app->logger, $hash, $this->app->cfg, $this->app->serviceManager);
         $ge->setExportAll($exportAll);
-        $result = $ge->export();
+
+        $count = $ge->getRowCount();
+        if($count >= $this->app->cfg['MAX_GRID_EXPORT_SIZE'] && $exportAll) {
+            $result = $ge->exportAsync();
+        } else {
+            $result = $ge->export();
+        }
 
         if($result !== null) {
-            $updateData = [
-                'filename' => str_replace('\\', '\\\\', $result),
-                'entryCount' => $ge->getEntryCount(),
-                'dateFinished' => DateTime::now()
-            ];
+            if($result == 'async') {
+                $updateData = [
+                    'entryCount' => $count
+                ];
+            } else {
+                $updateData = [
+                    'filename' => str_replace('\\', '\\\\', $result),
+                    'entryCount' => $ge->getEntryCount(),
+                    'dateFinished' => DateTime::now()
+                ];
+            }
     
             try {
-                $app->gridExportRepository->beginTransaction();
+                $this->app->gridExportRepository->beginTransaction();
     
-                $app->gridExportRepository->updateExportByHash($hash, $updateData);
+                $this->app->gridExportRepository->updateExportByHash($hash, $updateData);
     
-                $app->gridExportRepository->commit($app->currentUser->getId(), __METHOD__);
+                $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
             } catch(AException $e) {
-                $app->gridExportRepository->rollback();
+                $this->app->gridExportRepository->rollback();
             }
         }
 
@@ -62,6 +74,10 @@ class GridExportHelperPresenter extends AUserPresenter {
             $data = [
                 'empty' => '1'
             ];
+        } else if($result == 'async') {
+            $data = [
+                'empty' => 'async'
+            ];
         } else {
             $data = [
                 'empty' => '0',
@@ -69,7 +85,7 @@ class GridExportHelperPresenter extends AUserPresenter {
             ];
         }
 
-        $this->ajaxSendResponse($data);
+        return $data;
     }
 }
 

@@ -27,7 +27,7 @@ class FileUploadManager extends AManager {
     }
 
     private function createPostImageFileUploadPath(string $userId, string $postId, string $topicId, string $filename, string $extension, string $uploadId) {
-        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['UPLOAD_DIR'] . 'topic_' . $topicId . '\\post_' . $postId . '\\user_' . $userId . '\\upload_' . $uploadId . '\\';
+        $path = $this->cfg['UPLOAD_DIR'] . 'topic_' . $topicId . '\\post_' . $postId . '\\user_' . $userId . '\\upload_' . $uploadId . '\\';
 
         FileManager::createFolder($path, true);
 

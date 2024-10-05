@@ -19,16 +19,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
 
     public function __construct() {
         parent::__construct('ManageSystemServicesPresenter', 'Manage system services');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
+    public function startup() {
+        parent::startup();
 
-        global $app;
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
 
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
-
-        if(!$app->sidebarAuthorizator->canManageSystemStatus($app->currentUser->getId())) {
+        if(!$this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
@@ -51,14 +49,12 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function actionLoadServicesGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_SYSTEM_SERVICES, $gridPage);
 
-        $services = $app->systemServicesRepository->getAllServices();
+        $services = $this->app->systemServicesRepository->getAllServices();
         $count = count($services);
         $lastPage = ceil($count / $gridSize);
 
@@ -77,10 +73,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             return $cell;
         });
         $gb->addOnColumnRender('dateStarted', function(Cell $cell, SystemServiceEntity $sse) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
             $text = '-';
@@ -122,7 +122,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $gb->addAction(function(SystemServiceEntity $sse) {
             $text = '-';
 
-            if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING) {
+            if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING && $sse->getTitle() != 'PostLikeEqualizer') {
                 $text = LinkBuilder::createSimpleLink('Run', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'run', 'serviceId' => $sse->getId()], 'grid-link');
             }
 
@@ -143,18 +143,20 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             }
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build()]);
+        return ['grid' => $gb->build()];
     }
 
     public function handleRun() {
-        global $app;
-
         $serviceId = $this->httpGet('serviceId', true);
-        $service = $app->systemServicesRepository->getServiceById($serviceId);
+        $service = $this->app->systemServicesRepository->getServiceById($serviceId);
 
-        $app->serviceManager->runService($service->getScriptPath());  
+        try {
+            $this->app->serviceManager->runService($service->getScriptPath());
+            $this->flashMessage('Service started.', 'success');
+        } catch(AException $e) {
+            $this->flashMessage('Could not start service. Reason: ' . $e->getMessage(), 'error');
+        }
         
-        $this->flashMessage('Service started.', 'success');
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Modules;
 
-use App\Core\CacheManager;
+use App\Core\Application;
+use App\Core\Caching\CacheFactory;
+use App\Core\Caching\CacheNames;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 
@@ -19,8 +21,12 @@ abstract class AModule extends AGUICore {
     private array $flashMessages;
     protected ?TemplateObject $template;
     private ?APresenter $presenter;
-    private array $cachedPages;
     private ?Logger $logger;
+    protected ?Application $app;
+
+    public array $cfg;
+
+    private bool $isAjax;
 
     /**
      * The class constructor
@@ -33,8 +39,27 @@ abstract class AModule extends AGUICore {
         $this->flashMessages = [];
         $this->template = null;
         $this->presenter = null;
-        $this->cachedPages = [];
         $this->logger = null;
+        $this->isAjax = false;
+        $this->app = null;
+    }
+
+    /**
+     * Sets Application instance
+     * 
+     * @param Application $application Application instance
+     */
+    public function setApplication(Application $application) {
+        $this->app = $application;
+    }
+
+    /**
+     * Does the call come from AJAX?
+     * 
+     * @param bool $isAjax Is AJAX?
+     */
+    public function setAjax(bool $isAjax) {
+        $this->isAjax = $isAjax;
     }
 
     /**
@@ -68,16 +93,15 @@ abstract class AModule extends AGUICore {
      * 
      * @param string $presenterTitle Presenter title
      * @param string $actionTitle Action title
-     * @param bool $isAjax Is request called from AJAX?
      * @return string Rendered page content
      */
-    public function render(string $presenterTitle, string $actionTitle, bool $isAjax) {
-        $this->beforePresenterRender($presenterTitle, $actionTitle, $isAjax);
-
-        $isCacheable = $this->renderPresenter($isAjax);
+    public function render(string $presenterTitle, string $actionTitle) {
+        $this->startup($presenterTitle, $actionTitle);
+        
+        $this->renderPresenter();
         $this->renderModule();
 
-        return [$this->template->render()->getRenderedContent(), $isCacheable];
+        return $this->template->render()->getRenderedContent();
     }
 
     /**
@@ -87,19 +111,13 @@ abstract class AModule extends AGUICore {
 
     /**
      * Renders the presenter and fetches the TemplateObject instance. It also renders flash messages.
-     * 
-     * @param bool $isAjax Is request called from AJAX?
      */
-    public function renderPresenter(bool $isAjax) {
-        $isCacheable = false;
+    public function renderPresenter() {
+        $this->template = $this->presenter->render($this->title);
 
-        [$this->template, $isCacheable] = $this->presenter->render($this->title, $isAjax);
-
-        if(!$isAjax) {
+        if(!$this->isAjax) {
             $this->fillFlashMessages();
         }
-
-        return $isCacheable;
     }
 
     /**
@@ -144,16 +162,22 @@ abstract class AModule extends AGUICore {
      * @param string $actionTitle Action title
      * @param bool $isAjax Is the request called from AJAX?
      */
-    private function beforePresenterRender(string $presenterTitle, string $actionTitle, bool $isAjax) {
+    private function startup(string $presenterTitle, string $actionTitle) {
         $this->template = $this->getTemplate();
 
         $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
 
         $this->presenter = new $realPresenterTitle();
-        $this->presenter->setTemplate($isAjax ? null : $this->getTemplate());
+        $this->presenter->setTemplate($this->isAjax ? null : $this->getTemplate());
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
         $this->presenter->setLogger($this->logger);
+        $this->presenter->setCfg($this->cfg);
+        $this->presenter->setIsAjax($this->isAjax);
+        $this->presenter->setApplication($this->app);
+        $this->presenter->lock();
+        
+        $this->presenter->startup();
 
         /**
          * FLASH MESSAGES
@@ -164,28 +188,22 @@ abstract class AModule extends AGUICore {
             return;
         }
 
-        $cm = new CacheManager($this->logger);
+        if(isset($_GET['_fm'])) {
+            $cacheFactory = new CacheFactory($this->logger->getCfg());
+            $cache = $cacheFactory->getCache(CacheNames::FLASH_MESSAGES);
 
-        $flashMessages = $cm->loadFlashMessages();
+            $flashMessages = $cache->load($_GET['_fm'], function() { return []; });
 
-        if($flashMessages === null) {
-            return;
+            if(empty($flashMessages)) {
+                return;
+            }
+
+            foreach($flashMessages as $flashMessage) {
+                $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
+            }
+
+            $cache->invalidate();
         }
-
-        foreach($flashMessages as $flashMessage) {
-            $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
-        }
-
-        $cm->deleteFlashMessages();
-    }
-
-    /**
-     * Sets cached pages. Keys are the presenter names and the values is the page content.
-     * 
-     * @param array $cachedPages Array of cached pages
-     */
-    public function setCachedPages(array $cachedPages) {
-        $this->cachedPages = $cachedPages;
     }
 
     /**
@@ -195,6 +213,15 @@ abstract class AModule extends AGUICore {
      */
     public function getTitle() {
         return $this->title;
+    }
+
+    /**
+     * Sets configuration
+     * 
+     * @param array $cfg Configuration
+     */
+    public function setCfg(array $cfg) {
+        $this->cfg = $cfg;
     }
 }
 

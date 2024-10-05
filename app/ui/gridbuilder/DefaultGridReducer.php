@@ -2,7 +2,6 @@
 
 namespace App\UI\GridBuilder;
 
-use App\Core\Datetypes\DateTime;
 use App\Helpers\DateTimeFormatHelper;
 use App\Repositories\PostRepository;
 use App\Repositories\TopicRepository;

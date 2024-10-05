@@ -11,21 +11,18 @@ use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
-use Exception;
 
 class ManagePostFileUploadsPresenter extends AAdminPresenter {
     private GridHelper $gridHelper;
     
     public function __construct() {
         parent::__construct('ManagePostFileUploadsPresenter', 'Post file uploads management');
+    }
 
-        $this->addBeforeRenderCallback(function() {
-            $this->template->sidebar = $this->createManageSidebar();
-        });
-
-        global $app;
-
-        $this->gridHelper = new GridHelper($app->logger, $app->currentUser->getId());
+    public function startup() {
+        parent::startup();
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleList() {
@@ -58,33 +55,31 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
     }
 
     public function actionGetGrid() {
-        global $app;
-
         $gridPage = $this->httpGet('gridPage');
         $filterType = $this->httpGet('filterType');
         $filterKey = $this->httpGet('filterKey');
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_POST_FILE_UPLOADS, $gridPage, [$filterType]);
 
-        $gridSize = $gridSize = $app->getGridSize();
+        $gridSize = $gridSize = $this->app->getGridSize();
 
         $fileUploads = [];
         $totalCount = 0;
 
         switch($filterType) {
             case 'null':
-                $fileUploads = $app->fileUploadRepository->getAllFilesForGrid($gridSize, ($page * $gridSize));
-                $totalCount = count($app->fileUploadRepository->getAllFilesForGrid(0, 0));
+                $fileUploads = $this->app->fileUploadRepository->getAllFilesForGrid($gridSize, ($page * $gridSize));
+                $totalCount = count($this->app->fileUploadRepository->getAllFilesForGrid(0, 0));
                 break;
 
             case 'post':
-                $fileUploads = $app->fileUploadRepository->getFilesForPostForGrid($filterKey, $gridSize, ($page * $gridSize));
-                $totalCount = count($app->fileUploadRepository->getFilesForPostForGrid($filterKey, 0, 0));
+                $fileUploads = $this->app->fileUploadRepository->getFilesForPostForGrid($filterKey, $gridSize, ($page * $gridSize));
+                $totalCount = count($this->app->fileUploadRepository->getFilesForPostForGrid($filterKey, 0, 0));
                 break;
 
             case 'user':
-                $fileUploads = $app->fileUploadRepository->getFilesForUserForGrid($filterKey, $gridSize, ($page * $gridSize));
-                $totalCount = count($app->fileUploadRepository->getFilesForUserForGrid($filterKey, 0, 0));
+                $fileUploads = $this->app->fileUploadRepository->getFilesForUserForGrid($filterKey, $gridSize, ($page * $gridSize));
+                $totalCount = count($this->app->fileUploadRepository->getFilesForUserForGrid($filterKey, 0, 0));
                 break;
         }
 
@@ -94,8 +89,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $gb->addColumns(['post' => 'Post', 'user' => 'User', 'filepath' => 'File path (hover for full path)', 'filename' => 'Filename', 'dateCreated' => 'Date created']);
         $gb->addDataSource($fileUploads);
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filterType, $filterKey]);
-        $gb->addOnColumnRender('post', function(Cell $cell, PostImageFileEntity $pife) use ($app) {
-            $post = $app->postRepository->getPostById($pife->getPostId());
+        $gb->addOnColumnRender('post', function(Cell $cell, PostImageFileEntity $pife) {
+            $post = $this->app->postRepository->getPostById($pife->getPostId());
 
             $a = HTML::a();
 
@@ -105,8 +100,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             
             return $a->render();
         });
-        $gb->addOnColumnRender('user', function(Cell $cell, PostImageFileEntity $pife) use ($app) {
-            $user = $app->userRepository->getUserById($pife->getUserId());
+        $gb->addOnColumnRender('user', function(Cell $cell, PostImageFileEntity $pife) {
+            $user = $this->app->userRepository->getUserById($pife->getUserId());
 
             $a = HTML::a();
 
@@ -117,7 +112,9 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             return $a->render();
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostImageFileEntity $pife) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated());
+            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated()));
+            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
+            return $cell;
         });
         $gb->addOnColumnRender('filepath', function(Cell $cell, PostImageFileEntity $pife) {
             $cell->setTitle($pife->getFilepath());
@@ -128,8 +125,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
 
             return $cell;
         });
-        $gb->addAction(function(PostImageFileEntity $pife) use ($app) {
-            $filepath = $app->fileUploadManager->createPostImageSourceLink($pife);
+        $gb->addAction(function(PostImageFileEntity $pife) {
+            $filepath = $this->app->fileUploadManager->createPostImageSourceLink($pife);
 
             $a = HTML::a();
 
@@ -140,8 +137,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
 
             return $a->render();
         });
-        $gb->addAction(function(PostImageFileEntity $pife) use ($app) {
-            if($app->actionAuthorizator->canDeleteFileUpload($app->currentUser->getId(), $pife)) {
+        $gb->addAction(function(PostImageFileEntity $pife) {
+            if($this->app->actionAuthorizator->canDeleteFileUpload($this->getUserId(), $pife)) {
                 return LinkBuilder::createSimpleLink('Delete', $this->createURL('delete', ['uploadId' => $pife->getId()]), 'grid-link');
             } else {
                 return '-';
@@ -173,8 +170,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             $options = [];
             switch($filterType) {
                 case 'post':
-                        $postIds = $app->fileUploadRepository->getPostIdsWithFileUploads();
-                        $posts = $app->postRepository->bulkGetPostsByIds($postIds);
+                        $postIds = $this->app->fileUploadRepository->getPostIdsWithFileUploads();
+                        $posts = $this->app->postRepository->bulkGetPostsByIds($postIds);
 
                         foreach($posts as $post) {
                             if($post->getId() == $filterKey) {
@@ -186,8 +183,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
                     break;
 
                 case 'user':
-                        $userIds = $app->fileUploadRepository->getUserIdsWithFileUploads();
-                        $users = $app->userRepository->getUsersByIdBulk($userIds);
+                        $userIds = $this->app->fileUploadRepository->getUserIdsWithFileUploads();
+                        $users = $this->app->userRepository->getUsersByIdBulk($userIds);
 
                         foreach($users as $user) {
                             if($user->getId() == $filterKey) {
@@ -258,26 +255,24 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             $filterControl = $filterForm . '<script type="text/javascript" src="js/PostUploadImagesFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
         }
 
-        $this->ajaxSendResponse(['grid' => $gb->build(), 'filterControl' => $filterControl]);
+        return ['grid' => $gb->build(), 'filterControl' => $filterControl];
     }
 
     public function handleDelete() {
-        global $app;
-
         $uploadId = $this->httpGet('uploadId', true);
 
-        $pife = $app->fileUploadRepository->getFileById($uploadId);
+        $pife = $this->app->fileUploadRepository->getFileById($uploadId);
 
         try {
-            $app->fileUploadRepository->beginTransaction();
+            $this->app->fileUploadRepository->beginTransaction();
             
-            $app->fileUploadManager->deleteUploadedFile($pife, $app->currentUser->getId());
+            $this->app->fileUploadManager->deleteUploadedFile($pife, $this->getUserId());
 
-            $app->fileUploadRepository->commit($app->currentUser->getId(), __METHOD__);
+            $this->app->fileUploadRepository->commit($this->getUserId(), __METHOD__);
 
             $this->flashMessage('File deleted.', 'success');
         } catch(AException $e) {
-            $app->fileUploadRepository->rollback();
+            $this->app->fileUploadRepository->rollback();
             
             $this->flashMessage('File could not be deleted. Reason: ' . $e->getMessage(), 'error');
         }
@@ -286,15 +281,13 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
     }
 
     public function actionGetFilterCategorySuboptions() {
-        global $app;
-
         $category = $this->httpGet('category');
 
         $options = [];
         switch($category) {
             case 'post':
-                $postIds = $app->fileUploadRepository->getPostIdsWithFileUploads();
-                $posts = $app->postRepository->bulkGetPostsByIds($postIds);
+                $postIds = $this->app->fileUploadRepository->getPostIdsWithFileUploads();
+                $posts = $this->app->postRepository->bulkGetPostsByIds($postIds);
 
                 foreach($posts as $post) {
                     $options[] = '<option value="' . $post->getId() . '">' . $post->getTitle() . '</option>';
@@ -302,8 +295,8 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             break;
 
         case 'user':
-                $userIds = $app->fileUploadRepository->getUserIdsWithFileUploads();
-                $users = $app->userRepository->getUsersByIdBulk($userIds);
+                $userIds = $this->app->fileUploadRepository->getUserIdsWithFileUploads();
+                $users = $this->app->userRepository->getUsersByIdBulk($userIds);
 
                 foreach($users as $user) {
                     $options[] = '<option value="' . $user->getId() . '">' . $user->getUsername() . '</option>';
@@ -311,7 +304,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
             break;
         }
 
-        $this->ajaxSendResponse(['options' => $options, 'empty' => (empty($options))]);
+        return ['options' => $options, 'empty' => (empty($options))];
     }
 }
 

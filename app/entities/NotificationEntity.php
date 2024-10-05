@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class NotificationEntity implements ICreatableFromRow {
+class NotificationEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $title;
@@ -47,7 +47,11 @@ class NotificationEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['notificationId'], $row['userId'], $row['title'], $row['message'], $row['dateCreated'], $row['dateSeen']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['notificationId' => 'string', 'userId' => 'string', 'title' => 'string', 'message' => 'string', 'dateCreated' => 'string', 'dateSeen' => '?string']);
+
+        return new self($row->notificationId, $row->userId, $row->title, $row->message, $row->dateCreated, $row->dateSeen);
     }
 }
 

@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class TopicMemberEntity implements ICreatableFromRow {
+class TopicMemberEntity extends AEntity {
     private string $id;
     private string $userId;
     private string $topicId;
@@ -41,8 +41,11 @@ class TopicMemberEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['membershipId' => 'string', 'userId' => 'string', 'topicId' => 'string', 'role' => 'int', 'dateCreated' => 'string']);
         
-        return new self($row['membershipId'], $row['userId'], $row['topicId'], $row['role'], $row['dateCreated']);
+        return new self($row->membershipId, $row->userId, $row->topicId, $row->role, $row->dateCreated);
     }
 }
 

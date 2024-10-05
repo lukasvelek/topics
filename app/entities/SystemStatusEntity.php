@@ -2,7 +2,7 @@
 
 namespace App\Entities;
 
-class SystemStatusEntity implements ICreatableFromRow {
+class SystemStatusEntity extends AEntity {
     private string $id;
     private string $name;
     private int $status;
@@ -41,7 +41,11 @@ class SystemStatusEntity implements ICreatableFromRow {
         if($row === null) {
             return null;
         }
-        return new self($row['systemId'], $row['name'], $row['status'], $row['description'], $row['dateUpdated']);
+
+        $row = self::createRow($row);
+        self::checkTypes($row, ['systemId' => 'string', 'name' => 'string', 'status' => 'int', 'description' => '?string', 'dateUpdated' => 'string']);
+
+        return new self($row->systemId, $row->name, $row->status, $row->description, $row->dateUpdated);
     }
 }
 
