@@ -21,7 +21,7 @@ Topics is a website that allows people to chat about different topics. Each topi
         - Currently words are banned on the application-level
 
 ## Current version
-    - v1.5 (10/5/2024)
+    - v1.6_dev (-)
 
 ## Future plans
     - Videos in posts
