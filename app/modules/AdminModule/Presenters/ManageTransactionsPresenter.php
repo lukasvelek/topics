@@ -79,15 +79,14 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             if($user === null) {
                 return '-';
             }
+            
+            $el = HTML::new()->el('a')->setHref($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
+                    ->setText($user->getUsername())
+                    ->setClass('grid-link');
 
-            $a = HTML::a();
+            $cell->setValue($el);
 
-            $a->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
-                ->text($user->getUsername())
-                ->class('grid-link')
-            ;
-
-            return $a->render();
+            return $cell;
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TransactionEntity $te) {
             $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated()));

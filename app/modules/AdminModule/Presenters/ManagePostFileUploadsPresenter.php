@@ -92,24 +92,24 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('post', function(Cell $cell, PostImageFileEntity $pife) {
             $post = $this->app->postRepository->getPostById($pife->getPostId());
 
-            $a = HTML::a();
+            $el = HTML::new()->setHref($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
+                    ->setText($post->getTitle())
+                    ->setClass('grid-link');
 
-            $a->href($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
-                ->text($post->getTitle())
-                ->class('grid-link');
-            
-            return $a->render();
+            $cell->setValue($el);
+
+            return $cell;
         });
         $gb->addOnColumnRender('user', function(Cell $cell, PostImageFileEntity $pife) {
             $user = $this->app->userRepository->getUserById($pife->getUserId());
 
-            $a = HTML::a();
+            $el = HTML::new()->setHref($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $user->getId()]))
+                    ->setText($user->getUsername())
+                    ->setClass('grid-link');
 
-            $a->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $user->getId()]))
-                ->text($user->getUsername())
-                ->class('grid-link');
+            $cell->setValue($el);
 
-            return $a->render();
+            return $cell;
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostImageFileEntity $pife) {
             $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($pife->getDateCreated()));
@@ -128,14 +128,12 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $gb->addAction(function(PostImageFileEntity $pife) {
             $filepath = $this->app->fileUploadManager->createPostImageSourceLink($pife);
 
-            $a = HTML::a();
+            $el = HTML::new()->setHref('#')
+                    ->setOnClick('openImage(\'' . $filepath . '\')')
+                    ->setText('Open')
+                    ->setClass('grid-link');
 
-            $a->onClick('openImage(\'' . $filepath . '\')')
-                ->text('Open')
-                ->class('grid-link')
-                ->href('#');
-
-            return $a->render();
+            return $el->toString();
         });
         $gb->addAction(function(PostImageFileEntity $pife) {
             if($this->app->actionAuthorizator->canDeleteFileUpload($this->getUserId(), $pife)) {
