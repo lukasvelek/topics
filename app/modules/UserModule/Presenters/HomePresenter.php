@@ -91,8 +91,6 @@ class HomePresenter extends AUserPresenter {
         $link = PostLister::createLikeLink($postId, ($toLike == 'true'));
 
         try {
-            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
-            
             $this->app->postRepository->beginTransaction();
 
             if($toLike == 'true') {
@@ -105,6 +103,8 @@ class HomePresenter extends AUserPresenter {
             $cache->invalidate();
 
             $this->app->postRepository->commit($userId, __METHOD__);
+
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
         } catch(AException $e) {
             $this->app->postRepository->rollback();
 
