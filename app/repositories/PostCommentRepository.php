@@ -75,7 +75,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getCommentCountForPostId(string $postId, bool $deletedOnly = true) {
+    public function getCommentCountForPostId(string $postId, bool $notDeletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
@@ -83,7 +83,7 @@ class PostCommentRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->andWhere('parentCommentId IS NULL');
 
-        if($deletedOnly) {
+        if($notDeletedOnly) {
             $qb->andWhere('isDeleted = 0');
         }
 

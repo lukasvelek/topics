@@ -333,7 +333,7 @@ class PostsPresenter extends AUserPresenter {
         $authorId = $this->getUserId();
 
         if($text == '') {
-            return ['error' => '1', 'errorMsg' => 'No comment text provided.'];
+            throw new AjaxRequestException('No comment text provided.');
         }
 
         try {
@@ -377,9 +377,11 @@ class PostsPresenter extends AUserPresenter {
             if($parentCommentId !== null) {
                 $values['parentComment'] = true;
             }
+            $commentCount = $this->app->postCommentRepository->getCommentCountForPostId($postId);
+            $values['commentCount'] = $commentCount;
             return $values;
         } else {
-            return ['error' => '1', 'errorMsg' => 'Could not post comment.'];
+            throw new AjaxRequestException('Could not post comment.');
         }
     }
 
