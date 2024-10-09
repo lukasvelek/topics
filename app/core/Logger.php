@@ -262,7 +262,7 @@ class Logger implements ILoggerCallable {
             FileManager::createFolder($folder);
         }
 
-        FileManager::saveFile($folder, $file, $text . "\r\n");
+        FileManager::saveFile($folder, $file, $text . "\r\n", false, true);
     }
 
     /**
