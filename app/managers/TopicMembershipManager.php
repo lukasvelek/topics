@@ -131,7 +131,7 @@ class TopicMembershipManager extends AManager {
             return $user->getUsername() . ' (Ex-user)';
         }
 
-        $span = HTML::new()->el('span')->setText(TopicMemberRole::toString($role))->setStyle('color', TopicMemberRole::getColorByKey($role));
+        $span = HTML::el('span')->text(TopicMemberRole::toString($role))->style('color', TopicMemberRole::getColorByKey($role));
 
         $text = $namePrefix . $user->getUsername() . ' (' . $span->toString() . ')';
 

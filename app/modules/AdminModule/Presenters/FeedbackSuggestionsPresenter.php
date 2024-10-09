@@ -79,51 +79,50 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             return $e->getShortenedText(100);
         });
         $gb->addOnColumnRender('category', function(Cell $cell, UserSuggestionEntity $e) {
-            $a = HTML::a();
-
-            $a->onClick('getSuggestionsGrid(-1, \'category\', \'' . $e->getCategory() . '\')')
+            $a = HTML::el('a')->onClick('getSuggestionsGrid(-1, \'category\', \'' . $e->getCategory() . '\')')
                 ->text(SuggestionCategory::toString($e->getCategory()))
                 ->class('grid-link')
-                ->style(['color' => SuggestionCategory::getColorByKey($e->getCategory()), 'cursor' => 'pointer'])
-                ->href('#')
-            ;
+                ->style('color', SuggestionCategory::getColorByKey($e->getCategory()))
+                ->style('cursor', 'pointer')
+                ->href('#');
 
-            return $a->render();
+            $cell->setValue($a);
+
+            return $cell;
         });
         $gb->addOnColumnRender('status', function(Cell $cell, UserSuggestionEntity $e) {
-            $a = HTML::a();
-
-            $a->onClick('getSuggestionsGrid(-1, \'status\', \'' . $e->getStatus() . '\')')
+            $a = HTML::el('a')->onClick('getSuggestionsGrid(-1, \'status\', \'' . $e->getStatus() . '\')')
                 ->text(SuggestionStatus::toString($e->getStatus()))
                 ->class('grid-link')
-                ->style(['color' => SuggestionStatus::getColorByStatus($e->getStatus()), 'cursor' => 'pointer'])
-                ->href('#')
-            ;
+                ->style('color', SuggestionStatus::getColorByStatus($e->getStatus()))
+                ->style('cursor', 'pointer')
+                ->href('#');
 
-            return $a->render();
+            $cell->setValue($a);
+
+            return $cell;
         });
         $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) {
             $user = $this->app->userRepository->getUserById($e->getUserId());
 
-            $a = HTML::a();
-
-            $a->onClick('getSuggestionsGrid(-1, \'user\', \'' . $e->getUserId() . '\')')
+            $a = HTML::el('a')->onClick('getSuggestionsGrid(-1, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
                 ->class('grid-link')
-                ->href('#')
-            ;
+                ->href('#');
 
-            return $a->render();
+            $cell->setValue($a);
+
+            return $cell;
         });
         $gb->addOnColumnRender('title', function(Cell $cell, UserSuggestionEntity $e) {
-            $a = HTML::a();
-
-            $a->text($e->getTitle())
+            $a = HTML::el('a')
+                ->text($e->getTitle())
                 ->class('grid-link')
-                ->href($this->app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]))
-            ;
+                ->href($this->app->composeURL(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'profile', 'suggestionId' => $e->getId()]));
 
-            return $a->render();
+            $cell->setValue($a);
+
+            return $cell;
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $suggestionCount, 'getSuggestionsGrid', [$filterType, $filterKey]);
 

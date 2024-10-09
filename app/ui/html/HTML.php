@@ -3,23 +3,22 @@
 namespace App\UI\HTML;
 
 use App\Exceptions\GeneralException;
-use App\UI\HTML\Tags\TagA;
-use App\UI\HTML\Tags\TagSpan;
 
+/**
+ * HTML is a class that allows creating a HTML tag. It can be whatever tag as it supports several parameters.
+ * 
+ * @author Lukas Velek
+ */
 class HTML {
-    /**
-     * @deprecated
-     */
-    public static function a() {
-        return new TagA();
-    }
-
     private ?string $el;
     private array $styles;
-    private ?string $text;
+    private HTML|string $text;
     private array $attributes;
 
-    public function __construct() {
+    /**
+     * Private class constructor
+     */
+    private function __construct() {
         $this->el = null;
         $this->styles = [];
         $this->text = null;
@@ -27,46 +26,124 @@ class HTML {
         return $this;
     }
 
-    public function el(string $name) {
-        $this->el = $name;
-        return $this;
+    /**
+     * Sets the tag (a, span, div, ...)
+     * 
+     * @param string $name Tag
+     * @return self
+     */
+    public static function el(string $name) {
+        $x = new self();
+        $x->el = $name;
+        return $x;
     }
 
-    public function setClass(string $class) {
+    /**
+     * Sets the class attribute
+     * 
+     * @param string $class
+     * @return self
+     */
+    public function class(string $class) {
         $this->attributes['class'] = $class;
         return $this;
     }
 
-    public function setStyle(string $key, mixed $value) {
+    /**
+     * Sets the style attribute
+     * 
+     * @param string $key Style key (color, background-color)
+     * @param mixed $value Style value (green, 10px)
+     * @return self
+     */
+    public function style(string $key, mixed $value) {
         $this->styles[] = $key . ': ' . $value;
         return $this;
     }
 
-    public function setText(string $text) {
+    /**
+     * Sets the content - it can be string or another instance of HTML
+     * 
+     * @param HTML|string $text
+     * @return self
+     */
+    public function text(HTML|string $text) {
         $this->text = $text;
         return $this;
     }
 
-    public function setTitle(string $title) {
+    /**
+     * Sets the title attribute
+     * 
+     * @param string $title
+     * @return self
+     */
+    public function title(string $title) {
         $this->attributes['title'] = $title;
         return $this;
     }
 
-    public function setHref(string $href) {
+    /**
+     * Sets the href attribute
+     * 
+     * @param string $href Href
+     * @return self
+     */
+    public function href(string $href) {
         $this->attributes['href'] = $href;
         return $this;
     }
 
-    public function setOnClick(string $onClick) {
+    /**
+     * Sets the onclick attribute
+     * 
+     * @param string $onClick Onclick
+     * @return self
+     */
+    public function onClick(string $onClick) {
         $this->attributes['onclick'] = $onClick;
         return $this;
     }
 
-    public function toString() {
-        if($this->el === null) {
-            throw new GeneralException('No element type is set.');
-        }
+    /**
+     * Sets the value attribute
+     * 
+     * @param mixed $value Value
+     * @return self
+     */
+    public function value(mixed $value) {
+        $this->attributes['value'] = $value;
+        return $this;
+    }
 
+    /**
+     * Sets the name attribute
+     * 
+     * @param string $name Name
+     * @return self
+     */
+    public function name(string $name) {
+        $this->attributes['name'] = $name;
+        return $this;
+    }
+
+    /**
+     * Sets the id attribute
+     * 
+     * @param string $id ID
+     * @return self
+     */
+    public function id(string $id) {
+        $this->attributes['id'] = $id;
+        return $this;
+    }
+
+    /**
+     * Converts the class to string
+     * 
+     * @return string
+     */
+    public function toString() {
         $code = '<' . $this->el;
 
         $tmps = [];
@@ -89,15 +166,15 @@ class HTML {
 
         $code .= '>';
 
-        $code .= $this->text;
+        if($this->text instanceof HTML) {
+            $code .= $this->text->toString();
+        } else {
+            $code .= $this->text;
+        }
 
         $code .= '</' . $this->el . '>';
 
         return $code;
-    }
-
-    public static function new() {
-        return new self();
     }
 }
 

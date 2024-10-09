@@ -80,20 +80,20 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             return ReportEntityType::toString($re->getEntityType()) . ' report';
         });
         $gb->addOnColumnRender('category', function(Cell $cell, ReportEntity $re) {
-            $el = HTML::new()->el('a')->setHref('#')
-                ->setOnClick('getReportGrid(-1, \'category\', \'' . $re->getCategory() . '\')')
-                ->setText(ReportCategory::toString($re->getCategory()))
-                ->setClass('grid-link');
+            $el = HTML::el('a')->href('#')
+                ->onClick('getReportGrid(-1, \'category\', \'' . $re->getCategory() . '\')')
+                ->text(ReportCategory::toString($re->getCategory()))
+                ->class('grid-link');
 
             $cell->setValue($el);
 
             return $cell;
         });
         $gb->addOnColumnRender('status', function(Cell $cell, ReportEntity $re) {
-            $el = HTML::new()->el('a')->setHref('#')
-                ->setOnClick('getReportGrid(-1, \'status\', \'' . $re->getStatus() . '\')')
-                ->setText(ReportCategory::toString($re->getStatus()))
-                ->setClass('grid-link');
+            $el = HTML::el('a')->href('#')
+                ->onClick('getReportGrid(-1, \'status\', \'' . $re->getStatus() . '\')')
+                ->text(ReportCategory::toString($re->getStatus()))
+                ->class('grid-link');
 
             $cell->setValue($el);
 
@@ -102,19 +102,19 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) {
             $user = $this->app->userRepository->getUserById($re->getUserId());
 
-            $el = HTML::new()->el('a')->setHref('#')
-                ->setOnClick('getReportGrid(-1, \'user\', \'' . $user->getId() . '\')')
-                ->setText($user->getUsername())
-                ->setClass('grid-link');
+            $el = HTML::el('a')->href('#')
+                ->onClick('getReportGrid(-1, \'user\', \'' . $user->getId() . '\')')
+                ->text($user->getUsername())
+                ->class('grid-link');
 
             $cell->setValue($el);
 
             return $cell;
         });
         $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
-            $el = HTML::new()->el('a')->setHref($this->createURLString('profile', ['reportId' => $re->getId()]))
-                ->setText(ReportEntityType::toString($re->getEntityType()) . ' report')
-                ->setClass('grid-link');
+            $el = HTML::el('a')->href($this->createURLString('profile', ['reportId' => $re->getId()]))
+                ->text(ReportEntityType::toString($re->getEntityType()) . ' report')
+                ->class('grid-link');
 
             $cell->setValue($el);
 

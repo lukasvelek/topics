@@ -80,9 +80,9 @@ class ManageTransactionsPresenter extends AAdminPresenter {
                 return '-';
             }
             
-            $el = HTML::new()->el('a')->setHref($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
-                    ->setText($user->getUsername())
-                    ->setClass('grid-link');
+            $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
+                    ->text($user->getUsername())
+                    ->class('grid-link');
 
             $cell->setValue($el);
 
