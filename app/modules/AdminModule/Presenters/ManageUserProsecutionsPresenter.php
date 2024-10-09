@@ -12,7 +12,6 @@ use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageUserProsecutionsPresenter extends AAdminPresenter {
@@ -25,12 +24,12 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
     public function startup() {
         parent::startup();
 
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-
         if(!$this->app->sidebarAuthorizator->canManageUserProsecutions($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionProsecutionGrid() {
@@ -47,8 +46,12 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addColumns(['user' => 'User', 'reason' => 'Reason', 'type' => 'Type', 'dateFrom' => 'Date from', 'dateTo' => 'Date to']);
         $gb->addDataSource($prosecutions);
         $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) {
-            $user = $this->app->userRepository->getUserById($userProsecution->getUserId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            try {
+                $user = $this->app->userManager->getUserById($userProsecution->getUserId());
+                return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnColumnRender('type', function(Cell $cell, UserProsecutionEntity $userProsecution) {
             return UserProsecutionType::toString($userProsecution->getType());
@@ -84,8 +87,12 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addGridPaging($page, $lastPage, $gridSize, $prosecutionCount, 'getUserProsecutions');
 
         $gb->addOnExportRender('user', function(UserProsecutionEntity $userProsecution) {
-            $user = $this->app->userRepository->getUserById($userProsecution->getUserId());
-            return $user->getUsername();
+            try {
+                $user = $this->app->userManager->getUserById($userProsecution->getUserId());
+                return $user->getUsername();
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnExportRender('type', function(UserProsecutionEntity $userProsecution) {
             return UserProsecutionType::toString($userProsecution->getType());
@@ -152,9 +159,10 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
             }
 
             $prosecution = $this->app->userProsecutionRepository->getProsecutionById($prosecutionId);
-            $user = $this->app->userRepository->getUserById($prosecution->getUserId());
-
+            
             try {
+                $user = $this->app->userManager->getUserById($prosecution->getUserId());
+
                 $this->app->userProsecutionRepository->beginTransaction();
 
                 $this->app->userProsecutionManager->removeBan($prosecution->getUserId(), $this->getUserId(), $reason);
@@ -205,8 +213,12 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $gb->addDataSource($historyEntries);
         $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
-            $user = $this->app->userRepository->getUserById($entity->getUserId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            try {
+                $user = $this->app->userManager->getUserById($entity->getUserId());
+                return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, UserProsecutionHistoryEntryEntity $entity) {
             return DateTimeFormatHelper::formatDateToUserFriendly($entity->getDateCreated());

@@ -13,7 +13,6 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
@@ -103,14 +102,18 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
             return $cell;
         });
         $gb->addOnColumnRender('user', function(Cell $cell, UserSuggestionEntity $e) {
-            $user = $this->app->userRepository->getUserById($e->getUserId());
+            try {
+                $user = $this->app->userManager->getUserById($e->getUserId());
 
-            $a = HTML::el('a')->onClick('getSuggestionsGrid(-1, \'user\', \'' . $e->getUserId() . '\')')
+                $a = HTML::el('a')->onClick('getSuggestionsGrid(-1, \'user\', \'' . $e->getUserId() . '\')')
                 ->text($user->getUsername())
                 ->class('grid-link')
                 ->href('#');
 
-            $cell->setValue($a);
+                $cell->setValue($a);
+            } catch(AException $e) {
+                $cell->setValue('-');
+            }
 
             return $cell;
         });
@@ -316,9 +319,13 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $commentCode = [];
         foreach($comments as $comment) {
             if($comment->isAdminOnly() && !$this->getUser()->isAdmin()) continue;
-            
-            $author = $this->app->userRepository->getUserById($comment->getUserId());
-            $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $comment->getUserId() . '">' . $author->getUsername() . '</a>';
+
+            try {
+                $author = $this->app->userManager->getUserById($comment->getUserId());
+                $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $comment->getUserId() . '">' . $author->getUsername() . '</a>';
+            } catch(AException $e) {
+                $authorLink = '-';
+            }
 
             $hiddenLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=0&suggestionId=' . $suggestionId . '">Hidden</a>';
             $publicLink = '<a class="post-data-link" style="color: grey" href="?page=AdminModule:FeedbackSuggestions&action=updateComment&commentId=' . $comment->getId() . '&hidden=1&suggestionId=' . $suggestionId . '">Public</a>';
@@ -350,8 +357,12 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $this->saveToPresenterCache('suggestion', $suggestion);
 
-        $author = $this->app->userRepository->getUserById($suggestion->getUserId());
-        $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $suggestion->getUserId() . '">' . $author->getUsername() . '</a>';
+        try {
+            $author = $this->app->userManager->getUserById($suggestion->getUserId());
+            $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $suggestion->getUserId() . '">' . $author->getUsername() . '</a>';
+        } catch(AException $e) {
+            $authorLink = '-';
+        }
         $status = '<span style="color: ' . SuggestionStatus::getColorByStatus($suggestion->getStatus()) . '">' . SuggestionStatus::toString($suggestion->getStatus()) . '</span>';
         $category = '<span style="color: ' . SuggestionCategory::getColorByKey($suggestion->getCategory()) . '">' . SuggestionCategory::toString($suggestion->getCategory()) . '</span>';
 
@@ -543,8 +554,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleUpdateComment() {
-        
-
         $commentId = $this->httpGet('commentId');
         $hidden = $this->httpGet('hidden');
         $suggestionId = $this->httpGet('suggestionId');
@@ -567,8 +576,6 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
     }
 
     public function handleDeleteComment() {
-        
-
         $commentId = $this->httpGet('commentId');
         $suggestionId = $this->httpGet('suggestionId');
 

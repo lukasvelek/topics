@@ -8,8 +8,6 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\DefaultGridReducer;
-use App\UI\GridBuilder\GridBuilder;
-use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageGridExportsPresenter extends AAdminPresenter {
@@ -21,6 +19,11 @@ class ManageGridExportsPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }

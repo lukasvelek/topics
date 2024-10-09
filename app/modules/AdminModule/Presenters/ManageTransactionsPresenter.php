@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Components\Grid\GridFactory;
 use App\Core\AjaxRequestBuilder;
 use App\Entities\TransactionEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
@@ -20,6 +21,11 @@ class ManageTransactionsPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageTransactions($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
 
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
@@ -74,17 +80,17 @@ class ManageTransactionsPresenter extends AAdminPresenter {
                 return '-';
             }
             
-            $user = $this->app->userRepository->getUserById($te->getUserId());
+            try {
+                $user = $this->app->userManager->getUserById($te->getUserId());
 
-            if($user === null) {
-                return '-';
+                $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
+                        ->text($user->getUsername())
+                        ->class('grid-link');
+    
+                $cell->setValue($el);
+            } catch(AException $e) {
+                $cell->setValue('-');
             }
-            
-            $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
-                    ->text($user->getUsername())
-                    ->class('grid-link');
-
-            $cell->setValue($el);
 
             return $cell;
         });
@@ -100,14 +106,13 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $gb->addOnExportRender('user', function(TransactionEntity $te) {
             if($te->getUserId() === null) {
                 return '-';
-            } else {
-                $user = $this->app->userRepository->getUserById($te->getUserId());
+            }
 
-                if($user === null) {
-                    return '-';
-                } else {
-                    return $user->getUsername();
-                }
+            try {
+                $user = $this->app->userManager->getUserById($te->getUserId());
+                return $user->getUsername();
+            } catch(AException $e) {
+                return '-';
             }
         });
         $gb->addGridExport(function() {

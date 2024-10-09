@@ -9,7 +9,6 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class TopicInvitesPresenter extends AUserPresenter {

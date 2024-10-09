@@ -11,12 +11,14 @@ use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
+use App\Exceptions\AException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\GridBuilder;
+use Exception;
 
 /**
  * Common presenter class that all presenters must extend. It contains useful methods and most importantly rendering functionality.
@@ -600,7 +602,12 @@ abstract class APresenter extends AGUICore {
 
         if(method_exists($this, $actionAction)) {
             $result = $this->logger->stopwatch(function() use ($actionAction) {
-                return $this->$actionAction();
+                try {
+                    $result = $this->$actionAction();
+                } catch(AException|Exception $e) {
+                    return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                }
+                return $result;
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
 
             if($this->ajaxResponse !== null) {

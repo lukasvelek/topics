@@ -20,6 +20,7 @@ use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
+use App\Managers\PostManager;
 use App\Managers\ReportManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
@@ -121,6 +122,7 @@ class Application {
     public EntityManager $entityManager;
     public ReportManager $reportManager;
     public ChatManager $chatManager;
+    public PostManager $postManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -167,6 +169,7 @@ class Application {
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
         $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
+        $this->postManager = new PostManager($this->logger, $this->entityManager, $this->postRepository, $this->postCommentRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

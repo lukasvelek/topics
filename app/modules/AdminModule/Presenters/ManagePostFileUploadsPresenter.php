@@ -8,7 +8,6 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
@@ -21,6 +20,11 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManagePostFileUploads($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
@@ -90,24 +94,32 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $gb->addDataSource($fileUploads);
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filterType, $filterKey]);
         $gb->addOnColumnRender('post', function(Cell $cell, PostImageFileEntity $pife) {
-            $post = $this->app->postRepository->getPostById($pife->getPostId());
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $pife->getPostId());
 
-            $el = HTML::el('a')->href($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
-                    ->text($post->getTitle())
-                    ->class('grid-link');
+                $el = HTML::el('a')->href($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
+                        ->text($post->getTitle())
+                        ->class('grid-link');
 
-            $cell->setValue($el);
+                $cell->setValue($el);
+            } catch(AException $e) {
+                $cell->setValue('-');
+            }
 
             return $cell;
         });
         $gb->addOnColumnRender('user', function(Cell $cell, PostImageFileEntity $pife) {
-            $user = $this->app->userRepository->getUserById($pife->getUserId());
+            try {
+                $user = $this->app->userManager->getUserById($pife->getUserId());
 
-            $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $user->getId()]))
-                    ->text($user->getUsername())
-                    ->class('grid-link');
-
-            $cell->setValue($el);
+                $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $user->getId()]))
+                        ->text($user->getUsername())
+                        ->class('grid-link');
+    
+                $cell->setValue($el);
+            } catch(AException $e) {
+                $cell->setValue('-');
+            }
 
             return $cell;
         });

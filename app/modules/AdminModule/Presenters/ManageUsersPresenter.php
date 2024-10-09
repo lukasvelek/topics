@@ -15,7 +15,6 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
@@ -28,12 +27,12 @@ class ManageUsersPresenter extends AAdminPresenter {
     public function startup() {
         parent::startup();
 
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-
         if(!$this->app->sidebarAuthorizator->canManageUsers($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
+        
+        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function actionLoadUsersGrid() {
@@ -118,7 +117,13 @@ class ManageUsersPresenter extends AAdminPresenter {
 
     public function handleUnsetAdmin(?FormResponse $fr = null) {
         $userId = $this->httpGet('userId', true);
-        $user = $this->app->userRepository->getUserById($userId);
+
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $password = $fr->password;
@@ -173,7 +178,13 @@ class ManageUsersPresenter extends AAdminPresenter {
 
     public function handleSetAdmin(?FormResponse $fr = null) {
         $userId = $this->httpGet('userId', true);
-        $user = $this->app->userRepository->getUserById($userId);
+        
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:ManageUsers', 'action' => 'list']);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $password = $fr->password;
@@ -228,8 +239,14 @@ class ManageUsersPresenter extends AAdminPresenter {
     
     public function handleWarnUser(?FormResponse $fr = null) {
         $userId = $this->httpGet('userId', true);
-        $user = $this->app->userRepository->getUserById($userId);
         $reportId = $this->httpGet('reportId', true);
+        
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'profile', 'reportId' => $reportId]);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;
@@ -274,8 +291,14 @@ class ManageUsersPresenter extends AAdminPresenter {
 
     public function handleBanUser(?FormResponse $fr = null) {
         $userId = $this->httpGet('userId', true);
-        $user = $this->app->userRepository->getUserById($userId);
         $reportId = $this->httpGet('reportId');
+        
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:FeedbacReports', 'action' => 'profile', 'reportId' => $reportId]);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $reason = $fr->description;

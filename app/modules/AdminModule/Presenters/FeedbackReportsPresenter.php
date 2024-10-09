@@ -14,7 +14,6 @@ use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
@@ -100,14 +99,17 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             return $cell;
         });
         $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) {
-            $user = $this->app->userRepository->getUserById($re->getUserId());
-
-            $el = HTML::el('a')->href('#')
+            try {
+                $user = $this->app->userManager->getUserById($re->getUserId());
+                $el = HTML::el('a')->href('#')
                 ->onClick('getReportGrid(-1, \'user\', \'' . $user->getId() . '\')')
                 ->text($user->getUsername())
                 ->class('grid-link');
 
-            $cell->setValue($el);
+                $cell->setValue($el);
+            } catch(AException $e) {
+                $cell->setValue('-');
+            }
 
             return $cell;
         });
@@ -300,7 +302,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $this->saveToPresenterCache('report', $report);
 
-        $author = $this->app->userRepository->getUserById($report->getUserId());
+        try {
+            $author = $this->app->userManager->getUserById($report->getUserId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
+        }
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $report->getUserId() . '">' . $author->getUsername() . '</a>';
         $entityTypeText = ReportEntityType::toString($report->getEntityType());
         $entityLink = '<a class="post-data-link" href="?page=UserModule:';
@@ -308,13 +315,27 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         switch($report->getEntityType()) {
             case ReportEntityType::COMMENT:
                 $comment = $this->app->postCommentRepository->getCommentById($report->getEntityId());
-                $post = $this->app->postRepository->getPostById($comment->getPostId());
-                $author = $this->app->userRepository->getUserById($comment->getAuthorId());
+                $tmp = '';
+                try {
+                    $tmp = 'post';
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+
+                    $tmp = 'user';
+                    $author = $this->app->userManager->getUserById($comment->getAuthorId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find ' . $tmp . '. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Posts&action=profile&postId=' . $comment->getPostId() . '">Comment on post \'' . $post->getTitle() . '\' from user \'' . $author->getUsername() . '\' created on \'' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) .'\'</a>';
                 break;
 
             case ReportEntityType::POST:
-                $post = $this->app->postRepository->getPostById($report->getEntityId());
+                try {
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $report->getEntityId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
                 break;
 
@@ -322,14 +343,19 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 try {
                     $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                 } catch(AException $e) {
-                    $this->flashMessage($e->getMessage(), 'error');
+                    $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
                 }
                 $entityLink .= 'Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
                 break;
 
             case ReportEntityType::USER:
-                $reportUser = $this->app->userRepository->getUserById($report->getEntityId());
+                try {
+                    $reportUser = $this->app->userManager->getUserById($report->getEntityId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Users&action=profile&userId=' . $report->getEntityId() . '">' . $reportUser->getUsername() . '</a>';
                 break;
         }
@@ -389,7 +415,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
 
                 case ReportEntityType::POST:
-                    $post = $this->app->postRepository->getPostById($report->getEntityId());
+                    try {
+                        $post = $this->app->postManager->getPostById($this->getUserId(), $report->getEntityId());
+                    } catch(AException $e) {
+                        $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                        $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                    }
 
                     if($post->isDeleted() !== true) {
                         $adminLinks[] = LinkBuilder::createSimpleLink('Delete post', ['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
@@ -401,7 +432,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     try {
                         $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                     } catch(AException $e) {
-                        $this->flashMessage($e->getMessage(), 'error');
+                        $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
                         $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
                     }
 

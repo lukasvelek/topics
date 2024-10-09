@@ -258,6 +258,7 @@ class PostRepository extends ARepository {
         return $qb->fetch();
     }
 
+    /** @deprecated */
     public function getPostById(string $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 

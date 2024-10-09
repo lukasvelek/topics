@@ -279,9 +279,15 @@ class AjaxRequestBuilder {
             $code[] = 'try {';
             $code[] = 'const obj = JSON.parse(data);';
 
+            $code[] = 'if(obj.error && obj.error == 1) {';
+            $code[] = 'if(obj.errorMsg) { alert(obj.errorMsg); }';
+            $code[] = '} else {';
+
             foreach($this->whenDoneOperations as $wdo) {
                 $code[] = $wdo;
             }
+
+            $code[] = '}';
 
             $code[] = '} catch (error) {';
             $code[] = 'alert("Could not load data. See console for more information.");';

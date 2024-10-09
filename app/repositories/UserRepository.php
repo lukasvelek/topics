@@ -20,6 +20,7 @@ class UserRepository extends ARepository {
         $this->userUsername2IdCache = $this->cacheFactory->getCache(CacheNames::USERS_USERNAME_TO_ID_MAPPING);
     }
 
+    /** @deprecated */
     public function getUserById(string $id): UserEntity|null {
         $qb = $this->qb(__METHOD__);
 

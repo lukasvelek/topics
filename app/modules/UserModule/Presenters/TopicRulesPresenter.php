@@ -15,6 +15,10 @@ class TopicRulesPresenter extends AUserPresenter {
         parent::__construct('TopicRulesPresenter', 'Topic rules');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleList() {
         $topicId = $this->httpGet('topicId', true);
 

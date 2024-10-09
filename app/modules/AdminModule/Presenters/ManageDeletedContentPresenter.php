@@ -7,6 +7,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
@@ -23,6 +24,11 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
@@ -137,8 +143,12 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                 $gb->addDataSource($data);
                 $gb->addColumns(['post' => 'Post', 'text' => 'Text', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
                 $gb->addOnColumnRender('post', function(Cell $cell, PostCommentEntity $comment) {
-                    $post = $this->app->postRepository->getPostById($comment->getPostId());
-                    return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
+                    try {
+                        $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+                        return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
+                    } catch(AException $e) {
+                        return '-';
+                    }
                 });
                 $gb->addOnColumnRender('text', function(Cell $cell, PostCommentEntity $comment) {
                     return $comment->getShortenedText();

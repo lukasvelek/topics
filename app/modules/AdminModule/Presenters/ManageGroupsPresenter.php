@@ -13,7 +13,6 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Option;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageGroupsPresenter extends AAdminPresenter {
@@ -88,7 +87,11 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $users = [];
 
         foreach($members as $member) {
-            $users[$member->getUserId()] = $this->app->userRepository->getUserById($member->getUserId());
+            try {
+                $users[$member->getUserId()] = $this->app->userManager->getUserById($member->getUserId());
+            } catch(AException $e) {
+                continue;
+            }
         }
 
         $gb = $this->getGridBuilder();
@@ -156,9 +159,10 @@ class ManageGroupsPresenter extends AAdminPresenter {
 
         if($this->httpGet('isSubmit') == '1') {
             $user = $fr->user;
-            $userEntity = $this->app->userRepository->getUserById($user);
             
             try {
+                $userEntity = $this->app->userManager->getUserById($user);
+
                 $this->app->groupRepository->beginTransaction();
 
                 $this->app->groupRepository->addGroupMember($groupId, $user);
@@ -247,7 +251,12 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $group = $this->app->groupRepository->getGroupById($groupId);
         
         $userId = $this->httpGet('userId');
-        $user = $this->app->userRepository->getUserById($userId);
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('listMembers', ['groupId' => $groupId]));
+        }
 
         if($this->httpGet('isSubmit') == '1') {
             try {

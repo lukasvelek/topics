@@ -9,7 +9,6 @@ use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageEmailsPresenter extends AAdminPresenter {
@@ -21,6 +20,11 @@ class ManageEmailsPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageEmails($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
 
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }

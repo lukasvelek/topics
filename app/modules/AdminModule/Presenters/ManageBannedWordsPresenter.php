@@ -11,7 +11,7 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageBannedWordsPresenter extends AAdminPresenter {
@@ -23,6 +23,11 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageBannedWords($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
@@ -41,8 +46,12 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
         $gb->addDataSource($data);
         $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) {
-            $user = $this->app->userRepository->getUserById($bwe->getAuthorId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            try {
+                $user = $this->app->userManager->getUserById($bwe->getAuthorId());
+                return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
             $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated()));

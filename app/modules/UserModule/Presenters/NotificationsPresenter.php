@@ -4,6 +4,7 @@ namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 
 class NotificationsPresenter extends AUserPresenter {
     public function __construct() {
@@ -120,8 +121,7 @@ class NotificationsPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->app->notificationRepository->rollback();
 
-            $this->flashMessage('Could not close notification. Reason: ' . $e->getMessage(), 'error');
-            $this->redirect();
+            throw new AjaxRequestException('Could not close notification.', $e);
         }
 
         $cnt = count($this->app->notificationManager->getUnseenNotificationsForUser($this->getUserId()));
@@ -151,7 +151,8 @@ class NotificationsPresenter extends AUserPresenter {
             $this->app->notificationRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
             $this->app->notificationRepository->rollback();
-            $this->flashMessage('Could not close notifications. Reason: ' . $e->getMessage(), 'error');
+
+            throw new AjaxRequestException('Could not close notification.', $e);
         }
 
         return ['text' => '<div style="text-align: center">No notifications found</div>'];

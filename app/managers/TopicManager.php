@@ -309,6 +309,15 @@ class TopicManager extends AManager {
     public function getTopicOwner(string $topicId) {
         return $this->tmm->getTopicOwnerId($topicId);
     }
+
+    public function getFollowedTopics(string $userId, array &$topicIdsUserIsMemberOf) {
+        $topicIdsUserIsMemberOf = $this->getTopicIdsUserIsMemberOf($userId);
+        return $this->getTopicsByIdArray($topicIdsUserIsMemberOf, $userId);
+    }
+
+    public function getTopicIdsUserIsMemberOf(string $userId) {
+        return $this->tmm->getUserMembershipsInTopics($userId);
+    }
 }
 
 ?>

@@ -9,6 +9,7 @@ use App\Entities\TopicEntity;
 use App\Entities\UserChatMessageEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
@@ -136,10 +137,14 @@ class UserChatsPresenter extends AUserPresenter {
         $code = '<div id="topic-followed-section">';
 
         foreach($chats as $chat) {
-            if($this->getUserId() == $chat->getUser1Id()) {
-                $username = $this->app->userRepository->getUserById($chat->getUser2Id())->getUsername();
-            } else {
-                $username = $this->app->userRepository->getUserById($chat->getUser1Id())->getUsername();
+            try {
+                if($this->getUserId() == $chat->getUser1Id()) {
+                    $username = $this->app->userManager->getUserById($chat->getUser2Id())->getUsername();
+                } else {
+                    $username = $this->app->userManager->getUserById($chat->getUser1Id())->getUsername();
+                }
+            } catch(AException $e) {
+                throw new AjaxRequestException('Could not find user.', $e);
             }
 
             $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div class="row" id="chat-id-' . $chat->getChatId() . '">';
@@ -447,6 +452,8 @@ class UserChatsPresenter extends AUserPresenter {
             $this->app->chatRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
             $this->app->chatRepository->rollback();
+
+            throw new AjaxRequestException('Could not submit message.', $e);
         }
 
         $message = $this->app->chatManager->getChatMessageEntityById($messageId);
