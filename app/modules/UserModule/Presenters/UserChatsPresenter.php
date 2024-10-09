@@ -15,6 +15,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class UserChatsPresenter extends AUserPresenter {
@@ -63,34 +64,39 @@ class UserChatsPresenter extends AUserPresenter {
         $lastMessages = $tmp['lastMessages'];
 
         $code = '<div id="topic-followed-section">';
-        foreach($channels as $channel) {
-            $topic = $this->app->topicManager->getTopicById($channel->getTopicId(), $this->getUserId());
-            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
-            $code .= '<div class="col-md">';
-            $code .= '<div class="row">';
-            $code .= '<div class="col-md" id="left">';
-            $code .= '<span style="font-size: 18px">' . $topic->getTitle() . '</span>';
-            $code .= '</div>';
-            $code .= '</div>';
-
-            if(array_key_exists($channel->getChannelId(), $lastMessages)) {
-                $message = $lastMessages[$channel->getChannelId()];
-
-                $do = new DateTime(strtotime($message->getDateCreated()));
-                $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
-
-                $dt = clone($do);
-                $dt->format('Y-m-d');
-                if($dt->getResult() == date('Y-m-d')) {
-                    $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+        
+        if(!empty($channels)) {
+            foreach($channels as $channel) {
+                $topic = $this->app->topicManager->getTopicById($channel->getTopicId(), $this->getUserId());
+                $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'channel', ['channelId' => $channel->getChannelId()]) . '"><div class="row" id="channel-id-' . $channel->getChannelId() . '">';
+                $code .= '<div class="col-md">';
+                $code .= '<div class="row">';
+                $code .= '<div class="col-md" id="left">';
+                $code .= '<span style="font-size: 18px">' . $topic->getTitle() . '</span>';
+                $code .= '</div>';
+                $code .= '</div>';
+    
+                if(array_key_exists($channel->getChannelId(), $lastMessages)) {
+                    $message = $lastMessages[$channel->getChannelId()];
+    
+                    $do = new DateTime(strtotime($message->getDateCreated()));
+                    $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
+    
+                    $dt = clone($do);
+                    $dt->format('Y-m-d');
+                    if($dt->getResult() == date('Y-m-d')) {
+                        $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+                    }
+    
+                    $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
+                    $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
                 }
-
-                $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
-                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
+    
+                $code .= '</div>';
+                $code .= '</div></a>';
             }
-
-            $code .= '</div>';
-            $code .= '</div></a>';
+        } else {
+            $code .= HTML::el('div')->text('No channels found')->style('text-align', 'center')->toString();
         }
 
         $code .= '</div>';
@@ -136,52 +142,56 @@ class UserChatsPresenter extends AUserPresenter {
 
         $code = '<div id="topic-followed-section">';
 
-        foreach($chats as $chat) {
-            try {
-                if($this->getUserId() == $chat->getUser1Id()) {
-                    $username = $this->app->userManager->getUserById($chat->getUser2Id())->getUsername();
-                } else {
-                    $username = $this->app->userManager->getUserById($chat->getUser1Id())->getUsername();
-                }
-            } catch(AException $e) {
-                throw new AjaxRequestException('Could not find user.', $e);
-            }
-
-            $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div class="row" id="chat-id-' . $chat->getChatId() . '">';
-            $code .= '<div class="col-md">';
-            $code .= '<div class="row">';
-            $code .= '<div class="col-md" id="left">';
-            $code .= '<span style="font-size: 18px">' . $username . '</span>';
-            $code .= '</div>';
-            $code .= '</div>';
-            
-            if(array_key_exists($chat->getChatId(), $lastMessages)) {
-                $message = $lastMessages[$chat->getChatId()];
-
-                $tmp = '';
-                if($message->getAuthorId() != $this->getUserId()) {
-                    $otherUser = $this->app->userRepository->getUserById($message->getAuthorId());
-                    if($otherUser !== null) {
-                        $tmp = $otherUser->getUsername() . ': ';
+        if(!empty($chats)) {
+            foreach($chats as $chat) {
+                try {
+                    if($this->getUserId() == $chat->getUser1Id()) {
+                        $username = $this->app->userManager->getUserById($chat->getUser2Id())->getUsername();
+                    } else {
+                        $username = $this->app->userManager->getUserById($chat->getUser1Id())->getUsername();
                     }
+                } catch(AException $e) {
+                    throw new AjaxRequestException('Could not find user.', $e);
                 }
-
-                $do = new DateTime(strtotime($message->getDateCreated()));
-                $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
-
-                $dt = clone($do);
-                $dt->format('Y-m-d');
-                if($dt->getResult() == date('Y-m-d')) {
-                    $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+    
+                $code .= '<a class="post-data-link" href="' . $this->createFullURLString('UserModule:UserChats', 'chat', ['chatId' => $chat->getChatId()]) . '"><div class="row" id="chat-id-' . $chat->getChatId() . '">';
+                $code .= '<div class="col-md">';
+                $code .= '<div class="row">';
+                $code .= '<div class="col-md" id="left">';
+                $code .= '<span style="font-size: 18px">' . $username . '</span>';
+                $code .= '</div>';
+                $code .= '</div>';
+                
+                if(array_key_exists($chat->getChatId(), $lastMessages)) {
+                    $message = $lastMessages[$chat->getChatId()];
+    
+                    $tmp = '';
+                    if($message->getAuthorId() != $this->getUserId()) {
+                        $otherUser = $this->app->userRepository->getUserById($message->getAuthorId());
+                        if($otherUser !== null) {
+                            $tmp = $otherUser->getUsername() . ': ';
+                        }
+                    }
+    
+                    $do = new DateTime(strtotime($message->getDateCreated()));
+                    $format = DateTimeFormatHelper::EUROPEAN_FORMAT;
+    
+                    $dt = clone($do);
+                    $dt->format('Y-m-d');
+                    if($dt->getResult() == date('Y-m-d')) {
+                        $format = DateTimeFormatHelper::TIME_ONLY_FORMAT;
+                    }
+    
+                    $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
+    
+                    $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $tmp . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
                 }
-
-                $date = '<span title="' . DateTimeFormatHelper::formatDateToUserFriendly($do, DateTimeFormatHelper::ATOM_FORMAT) . '">' . DateTimeFormatHelper::formatDateToUserFriendly($do, $format) . '</span>';
-
-                $code .= '<div class="row"><div class="col-md" id="left"><span style="font-size: 14px">' . $tmp . $message->getMessage() . '</span></div><div class="col-md-3" id="right">' . $date . '</div></div>';
+    
+                $code .= '</div>';
+                $code .= '</div></a>';
             }
-
-            $code .= '</div>';
-            $code .= '</div></a>';
+        } else {
+            $code .= HTML::el('div')->text('No chats found')->style('text-align', 'center')->toString();
         }
 
         $code .= '</div>';

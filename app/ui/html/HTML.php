@@ -12,7 +12,7 @@ use App\Exceptions\GeneralException;
 class HTML {
     private ?string $el;
     private array $styles;
-    private HTML|string $text;
+    private null|HTML|string $text;
     private array $attributes;
 
     /**
