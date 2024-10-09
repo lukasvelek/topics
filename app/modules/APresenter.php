@@ -9,6 +9,7 @@ use App\Core\Caching\CacheNames;
 use App\Core\Datatypes\ArrayList;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
+use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\AException;
@@ -51,6 +52,7 @@ abstract class APresenter extends AGUICore {
 
     private array $flashMessages;
     private array $specialRedirectUrlParams;
+    private HttpRequest $httpRequest;
 
     /**
      * The class constructor
@@ -264,6 +266,15 @@ abstract class APresenter extends AGUICore {
      */
     public function setLogger(Logger $logger) {
         $this->logger = $logger;
+    }
+
+    /**
+     * Sets the http request instance
+     * 
+     * @param HttpRequest $request HttpRequest instance
+     */
+    public function setHttpRequest(HttpRequest $request) {
+        $this->httpRequest = $request;
     }
 
     /**

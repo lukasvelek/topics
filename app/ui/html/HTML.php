@@ -38,6 +38,11 @@ class HTML {
         return $x;
     }
 
+    public function addAtribute(string $key, mixed $value) {
+        $this->attributes[$key] = $value;
+        return $this;
+    }
+
     /**
      * Sets the class attribute
      * 
@@ -70,6 +75,15 @@ class HTML {
     public function text(HTML|string $text) {
         $this->text = $text;
         return $this;
+    }
+
+    /**
+     * Returns the content
+     * 
+     * @return HTML|string Content
+     */
+    public function getText() {
+        return $this->text;
     }
 
     /**

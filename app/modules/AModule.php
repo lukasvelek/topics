@@ -5,6 +5,7 @@ namespace App\Modules;
 use App\Core\Application;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
+use App\Core\Http\HttpRequest;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 
@@ -23,6 +24,7 @@ abstract class AModule extends AGUICore {
     private ?APresenter $presenter;
     private ?Logger $logger;
     protected ?Application $app;
+    protected HttpRequest $httpRequest;
 
     public array $cfg;
 
@@ -69,6 +71,15 @@ abstract class AModule extends AGUICore {
      */
     public function setLogger(Logger $logger) {
         $this->logger = $logger;
+    }
+
+    /**
+     * Sets the http request instance
+     * 
+     * @param HttpRequest $request HttpRequest instance
+     */
+    public function setHttpRequest(HttpRequest $request) {
+        $this->httpRequest = $request;
     }
 
     /**
@@ -175,6 +186,7 @@ abstract class AModule extends AGUICore {
         $this->presenter->setCfg($this->cfg);
         $this->presenter->setIsAjax($this->isAjax);
         $this->presenter->setApplication($this->app);
+        $this->presenter->setHttpRequest($this->httpRequest);
         $this->presenter->lock();
         
         $this->presenter->startup();

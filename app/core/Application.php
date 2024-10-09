@@ -8,6 +8,7 @@ use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
+use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
@@ -312,12 +313,27 @@ class Application {
         $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
         $moduleObject->setLogger($this->logger);
+        $moduleObject->setHttpRequest($this->getRequest());
 
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
         $re->setAjax($this->isAjaxRequest);
         return $re->render();
+    }
+
+    private function getRequest() {
+        $request = new HttpRequest();
+
+        foreach($_GET as $k => $v) {
+            if($k == 'isAjax') {
+                $request->isAjax = true;
+            } else {
+                $request->$k = $v;
+            }
+        }
+
+        return $request;
     }
 
     /**
