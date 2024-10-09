@@ -9,7 +9,6 @@ use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 
 class ManageSystemStatusPresenter extends AAdminPresenter {
@@ -27,7 +26,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
     }
 
     public function actionCreateGrid() {
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $statuses = $this->app->systemStatusRepository->getAllStatuses();
 

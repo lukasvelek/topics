@@ -39,7 +39,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $lastPage = ceil($totalCount / $gridSize);
         $groups = $this->app->groupRepository->getGroupsForGrid($gridSize, ($page * $gridSize));
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['title' => 'Title', 'description' => 'Description']);
         $gb->addDataSource($groups);
         $gb->addAction(function(GroupEntity $entity) {
@@ -91,7 +91,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
             $users[$member->getUserId()] = $this->app->userRepository->getUserById($member->getUserId());
         }
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['user' => 'User', 'dateCreated' => 'Member since']);
         $gb->addDataSource($members);
         $gb->addOnColumnRender('user', function(Cell $cell, GroupMembershipEntity $entity) use ($users) {

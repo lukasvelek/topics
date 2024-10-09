@@ -85,7 +85,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['post' => 'Post', 'user' => 'User', 'filepath' => 'File path (hover for full path)', 'filename' => 'Filename', 'dateCreated' => 'Date created']);
         $gb->addDataSource($fileUploads);
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filterType, $filterKey]);

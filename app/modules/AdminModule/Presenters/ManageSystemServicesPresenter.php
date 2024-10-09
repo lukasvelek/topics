@@ -58,7 +58,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $count = count($services);
         $lastPage = ceil($count / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'runTime' => 'Time run', 'status' => 'Status']);
         $gb->addDataSource($services);
         $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {

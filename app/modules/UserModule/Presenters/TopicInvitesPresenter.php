@@ -58,7 +58,7 @@ class TopicInvitesPresenter extends AUserPresenter {
         $topicIds = $this->app->topicInviteRepository->getAllTopicsInUserInvites($this->getUserId(), $validOnly);
         $topics = $this->app->topicRepository->bulkGetTopicsByIds($topicIds, true);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $gb->addDataSource($invites);
         $gb->addColumns(['topic' => 'Topic', 'dateValid' => 'Valid until']);

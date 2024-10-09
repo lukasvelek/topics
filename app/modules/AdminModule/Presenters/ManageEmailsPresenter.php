@@ -48,7 +48,7 @@ class ManageEmailsPresenter extends AAdminPresenter {
     }
 
     public function actionGetGrid() {
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
 
         $gridPage = $this->httpGet('gridPage');
         $gridSize = $this->app->getGridSize();
@@ -77,9 +77,6 @@ class ManageEmailsPresenter extends AAdminPresenter {
         $grid->addAction(function(EmailEntity $email) {
             return LinkBuilder::createSimpleLink('Send now', $this->createURL('sendNow', ['mailId' => $email->getId()]), 'grid-link');
         });
-        
-        $gr = $this->getGridReducer();
-        $gr->applyReducer($grid);
 
         return ['grid' => $grid->build()];
     }

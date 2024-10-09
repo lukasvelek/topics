@@ -36,7 +36,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $reports = $this->app->reportRepository->getAllReports();
         $checkReport = function(string $entityId, string $entityType) use ($reports) {

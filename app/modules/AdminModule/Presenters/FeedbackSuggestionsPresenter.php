@@ -71,7 +71,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $lastPage = ceil($suggestionCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $gb->addDataSource($suggestions);
         $gb->addColumns(['title' => 'Title', 'text' => 'Text', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);

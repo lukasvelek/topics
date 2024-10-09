@@ -80,7 +80,7 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
 
         $grid->addColumns(['index' => 'No', 'text' => 'Rule']);
         $grid->addOnColumnRender('index', function(Cell $cell, object $obj) {

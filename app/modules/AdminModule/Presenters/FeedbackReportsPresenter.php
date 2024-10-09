@@ -72,7 +72,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $lastPage = ceil($reportCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $gb->addDataSource($reports);
         $gb->addColumns(['title' => 'Title', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);

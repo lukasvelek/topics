@@ -16,6 +16,7 @@ use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder\GridBuilder;
 
 /**
  * Common presenter class that all presenters must extend. It contains useful methods and most importantly rendering functionality.
@@ -715,12 +716,13 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Returns DefaultGridReducer instance
+     * Returns an instance of GridBuilder
      * 
-     * @return \App\UI\GridBuilder\DefaultGridReducer DefaultGridReducer instance
+     * @param bool $applyReducer True if reducer should be applied
+     * @return \App\UI\GridBuilder\GridBuilder
      */
-    public function getGridReducer() {
-        return $this->app->getGridReducer();
+    public function getGridBuilder(bool $applyReducer = true) {
+        return new GridBuilder($this->app->getGridReducer(), $applyReducer);
     }
 }
 

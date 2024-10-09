@@ -60,7 +60,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         
         $gb->setIdElement('gridbuilder-grid2');
         $gb->addColumns(['method' => 'Method', 'user' => 'User', 'dateCreated' => 'Date created']);

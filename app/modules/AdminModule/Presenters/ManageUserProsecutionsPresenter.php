@@ -43,7 +43,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $lastPage = ceil($prosecutionCount / $gridSize);
         $prosecutions = $this->app->userProsecutionRepository->getActiveProsecutionsForGrid($gridSize, ($page * $gridSize));
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['user' => 'User', 'reason' => 'Reason', 'type' => 'Type', 'dateFrom' => 'Date from', 'dateTo' => 'Date to']);
         $gb->addDataSource($prosecutions);
         $gb->addOnColumnRender('user', function(Cell $cell, UserProsecutionEntity $userProsecution) {
@@ -201,7 +201,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $lastPage = ceil($historyEntriesCount / $gridSize);
         $historyEntries = $this->app->userProsecutionRepository->getProsecutionHistoryEntriesForGrid($gridSize, ($page * $gridSize));
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['user' => 'User', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $gb->addDataSource($historyEntries);
         $gb->addOnColumnRender('user', function (Cell $cell, UserProsecutionHistoryEntryEntity $entity) {

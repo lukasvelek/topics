@@ -1668,7 +1668,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $canPinMore = count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS'];
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
         $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
@@ -1840,7 +1840,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
 
         $grid->addDataSource($postConcepts);
         $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
@@ -1851,9 +1851,6 @@ class TopicsPresenter extends AUserPresenter {
         $grid->addAction(function(PostConceptEntity $pce) {
             return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
         });
-
-        $reducer = $this->getGridReducer();
-        $reducer->applyReducer($grid);
 
         return ['grid' => $grid->build()];
     }

@@ -79,7 +79,7 @@ class ManageGridExportsPresenter extends AAdminPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $gb->setIdElement('gridbuilder-grid');
 

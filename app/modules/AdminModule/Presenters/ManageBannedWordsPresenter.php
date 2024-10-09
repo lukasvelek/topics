@@ -37,7 +37,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $totalCount = $this->app->contentRegulationRepository->getBannedWordsCount();
         $lastPage = ceil($totalCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
         $gb->addDataSource($data);
         $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) {

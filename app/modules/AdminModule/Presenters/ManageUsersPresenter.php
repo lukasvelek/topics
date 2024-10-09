@@ -46,7 +46,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $lastPage = ceil($userCount / $gridSize);
         $users = $this->app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?', 'canLogin' => 'Can login?']);
         $gb->addDataSource($users);
         $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
@@ -86,9 +86,6 @@ class ManageUsersPresenter extends AAdminPresenter {
             }
         });
         $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
-
-        $gr = $this->getGridReducer();
-        $gr->applyReducer($gb);
 
         return ['grid' => $gb->build()];
     }
