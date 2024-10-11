@@ -20,6 +20,7 @@ use Exception;
  * 
  * @author Lukas Velek
  * @version 1.2
+ * @deprecated
  */
 class GridBuilder {
     private array $actions;

@@ -3,16 +3,10 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
-use App\Entities\TransactionEntity;
-use App\Exceptions\AException;
-use App\Helpers\DateTimeFormatHelper;
 use App\UI\GridBuilder2\Cell;
 use App\UI\GridBuilder2\Row;
-use App\UI\HTML\HTML;
 
 class ManageTransactionsPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageTransactionsPresenter', 'Manage transactions');
     }

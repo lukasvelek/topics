@@ -14,6 +14,7 @@ use App\Logger\Logger;
  * GridExporter exports grid data and saves it to CSV
  * 
  * @author Lukas Velek
+ * @deprecated
  */
 class GridExporter {
     private const LOG = false;

@@ -8,6 +8,9 @@ use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
 use App\UI\LinkBuilder;
 
+/**
+ * @deprecated
+ */
 class DefaultGridReducer implements IGridReducer {
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;

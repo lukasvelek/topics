@@ -5,6 +5,9 @@ namespace App\UI\GridBuilder;
 use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 
+/**
+ * @deprecated
+ */
 class Cell implements IRenderable {
     private mixed $text;
     private bool $isHeader;

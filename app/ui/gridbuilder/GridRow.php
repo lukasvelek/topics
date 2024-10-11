@@ -4,6 +4,9 @@ namespace App\UI\GridBuilder;
 
 use App\UI\IRenderable;
 
+/**
+ * @deprecated
+ */
 class Row implements IRenderable {
     private array $cells;
     private array $attributes;

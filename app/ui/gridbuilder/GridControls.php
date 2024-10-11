@@ -4,6 +4,9 @@ namespace App\UI\GridBuilder;
 
 use App\UI\IRenderable;
 
+/**
+ * @deprecated
+ */
 class GridControls implements IRenderable {
     private ?string $gridPagingInfo;
     private ?string $gridRefresh;

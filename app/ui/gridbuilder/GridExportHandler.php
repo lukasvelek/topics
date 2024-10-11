@@ -14,6 +14,7 @@ use App\Logger\Logger;
  * It saves all necessary data to cache for the AJAX callback to create export.
  * 
  * @author Lukas Velek
+ * @deprecated
  */
 class GridExportHandler {
     private string $hash;
