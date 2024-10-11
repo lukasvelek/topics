@@ -3,9 +3,11 @@
 namespace App\UI\GridBuilder2;
 
 use App\Core\AjaxRequestBuilder;
+use App\Core\Application;
 use App\Core\DB\DatabaseRow;
 use App\Core\FileManager;
 use App\Core\Http\HttpRequest;
+use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
@@ -19,6 +21,7 @@ class GridBuilder implements IRenderable {
     private const COL_TYPE_TEXT = 'text';
     private const COL_TYPE_DATETIME = 'datetime';
     private const COL_TYPE_BOOLEAN = 'boolean';
+    private const COL_TYPE_USER = 'user';
 
     private ?QueryBuilder $dataSource;
     private string $primaryKeyColName;
@@ -36,6 +39,7 @@ class GridBuilder implements IRenderable {
     private int $gridPage;
     private ?int $totalCount;
     private GridHelper $helper;
+    private Application $app;
 
     /**
      * Methods called with parameters: DatabaseRow $row, Row $_row, HTML $rowHtml
@@ -70,6 +74,10 @@ class GridBuilder implements IRenderable {
         $this->helper = $helper;
     }
 
+    public function setApplication(Application $app) {
+        $this->app = $app;
+    }
+
     public function addAction(string $name, ?string $label) {
         if($label === null) {
             $label = $name;
@@ -94,6 +102,10 @@ class GridBuilder implements IRenderable {
 
     public function disablePagination() {
         $this->enablePagination = false;
+    }
+
+    public function addColumnUser(string $name, ?string $label = null) {
+        return $this->addColumn($name, self::COL_TYPE_USER, $label);
     }
 
     public function addColumnBoolean(string $name, ?string $label = null) {
@@ -124,6 +136,15 @@ class GridBuilder implements IRenderable {
 
             $col->onExportColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($value);
+            };
+        } else if($type == self::COL_TYPE_USER) {
+            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
+                $user = $this->app->userManager->getUserById($value);
+                if($user === null) {
+                    return $value;
+                } else {
+                    return UserEntity::createUserProfileLink($user, false, 'grid-link');
+                }
             };
         }
 

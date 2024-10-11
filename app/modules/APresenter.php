@@ -614,6 +614,7 @@ abstract class APresenter extends AGUICore {
                         if($component instanceof GridBuilder2GridBuilder) {
                             $component->setComponentName($name);
                             $component->setPresenter($this);
+                            $component->setApplication($this->app);
                             $component->startup();
                         }
                         
@@ -723,8 +724,8 @@ abstract class APresenter extends AGUICore {
                 $presenter = clone $this;
                 $presenter->setAction($request->query['pAction']);
 
-
                 $result->setPresenter($presenter);
+                $result->setApplication($this->app);
                 $result->startup();
             }
 
@@ -887,11 +888,11 @@ abstract class APresenter extends AGUICore {
      * @return \App\UI\GridBuilder\GridBuilder
      * @deprecated
      */
-    public function getGridBuilder(bool $applyReducer = true) {
+    public function getGridBuilderX(bool $applyReducer = true) {
         return new GridBuilder($this->app->getGridReducer(), $applyReducer);
     }
 
-    public function getGridBuilder2() {
+    public function getGridBuilder() {
         $grid = new GridBuilder2GridBuilder($this->httpRequest, $this->cfg);
         $helper = new GridHelper($this->logger, $this->getUserId());
         $grid->setHelper($helper);

@@ -41,7 +41,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     public function renderList() {}
 
     public function createComponentGrid() {
-        $grid = $this->getGridBuilder2();
+        $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->systemServicesRepository->composeQueryForServices(), 'serviceId');
 

@@ -3,6 +3,9 @@
 namespace App\UI\GridBuilder2;
 
 class Column {
+    /**
+     * Methods are called with parameters: DatabaseRow $row, Row $_row, Cell $cell, mixed $value
+     */
     public array $onRenderColumn;
     public array $onExportColumn;
 

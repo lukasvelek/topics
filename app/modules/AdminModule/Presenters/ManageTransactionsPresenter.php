@@ -2,14 +2,12 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Components\Grid\GridFactory;
-use App\Core\AjaxRequestBuilder;
+use App\Core\DB\DatabaseRow;
 use App\Entities\TransactionEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
-use App\Helpers\GridHelper;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 
 class ManageTransactionsPresenter extends AAdminPresenter {
@@ -26,27 +24,12 @@ class ManageTransactionsPresenter extends AAdminPresenter {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
-
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleList() {
         $links = [];
 
         $this->saveToPresenterCache('links', $links);
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setHeader(['gridPage' => '_gridPage'])
-            ->setAction($this, 'getGrid')
-            ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_gridPage'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getGrid(-1)');
     }
 
     public function renderList() {
@@ -55,71 +38,19 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $this->template->links = $links;
     }
 
-    public function actionGetGrid() {
-        $gridSize = $this->app->getGridSize();
-        $gridPage = $this->httpGet('gridPage');
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TRANSACTION_LOG, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->transactionLogRepository->composeQueryForTransactions(), 'transactionId');
+
+        $col = $grid->addColumnText('methodName', 'Method');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
+            return $row->methodName . '()';
+        };
+        $grid->addColumnUser('userId', 'User');
+        $grid->addColumnDatetime('dateCreated', 'Date created');
         
-        $transactions = $this->app->transactionLogRepository->getTransactionsForGrid($gridSize, ($page * $gridSize));
-        $totalCount = count($this->app->transactionLogRepository->getTransactionsForGrid(0, 0));
-
-        $lastPage = ceil($totalCount / $gridSize);
-
-        $gb = $this->getGridBuilder();
-        
-        $gb->setIdElement('gridbuilder-grid2');
-        $gb->addColumns(['method' => 'Method', 'user' => 'User', 'dateCreated' => 'Date created']);
-        $gb->addDataSource($transactions);
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid');
-        $gb->addOnColumnRender('method', function(Cell $cell, TransactionEntity $te) {
-            return $te->getMethodName() . '()';
-        });
-        $gb->addOnColumnRender('user', function(Cell $cell, TransactionEntity $te) {
-            if($te->getUserId() === null) {
-                return '-';
-            }
-            
-            try {
-                $user = $this->app->userManager->getUserById($te->getUserId());
-
-                $el = HTML::el('a')->href($this->createFullURLString('UserModule:Users', 'profile', ['userId' => $te->getUserId()]))
-                        ->text($user->getUsername())
-                        ->class('grid-link');
-    
-                $cell->setValue($el);
-            } catch(AException $e) {
-                $cell->setValue('-');
-            }
-
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateCreated', function(Cell $cell, TransactionEntity $te) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($te->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-
-        $gb->addOnExportRender('method', function(TransactionEntity $te) {
-            return $te->getMethodName() . '()';
-        });
-        $gb->addOnExportRender('user', function(TransactionEntity $te) {
-            if($te->getUserId() === null) {
-                return '-';
-            }
-
-            try {
-                $user = $this->app->userManager->getUserById($te->getUserId());
-                return $user->getUsername();
-            } catch(AException $e) {
-                return '-';
-            }
-        });
-        $gb->addGridExport(function() {
-            return $this->app->transactionLogRepository->getTransactionsForGrid(0, 0);
-        }, GridHelper::GRID_TRANSACTION_LOG, $this->logger);
-
-        return ['grid' => $gb->build()];
+        return $grid;
     }
 }
 
