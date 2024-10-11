@@ -53,6 +53,12 @@ class GridBuilder implements IRenderable {
      */
     private array $actions;
 
+    public array $customFilters;
+    /**
+     * @var array<Filter> $filters
+     */
+    private array $filters;
+
     public function __construct(HttpRequest $request, array $cfg) {
         $this->httpRequest = $request;
         $this->cfg = $cfg;
@@ -65,6 +71,8 @@ class GridBuilder implements IRenderable {
         $this->onRowRender = [];
         $this->actions = [];
         $this->totalCount = null;
+        $this->customFilters = [];
+        $this->filters = [];
     }
 
     public function startup() {
@@ -93,6 +101,13 @@ class GridBuilder implements IRenderable {
 
     public function disablePagination() {
         $this->enablePagination = false;
+    }
+
+    public function addFilter(string $key, mixed $value, array $options) {
+        $filter = new Filter($key, $value, $options);
+        $this->filters[$key] = &$filter;
+
+        return $filter;
     }
 
     public function addAction(string $name) {
@@ -181,6 +196,16 @@ class GridBuilder implements IRenderable {
         $qb->limit($gridSize)
             ->offset(($this->gridPage * $gridSize));
 
+        if(!empty($this->filters)) {
+            foreach($this->filters as $name => $filter) {
+                if(!empty($filter->onSqlExecute)) {
+                    foreach($filter->onSqlExecute as $sql) {
+                        $sql($qb, $filter);
+                    }
+                }
+            }
+        }
+
         return $qb;
     }
 
@@ -189,6 +214,7 @@ class GridBuilder implements IRenderable {
 
         $template = $this->getTemplate();
 
+        $template->filters = $this->createGridFilterControls();
         $template->grid = $this->table->output();
         $template->controls = $this->createGridControls();
 
@@ -378,31 +404,80 @@ class GridBuilder implements IRenderable {
     private function createScripts() {
         $scripts = [];
 
+        $addScript = function(AjaxRequestBuilder $arb) use (&$scripts) {
+            $scripts[] = '<script type="text/javascript">' . $arb->build() . '</script>';
+        };
+
         // REFRESH
+        $refreshHeader = ['gridPage' => '_page'];
+        $refreshArgs = ['_page'];
+        if(isset($this->httpRequest->query['filterKey'])) {
+            $refreshHeader['filterKey'] = '_filterKey';
+            $refreshArgs[] = '_filterKey';
+        }
+        if(isset($this->httpRequest->query['filterType'])) {
+            $refreshHeader['filterType'] = '_filterType';
+            $refreshArgs[] = '_filterType';
+        }
+
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
             ->setComponentAction($this->presenter, $this->componentName . '-refresh')
-            ->setHeader(['gridPage' => '_page'])
+            ->setHeader($refreshHeader)
             ->setFunctionName($this->componentName . '_gridRefresh')
-            ->setFunctionArguments(['_page'])
+            ->setFunctionArguments($refreshArgs)
             ->updateHTMLElement('grid', 'grid')
             ->setComponent()
         ;
 
-        $scripts[] = '<script type="text/javascript">' . $arb->build() . '</script>';
+        $addScript($arb);
 
         // PAGINATION
+        $paginationHeader = ['gridPage' => '_page'];
+        $paginationArgs = ['_page'];
+        if(isset($this->httpRequest->query['filterKey'])) {
+            $paginationHeader['filterKey'] = '_filterKey';
+            $paginationArgs[] = '_filterKey';
+        }
+        if(isset($this->httpRequest->query['filterType'])) {
+            $paginationHeader['filterType'] = '_filterType';
+            $paginationArgs[] = '_filterType';
+        }
+
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
             ->setComponentAction($this->presenter, $this->componentName . '-page')
-            ->setHeader(['gridPage' => '_page'])
+            ->setHeader($paginationHeader)
             ->setFunctionName($this->componentName . '_page')
-            ->setFunctionArguments(['_page'])
+            ->setFunctionArguments($paginationArgs)
             ->updateHTMLElement('grid', 'grid')
             ->setComponent()
         ;
 
-        $scripts[] = '<script type="text/javascript">' . $arb->build() . '</script>';
+        $addScript($arb);
+
+        // FILTER
+        if(!empty($this->filters)) {
+            $arb = new AjaxRequestBuilder();
+            $arb->setMethod()
+                ->setComponentAction($this->presenter, $this->componentName, '-filter')
+                ->setHeader(['filterKey' => '_filterKey', 'filterType' => '_filterType'])
+                ->setFunctionName($this->componentName . '_filter')
+                ->setFunctionArguments(['_filterType', '_filterKey'])
+                ->updateHTMLElement('grid', 'grid')
+                ->setComponent()
+            ;
+
+            $addScript($arb);
+
+            $scripts[] = '
+                <script type="text/javascript">
+                    async function processGridFilterSubmit(_gridPage) {
+                        
+                    }
+                </script>
+            ';
+        }
 
         return implode('', $scripts);
     }
@@ -436,7 +511,17 @@ class GridBuilder implements IRenderable {
     }
 
     private function createPagingButtonCode(int $page, string $text, bool $disabled = false) {
-        return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . $page . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
+        $filterKey = '';
+        if(isset($this->httpRequest->query['filterKey'])) {
+            $filterKey .= ', \'' . $this->httpRequest->query['filterKey'] . '\'';
+        }
+
+        $filterType = '';
+        if(isset($this->httpRequest->query['filterType'])) {
+            $filterType .= ', \'' . $this->httpRequest->query['filterType'] . '\'';
+        }
+
+        return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . $page . $filterKey . $filterType . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
     }
 
     private function getGridPage() {
@@ -446,7 +531,7 @@ class GridBuilder implements IRenderable {
             $page = $this->httpRequest->query['gridPage'];
         }
 
-        $page = $this->helper->getGridPage($this->componentName, $page);
+        $page = $this->helper->getGridPage($this->componentName, $page, $this->customFilters);
 
         return (int)$page;
     }
@@ -461,6 +546,28 @@ class GridBuilder implements IRenderable {
         $dataSource->resetLimit()->resetOffset()->select(['COUNT(*) AS cnt']);
         $this->totalCount = $dataSource->execute()->fetch('cnt');
         return $this->totalCount;
+    }
+
+    private function createGridFilterControls() {
+        if(empty($this->filters)) {
+            return '';
+        }
+
+        $code = '';
+        foreach($this->filters as $name => $filter) {
+            $filter->inject($this->componentName);
+            $code .= $filter->output()->toString();
+        }
+
+        $submit = HTML::el('button')
+                    ->addAtribute('type', 'button')
+                    ->onClick('processGridFilterSubmit(' . $this->gridPage . ')')
+                    ->href('#')
+                    ->text('Submit');
+
+        $code .= $submit->toString();
+
+        return $code;
     }
 
     // GRID AJAX REQUEST HANDLERS

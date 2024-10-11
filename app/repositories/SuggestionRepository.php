@@ -80,6 +80,27 @@ class SuggestionRepository extends ARepository {
         return $suggestions;
     }
 
+    public function composeQueryForOpenSuggestions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]));
+
+        return $qb;
+    }
+
+    public function composeQueryForOpenSuggestionsFilterCategory(string $category) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_suggestions')
+            ->where($qb->getColumnInValues('status', [SuggestionStatus::OPEN, SuggestionStatus::MORE_INFORMATION_NEEDED, SuggestionStatus::PLANNED]))
+            ->andWhere('category = ?', [$category]);
+
+        return $qb;
+    }
+
     public function getOpenSuggestionsForListFilterCategory(string $category, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -138,7 +159,7 @@ class SuggestionRepository extends ARepository {
         return $suggestions;
     }
 
-    public function getSuggestionById(int $id) {
+    public function getSuggestionById(string $id) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
