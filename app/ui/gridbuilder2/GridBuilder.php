@@ -3,7 +3,6 @@
 namespace App\UI\GridBuilder2;
 
 use App\Core\AjaxRequestBuilder;
-use App\Core\Application;
 use App\Core\DB\DatabaseRow;
 use App\Core\FileManager;
 use App\Core\Http\HttpRequest;
@@ -11,14 +10,27 @@ use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
-use App\Modules\APresenter;
 use App\Modules\TemplateObject;
+use App\UI\AComponent;
 use App\UI\HTML\HTML;
-use App\UI\IRenderable;
 use Exception;
 use QueryBuilder\QueryBuilder;
 
-class GridBuilder implements IRenderable {
+/**
+ * Grid builder is a component used to create data grids or tables.
+ * 
+ * Functions supported:
+ * - custom column order definition
+ * - custom column value override
+ * - automatic value override (users, datetime, etc.)
+ * - row actions (info, edit, delete, etc.)
+ * - pagination
+ * - refreshing
+ * 
+ * @author Lukas Velek
+ * @version 2.0
+ */
+class GridBuilder extends AComponent {
     private const COL_TYPE_TEXT = 'text';
     private const COL_TYPE_DATETIME = 'datetime';
     private const COL_TYPE_BOOLEAN = 'boolean';
@@ -26,8 +38,6 @@ class GridBuilder implements IRenderable {
 
     private ?QueryBuilder $dataSource;
     private string $primaryKeyColName;
-    private HttpRequest $httpRequest;
-    private array $cfg;
     /**
      * @var array<string, Column> $columns
      */
@@ -35,12 +45,9 @@ class GridBuilder implements IRenderable {
     private array $columnLabels;
     private Table $table;
     private bool $enablePagination;
-    private string $componentName;
-    private APresenter $presenter;
     private int $gridPage;
     private ?int $totalCount;
     private GridHelper $helper;
-    private Application $app;
 
     /**
      * Methods called with parameters: DatabaseRow $row, Row $_row, HTML $rowHtml
@@ -53,15 +60,19 @@ class GridBuilder implements IRenderable {
      */
     private array $actions;
 
-    public array $customFilters;
     /**
      * @var array<Filter> $filters
      */
     private array $filters;
 
+    /**
+     * Class constructor
+     * 
+     * @param HttpRequest $request HttpRequest instance
+     * @param array $cfg Application configuration
+     */
     public function __construct(HttpRequest $request, array $cfg) {
-        $this->httpRequest = $request;
-        $this->cfg = $cfg;
+        parent::__construct($request, $cfg);
 
         $this->dataSource = null;
         $this->columns = [];
@@ -71,34 +82,37 @@ class GridBuilder implements IRenderable {
         $this->onRowRender = [];
         $this->actions = [];
         $this->totalCount = null;
-        $this->customFilters = [];
         $this->filters = [];
     }
 
+    /**
+     * Starts up the component
+     */
     public function startup() {
+        parent::startup();
+
         $this->gridPage = $this->getGridPage();
     }
 
+    /**
+     * Sets the GridHelper instance
+     * 
+     * @param GridHelper $helper GridHelper instance
+     */
     public function setHelper(GridHelper $helper) {
         $this->helper = $helper;
     }
 
-    public function setApplication(Application $app) {
-        $this->app = $app;
-    }
-
-    public function setPresenter(APresenter $presenter) {
-        $this->presenter = $presenter;
-    }
-
-    public function setComponentName(string $name) {
-        $this->componentName = $name;
-    }
-
+    /**
+     * Enables pagination
+     */
     public function enablePagination() {
         $this->enablePagination = true;
     }
 
+    /**
+     * Disables pagination
+     */
     public function disablePagination() {
         $this->enablePagination = false;
     }
@@ -510,6 +524,14 @@ class GridBuilder implements IRenderable {
         return implode('', [$firstPageBtn, $previousPageBtn, $nextPageBtn, $lastPageBtn]);
     }
 
+    /**
+     * Creates a paging button code
+     * 
+     * @param int $page Page to be changed to
+     * @param string $text Button text
+     * @param bool $disabled True if button is disabled or false if not
+     * @return string HTML code
+     */
     private function createPagingButtonCode(int $page, string $text, bool $disabled = false) {
         $filterKey = '';
         if(isset($this->httpRequest->query['filterKey'])) {
@@ -524,6 +546,11 @@ class GridBuilder implements IRenderable {
         return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . $page . $filterKey . $filterType . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
     }
 
+    /**
+     * Returns current grid page
+     * 
+     * @return int Current grid page
+     */
     private function getGridPage() {
         $page = 0;
 
@@ -531,11 +558,16 @@ class GridBuilder implements IRenderable {
             $page = $this->httpRequest->query['gridPage'];
         }
 
-        $page = $this->helper->getGridPage($this->componentName, $page, $this->customFilters);
+        $page = $this->helper->getGridPage($this->componentName, $page);
 
         return (int)$page;
     }
 
+    /**
+     * Returns total entry count
+     * 
+     * @return int Total entry count
+     */
     private function getTotalCount() {
         if($this->totalCount !== null) {
             return $this->totalCount;
@@ -548,6 +580,11 @@ class GridBuilder implements IRenderable {
         return $this->totalCount;
     }
 
+    /**
+     * Creates code for filter controls
+     * 
+     * @return string HTML code
+     */
     private function createGridFilterControls() {
         if(empty($this->filters)) {
             return '';
@@ -572,11 +609,21 @@ class GridBuilder implements IRenderable {
 
     // GRID AJAX REQUEST HANDLERS
 
+    /**
+     * Refreshes the grid
+     * 
+     * @return array<string, string> Response
+     */
     public function actionRefresh() {
         $this->build();
         return ['grid' => $this->render()];
     }
 
+    /**
+     * Changes the grid page
+     * 
+     * @return array<string, string> Response
+     */
     public function actionPage() {
         $this->build();
         return ['grid' => $this->render()];
