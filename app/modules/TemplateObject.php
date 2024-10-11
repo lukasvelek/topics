@@ -3,6 +3,7 @@
 namespace App\Modules;
 
 use App\UI\FormBuilder\FormBuilder;
+use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 
 /**
@@ -15,6 +16,7 @@ class TemplateObject {
 
     private string $__templateContent;
     private array $__values;
+    private array $__components;
 
     /**
      * Class constructor
@@ -24,6 +26,7 @@ class TemplateObject {
     public function __construct(string $templateContent) {
         $this->__templateContent = $templateContent;
         $this->__values = [];
+        $this->__components = [];
     }
 
     /**
@@ -45,6 +48,26 @@ class TemplateObject {
      */
     public function __get(string $name) {
         return $this->$name;
+    }
+
+    /**
+     * Sets a new component
+     * 
+     * @param string $name Component name
+     * @param mixed $value Component
+     */
+    public function setComponent(string $name, mixed $value) {
+        $this->__components[$name] = $value;
+    }
+
+    /**
+     * Returns a component
+     * 
+     * @param string $name Component name
+     * @return mixed Component
+     */
+    public function getComponent(string $name) {
+        return $this->__components[$name];
     }
 
     /**
@@ -70,9 +93,25 @@ class TemplateObject {
                 $this->$__value = $this->$__value->render();
             } else if($this->$__value instanceof IRenderable) {
                 $this->$__value = $this->$__value->render();
+            } else if($this->$__value instanceof HTML) {
+                $this->$__value = $this->$__value->toString();
             }
 
             $this->replace($upperValue, $this->$__value);
+        }
+
+        if(!empty($this->__components)) {
+            foreach($this->__components as $name => $object) {
+                $templateName = 'component ' . $name;
+
+                if($object instanceof IRenderable) {
+                    $object = $object->render();
+                } else {
+                    continue;
+                }
+
+                $this->replace($templateName, $object);
+            }
         }
 
         if(self::SHORTEN_CODE) {

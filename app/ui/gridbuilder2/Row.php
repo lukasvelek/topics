@@ -41,7 +41,7 @@ class Row extends AElement {
         $content = '';
 
         foreach($this->cells as $cell) {
-            $content .= $cell->output();
+            $content .= $cell->output()->toString();
         }
 
         return $content;

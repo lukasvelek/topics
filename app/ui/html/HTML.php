@@ -2,8 +2,6 @@
 
 namespace App\UI\HTML;
 
-use App\Exceptions\GeneralException;
-
 /**
  * HTML is a class that allows creating a HTML tag. It can be whatever tag as it supports several parameters.
  * 
@@ -38,6 +36,13 @@ class HTML {
         return $x;
     }
 
+    /**
+     * Adds custom attribute
+     * 
+     * @param string $key Attribute key
+     * @param mixed $value Attribute value
+     * @return self
+     */
     public function addAtribute(string $key, mixed $value) {
         $this->attributes[$key] = $value;
         return $this;

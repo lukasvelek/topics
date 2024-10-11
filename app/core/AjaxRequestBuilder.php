@@ -21,6 +21,7 @@ class AjaxRequestBuilder {
     private array $customArgs;
     private array $elements;
     private bool $useLoadingAnimation;
+    private bool $isComponent;
 
     /**
      * Class constructor
@@ -38,8 +39,13 @@ class AjaxRequestBuilder {
         $this->customArgs = [];
         $this->elements = [];
         $this->useLoadingAnimation = true;
+        $this->isComponent = false;
 
         return $this;
+    }
+
+    public function setComponent(bool $component = true) {
+        $this->isComponent = $component;
     }
     
     /**
@@ -89,6 +95,16 @@ class AjaxRequestBuilder {
         $presenter = $presenter->getCleanName();
 
         $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $actionName]);
+
+        return $this;
+    }
+
+    public function setComponentAction(APresenter $presenter, string $componentActionName) {
+        $module = $presenter->moduleName;
+        $action = $presenter->getAction();
+        $presenter = $presenter->getCleanName();
+
+        $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $action, 'do' => $componentActionName]);
 
         return $this;
     }
@@ -310,6 +326,10 @@ class AjaxRequestBuilder {
     private function processHeadParams() {
         if(!array_key_exists('isAjax', $this->headerParams)) {
             $this->headerParams['isAjax'] = 1;
+        }
+
+        if($this->isComponent) {
+            $this->headerParams['isComponent'] = 1;
         }
 
         $json = json_encode($this->headerParams);

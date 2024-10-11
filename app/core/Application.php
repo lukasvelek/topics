@@ -329,7 +329,7 @@ class Application {
             if($k == 'isAjax') {
                 $request->isAjax = true;
             } else {
-                $request->$k = $v;
+                $request->query[$k] = $v;
             }
         }
 

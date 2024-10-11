@@ -28,7 +28,7 @@ class Table extends AElement {
         $content = '';
 
         foreach($this->rows as $row) {
-            $content .= $row->output();
+            $content .= $row->output()->toString();
         }
 
         return $content;

@@ -5,10 +5,12 @@ namespace App\Modules\AdminModule;
 use App\Constants\SystemServiceStatus;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
+use App\Core\Http\HttpRequest;
 use App\Entities\SystemServiceEntity;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
+use App\UI\GridBuilder2\GridBuilder;
 use App\UI\GridBuilder\Cell;
 use App\UI\GridBuilder\Row;
 use App\UI\LinkBuilder;
@@ -32,7 +34,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
     }
 
     public function handleList() {
-        $arb = new AjaxRequestBuilder();
+        /*$arb = new AjaxRequestBuilder();
         $arb->setURL(['page' => 'AdminModule:ManageSystemServices', 'action' => 'loadServicesGrid'])
             ->setMethod('GET')
             ->setHeader(['gridPage' => '_page'])
@@ -42,13 +44,24 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('getServicesGrid(-1)');
+        $this->addScript('getServicesGrid(-1)');*/
     }
 
     public function renderList() {}
 
+    public function createComponentGrid(HttpRequest $request) {
+        $grid = new GridBuilder($request, $this->cfg);
+
+        $grid->createDataSourceFromQueryBuilder($this->app->systemServicesRepository->composeQueryForServices(), 'serviceId');
+        $grid->addColumnText('title', 'Title');
+        $grid->addColumnDatetime('dateStarted', 'Date started');
+        $grid->addColumnDatetime('dateEnded', 'DateEnded');
+
+        return $grid;
+    }
+
     public function actionLoadServicesGrid() {
-        $gridPage = $this->httpGet('gridPage');
+        /*$gridPage = $this->httpGet('gridPage');
         $gridSize = $gridSize = $this->app->getGridSize();
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_SYSTEM_SERVICES, $gridPage);
@@ -142,7 +155,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             }
         }
 
-        return ['grid' => $gb->build()];
+        return ['grid' => $gb->build()];*/
     }
 
     public function handleRun() {

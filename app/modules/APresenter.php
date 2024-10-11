@@ -13,12 +13,15 @@ use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
 use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder2\GridBuilder as GridBuilder2GridBuilder;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\IRenderable;
 use Exception;
 
 /**
@@ -53,6 +56,7 @@ abstract class APresenter extends AGUICore {
     private array $flashMessages;
     private array $specialRedirectUrlParams;
     private HttpRequest $httpRequest;
+    private bool $isComponentAjax;
 
     /**
      * The class constructor
@@ -74,6 +78,7 @@ abstract class APresenter extends AGUICore {
         $this->lock = false;
         $this->app = null;
         $this->currentUser = null;
+        $this->isComponentAjax = false;
 
         $this->presenterCache = new ArrayList();
         $this->presenterCache->setStringKeyType();
@@ -275,6 +280,13 @@ abstract class APresenter extends AGUICore {
      */
     public function setHttpRequest(HttpRequest $request) {
         $this->httpRequest = $request;
+        $this->processHttpRequest();
+    }
+
+    private function processHttpRequest() {
+        if(isset($this->httpRequest->query['isComponent']) && $this->httpRequest->query['isComponent'] == 1) {
+            $this->isComponentAjax = true;
+        }
     }
 
     /**
@@ -505,6 +517,15 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
+     * Returns the current action that the presenter will perform
+     * 
+     * @return string Action name
+     */
+    public function getAction() {
+        return $this->action;
+    }
+
+    /**
      * Sets the page content template
      * 
      * @param null|TemplateObject $template Template or null
@@ -527,7 +548,7 @@ abstract class APresenter extends AGUICore {
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
 
-        if($this->isAjax) {
+        if($this->isAjax && !$this->isComponentAjax) {
             $result = $this->processAction($moduleName);
             if($result !== null) {
                 return $result;
@@ -551,7 +572,7 @@ abstract class APresenter extends AGUICore {
             return new TemplateObject($handleResult);
         }
 
-        if(method_exists($this, $renderAction) && !$this->isAjax) {
+        if(method_exists($this, $renderAction) /*&& !$this->isAjax*/) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -559,11 +580,52 @@ abstract class APresenter extends AGUICore {
                 throw new TemplateDoesNotExistException($this->action, $templatePath);
             }
 
-            $templateContent = new TemplateObject(file_get_contents($templatePath));
+            //$templateContent = new TemplateObject(file_get_contents($templatePath));
+            $templateContent = file_get_contents($templatePath);
+
+            $variables = [];
+            preg_match_all('/\$[a-zA-Z0-9\s]*\$/', $templateContent, $variables);
+            $variables = $variables[0];
+            $tmp = [];
+            $components = [];
+            foreach($variables as $variable) {
+                $v = substr($variable, 1, -1);
+
+                if(str_contains($v, 'component')) {
+                    $componentName = substr($v, strlen('component') + 1);
+                    $componentAction = 'createComponent' . ucfirst($componentName);
+                    $components[$componentName] = $componentAction;
+                } else {
+                    $tmp[] = $v;
+                }
+            }
+
+            $templateContent = new TemplateObject($templateContent);
+            
+            if(!empty($components)) {
+                foreach($components as $name => $action) {
+                    if(method_exists($this, $action)) {
+                        $component = $this->$action($this->httpRequest);
+
+                        if($component instanceof GridBuilder2GridBuilder) {
+                            $component->setComponentName($name);
+                            $component->setPresenter($this);
+                        }
+                        
+                        if($component instanceof IRenderable) {
+                            $templateContent->setComponent($name, $component);
+                        } else {
+                            throw new GeneralException('Method \'' . $this::class . '::' . $action . '()\' does not return a value that implements IRenderable interface.');
+                        }
+                    } else {
+                        throw new GeneralException('No method \'' . $this::class . '::' . $action . '()\' exists.');
+                    }
+                }
+            }
         }
 
         if($ok === false) {
-            if($this->isAjax) {
+            if($this->isAjax && !$this->isComponentAjax) {
                 if($this->cfg['IS_DEV']) {
                     throw new ActionDoesNotExistException($this->action);
                 } else {
@@ -578,6 +640,44 @@ abstract class APresenter extends AGUICore {
                     throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
                 } else {
                     $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
+            }
+        }
+
+        if(isset($this->httpRequest->query['do'])) {
+            $do = $this->httpRequest->query['do'];
+            $doParts = explode('-', $do);
+            $componentName = $doParts[0];
+            $methodName = 'action' . ucfirst($doParts[1]);
+            $methodArgs = [];
+            if(count($doParts) > 2) {
+                for($i = 2; $i < count($doParts); $i++) {
+                    $methodArgs[] = $doParts[$i];
+                }
+            }
+
+            $component = $templateContent->getComponent($componentName);
+
+            if($component !== null) {
+                if(method_exists($component, $methodName)) {
+                    $result = $this->logger->stopwatch(function() use ($component, $methodName) {
+                        try {
+                            $result = $component->$methodName($this->httpRequest);
+                        } catch(AException|Exception $e) {
+                            return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                        }
+                        return $result;
+                    }, '');
+        
+                    if($this->ajaxResponse !== null) {
+                        return new TemplateObject($this->ajaxResponse);
+                    } else if($result !== null) {
+                        return new TemplateObject(json_encode($result));
+                    } else {
+                        throw new NoAjaxResponseException();
+                    }
+                } else {
+                    throw new ActionDoesNotExistException('Method \'' . $component::class . '::' . $methodName . '()\' does not exist.');
                 }
             }
         }
@@ -614,7 +714,7 @@ abstract class APresenter extends AGUICore {
         if(method_exists($this, $actionAction)) {
             $result = $this->logger->stopwatch(function() use ($actionAction) {
                 try {
-                    $result = $this->$actionAction();
+                    $result = $this->$actionAction($this->httpRequest);
                 } catch(AException|Exception $e) {
                     return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
                 }
