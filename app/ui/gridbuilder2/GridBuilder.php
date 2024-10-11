@@ -13,6 +13,7 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\Modules\APresenter;
 use App\Modules\TemplateObject;
+use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 use Exception;
 use QueryBuilder\QueryBuilder;
@@ -78,16 +79,6 @@ class GridBuilder implements IRenderable {
         $this->app = $app;
     }
 
-    public function addAction(string $name, ?string $label) {
-        if($label === null) {
-            $label = $name;
-        }
-        $action = new Action($name, $label);
-        $this->actions[] = &$action;
-
-        return $action;
-    }
-
     public function setPresenter(APresenter $presenter) {
         $this->presenter = $presenter;
     }
@@ -102,6 +93,13 @@ class GridBuilder implements IRenderable {
 
     public function disablePagination() {
         $this->enablePagination = false;
+    }
+
+    public function addAction(string $name) {
+        $action = new Action($name);
+        $this->actions[$name] = &$action;
+
+        return $action;
     }
 
     public function addColumnUser(string $name, ?string $label = null) {
@@ -130,7 +128,12 @@ class GridBuilder implements IRenderable {
         }
 
         if($type == self::COL_TYPE_DATETIME) {
-            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
+            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+                if($value === null) {
+                    return '-';
+                }
+
+                $html->title(DateTimeFormatHelper::formatDateToUserFriendly($value, DateTimeFormatHelper::ATOM_FORMAT));
                 return DateTimeFormatHelper::formatDateToUserFriendly($value);
             };
 
@@ -138,13 +141,29 @@ class GridBuilder implements IRenderable {
                 return DateTimeFormatHelper::formatDateToUserFriendly($value);
             };
         } else if($type == self::COL_TYPE_USER) {
-            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
+            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
                 $user = $this->app->userManager->getUserById($value);
                 if($user === null) {
                     return $value;
                 } else {
                     return UserEntity::createUserProfileLink($user, false, 'grid-link');
                 }
+            };
+        } else if($type == self::COL_TYPE_BOOLEAN) {
+            $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+                if($value == true) {
+                    $el = HTML::el('span')
+                            ->style('color', 'green')
+                            ->text(/*'Yes'*/ '&check;');
+                    $cell->setContent($el);
+                } else {
+                    $el = HTML::el('span')
+                            ->style('color', 'red')
+                            ->text(/*'No'*/ '&times;');
+                    $cell->setContent($el);
+                }
+
+                return $cell;
             };
         }
 
@@ -214,26 +233,32 @@ class GridBuilder implements IRenderable {
             $_row = new Row();
             $_row->setPrimaryKey($row->{$this->primaryKeyColName});
 
-            foreach($row->getKeys() as $k) {
-                if(array_key_exists($k, $this->columns)) {
+            foreach($this->columns as $name => $col) {
+                if(in_array($name, $row->getKeys())) {
                     $_cell = new Cell();
-                    $_cell->setName($k);
+                    $_cell->setName($name);
 
-                    $content = $row->$k;
-                    
-                    if(!empty($this->columns[$k]->onRenderColumn)) {
-                        foreach($this->columns[$k]->onRenderColumn as $render) {
+                    $content = $row->$name;
+
+                    if(!empty($this->columns[$name]->onRenderColumn)) {
+                        foreach($this->columns[$name]->onRenderColumn as $render) {
                             try {
-                                $content = $render($row, $_row, $_cell, $content);
+                                $content = $render($row, $_row, $_cell, $_cell->html, $content);
                             } catch(Exception $e) {}
                         }
                     }
 
                     if($content === null) {
                         $content = '-';
-                    }
 
-                    $_cell->setContent($content);
+                        $_cell->setContent($content);
+                    } else {
+                        if($content instanceof Cell) {
+                            $_cell = $content;
+                        } else {
+                            $_cell->setContent($content);
+                        }
+                    }
 
                     $_row->addCell($_cell);
                 }
@@ -249,26 +274,25 @@ class GridBuilder implements IRenderable {
 
             if(!empty($this->actions)) {
                 $isAtLeastOneDisplayed = false;
-
-                foreach($this->actions as $action) {
-                    $canRender = [];
+                
+                $canRender = [];
+                foreach($this->actions as $actionName => $action) {
                     foreach($action->onCanRender as $render) {
                         try {
                             $result = $render($row, $_row);
 
                             if($result === true) {
-                                $isAtLeastOneDisplayed = true;
-                                $canRender[$action->name] = $action;
-                            } else {
-                                $canRender[$action->name] = '-';
+                                $canRender[$actionName] = $action;
                             }
                         } catch(Exception $e) {}
                     }
                 }
 
+                $isAtLeastOneDisplayed = !empty($canRender);
+
                 foreach($canRender as $name => $action) {
                     if($action instanceof Action) {
-                        $action->inject($row, $_row);
+                        $action->inject($row, $_row, $row->{$this->primaryKeyColName});
                         $_cell = new Cell();
                         $_cell->setName($name);
                         $_cell->setContent($action->output());
@@ -285,15 +309,29 @@ class GridBuilder implements IRenderable {
 
                 if($isAtLeastOneDisplayed && !$hasActionsCol) {
                     $_headerCell = new Cell();
-                    $_headerCell->setName('col-actions');
+                    $_headerCell->setName('actions');
                     $_headerCell->setContent('Actions');
                     $_headerCell->setHeader();
+                    $_headerCell->setSpan(count($canRender));
                     $_tableRows['header']->addCell($_headerCell, true);
                     $hasActionsCol = true;
                 }
             }
 
             $_tableRows[] = $_row;
+        }
+
+        if(count($_tableRows) == 1) {
+            $cell = new Cell();
+            $cell->setSpan(count($this->columns));
+            $cell->setName('no-data-message');
+            $cell->setContent('No data found.');
+
+            $row = new Row();
+            $row->addCell($cell);
+            $row->setPrimaryKey(null);
+
+            $_tableRows[] = $row;
         }
 
         $this->table = new Table($_tableRows);

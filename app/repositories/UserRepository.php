@@ -136,6 +136,15 @@ class UserRepository extends ARepository {
         return $this->createUsersArrayFromQb($qb);
     }
 
+    public function composeQueryForUsers() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users');
+
+        return $qb;
+    }
+
     public function updateUser(string $id, array $data) {
         $qb = $this->qb(__METHOD__);
 

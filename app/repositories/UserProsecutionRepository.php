@@ -116,6 +116,32 @@ class UserProsecutionRepository extends ARepository {
         return $prosecutions;
     }
 
+    public function composeQueryForProsecutions() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_prosecutions')
+            ->where(
+                $this->xb()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::PERMA_BAN])
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::BAN])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                    ->or()
+                    ->lb()
+                        ->where('type = ?', [UserProsecutionType::WARNING])
+                        ->andWhere('endDate > CURRENT_TIMESTAMP()')
+                    ->rb()
+                ->build()
+            );
+
+        return $qb;
+    }
+
     public function createNewUserProsecutionHistoryEntry(string $prosecutionId, string $userId, string $text) {
         $qb = $this->qb(__METHOD__);
 
@@ -156,6 +182,16 @@ class UserProsecutionRepository extends ARepository {
             ->execute();
 
         return $qb->fetch('cnt');
+    }
+
+    public function composeQueryForProsecutionLogHistory() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('user_prosecutions_history')
+            ->orderBy('dateCreated', 'DESC');
+
+        return $qb;
     }
 
     public function getProsecutionHistoryEntriesForGrid(int $limit, int $offset) {

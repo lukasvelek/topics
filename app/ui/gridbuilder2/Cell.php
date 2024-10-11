@@ -8,10 +8,14 @@ use Exception;
 class Cell extends AElement {
     private string|HTML $content;
     private string $name;
-    private HTML $html;
+    public HTML $html;
     private bool $isHeader;
     private string $class;
+    private int $span;
 
+    /**
+     * Methods are called with parameters: DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value
+     */
     public array $onRenderCol;
     public array $onExportCol;
 
@@ -21,6 +25,8 @@ class Cell extends AElement {
         $this->onRenderCol = [];
         $this->onExportCol = [];
         $this->isHeader = false;
+        $this->span = 1;
+        $this->html = HTML::el('td');
     }
 
     public function setHeader(bool $header = true) {
@@ -39,17 +45,26 @@ class Cell extends AElement {
         $this->class = $class;
     }
 
+    public function setSpan(int $span) {
+        if($span == 0) {
+            return;
+        }
+        $this->span = $span;
+    }
+
     public function output(): HTML {
-        $tag = 'td';
         if($this->isHeader) {
-            $tag = 'th';
+            $this->html->changeTag('th');
         }
 
         $this->processRender();
 
-        $this->html = HTML::el($tag);
         $this->html->id('col-' . $this->name);
         $this->html->text($this->content);
+        
+        if($this->span > 1) {
+            $this->html->addAtribute('colspan', $this->span);
+        }
         
         if(isset($this->class)) {
             $this->html->class($this->class);

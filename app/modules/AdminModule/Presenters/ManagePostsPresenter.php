@@ -87,7 +87,12 @@ class ManagePostsPresenter extends AAdminPresenter {
 
     public function handleDeletePost(?FormResponse $fr = null) {
         $postId = $this->httpGet('postId', true);
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
+        }
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {

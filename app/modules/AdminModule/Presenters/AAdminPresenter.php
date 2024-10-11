@@ -48,12 +48,12 @@ abstract class AAdminPresenter extends APresenter {
         $userProsecutions = $this->checkPage('AdminModule:ManageUserProsecutions');
         $systemStatus = $this->checkPage('AdminModule:ManageSystemStatus');
         $groups = $this->checkPage('AdminModule:ManageGroups');
-        $deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
+        //$deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
         $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
         $transactions = $this->checkPage('AdminModule:ManageTransactions');
-        $gridExports = $this->checkPage('AdminModule:ManageGridExports');
+        //$gridExports = $this->checkPage('AdminModule:ManageGridExports');
         $emails = $this->checkPage('AdminModule:ManageEmails');
 
         $sb = new Sidebar();
@@ -70,9 +70,9 @@ abstract class AAdminPresenter extends APresenter {
             $sb->addLink('System status', $this->createFullURL('AdminModule:ManageSystemStatus', 'list'), $systemStatus);
             $sb->addLink('System services', $this->createFullURL('AdminModule:ManageSystemServices', 'list'), $systemServices);
         }
-        if($this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
+        /*if($this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
             $sb->addLink('Deleted content', $this->createFullURL('AdminModule:ManageDeletedContent', 'list'), $deletedContent);
-        }
+        }*/
         if($this->app->sidebarAuthorizator->canManageBannedWords($this->getUserId())) {
             $sb->addLink('Banned words', $this->createFullURL('AdminModule:ManageBannedWords', 'list'), $bannedWords);
         }
@@ -82,9 +82,9 @@ abstract class AAdminPresenter extends APresenter {
         if($this->app->sidebarAuthorizator->canManageTransactions($this->getUserId())) {
             $sb->addLink('Transactions', $this->createFullURL('AdminModule:ManageTransactions', 'list'), $transactions);
         }
-        if($this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
+        /*if($this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
             $sb->addLink('Grid exports', $this->createFullURL('AdminModule:ManageGridExports', 'list'), $gridExports);
-        }
+        }*/
         if($this->app->sidebarAuthorizator->canManageEmails($this->getUserId())) {
             $sb->addLink('Email queue', $this->createFullURL('AdminModule:ManageEmails', 'list'), $emails);
         }

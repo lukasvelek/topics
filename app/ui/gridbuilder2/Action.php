@@ -15,12 +15,14 @@ class Action implements IHTMLOutput {
      */
     public array $onCanRender;
     /**
-     * Methods called with parameters: DatabaseRow $row, Row $_row
+     * Methods called with parameters: mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html
      */
     public array $onRender;
 
     private DatabaseRow $row;
     private Row $_row;
+    private HTML $html;
+    private mixed $primaryKey;
 
     public function __construct(string $name) {
         $this->name = $name;
@@ -28,25 +30,27 @@ class Action implements IHTMLOutput {
         $this->onCanRender = [];
         $this->onRender = [];
 
+        $this->html = HTML::el('span');
+
         return $this;
     }
 
-    public function inject(DatabaseRow $row, Row $_row) {
+    public function inject(DatabaseRow $row, Row $_row, mixed $primaryKey) {
         $this->row = $row;
         $this->_row = $_row;
+        $this->primaryKey = $primaryKey;
     }
 
     public function output(): HTML {
-        $el = HTML::el('span');
-        $el->id('col-actions-' . $this->name);
+        $this->html->id('col-actions-' . $this->name);
 
         if(isset($this->title)) {
-            $el->title($this->title);
+            $this->html->title($this->title);
         }
 
-        $el->text($this->processText());
+        $this->html->text($this->processText());
 
-        return $el;
+        return $this->html;
     }
 
     public function setTitle(string $title) {
@@ -54,19 +58,21 @@ class Action implements IHTMLOutput {
     }
 
     private function processText() {
+        $result = '-';
+
         if(!empty($this->onRender)) {
             foreach($this->onRender as $render) {
                 try {
-                    return $render($this->row, $this->_row);
+                    $result = $render($this->primaryKey, $this->row, $this->_row, $this->html);
                 } catch(Exception $e) {
-                    return '-';
+                    $result = '-';
                 }
             }
         } else {
-            return '-';
+            $result = '-';
         }
 
-        return '-';
+        return $result;
     }
 }
 

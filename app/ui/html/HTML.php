@@ -37,6 +37,17 @@ class HTML {
     }
 
     /**
+     * Changes the tag
+     * 
+     * @param string $name Tag
+     * @return self
+     */
+    public function changeTag(string $name) {
+        $this->el = $name;
+        return $this;
+    }
+
+    /**
      * Adds custom attribute
      * 
      * @param string $key Attribute key

@@ -5,7 +5,7 @@ namespace App\UI\GridBuilder2;
 use App\UI\HTML\HTML;
 
 class Row extends AElement {
-    private string|int $primaryKey;
+    private string|int|null $primaryKey;
     public HTML $html;
     /**
      * @var array<Cell> $cells
@@ -19,7 +19,7 @@ class Row extends AElement {
         $this->html = HTML::el('tr');
     }
 
-    public function setPrimaryKey(string|int $primaryKey) {
+    public function setPrimaryKey(string|int|null $primaryKey) {
         $this->primaryKey = $primaryKey;
     }
 
@@ -32,7 +32,7 @@ class Row extends AElement {
     }
 
     public function output(): HTML {
-        $this->html->id('row-' . $this->primaryKey);
+        $this->html->id('row-' . (isset($this->primaryKey) ? $this->primaryKey : ''));
         $this->html->text($this->processRender());
 
         return $this->html;

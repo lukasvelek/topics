@@ -20,16 +20,8 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         }
     }
 
-    public function handleList() {
-        $links = [];
-
-        $this->saveToPresenterCache('links', $links);
-    }
-
     public function renderList() {
-        $links = $this->loadFromPresenterCache('links');
-
-        $this->template->links = $links;
+        $this->template->links = [];
     }
 
     public function createComponentGrid() {

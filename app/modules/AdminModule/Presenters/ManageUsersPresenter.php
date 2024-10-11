@@ -3,23 +3,20 @@
 namespace App\Modules\AdminModule;
 
 use App\Constants\UserProsecutionType;
-use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
+use App\Core\DB\DatabaseRow;
 use App\Core\HashManager;
-use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
-use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageUsersPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageUsersPresenter', 'Users management');
     }
@@ -31,86 +28,47 @@ class ManageUsersPresenter extends AAdminPresenter {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
-    public function actionLoadUsersGrid() {
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $this->app->getGridSize();
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USERS, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->userRepository->composeQueryForUsers(), 'userId');
 
-        $userCount = $this->app->userRepository->getUsersCount();
-        $lastPage = ceil($userCount / $gridSize);
-        $users = $this->app->userRepository->getUsersForGrid($gridSize, ($page * $gridSize));
+        $grid->addColumnText('username', 'Username');
+        $grid->addColumnText('email', 'Email');
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnBoolean('isAdmin', 'Is administrator?');
+        $grid->addColumnBoolean('canLogin', 'Can login?');
 
-        $gb = $this->getGridBuilder();
-        $gb->addColumns(['username' => 'Username', 'email' => 'Email', 'isAdmin' => 'Is administrator?', 'canLogin' => 'Can login?']);
-        $gb->addDataSource($users);
-        $gb->addOnColumnRender('isAdmin', function(Cell $cell, UserEntity $entity) {
-            if($entity->isAdmin()) {
-                $cell->setValue('&check;');
-                $cell->setTextColor('green');
+        $profile = $grid->addAction('profile');
+        $profile->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            return true;
+        };
+        $profile->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            return LinkBuilder::createSimpleLink('Profile', $this->createFullURL('UserModule:Users', 'profile', ['userId' => $primaryKey]), 'grid-link');
+        };
+
+        $setAdmin = $grid->addAction('setAdmin');
+        $setAdmin->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            if($row->username == 'service_user' || $row->username == 'admin') {
+                return false;
+            }
+
+            return true;
+        };
+        $setAdmin->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            if($row->isAdmin) {
+                return LinkBuilder::createSimpleLink('Unset as administrator', $this->createURL('unsetAdmin', ['userId' => $primaryKey]), 'grid-link');
             } else {
-                $cell->setValue('&times;');
-                $cell->setTextColor('red');
+                return LinkBuilder::createSimpleLink('Set as administrator', $this->createURL('setAdmin', ['userId' => $primaryKey]), 'grid-link');
             }
+        };
 
-            return $cell;
-        });
-        $gb->addOnColumnRender('canLogin', function(Cell $cell, UserEntity $entity) {
-            if($entity->canLogin()) {
-                $cell->setValue('&check;');
-                $cell->setTextColor('green');
-            } else {
-                $cell->setValue('&times;');
-                $cell->setTextColor('red');
-            }
-
-            return $cell;
-        });
-        $gb->addAction(function (UserEntity $user) {
-            return LinkBuilder::createSimpleLink('Profile', ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
-        });
-        $gb->addAction(function (UserEntity $user) {
-            if($user->getId() == $this->getUserId()) {
-                return '-';
-            }
-
-            if($user->isAdmin()) {
-                return LinkBuilder::createSimpleLink('Unset as administrator', $this->createURL('unsetAdmin', ['userId' => $user->getId()]), 'grid-link');
-            } else {
-                return LinkBuilder::createSimpleLink('Set as administrator', $this->createURL('setAdmin', ['userId' => $user->getId()]), 'grid-link');
-            }
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $userCount, 'getUsers');
-
-        return ['grid' => $gb->build()];
-    }
-
-    public function handleList() {
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod('GET')
-            ->setURL(['page' => 'AdminModule:ManageUsers', 'action' => 'loadUsersGrid'])
-            ->setHeader(['gridPage' => '_page'])
-            ->setFunctionName('getUsers')
-            ->setFunctionArguments(['_page'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getUsers(-1)');
+        return $grid;
     }
 
     public function renderList() {
-        $gridScript = $this->loadFromPresenterCache('gridScript');
-
-        $this->template->grid_script = $gridScript;
-        $this->template->grid = '';
-        $this->template->grid_paginator = '';
-
         $newUserLink = '<a class="post-data-link" href="?page=AdminModule:ManageUsers&action=newForm">New user</a>';
         $this->template->links = [$newUserLink];
     }

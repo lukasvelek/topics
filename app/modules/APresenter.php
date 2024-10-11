@@ -577,7 +577,7 @@ abstract class APresenter extends AGUICore {
             return new TemplateObject($handleResult);
         }
 
-        if(method_exists($this, $renderAction) /*&& !$this->isAjax*/) {
+        if(method_exists($this, $renderAction)) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -585,7 +585,6 @@ abstract class APresenter extends AGUICore {
                 throw new TemplateDoesNotExistException($this->action, $templatePath);
             }
 
-            //$templateContent = new TemplateObject(file_get_contents($templatePath));
             $templateContent = file_get_contents($templatePath);
 
             $variables = [];
@@ -621,10 +620,15 @@ abstract class APresenter extends AGUICore {
                         if($component instanceof IRenderable) {
                             $templateContent->setComponent($name, $component);
 
+                            $params = $this->httpRequest->query;
+                            unset($params['page'], $params['action']);
+
+                            $header = array_merge(['component' => '_component', 'pAction' => $this->action], $params);
+
                             $arb = new AjaxRequestBuilder();
                             $arb->setMethod()
                                 ->setAction($this, 'runComponentAsync')
-                                ->setHeader(['component' => '_component', 'pAction' => $this->action])
+                                ->setHeader($header)
                                 ->setFunctionName('runComponent')
                                 ->setFunctionArguments(['_component'])
                                 ->addWhenDoneOperation('$("#" + _component).html(obj[_component]);')
