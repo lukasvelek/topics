@@ -885,6 +885,7 @@ abstract class APresenter extends AGUICore {
      * 
      * @param bool $applyReducer True if reducer should be applied
      * @return \App\UI\GridBuilder\GridBuilder
+     * @deprecated
      */
     public function getGridBuilder(bool $applyReducer = true) {
         return new GridBuilder($this->app->getGridReducer(), $applyReducer);
