@@ -10,6 +10,7 @@ class Cell extends AElement {
     private string $name;
     private HTML $html;
     private bool $isHeader;
+    private string $class;
 
     public array $onRenderCol;
     public array $onExportCol;
@@ -34,6 +35,10 @@ class Cell extends AElement {
         $this->content = $content;
     }
 
+    public function setClass(string $class) {
+        $this->class = $class;
+    }
+
     public function output(): HTML {
         $tag = 'td';
         if($this->isHeader) {
@@ -45,6 +50,10 @@ class Cell extends AElement {
         $this->html = HTML::el($tag);
         $this->html->id('col-' . $this->name);
         $this->html->text($this->content);
+        
+        if(isset($this->class)) {
+            $this->html->class($this->class);
+        }
 
         return $this->html;
     }

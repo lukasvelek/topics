@@ -11,7 +11,6 @@ use App\Helpers\DateTimeFormatHelper;
 use App\Modules\APresenter;
 use App\Modules\TemplateObject;
 use App\UI\IRenderable;
-use App\UI\LinkBuilder;
 use Exception;
 use QueryBuilder\QueryBuilder;
 
@@ -34,6 +33,17 @@ class GridBuilder implements IRenderable {
     private APresenter $presenter;
     private int $gridPage;
 
+    /**
+     * Methods called with parameters: DatabaseRow $row, Row $_row, HTML $rowHtml
+     * @var array<callback> $onRowRender
+     */
+    public array $onRowRender;
+
+    /**
+     * @var array<Action> $actions
+     */
+    private array $actions;
+
     public function __construct(HttpRequest $request, array $cfg) {
         $this->httpRequest = $request;
         $this->cfg = $cfg;
@@ -43,6 +53,18 @@ class GridBuilder implements IRenderable {
         $this->columnLabels = [];
         $this->enablePagination = true;
         $this->gridPage = $this->getGridPage();
+        $this->onRowRender = [];
+        $this->actions = [];
+    }
+
+    public function addAction(string $name, ?string $label) {
+        if($label === null) {
+            $label = $name;
+        }
+        $action = new Action($name, $label);
+        $this->actions[] = &$action;
+
+        return $action;
     }
 
     public function setPresenter(APresenter $presenter) {
@@ -145,7 +167,9 @@ class GridBuilder implements IRenderable {
             $_headerRow->addCell($_headerCell);
         }
 
-        $_tableRows[] = $_headerRow;
+        $_tableRows['header'] = $_headerRow;
+
+        $hasActionsCol = false;
 
         while($row = $cursor->fetchAssoc()) {
             $row = $this->createDatabaseRow($row);
@@ -174,6 +198,60 @@ class GridBuilder implements IRenderable {
                     $_cell->setContent($content);
 
                     $_row->addCell($_cell);
+                }
+            }
+
+            if(!empty($this->onRowRender)) {
+                foreach($this->onRowRender as $render) {
+                    try {
+                        $render($row, $_row, $_row->html);
+                    } catch(Exception $e) {}
+                }
+            }
+
+            if(!empty($this->actions)) {
+                $isAtLeastOneDisplayed = false;
+
+                foreach($this->actions as $action) {
+                    $canRender = [];
+                    foreach($action->onCanRender as $render) {
+                        try {
+                            $result = $render($row, $_row);
+
+                            if($result === true) {
+                                $isAtLeastOneDisplayed = true;
+                                $canRender[$action->name] = $action;
+                            } else {
+                                $canRender[$action->name] = '-';
+                            }
+                        } catch(Exception $e) {}
+                    }
+                }
+
+                foreach($canRender as $name => $action) {
+                    if($action instanceof Action) {
+                        $action->inject($row, $_row);
+                        $_cell = new Cell();
+                        $_cell->setName($name);
+                        $_cell->setContent($action->output());
+                        $_cell->setClass('grid-cell-action');
+                    } else {
+                        $_cell = new Cell();
+                        $_cell->setName($name);
+                        $_cell->setContent('-');
+                        $_cell->setClass('grid-cell-action');
+                    }
+
+                    $_row->addCell($_cell, true);
+                }
+
+                if($isAtLeastOneDisplayed && !$hasActionsCol) {
+                    $_headerCell = new Cell();
+                    $_headerCell->setName('col-actions');
+                    $_headerCell->setContent('Actions');
+                    $_headerCell->setHeader();
+                    $_tableRows['header']->addCell($_headerCell, true);
+                    $hasActionsCol = true;
                 }
             }
 
@@ -227,7 +305,7 @@ class GridBuilder implements IRenderable {
             ->setHeader(['gridPage' => '_page'])
             ->setFunctionName($this->componentName . '_gridRefresh')
             ->setFunctionArguments(['_page'])
-            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid', 'grid')
             ->setComponent()
         ;
 
@@ -240,7 +318,7 @@ class GridBuilder implements IRenderable {
             ->setHeader(['gridPage' => '_page'])
             ->setFunctionName($this->componentName . '_page')
             ->setFunctionArguments(['_page'])
-            ->updateHTMLElement('grid-content', 'grid')
+            ->updateHTMLElement('grid', 'grid')
             ->setComponent()
         ;
 
@@ -255,19 +333,18 @@ class GridBuilder implements IRenderable {
 
     private function createGridPagingControl() {
         $totalCount = $this->getTotalCount();
-        $lastPage = ceil($totalCount / $this->cfg['GRID_SIZE']);
+        $lastPage = (int)ceil($totalCount / $this->cfg['GRID_SIZE']) - 1;
 
-        $firstPageBtn = $this->createPagingButtonCode(0, '&lt;&lt;');
+        $firstPageBtn = $this->createPagingButtonCode(0, '&lt;&lt;', ($this->gridPage == 0));
+        $previousPageBtn = $this->createPagingButtonCode(($this->gridPage - 1), '&lt;', ($this->gridPage == 0));
+        $nextPageBtn = $this->createPagingButtonCode(($this->gridPage + 1), '&gt;', ($this->gridPage == $lastPage));
+        $lastPageBtn = $this->createPagingButtonCode($lastPage, '&gt;&gt;', ($this->gridPage == $lastPage));
 
-        return $firstPageBtn . '';
+        return implode('', [$firstPageBtn, $previousPageBtn, $nextPageBtn, $lastPageBtn]);
     }
 
-    private function createPagingButtonCode(int $page, string $text) {
-        return '<button type="button" onclick="' . $this->componentName . '_page(' . $page . ')">' . $text . '</button>';
-    }
-
-    private function getGridUrl() {
-        return ['page' => $this->getGridPage(), 'action' => $this->httpRequest->query['action']];
+    private function createPagingButtonCode(int $page, string $text, bool $disabled = false) {
+        return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . $page . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
     }
 
     private function getGridPage() {
@@ -280,17 +357,19 @@ class GridBuilder implements IRenderable {
         return (int)$page;
     }
 
-    public function actionRefresh() {
-        $this->build();
-        return ['grid' => $this->render()];
-    }
-
     private function getTotalCount() {
         $dataSource = clone $this->dataSource;
 
-        $dataSource->limit(0)->offset(0)->select(['COUNT(*) AS cnt']);
+        $dataSource->resetLimit()->resetOffset()->select(['COUNT(*) AS cnt']);
         $result = $dataSource->execute()->fetch('cnt');
         return $result;
+    }
+
+    // GRID AJAX REQUEST HANDLERS
+
+    public function actionRefresh() {
+        $this->build();
+        return ['grid' => $this->render()];
     }
 
     public function actionPage() {

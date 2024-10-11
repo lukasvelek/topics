@@ -44,8 +44,16 @@ class AjaxRequestBuilder {
         return $this;
     }
 
+    /**
+     * Sets whether the call is coming from a component
+     * 
+     * @param bool $component True if the call is coming from a component or false if not
+     * @return self
+     */
     public function setComponent(bool $component = true) {
         $this->isComponent = $component;
+
+        return $this;
     }
     
     /**
@@ -373,7 +381,7 @@ class AjaxRequestBuilder {
      */
     private function createLoadingAnimation() {
         foreach($this->elements as $element) {
-            if($element == 'grid-content') {
+            if($element == 'grid-content' || $element == 'grid') {
                 $code = '
                     $("#' . $element . '").html(\'<div id="center"><img src="resources/loading.gif" width="64"><br>Loading...</div>\');
                 ';

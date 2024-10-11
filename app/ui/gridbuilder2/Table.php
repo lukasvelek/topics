@@ -27,9 +27,18 @@ class Table extends AElement {
     private function processRender() {
         $content = '';
 
+        $first = true;
         foreach($this->rows as $row) {
+            if($first) {
+                $content .= '<thead>' . $row->output()->toString() . '</thead>';
+                $first = false;
+                $content .= '<tbody>';
+                continue;
+            }
+            
             $content .= $row->output()->toString();
         }
+        $content .= '</tbody>';
 
         return $content;
     }

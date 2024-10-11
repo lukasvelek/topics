@@ -139,6 +139,19 @@ class QueryBuilder
     }
 
     /**
+     * Resets OFFSET
+     * 
+     * @return self
+     */
+    public function resetOffset() {
+        if(isset($this->queryData['offset'])) {
+            unset($this->queryData['offset']);
+        }
+
+        return $this;
+    }
+
+    /**
      * Appends DELETE
      * 
      * @return self
@@ -454,6 +467,19 @@ class QueryBuilder
      */
     public function limit(int $limit) {
         $this->queryData['limit'] = $limit;
+
+        return $this;
+    }
+
+    /**
+     * Resets LIMIT
+     * 
+     * @return self
+     */
+    public function resetLimit() {
+        if(isset($this->queryData['limit'])) {
+            unset($this->queryData['limit']);
+        }
 
         return $this;
     }

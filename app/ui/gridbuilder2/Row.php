@@ -6,31 +6,32 @@ use App\UI\HTML\HTML;
 
 class Row extends AElement {
     private string|int $primaryKey;
-    private HTML $html;
+    public HTML $html;
     /**
      * @var array<Cell> $cells
      */
     private array $cells;
 
-    public array $onRenderRow;
-
     public function __construct() {
         parent::__construct();
 
         $this->cells = [];
-        $this->onRenderRow = [];
+        $this->html = HTML::el('tr');
     }
 
     public function setPrimaryKey(string|int $primaryKey) {
         $this->primaryKey = $primaryKey;
     }
 
-    public function addCell(Cell $cell) {
-        $this->cells[] = $cell;
+    public function addCell(Cell $cell, bool $prepend = false) {
+        if($prepend) {
+            $this->cells = array_merge([$cell], $this->cells);
+        } else {
+            $this->cells[] = $cell;
+        }
     }
 
     public function output(): HTML {
-        $this->html = HTML::el('tr');
         $this->html->id('row-' . $this->primaryKey);
         $this->html->text($this->processRender());
 
