@@ -392,6 +392,23 @@ class AjaxRequestBuilder {
 
         $this->addBeforeAjaxOperation('await sleep(100);');
     }
+
+    /**
+     * Explicitly enables loading animation
+     * 
+     * @param string $element Element name
+     * @param bool $isRaw True if the element name is raw or false if not
+     * @return self
+     */
+    public function enableLoadingAnimation(string $element, bool $isRaw = false) {
+        $code = '
+            $(' . ($isRaw ? '' : '"#') . $element . ($isRaw ? '' : '"') . ').html(\'<div id="center"><img src="resources/loading.gif" width="64"><br>Loading...</div>\');
+        ';
+
+        $this->addBeforeAjaxOperation($code);
+
+        return $this;
+    }
 }
 
 ?>

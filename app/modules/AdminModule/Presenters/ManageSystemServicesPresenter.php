@@ -40,13 +40,15 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
 
     public function renderList() {}
 
-    public function createComponentGrid(HttpRequest $request) {
-        $grid = new GridBuilder($request, $this->cfg);
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder2();
 
         $grid->createDataSourceFromQueryBuilder($this->app->systemServicesRepository->composeQueryForServices(), 'serviceId');
+
         $grid->addColumnText('title', 'Title');
         $grid->addColumnDatetime('dateStarted', 'Date started');
         $grid->addColumnDatetime('dateEnded', 'Date ended');
+
         $grid->onRowRender[] = function(DatabaseRow $row, GridBuilder2Row $_row, HTML $tr) {
             $date = new DateTime();
             $date->modify('-2d');

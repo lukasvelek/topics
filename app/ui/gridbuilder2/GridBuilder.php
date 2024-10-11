@@ -8,6 +8,7 @@ use App\Core\FileManager;
 use App\Core\Http\HttpRequest;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Modules\APresenter;
 use App\Modules\TemplateObject;
 use App\UI\IRenderable;
@@ -17,6 +18,7 @@ use QueryBuilder\QueryBuilder;
 class GridBuilder implements IRenderable {
     private const COL_TYPE_TEXT = 'text';
     private const COL_TYPE_DATETIME = 'datetime';
+    private const COL_TYPE_BOOLEAN = 'boolean';
 
     private ?QueryBuilder $dataSource;
     private string $primaryKeyColName;
@@ -32,6 +34,8 @@ class GridBuilder implements IRenderable {
     private string $componentName;
     private APresenter $presenter;
     private int $gridPage;
+    private ?int $totalCount;
+    private GridHelper $helper;
 
     /**
      * Methods called with parameters: DatabaseRow $row, Row $_row, HTML $rowHtml
@@ -52,9 +56,18 @@ class GridBuilder implements IRenderable {
         $this->columns = [];
         $this->columnLabels = [];
         $this->enablePagination = true;
-        $this->gridPage = $this->getGridPage();
+        $this->gridPage = 0;
         $this->onRowRender = [];
         $this->actions = [];
+        $this->totalCount = null;
+    }
+
+    public function startup() {
+        $this->gridPage = $this->getGridPage();
+    }
+
+    public function setHelper(GridHelper $helper) {
+        $this->helper = $helper;
     }
 
     public function addAction(string $name, ?string $label) {
@@ -81,6 +94,10 @@ class GridBuilder implements IRenderable {
 
     public function disablePagination() {
         $this->enablePagination = false;
+    }
+
+    public function addColumnBoolean(string $name, ?string $label = null) {
+        return $this->addColumn($name, self::COL_TYPE_BOOLEAN, $label);
     }
 
     public function addColumnDatetime(string $name, ?string $label = null) {
@@ -278,12 +295,16 @@ class GridBuilder implements IRenderable {
 
         $code = '
             <div class="row">
-                <div class="col-md">
+                <div class="col-md-3">
                     ' . $this->createGridPagingControl() . '
                 </div>
 
                 <div class="col-md">
                     ' . $this->createGridRefreshControl() . '
+                </div>
+
+                <div class="col-md" id="right">
+                    ' . $this->createGridPageInfo() . '
                 </div>
             </div>
 
@@ -327,8 +348,20 @@ class GridBuilder implements IRenderable {
         return implode('', $scripts);
     }
 
+    private function createGridPageInfo() {
+        $totalCount = $this->getTotalCount();
+        $lastPage = (int)ceil($totalCount / $this->cfg['GRID_SIZE']);
+
+        $lastPageCount = $this->cfg['GRID_SIZE'] * ($this->gridPage + 1);
+        if($lastPageCount > $totalCount) {
+            $lastPageCount = $totalCount;
+        }
+
+        return 'Page ' . ($this->gridPage + 1) . ' of ' . $lastPage . ' (' . ($this->cfg['GRID_SIZE'] * $this->gridPage) . ' - ' . $lastPageCount . ')';
+    }
+
     private function createGridRefreshControl() {
-        return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . $this->getGridPage() . ')">Refresh</a>';
+        return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . $this->getGridPage() . ')">Refresh &orarr;</a>';
     }
 
     private function createGridPagingControl() {
@@ -354,15 +387,21 @@ class GridBuilder implements IRenderable {
             $page = $this->httpRequest->query['gridPage'];
         }
 
+        $page = $this->helper->getGridPage($this->componentName, $page);
+
         return (int)$page;
     }
 
     private function getTotalCount() {
+        if($this->totalCount !== null) {
+            return $this->totalCount;
+        }
+
         $dataSource = clone $this->dataSource;
 
         $dataSource->resetLimit()->resetOffset()->select(['COUNT(*) AS cnt']);
-        $result = $dataSource->execute()->fetch('cnt');
-        return $result;
+        $this->totalCount = $dataSource->execute()->fetch('cnt');
+        return $this->totalCount;
     }
 
     // GRID AJAX REQUEST HANDLERS
