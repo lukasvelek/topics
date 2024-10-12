@@ -10,8 +10,10 @@ use App\Entities\UserEntity;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
+use App\Helpers\TemplateHelper;
 use App\Modules\TemplateObject;
 use App\UI\AComponent;
+use App\UI\FormBuilder\FormResponse;
 use App\UI\HTML\HTML;
 use Exception;
 use QueryBuilder\QueryBuilder;
@@ -64,6 +66,7 @@ class GridBuilder extends AComponent {
      * @var array<Filter> $filters
      */
     private array $filters;
+    private array $activeFilters;
 
     /**
      * Class constructor
@@ -83,6 +86,7 @@ class GridBuilder extends AComponent {
         $this->actions = [];
         $this->totalCount = null;
         $this->filters = [];
+        $this->activeFilters = [];
     }
 
     /**
@@ -210,12 +214,17 @@ class GridBuilder extends AComponent {
         $qb->limit($gridSize)
             ->offset(($this->gridPage * $gridSize));
 
-        if(!empty($this->filters)) {
-            foreach($this->filters as $name => $filter) {
-                if(!empty($filter->onSqlExecute)) {
-                    foreach($filter->onSqlExecute as $sql) {
-                        $sql($qb, $filter);
+        if(!empty($this->activeFilters)) {
+            foreach($this->activeFilters as $name => $value) {
+                if($value == 'null') {
+                    continue;
+                }
+                if(!empty($this->filters[$name]->onSqlExecute)) {
+                    foreach($this->filters[$name]->onSqlExecute as $sql) {
+                        $sql($qb, $this->filters[$name]);
                     }
+                } else {
+                    $qb->andWhere($name . ' = ?', [$value]);
                 }
             }
         }
@@ -226,19 +235,14 @@ class GridBuilder extends AComponent {
     public function render() {
         $this->build();
 
-        $template = $this->getTemplate();
+        $template = $this->getTemplate(__DIR__ . '/grid.html');
 
-        $template->filters = $this->createGridFilterControls();
         $template->grid = $this->table->output();
         $template->controls = $this->createGridControls();
+        $template->filter_modal = '';
+        $template->filters = $this->createGridFilterControls();
 
         return $template->render()->getRenderedContent();
-    }
-
-    private function getTemplate() {
-        $content = FileManager::loadFile(__DIR__ . '/grid.html');
-        
-        return new TemplateObject($content);
     }
 
     private function build() {
@@ -407,9 +411,9 @@ class GridBuilder extends AComponent {
                 </div>
             </div>
 
-            <div>
+            <span>
                 ' . $this->createScripts() . '
-            </div>
+            </span>
         ';
 
         return $code;
@@ -425,13 +429,13 @@ class GridBuilder extends AComponent {
         // REFRESH
         $refreshHeader = ['gridPage' => '_page'];
         $refreshArgs = ['_page'];
-        if(isset($this->httpRequest->query['filterKey'])) {
-            $refreshHeader['filterKey'] = '_filterKey';
-            $refreshArgs[] = '_filterKey';
-        }
-        if(isset($this->httpRequest->query['filterType'])) {
-            $refreshHeader['filterType'] = '_filterType';
-            $refreshArgs[] = '_filterType';
+        if(!empty($this->activeFilters)) {
+            foreach($this->activeFilters as $name => $value) {
+                $pName = '_' . $name;
+
+                $refreshHeader[$name] = $pName;
+                $refreshArgs[] = $pName;
+            }
         }
 
         $arb = new AjaxRequestBuilder();
@@ -449,13 +453,13 @@ class GridBuilder extends AComponent {
         // PAGINATION
         $paginationHeader = ['gridPage' => '_page'];
         $paginationArgs = ['_page'];
-        if(isset($this->httpRequest->query['filterKey'])) {
-            $paginationHeader['filterKey'] = '_filterKey';
-            $paginationArgs[] = '_filterKey';
-        }
-        if(isset($this->httpRequest->query['filterType'])) {
-            $paginationHeader['filterType'] = '_filterType';
-            $paginationArgs[] = '_filterType';
+        if(!empty($this->activeFilters)) {
+            foreach($this->activeFilters as $name => $value) {
+                $pName = '_' . $name;
+
+                $paginationHeader[$name] = $pName;
+                $paginationArgs[] = $pName;
+            }
         }
 
         $arb = new AjaxRequestBuilder();
@@ -473,21 +477,44 @@ class GridBuilder extends AComponent {
         // FILTER
         if(!empty($this->filters)) {
             $arb = new AjaxRequestBuilder();
+
+            $headerParams = [];
+            $fArgs = [];
+            foreach($this->filters as $name => $filter) {
+                $hName = '_' . $name;
+                $headerParams[$name] = $hName;
+                $fArgs[] = $hName;
+            }
+
             $arb->setMethod()
-                ->setComponentAction($this->presenter, $this->componentName, '-filter')
-                ->setHeader(['filterKey' => '_filterKey', 'filterType' => '_filterType'])
+                ->setComponentAction($this->presenter, $this->componentName . '-filter')
+                ->setHeader($headerParams)
                 ->setFunctionName($this->componentName . '_filter')
-                ->setFunctionArguments(['_filterType', '_filterKey'])
-                ->updateHTMLElement('grid', 'grid')
+                ->setFunctionArguments($fArgs)
                 ->setComponent()
+                ->updateHTMLElement('grid', 'grid')
             ;
 
             $addScript($arb);
+        }
+
+        // FILTER MODAL
+        if(!empty($this->filters)) {
+            $scripts[] = '
+                <script type="text/javascript">
+                    async function ' . $this->componentName . '_processFilterModalOpen() {
+                        $("#grid-filter-modal-inner")
+                            .css("height", "90%")
+                            .css("visibility", "visible")
+                            .css("width", "90%");
+                    }
+                </script>
+            ';
 
             $scripts[] = '
                 <script type="text/javascript">
-                    async function processGridFilterSubmit(_gridPage) {
-                        
+                    function ' . $this->componentName . '_processFilterClear() {
+                        location.href = "' . $this->presenter->createURLString($this->presenter->getAction()) . '";
                     }
                 </script>
             ';
@@ -509,7 +536,15 @@ class GridBuilder extends AComponent {
     }
 
     private function createGridRefreshControl() {
-        return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . $this->getGridPage() . ')">Refresh &orarr;</a>';
+        $args = [$this->getGridPage()];
+
+        if(!empty($this->activeFilters)) {
+            foreach($this->activeFilters as $name => $value) {
+                $args[] = '\'' . $value . '\'';
+            }
+        }
+
+        return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . implode(', ', $args) . ')">Refresh &orarr;</a>';
     }
 
     private function createGridPagingControl() {
@@ -533,17 +568,14 @@ class GridBuilder extends AComponent {
      * @return string HTML code
      */
     private function createPagingButtonCode(int $page, string $text, bool $disabled = false) {
-        $filterKey = '';
-        if(isset($this->httpRequest->query['filterKey'])) {
-            $filterKey .= ', \'' . $this->httpRequest->query['filterKey'] . '\'';
+        $args = [$page];
+        if(!empty($this->activeFilters)) {
+            foreach($this->activeFilters as $name => $value) {
+                $args[] = '\'' . $value . '\'';
+            }
         }
 
-        $filterType = '';
-        if(isset($this->httpRequest->query['filterType'])) {
-            $filterType .= ', \'' . $this->httpRequest->query['filterType'] . '\'';
-        }
-
-        return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . $page . $filterKey . $filterType . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
+        return '<button type="button" class="grid-control-button" onclick="' . $this->componentName . '_page(' . implode(', ', $args) . ')"' . ($disabled ? ' disabled' : '') . '>' . $text . '</button>';
     }
 
     /**
@@ -590,21 +622,31 @@ class GridBuilder extends AComponent {
             return '';
         }
 
-        $code = '';
-        foreach($this->filters as $name => $filter) {
-            $filter->inject($this->componentName);
-            $code .= $filter->output()->toString();
+        $el = HTML::el('span');
+
+        $btn = HTML::el('button')
+                ->addAtribute('type', 'button')
+                ->onClick($this->componentName . '_processFilterModalOpen()')
+                ->text('Filter')
+        ;
+
+        $btns = [
+            $btn->toString()
+        ];
+
+        if(!empty($this->activeFilters)) {
+            $btn = HTML::el('button')
+                    ->addAtribute('type', 'button')
+                    ->onClick($this->componentName . '_processFilterClear()')
+                    ->text('Clear filter')
+            ;
+
+            $btns[] = $btn->toString();
         }
 
-        $submit = HTML::el('button')
-                    ->addAtribute('type', 'button')
-                    ->onClick('processGridFilterSubmit(' . $this->gridPage . ')')
-                    ->href('#')
-                    ->text('Submit');
+        $el->text(implode('', $btns));
 
-        $code .= $submit->toString();
-
-        return $code;
+        return $el->toString();
     }
 
     // GRID AJAX REQUEST HANDLERS
@@ -615,6 +657,12 @@ class GridBuilder extends AComponent {
      * @return array<string, string> Response
      */
     public function actionRefresh() {
+        foreach($this->filters as $name => $filter) {
+            if(isset($this->httpRequest->query[$name])) {
+                $this->activeFilters[$name] = $this->httpRequest->query[$name];
+            }
+        }
+
         $this->build();
         return ['grid' => $this->render()];
     }
@@ -625,8 +673,50 @@ class GridBuilder extends AComponent {
      * @return array<string, string> Response
      */
     public function actionPage() {
+        foreach($this->filters as $name => $filter) {
+            if(isset($this->httpRequest->query[$name])) {
+                $this->activeFilters[$name] = $this->httpRequest->query[$name];
+            }
+        }
+
         $this->build();
         return ['grid' => $this->render()];
+    }
+
+    public function actionFilter() {
+        foreach($this->filters as $name => $filter) {
+            if(isset($this->httpRequest->query[$name])) {
+                $this->activeFilters[$name] = $this->httpRequest->query[$name];
+            }
+        }
+
+        $this->build();
+        return ['grid' => $this->render()];
+    }
+
+    // FILTER MODAL COMPONENT
+    protected function createComponentFilter() {
+        $filter = GridFilter::createFromComponent($this);
+        $filter->setFilters($this->filters);
+        $filter->setGridComponentName($this->componentName);
+        $filter->setGridColumns($this->columnLabels);
+        $filter->setActiveFilters($this->activeFilters);
+
+        return $filter;
+    }
+
+    /**
+     * Creates an instance of component from other component
+     * 
+     * @param AComponent $component Other component
+     * @return AComponent
+     */
+    public static function createFromComponent(AComponent $component) {
+        $obj = new self($component->httpRequest, $component->cfg);
+        $obj->setApplication($component->app);
+        $obj->setPresenter($component->presenter);
+
+        return $obj;
     }
 }
 

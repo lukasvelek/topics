@@ -2,9 +2,8 @@
 
 namespace App\UI;
 
-use App\Core\Application;
 use App\Core\Http\HttpRequest;
-use App\Modules\APresenter;
+use App\Modules\AGUICore;
 
 /**
  * Common class for interactive components
@@ -12,10 +11,8 @@ use App\Modules\APresenter;
  * @author Lukas Velek
  * @version 1.0
  */
-abstract class AComponent implements IRenderable {
+abstract class AComponent extends AGUICore implements IRenderable {
     protected HttpRequest $httpRequest;
-    protected APresenter $presenter;
-    protected Application $app;
     protected array $cfg;
     protected string $componentName;
 
@@ -31,24 +28,6 @@ abstract class AComponent implements IRenderable {
     }
 
     /**
-     * Sets the Application instance
-     * 
-     * @param Application $app Application instance
-     */
-    public function setApplication(Application $app) {
-        $this->app = $app;
-    }
-
-    /**
-     * Sets the current Presenter instance
-     * 
-     * @param APresenter $presenter Current presenter instance
-     */
-    public function setPresenter(APresenter $presenter) {
-        $this->presenter = $presenter;
-    }
-
-    /**
      * Sets the component name
      * 
      * @param string $componentName Component name
@@ -61,6 +40,13 @@ abstract class AComponent implements IRenderable {
      * Initial compoonent configuration
      */
     public function startup() {}
+
+    /**
+     * Creates an instance of component from other component
+     * 
+     * @param AComponent $component Other component
+     */
+    abstract static function createFromComponent(AComponent $component);
 }
 
 ?>

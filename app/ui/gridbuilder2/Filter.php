@@ -27,6 +27,10 @@ class Filter implements IHTMLOutput {
         $this->componentName = $componentName;
     }
 
+    public function getOptions() {
+        return $this->values;
+    }
+
     public function output(): HTML {
         $el = HTML::el('select');
         $el->text($this->prepareOptionsCode());

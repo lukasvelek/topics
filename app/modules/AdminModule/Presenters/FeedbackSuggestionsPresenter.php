@@ -36,7 +36,21 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
 
         $grid->createDataSourceFromQueryBuilder($this->app->suggestionRepository->composeQueryForOpenSuggestions(), 'suggestionId');
 
-        //$grid->addFilter('category', null, SuggestionCategory::getAll());
+        $usersInSuggestions = $this->app->suggestionRepository->getUsersInSuggestions();
+        $userEntitiesInSuggestions = [];
+        foreach($usersInSuggestions as $userId) {
+            try {
+                $user = $this->app->userManager->getUserById($userId);
+                
+                $userEntitiesInSuggestions[$userId] = $user->getUsername();
+            } catch(AException $e) {
+                continue;
+            }
+        }
+
+        $grid->addFilter('category', null, SuggestionCategory::getAll());
+        $grid->addFilter('status', null, SuggestionStatus::getAll());
+        $grid->addFilter('userId', null, $userEntitiesInSuggestions);
 
         $grid->addColumnText('title', 'Title');
         $grid->addColumnUser('userId', 'User');
@@ -146,7 +160,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         ;
 
         $this->addScript($arb->build());
-        $this->addScript('loadSuggestionComments(' . $suggestionId . ', 10, 0)');
+        $this->addScript('loadSuggestionComments(\'' . $suggestionId . '\', 10, 0)');
 
         $fb = new FormBuilder();
         $fb ->setAction(['page' => 'AdminModule:FeedbackSuggestions', 'action' => 'newComment', 'suggestionId' => $suggestionId])

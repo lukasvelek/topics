@@ -2,7 +2,6 @@
 
 namespace App\Modules;
 
-use App\Core\Application;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Core\Http\HttpRequest;
@@ -21,9 +20,7 @@ abstract class AModule extends AGUICore {
 
     private array $flashMessages;
     protected ?TemplateObject $template;
-    private ?APresenter $presenter;
     private ?Logger $logger;
-    protected ?Application $app;
     protected HttpRequest $httpRequest;
 
     public array $cfg;
@@ -40,19 +37,8 @@ abstract class AModule extends AGUICore {
         $this->title = $title;
         $this->flashMessages = [];
         $this->template = null;
-        $this->presenter = null;
         $this->logger = null;
         $this->isAjax = false;
-        $this->app = null;
-    }
-
-    /**
-     * Sets Application instance
-     * 
-     * @param Application $application Application instance
-     */
-    public function setApplication(Application $application) {
-        $this->app = $application;
     }
 
     /**
@@ -149,21 +135,19 @@ abstract class AModule extends AGUICore {
      * 
      * @return TemplateObject Page layout TemplateObject instance
      */
-    private function getTemplate() {
+    private function getCommonTemplate() {
         $commonLayout = __DIR__ . '\\@layout\\common.html';
         $customLayout = __DIR__ . '\\' . $this->title . '\\Presenters\\templates\\@layout\\common.html';
 
-        $layoutContent = '';
-
-        if(file_exists($customLayout)) {
-            $layoutContent = file_get_contents($customLayout);
-        } else if(!file_exists($customLayout) && file_exists($commonLayout)) {
-            $layoutContent = file_get_contents($commonLayout);
-        } else {
+        $template = $this->getTemplate($customLayout);
+        if($template === null) {
+            $template = $this->getTemplate($commonLayout);
+        }
+        if($template === null) {
             throw new TemplateDoesNotExistException('common.html');
         }
 
-        return new TemplateObject($layoutContent);
+        return $template;
     }
 
     /**
@@ -174,12 +158,12 @@ abstract class AModule extends AGUICore {
      * @param bool $isAjax Is the request called from AJAX?
      */
     private function startup(string $presenterTitle, string $actionTitle) {
-        $this->template = $this->getTemplate();
+        $this->template = $this->getCommonTemplate();
 
         $realPresenterTitle = 'App\\Modules\\' . $this->title . '\\' . $presenterTitle;
 
         $this->presenter = new $realPresenterTitle();
-        $this->presenter->setTemplate($this->isAjax ? null : $this->getTemplate());
+        $this->presenter->setTemplate($this->isAjax ? null : $this->template);
         $this->presenter->setParams(['module' => $this->title]);
         $this->presenter->setAction($actionTitle);
         $this->presenter->setLogger($this->logger);
@@ -187,6 +171,7 @@ abstract class AModule extends AGUICore {
         $this->presenter->setIsAjax($this->isAjax);
         $this->presenter->setApplication($this->app);
         $this->presenter->setHttpRequest($this->httpRequest);
+        $this->presenter->setPresenter($this->presenter);
         $this->presenter->lock();
         
         $this->presenter->startup();

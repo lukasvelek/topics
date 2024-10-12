@@ -7,7 +7,7 @@ class SuggestionCategory {
     public const SECURITY = 'security';
     public const FUNCTION_REQUEST = 'functionRequest';
     public const OTHER = 'other';
-    public const PERFORMANCE = 'Performance';
+    public const PERFORMANCE = 'performance';
 
     public static function toString(string $key) {
         return match($key) {
