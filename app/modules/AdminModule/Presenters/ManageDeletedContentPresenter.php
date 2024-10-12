@@ -7,6 +7,7 @@ use App\Core\AjaxRequestBuilder;
 use App\Entities\PostCommentEntity;
 use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
+use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\GridBuilder\Cell;
@@ -23,6 +24,11 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
         
         $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
@@ -36,7 +42,7 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
 
         $page = $this->gridHelper->getGridPage(GridHelper::GRID_DELETED_CONTENT, $gridPage);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $reports = $this->app->reportRepository->getAllReports();
         $checkReport = function(string $entityId, string $entityType) use ($reports) {
@@ -67,11 +73,8 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                         $cell->setValue('No');
                     } else {
                         $link = $this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]);
-                        $a = HTML::a();
 
-                        $a->href($link)
-                        ->text('Yes')
-                        ->class('grid-link');
+                        $a = HTML::el('a')->href($link)->text('Yes')->class('grid-link');
 
                         $cell->setTextColor('green');
                         $cell->setValue($a);
@@ -85,13 +88,12 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                     return $cell;
                 });
                 $gb->addOnColumnRender('title', function(Cell $cell, TopicEntity $topic) {
-                    $a = HTML::a();
+                    $a = HTML::el('a')->href($this->createFullURLString('UserModule:Topics', 'profile', ['topicId' => $topic->getId()]))
+                            ->text($topic->getTitle())
+                            ->class('grid-link');
 
-                    $a->href($this->createFullURLString('UserModule:Topics', 'profile', ['topicId' => $topic->getId()]))
-                        ->text($topic->getTitle())
-                        ->class('grid-link');
-                        
-                    return $a->render();
+                    $cell->setValue($a);
+                    return $cell;
                 });
 
                 break;
@@ -109,28 +111,26 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                     if($report === null) {
                         $cell->setTextColor('red');
                         $cell->setValue('red');
-                        return $cell;
                     } else {
-                        $a = HTML::a();
+                        $a = HTML::el('a')->href($this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]))
+                                ->text('Yes')
+                                ->class('grid-link');
 
-                        $a->href($this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]))
-                            ->text('Yes')
-                            ->class('grid-link');
-
-                        return $a->render();
+                        $cell->setValue($a);
                     }
+
+                    return $cell;
                 });
                 $gb->addOnColumnRender('dateDeleted', function(Cell $cell, PostEntity $post) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateDeleted()) ?? '-';
                 });
                 $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
-                    $a = HTML::a();
+                    $a = HTML::el('a')->href($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
+                            ->text($post->getTitle())
+                            ->class('grid-link');
 
-                    $a->href($this->createFullURLString('UserModule:Posts', 'profile', ['postId' => $post->getId()]))
-                        ->text($post->getTitle())
-                        ->class('grid-link');
-                    
-                    return $a->render();
+                    $cell->setValue($a);
+                    return $cell;
                 });
 
                 break;
@@ -143,8 +143,12 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                 $gb->addDataSource($data);
                 $gb->addColumns(['post' => 'Post', 'text' => 'Text', 'reported' => 'Reported?', 'dateDeleted' => 'Deleted']);
                 $gb->addOnColumnRender('post', function(Cell $cell, PostCommentEntity $comment) {
-                    $post = $this->app->postRepository->getPostById($comment->getPostId());
-                    return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
+                    try {
+                        $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+                        return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
+                    } catch(AException $e) {
+                        return '-';
+                    }
                 });
                 $gb->addOnColumnRender('text', function(Cell $cell, PostCommentEntity $comment) {
                     return $comment->getShortenedText();
@@ -155,16 +159,15 @@ class ManageDeletedContentPresenter extends AAdminPresenter {
                     if($report === null) {
                         $cell->setTextColor('red');
                         $cell->setValue('No');
-                        return $cell;
                     } else {
-                        $a = HTML::a();
+                        $a = HTML::el('a')->href($this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]))
+                                    ->text('Yes')
+                                    ->class('grid-link');
 
-                        $a->href($this->createFullURLString('AdminModule:FeedbackReports', 'profile', ['reportId' => $report->getId()]))
-                            ->text('Yes')
-                            ->class('grid-link');
-
-                        return $a->render();
+                        $cell->setValue($a);
                     }
+
+                    return $cell;
                 });
                 $gb->addOnColumnRender('dateDeleted', function(Cell $cell, PostCommentEntity $comment) {
                     return DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateDeleted()) ?? '-';

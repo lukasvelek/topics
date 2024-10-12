@@ -142,7 +142,11 @@ async function sendPostComment(_postId, _parentCommentId) {
                 if(obj.parentComment) {
                     $("#post-comment-child-comments-" + _parentCommentId).prepend(comment);
                 } else {
-                    $("#post-comments").prepend(comment + "<br>");
+                    if(obj.commentCount && obj.commentCount == 1) {
+                        $("#post-comments").html(comment);
+                    } else {
+                        $("#post-comments").prepend(comment + "<br>");
+                    }
                 }
 
                 $("#" + _tmp).val("");

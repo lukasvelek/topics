@@ -4,12 +4,17 @@ namespace App\Modules\UserModule;
 
 use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 use App\Exceptions\GeneralException;
 use App\UI\GridBuilder\GridExporter;
 
 class GridExportHelperPresenter extends AUserPresenter {
     public function __construct() {
         parent::__construct('GridExportHelperPresenter', 'Grid Export Helper');
+    }
+
+    public function startup() {
+        parent::startup();
     }
 
     public function actionExportGrid() {
@@ -32,7 +37,7 @@ class GridExportHelperPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->app->gridExportRepository->rollback();
 
-            return ['empty' => '1'];
+            throw new AjaxRequestException('Could not export grid.', $e);
         }
 
         $ge = new GridExporter($this->app->logger, $hash, $this->app->cfg, $this->app->serviceManager);
@@ -66,6 +71,8 @@ class GridExportHelperPresenter extends AUserPresenter {
                 $this->app->gridExportRepository->commit($this->getUserId(), __METHOD__);
             } catch(AException $e) {
                 $this->app->gridExportRepository->rollback();
+
+                throw new AjaxRequestException('Could not export grid.', $e);
             }
         }
 

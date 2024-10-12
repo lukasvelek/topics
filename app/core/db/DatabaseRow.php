@@ -28,6 +28,10 @@ class DatabaseRow {
             return null;
         }
     }
+
+    public function getKeys() {
+        return array_keys($this->values);
+    }
 }
 
 ?>

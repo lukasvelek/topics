@@ -4,7 +4,6 @@ namespace App\Core\Caching;
 
 use App\Core\Caching\Cache;
 use App\Core\Datetypes\DateTime;
-use App\Core\FileLockManager;
 use App\Core\FileManager;
 
 /**
@@ -160,19 +159,7 @@ class CacheFactory {
         $filename = $date . $namespace;
         $filename = md5($filename);
 
-        $flm = new FileLockManager();
-        $flm->lock($path . $filename);
-
-        $handle = $flm->getHandle($path . $filename);
-
-        $result = false;
-        if($handle === null) {
-            $result = FileManager::saveFile($path, $filename, serialize($data));
-        } else {
-            $result = fputs($handle, serialize($data));
-
-            $flm->unlock($path . $filename);
-        }
+        $result = FileManager::saveFile($path, $filename, serialize($data), true, false);
 
         return $result !== false;
     }

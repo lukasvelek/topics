@@ -40,6 +40,15 @@ class GroupRepository extends ARepository {
         return $qb->fetch('cnt');
     }
 
+    public function composeQueryForGroups() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('groups');
+
+        return $qb;
+    }
+
     public function getGroupsForGrid(int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -86,6 +95,16 @@ class GroupRepository extends ARepository {
         }
 
         return $members;
+    }
+
+    public function composeQueryForGroupMembers(int $groupId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('group_membership')
+            ->where('groupId = ?', [$groupId]);
+
+        return $qb;
     }
 
     public function getGroupById(int $groupId) {

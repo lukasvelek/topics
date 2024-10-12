@@ -44,6 +44,15 @@ class MailRepository extends ARepository {
         return $entities;
     }
 
+    public function composeQueryForEmailQueue() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('mail_queue');
+
+        return $qb;
+    }
+
     public function deleteEntry(string $id) {
         $qb = $this->qb(__METHOD__);
 

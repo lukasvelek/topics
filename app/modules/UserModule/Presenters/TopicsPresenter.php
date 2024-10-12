@@ -15,6 +15,7 @@ use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
@@ -30,7 +31,6 @@ use App\UI\FormBuilder\Label;
 use App\UI\FormBuilder\Select;
 use App\UI\FormBuilder\SubmitButton;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
 use Exception;
@@ -346,7 +346,7 @@ class TopicsPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->app->postRepository->rollback();
 
-            $this->flashMessage('Post could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
+            throw new AjaxRequestException('Could not ' . $liked ? 'like' : 'unlike' . ' post.', $e);
         }
  
         $likes = $this->app->postRepository->getLikes($postId);
@@ -362,8 +362,7 @@ class TopicsPresenter extends AUserPresenter {
         try {
             $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         } catch(AException $e) {
-            $this->flashMessage($e->getMessage(), 'error');
-            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+            throw new AjaxRequestException('Could not find topic.', $e);
         }
 
         $isMember = $this->app->topicMembershipManager->checkFollow($topicId, $this->getUserId());
@@ -393,7 +392,11 @@ class TopicsPresenter extends AUserPresenter {
             
             $pinnedPostObjects = [];
             foreach($pinnedPosts as $pp) {
-                $post = $this->app->postRepository->getPostById($pp);
+                try {
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $pp);
+                } catch(AException $e) {
+                    continue;
+                }
                 $post->setIsPinned();
 
                 $pinnedPostObjects[] = $post;
@@ -474,11 +477,10 @@ class TopicsPresenter extends AUserPresenter {
 
         $postCode = [];
         foreach($posts as $post) {
-            $author = $this->app->userRepository->getUserById($post->getAuthorId());
-
-            if($author !== null) {
+            try {
+                $author = $this->app->userManager->getUserById($post->getAuthorId());
                 $userProfileLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
-            } else {
+            } catch(AException $e) {
                 $userProfileLink = '-';
             }
     
@@ -1202,7 +1204,11 @@ class TopicsPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($data as $postId => $cnt) {
-            $post = $this->app->postRepository->getPostById($postId);
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+            } catch(AException $e) {
+                continue;
+            }
 
             $link = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
             
@@ -1668,7 +1674,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $canPinMore = count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS'];
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
         $gb->addDataSource($posts);
         $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
@@ -1703,12 +1709,15 @@ class TopicsPresenter extends AUserPresenter {
             return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
         });
         $gb->addOnColumnRender('author', function(Cell $cell, PostEntity $post) {
-            $user = $this->app->userRepository->getUserById($post->getAuthorId());
+            try {
+                $user = $this->app->userManager->getUserById($post->getAuthorId());
 
-            $link = UserEntity::createUserProfileLink($user, true);
-            $link->setClass('grid-link');
-
-            return $link->render();
+                $link = UserEntity::createUserProfileLink($user, true);
+                $link->setClass('grid-link');
+                return $link;
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnColumnRender('dateAvailable', function(Cell $cell, PostEntity $post) use ($filter) {
             $date = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateAvailable());
@@ -1840,7 +1849,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
 
         $grid->addDataSource($postConcepts);
         $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
@@ -1852,15 +1861,10 @@ class TopicsPresenter extends AUserPresenter {
             return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
         });
 
-        $reducer = $this->getGridReducer();
-        $reducer->applyReducer($grid);
-
         return ['grid' => $grid->build()];
     }
 
     public function handleDeletePostConcept(?FormResponse $fr = null) {
-        ;
-
         $conceptId = $this->httpGet('conceptId', true);
         $topicId = $this->httpGet('topicId', true);
 

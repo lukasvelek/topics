@@ -1,0 +1,52 @@
+<?php
+
+namespace App\UI;
+
+use App\Core\Http\HttpRequest;
+use App\Modules\AGUICore;
+
+/**
+ * Common class for interactive components
+ * 
+ * @author Lukas Velek
+ * @version 1.0
+ */
+abstract class AComponent extends AGUICore implements IRenderable {
+    protected HttpRequest $httpRequest;
+    protected array $cfg;
+    protected string $componentName;
+
+    /**
+     * Abstract class constructor
+     * 
+     * @param HttpRequest $httpRequest HttpRequest instance
+     * @param array $cfg Application configuration
+     */
+    protected function __construct(HttpRequest $httpRequest, array $cfg) {
+        $this->httpRequest = $httpRequest;
+        $this->cfg = $cfg;
+    }
+
+    /**
+     * Sets the component name
+     * 
+     * @param string $componentName Component name
+     */
+    public function setComponentName(string $componentName) {
+        $this->componentName = $componentName;
+    }
+
+    /**
+     * Initial compoonent configuration
+     */
+    public function startup() {}
+
+    /**
+     * Creates an instance of component from other component
+     * 
+     * @param AComponent $component Other component
+     */
+    abstract static function createFromComponent(AComponent $component);
+}
+
+?>

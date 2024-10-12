@@ -17,7 +17,6 @@ use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
 use App\UI\LinkBuilder;
 use Exception;
 
@@ -85,13 +84,10 @@ class TopicManagementPresenter extends AUserPresenter {
         $allMembersCount = count($this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
         $lastPage = ceil($allMembersCount / $gridSize);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
 
         $gb->addDataSource($members);
         $gb->addColumns(['userId' => 'User', 'role' => 'Role']);
-
-        $gr = $this->getGridReducer();
-        $gr->applyReducer($gb);
 
         $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
             $text = TopicMemberRole::toString($tme->getRole());
@@ -268,13 +264,17 @@ class TopicManagementPresenter extends AUserPresenter {
             $lastPage = ceil($pollCount / $gridSize);
         }
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
         $gb->addDataSource($polls);
         $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) {
-            $user = $this->app->userRepository->getUserById($tpe->getAuthorId());
+            try {
+                $user = $this->app->userManager->getUserById($tpe->getAuthorId());
 
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getID()], 'grid-link');
+                return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getID()], 'grid-link');
+            } catch(AException $e) {
+                return '-';
+            }
         });
         $gb->addOnColumnRender('dateCreated', function(Cell $cell, TopicPollEntity $tpe) {
             return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateCreated());
@@ -421,7 +421,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $users = $this->app->userRepository->getUsersByIdBulk($userIds, true);
 
-        $gb = new GridBuilder();
+        $gb = $this->getGridBuilder();
         $gb->addDataSource($invites);
         $gb->addColumns(['user' => 'User', 'dateValid' => 'Valid until']);
         $gb->addOnColumnRender('user', function(Cell $cell, TopicInviteEntity $invite) use ($users) {
@@ -676,7 +676,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $lastPage = ceil($totalCount / $gridSize);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
         $grid->addColumns(['userId' => 'User', 'role' => 'Role', 'dateCreated' => 'Member from', 'daysMember' => 'Days of membership']);
         $grid->addDataSource($members);
         $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getFollowersGrid', [$topicId]);
@@ -706,8 +706,6 @@ class TopicManagementPresenter extends AUserPresenter {
             
             return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
         });
-
-        $this->getGridReducer()->applyReducer($grid);
         
         $grid->addGridExport(function() use ($topicId) {
             return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
@@ -746,8 +744,6 @@ class TopicManagementPresenter extends AUserPresenter {
     }
 
     public function actionGetBannedWordsGrid() {
-        
-
         $topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
 
@@ -760,16 +756,15 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $lastPage = ceil($bannedWordsTotalCount / $gridSize);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
         $grid->addColumns(['authorId' => 'Author', 'text' => 'Text', 'dateCreated' => 'Date created']);
         $grid->addDataSource($bannedWords);
 
         $grid->addOnColumnRender('authorId', function(Cell $cell, TopicBannedWordEntity $tbwe) {
-            $user = $this->app->userRepository->getUserById($tbwe->getAuthorId());
-
-            if($user !== null) {
+            try {
+                $user = $this->app->userManager->getUserById($tbwe->getAuthorId());
                 return UserEntity::createUserProfileLink($user);
-            } else {
+            } catch(AException $e) {
                 return '-';
             }
         });
@@ -782,9 +777,6 @@ class TopicManagementPresenter extends AUserPresenter {
         });
 
         $grid->addGridPaging($page, $lastPage, $gridSize, $bannedWordsTotalCount, 'getBannedWordsGrid', [$topicId]);
-
-        $gr = $this->getGridReducer();
-        $gr->applyReducer($grid);
 
         return ['grid' => $grid->build()];
     }

@@ -55,7 +55,7 @@ class UserSuggestionCommentEntity extends AEntity {
         }
 
         $row = self::createRow($row);
-        self::checkTypes($row, ['commentId' => 'string', 'suggestionId' => 'string', 'userId' => 'userId', 'text' => 'string', 'adminOnly' => 'bool', 'dateCreated' => 'string', 'statusChange' => 'bool']);
+        self::checkTypes($row, ['commentId' => 'string', 'suggestionId' => 'string', 'userId' => 'userId', 'commentText' => 'string', 'adminOnly' => 'bool', 'dateCreated' => 'string', 'statusChange' => 'bool']);
 
         return new self($row->commentId, $row->suggestionId, $row->userId, $row->commentText, $row->adminOnly, $row->dateCreated, $row->statusChange);
     }

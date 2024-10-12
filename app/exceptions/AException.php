@@ -16,7 +16,7 @@ abstract class AException extends Exception {
     protected function __construct(string $name, string $message, ?Throwable $previous = null, bool $createFile = true) {
         $this->hash = HashManager::createHash(8, false);
         
-        parent::__construct($message . ' [' . $this->hash . ']', 9999, $previous);
+        parent::__construct($message /*. ' [' . $this->hash . ']'*/, 9999, $previous);
 
         $this->html = $this->createHTML($name, $message);
 

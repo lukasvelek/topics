@@ -14,9 +14,13 @@ use Exception;
  * - custom column definitions
  * - custom value parsing (using functions defined by user)
  * - row actions (info, edit, delete, etc.)
+ * - pagination
+ * - exporting
+ * - refreshing
  * 
  * @author Lukas Velek
  * @version 1.2
+ * @deprecated
  */
 class GridBuilder {
     private array $actions;
@@ -40,11 +44,16 @@ class GridBuilder {
 
     private ?GridControls $gridControls;
     private ?Table $prebuiltTable;
+    private IGridReducer $reducer;
+    private bool $applyReducer;
 
     /**
      * Grid builder constructor
      */
-    public function __construct() {
+    public function __construct(IGridReducer $gridReducer, bool $applyReducer) {
+        $this->reducer = $gridReducer;
+        $this->applyReducer = $applyReducer;
+
         $this->columns = [];
         $this->actions = [];
         $this->dataSourceArray = [];
@@ -213,7 +222,11 @@ class GridBuilder {
      * 
      * @return GridTable GridTable instance
      */
-    public function prebuild() {
+    private function prebuild() {
+        if($this->applyReducer) {
+            $this->reducer->applyReducer($this);
+        }
+
         if($this->prebuiltTable !== null) {
             return $this->prebuiltTable;
         }

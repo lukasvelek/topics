@@ -2,8 +2,12 @@
 
 namespace App\UI\GridBuilder;
 
+use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 
+/**
+ * @deprecated
+ */
 class Cell implements IRenderable {
     private mixed $text;
     private bool $isHeader;
@@ -31,6 +35,9 @@ class Cell implements IRenderable {
         }
         if($value instanceof IRenderable) {
             $value = $value->render();
+        }
+        if($value instanceof HTML) {
+            $value = $value->toString();
         }
         $this->text = $value;
     }

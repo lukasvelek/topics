@@ -8,7 +8,10 @@ use App\Repositories\TopicRepository;
 use App\Repositories\UserRepository;
 use App\UI\LinkBuilder;
 
-class DefaultGridReducer {
+/**
+ * @deprecated
+ */
+class DefaultGridReducer implements IGridReducer {
     private UserRepository $userRepository;
     private TopicRepository $topicRepository;
     private PostRepository $postRepository;
@@ -23,12 +26,12 @@ class DefaultGridReducer {
         $this->postRepository = $postRepository;
     }
 
-    public function applyReducer(GridBuilder $grid) {
+    public function applyReducer(GridBuilder &$grid) {
         $this->processDates($grid);
         $this->processEntities($grid);
     }
 
-    private function processDates(GridBuilder $grid) {
+    private function processDates(GridBuilder &$grid) {
         $cols = $grid->getColumns();
 
         foreach($cols as $key => $value) {
@@ -68,7 +71,7 @@ class DefaultGridReducer {
         }
     }
 
-    private function processEntities(GridBuilder $grid) {
+    private function processEntities(GridBuilder &$grid) {
         $cols = $grid->getColumns();
 
         foreach($cols as $key => $value) {

@@ -3,13 +3,13 @@
 namespace App\Modules\AdminModule;
 
 use App\Constants\SystemStatus;
-use App\Core\AjaxRequestBuilder;
-use App\Entities\SystemStatusEntity;
+use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageSystemStatusPresenter extends AAdminPresenter {
@@ -26,35 +26,28 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         }
     }
 
-    public function actionCreateGrid() {
-        $gb = new GridBuilder();
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $statuses = $this->app->systemStatusRepository->getAllStatuses();
+        $grid->createDataSourceFromQueryBuilder($this->app->systemStatusRepository->composeQueryForStatuses(), 'systemId');
 
-        $gb->addDataSource($statuses);
-        $gb->addColumns(['name' => 'Name', 'status' => 'Status', 'description' => 'Description']);
-        $gb->addOnColumnRender('status', function(Cell $cell, SystemStatusEntity $sse) {
-            $cell->setTextColor(SystemStatus::getColorByCode($sse->getStatus()));
-            $cell->setValue(SystemStatus::toString($sse->getStatus()));
-            return $cell;
-        });
-        $gb->addAction(function(SystemStatusEntity $sse) {
-            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $sse->getId()]), 'grid-link');
-        });
+        $grid->addColumnText('name', 'Name');
+        $col = $grid->addColumnText('status', 'Status');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $html->style('color', SystemStatus::getColorByCode($value));
+            return SystemStatus::toString($value);
+        };
 
-        return ['grid' => $gb->build()];
-    }
+        $update = $grid->addAction('update');
+        $update->setTitle('Update');
+        $update->onCanRender[] = function() {
+            return true;
+        };
+        $update->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            return LinkBuilder::createSimpleLink('Update', $this->createURL('form', ['systemId' => $primaryKey]), 'grid-link');
+        };
 
-    public function handleList() {
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setURL($this->createURL('createGrid'))
-            ->setMethod()
-            ->setFunctionName('createGrid')
-            ->updateHTMLElement('grid-content', 'grid');
-
-        $this->addScript($arb->build());
-        $this->addScript('createGrid()');
+        return $grid;
     }
 
     public function renderList() {}

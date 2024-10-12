@@ -11,6 +11,10 @@ class FeedbackPresenter extends AAdminPresenter {
         parent::__construct('FeedbackPresenter', 'Feedback');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleDashboard() {
         $this->addScript('createWidgets();');
     }

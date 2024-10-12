@@ -9,6 +9,7 @@ use App\Core\Caching\CacheNames;
 use App\Entities\PostCommentEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 use App\Exceptions\FileUploadException;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
@@ -18,7 +19,6 @@ use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\TextArea;
 use App\UI\LinkBuilder;
-use DateTime;
 use Exception;
 
 class PostsPresenter extends AUserPresenter {
@@ -26,11 +26,21 @@ class PostsPresenter extends AUserPresenter {
         parent::__construct('PostsPresenter', 'Posts');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleProfile() {
         $bwh = new BannedWordsHelper($this->app->contentRegulationRepository, $this->app->topicContentRegulationRepository);
 
         $postId = $this->httpGet('postId');
-        $post = $this->app->postRepository->getPostById($postId);
+
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not open post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'followed']);
+        }
 
         if($post->isDeleted() && !$this->app->visibilityAuthorizator->canViewDeletedPost($this->getUserId())) {
             $this->flashMessage('This post does not exist.', 'error');
@@ -158,7 +168,12 @@ class PostsPresenter extends AUserPresenter {
             $finalLikeLink = ' ' . ($liked ? $unlikeLink : $likeLink);
         }
 
-        $author = $this->app->userRepository->getUserById($post->getAuthorId());
+        try {
+            $author = $this->app->userManager->getUserById($post->getAuthorId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
         $authorLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
 
         $reportLink = '';
@@ -318,10 +333,15 @@ class PostsPresenter extends AUserPresenter {
         $authorId = $this->getUserId();
 
         if($text == '') {
-            return ['error' => '1', 'errorMsg' => 'No comment text provided.'];
+            throw new AjaxRequestException('No comment text provided.');
         }
 
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            throw new AjaxRequestException('Could not find post.', $e);
+        }
+
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
         $authorLink = UserEntity::createUserProfileLink($this->getUser(), true);
@@ -344,8 +364,10 @@ class PostsPresenter extends AUserPresenter {
             $commentEntity = $this->app->postCommentRepository->getCommentById($commentId);
 
             $success = true;
-        } catch (AException) {
+        } catch (AException $e) {
             $this->app->postCommentRepository->rollback();
+
+            throw new AjaxRequestException('Could not create a new comment.', $e);
         }
 
         if($success) {
@@ -355,9 +377,11 @@ class PostsPresenter extends AUserPresenter {
             if($parentCommentId !== null) {
                 $values['parentComment'] = true;
             }
+            $commentCount = $this->app->postCommentRepository->getCommentCountForPostId($postId);
+            $values['commentCount'] = $commentCount;
             return $values;
         } else {
-            return ['error' => '1', 'errorMsg' => 'Could not post comment.'];
+            throw new AjaxRequestException('Could not post comment.');
         }
     }
 
@@ -390,9 +414,10 @@ class PostsPresenter extends AUserPresenter {
 
     public function handleUploadImage() {
         $postId = $this->httpGet('postId');
-        $post = $this->app->postRepository->getPostById($postId);
 
         try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+
             $this->app->topicRepository->beginTransaction();
             
             if(isset($_FILES['image']['name'])) {
@@ -439,7 +464,11 @@ class PostsPresenter extends AUserPresenter {
 
         $comment = $this->app->postCommentRepository->getCommentById($commentId);
 
-        $post = $this->app->postRepository->getPostById($comment->getPostId());
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+        } catch(AException $e) {
+            throw new AjaxRequestException('Could not find post.', $e);
+        }
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $post->getId()]), 'post-data-link');
 
         $authorLink = LinkBuilder::createSimpleLinkObject($this->getUser()?->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $userId], 'post-data-link');
@@ -464,7 +493,7 @@ class PostsPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->app->postCommentRepository->rollback();
             
-            $this->flashMessage('Comment could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
+            throw new AjaxRequestException('Could not ' . $liked ? 'like' : 'unlike' . ' post.', $e);
             
             $liked = false;
         }
@@ -481,7 +510,11 @@ class PostsPresenter extends AUserPresenter {
         $limit = $this->httpGet('limit');
         $offset = $this->httpGet('offset');
 
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            throw new AjaxRequestException('Could not find post.', $e);
+        }
 
         $comments = $this->app->postCommentRepository->getLatestCommentsForPostId($postId, $limit, $offset, !$post->isDeleted());
         $commentCount = $this->app->postCommentRepository->getCommentCountForPostId($postId, !$post->isDeleted());
@@ -524,9 +557,9 @@ class PostsPresenter extends AUserPresenter {
     }
 
     private function createPostComment(string $postId, PostCommentEntity $comment, array $likedComments, BannedWordsHelper $bwh, array $childComments, bool $parent = true) {
-        $post = $this->app->postRepository->getPostById($postId);
+        $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
 
-        $author = $this->app->userRepository->getUserById($comment->getAuthorId());
+        $author = $this->app->userManager->getUserById($comment->getAuthorId());
         $userProfileLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId(), '', 'post-comment-link');
 
         $liked = in_array($comment->getId(), $likedComments);
@@ -573,8 +606,6 @@ class PostsPresenter extends AUserPresenter {
         preg_match_all("/[@]\w*/m", $text, $matches);
 
         $matches = $matches[0];
-
-        $post = $this->app->postRepository->getPostById($postId);
 
         $users = [];
         foreach($matches as $match) {
@@ -641,7 +672,12 @@ class PostsPresenter extends AUserPresenter {
         $authorId = $this->getUserId();
         $parentCommentId = $this->httpGet('parentCommentId');
 
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+        }
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
 
         $authorLink = UserEntity::createUserProfileLink($this->getUser(), true);
@@ -688,12 +724,17 @@ class PostsPresenter extends AUserPresenter {
             } catch(AException $e) {
                 $this->app->reportRepository->rollback();
 
-                $this->flashMessage('Post could not be reported. Reason: ' . $e->getMessage());
+                $this->flashMessage('Post could not be reported. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
         } else {
-            $post = $this->app->postRepository->getPostById($postId);
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+            } catch(AException $e) {
+                $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId]);
+            }
             $this->saveToPresenterCache('post', $post);
 
             $categories = ReportCategory::getArray();
@@ -796,7 +837,12 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
         
         if($this->httpGet('isSubmit') == '1') {
-            $post = $this->app->postRepository->getPostById($postId);
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+            } catch(AException $e) {
+                $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['action' => 'profile', 'postId' => $postId]);
+            }
             $comment = $this->app->postCommentRepository->getCommentById($commentId);
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
@@ -840,7 +886,12 @@ class PostsPresenter extends AUserPresenter {
         $postId = $this->httpGet('postId');
 
         if($this->httpGet('isSubmit') == '1') {
-            $post = $this->app->postRepository->getPostById($postId);
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+            } catch(AException $e) {
+                $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect($this->createURL('profile', ['postId' => $postId]));
+            }
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), $this->createURL('profile', ['postId' => $postId]), 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
 
@@ -889,7 +940,12 @@ class PostsPresenter extends AUserPresenter {
 
     public function handleLike() {
         $postId = $this->httpGet('postId', true);
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('profile', ['postId' => $postId]));
+        }
 
         $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
         
@@ -917,7 +973,12 @@ class PostsPresenter extends AUserPresenter {
 
     public function handleUnlike() {
         $postId = $this->httpGet('postId', true);
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect($this->createURL('profile', ['postId' => $postId]));
+        }
 
         try {
             $this->app->postRepository->beginTransaction();

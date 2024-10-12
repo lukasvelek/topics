@@ -11,6 +11,15 @@ class SystemStatusRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
+    public function composeQueryForStatuses() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('system_status');
+
+        return $qb;
+    }
+
     public function getAllStatuses() {
         $qb = $this->qb(__METHOD__);
 

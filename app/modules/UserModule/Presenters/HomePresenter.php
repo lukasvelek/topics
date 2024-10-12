@@ -7,6 +7,7 @@ use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 
 class HomePresenter extends AUserPresenter {
     public function __construct() {
@@ -15,9 +16,13 @@ class HomePresenter extends AUserPresenter {
         $this->setDefaultAction('dashboard');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleDashboard() {
-        $topicIdsUserIsMemberOf = $this->app->topicMembershipManager->getUserMembershipsInTopics($this->getUserId());
-        $followedTopics = $this->app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
+        $topicIdsUserIsMemberOf = [];
+        $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
         $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
 
@@ -98,13 +103,13 @@ class HomePresenter extends AUserPresenter {
             $cache->invalidate();
 
             $this->app->postRepository->commit($userId, __METHOD__);
+
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
         } catch(AException $e) {
             $this->app->postRepository->rollback();
 
-            $this->flashMessage('Could not like post. Reason: ' . $e->getMessage(), 'error');
+            throw new AjaxRequestException('Could not like post.', $e);
         }
-
-        $post = $this->app->postRepository->getPostById($postId);
 
         return ['likes' => $post->getLikes(), 'link' => $link];
     }

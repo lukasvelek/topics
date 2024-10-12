@@ -15,6 +15,10 @@ class TopicRulesPresenter extends AUserPresenter {
         parent::__construct('TopicRulesPresenter', 'Topic rules');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleList() {
         $topicId = $this->httpGet('topicId', true);
 
@@ -80,7 +84,7 @@ class TopicRulesPresenter extends AUserPresenter {
 
         $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
 
-        $grid = new GridBuilder();
+        $grid = $this->getGridBuilder();
 
         $grid->addColumns(['index' => 'No', 'text' => 'Rule']);
         $grid->addOnColumnRender('index', function(Cell $cell, object $obj) {

@@ -2,19 +2,14 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Core\AjaxRequestBuilder;
-use App\Entities\EmailEntity;
+use App\Core\DB\DatabaseRow;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
-use App\Helpers\DateTimeFormatHelper;
-use App\Helpers\GridHelper;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageEmailsPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageEmailsPresenter', 'Email management');
     }
@@ -22,66 +17,44 @@ class ManageEmailsPresenter extends AAdminPresenter {
     public function startup() {
         parent::startup();
 
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-    }
-
-    public function handleList() {
-        $arb = new AjaxRequestBuilder();
-        $arb->setMethod()
-            ->setURL($this->createURL('getGrid'))
-            ->setHeader(['gridPage' => '_page'])
-            ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_page'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getGrid(0)');
-
-        $links = [];
-
-        $this->saveToPresenterCache('links', $links);
+        if(!$this->app->sidebarAuthorizator->canManageEmails($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
 
     public function renderList() {
-        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->links = [];
     }
 
-    public function actionGetGrid() {
-        $grid = new GridBuilder();
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $this->app->getGridSize();
-        
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_EMAIL_QUEUE, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->mailRepository->composeQueryForEmailQueue(), 'mailId');
 
-        $emails = $this->app->mailRepository->getAllEntriesLimited($gridSize, ($gridSize * $page));
-        $totalCount = count($this->app->mailRepository->getAllEntriesLimited(0, 0));
-        $lastPage = ceil($totalCount / $gridSize);
+        $grid->addColumnText('title', 'Title');
+        $col = $grid->addColumnText('recipient', 'Recipient');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, HTML $html, mixed $value) {
+            $user = $this->app->userRepository->getUserByEmail($value);
 
-        $grid->addDataSource($emails);
-        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid');
-        $grid->addColumns(['title' => 'Title', 'recipient' => 'Recipient', 'dateCreated' => 'Date created']);
+            if($user !== null) {
+                return UserEntity::createUserProfileLink($user, false, 'grid-link');
+            } else {
+                return $value;
+            }
+        };
+        $grid->addColumnDatetime('dateCreated', 'Date created');
 
-        $grid->addOnColumnRender('recipient', function(Cell $cell, EmailEntity $email) {
-            $user = $this->app->userRepository->getUserByEmail($email->getRecipient());
+        $sendNow = $grid->addAction('sendNow');
+        $sendNow->setTitle('Send now');
+        $sendNow->onCanRender[] = function() {
+            return true;
+        };
+        $sendNow->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            return LinkBuilder::createSimpleLink('Send now', $this->createURL('sendNow', ['mailId' => $primaryKey]), 'grid-link');
+        };
 
-            return UserEntity::createUserProfileLink($user, false, 'grid-link');
-        });
-        $grid->addOnColumnRender('dateCreated', function(Cell $cell, EmailEntity $ee) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($ee->getDateCreated()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($ee->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-
-        $grid->addAction(function(EmailEntity $email) {
-            return LinkBuilder::createSimpleLink('Send now', $this->createURL('sendNow', ['mailId' => $email->getId()]), 'grid-link');
-        });
-        
-        $gr = $this->getGridReducer();
-        $gr->applyReducer($grid);
-
-        return ['grid' => $grid->build()];
+        return $grid;
     }
 
     public function handleSendNow() {

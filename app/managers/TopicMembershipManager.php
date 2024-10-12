@@ -131,11 +131,9 @@ class TopicMembershipManager extends AManager {
             return $user->getUsername() . ' (Ex-user)';
         }
 
-        $span = HTML::span();
-        $span->setColor(TopicMemberRole::getColorByKey($role))
-            ->setText(TopicMemberRole::toString($role));
+        $span = HTML::el('span')->text(TopicMemberRole::toString($role))->style('color', TopicMemberRole::getColorByKey($role));
 
-        $text = $namePrefix . $user->getUsername() . ' (' . $span->render() . ')';
+        $text = $namePrefix . $user->getUsername() . ' (' . $span->toString() . ')';
 
         return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $class);
     }

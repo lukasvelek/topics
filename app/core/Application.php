@@ -8,6 +8,7 @@ use App\Authorizators\SidebarAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
+use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
@@ -20,6 +21,7 @@ use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
+use App\Managers\PostManager;
 use App\Managers\ReportManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
@@ -121,6 +123,7 @@ class Application {
     public EntityManager $entityManager;
     public ReportManager $reportManager;
     public ChatManager $chatManager;
+    public PostManager $postManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -167,6 +170,7 @@ class Application {
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
         $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
+        $this->postManager = new PostManager($this->logger, $this->entityManager, $this->postRepository, $this->postCommentRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
@@ -309,12 +313,27 @@ class Application {
         $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
         $moduleObject->setLogger($this->logger);
+        $moduleObject->setHttpRequest($this->getRequest());
 
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
         $re->setAjax($this->isAjaxRequest);
         return $re->render();
+    }
+
+    private function getRequest() {
+        $request = new HttpRequest();
+
+        foreach($_GET as $k => $v) {
+            if($k == 'isAjax') {
+                $request->isAjax = true;
+            } else {
+                $request->query[$k] = $v;
+            }
+        }
+
+        return $request;
     }
 
     /**
