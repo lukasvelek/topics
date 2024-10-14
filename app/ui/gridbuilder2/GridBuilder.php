@@ -187,12 +187,12 @@ class GridBuilder extends AComponent {
                 if($value == true) {
                     $el = HTML::el('span')
                             ->style('color', 'green')
-                            ->text(/*'Yes'*/ '&check;');
+                            ->text('&check;');
                     $cell->setContent($el);
                 } else {
                     $el = HTML::el('span')
                             ->style('color', 'red')
-                            ->text(/*'No'*/ '&times;');
+                            ->text('&times;');
                     $cell->setContent($el);
                 }
 
@@ -327,6 +327,8 @@ class GridBuilder extends AComponent {
 
                             if($result === true) {
                                 $canRender[$actionName] = $action;
+                            } else {
+                                $canRender[$actionName] = null;
                             }
                         } catch(Exception $e) {}
                     }
