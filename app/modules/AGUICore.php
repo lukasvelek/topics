@@ -128,7 +128,7 @@ abstract class AGUICore {
         if(!empty($_POST)) {
             $values = $this->getPostParams();
 
-            return FormResponse::createFormResponseFromPostData($values);
+            return FormResponse::createFormResponseFromPostData($values, $this->httpRequest);
         } else {
             return null;
         }

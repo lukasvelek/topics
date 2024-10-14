@@ -3,25 +3,28 @@
 namespace App\UI\FormBuilder;
 
 use App\Core\HashManager;
+use App\Core\Http\HttpRequest;
 
 class FormResponse {
     private array $__keys;
+    private HttpRequest $httpRequest;
 
-    public function __construct() {
+    public function __construct(HttpRequest $httpRequest) {
+        $this->httpRequest = $httpRequest;
+
         $this->__keys = [];
     }
 
     public function __set(string $key, mixed $value) {
-        $this->$key = $value;
-        $this->__keys[] = $key;
+        $this->__keys[$key] = $value;
     }
 
     public function __get(string $key) {
-        return $this->$key;
+        return $this->__keys[$key];
     }
 
-    public static function createFormResponseFromPostData(array $postData) {
-        $fr = new self();
+    public static function createFormResponseFromPostData(array $postData, HttpRequest $httpRequest) {
+        $fr = new self($httpRequest);
 
         foreach($postData as $k => $v) {
             $fr->$k = $v;
