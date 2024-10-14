@@ -5,6 +5,7 @@ namespace App\Modules;
 use App\Core\Application;
 use App\Core\FileManager;
 use App\Core\Http\HttpRequest;
+use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Helpers\TemplateHelper;
@@ -67,7 +68,11 @@ abstract class AGUICore {
             $template = new TemplateObject($content);
 
             if(isset($this->presenter)) {
-                $this->checkComponents($content, $template);
+                try {
+                    $this->checkComponents($content, $template);
+                } catch(AException $e) {
+                    throw new GeneralException('Could not render template. Reason: ' . $e->getMessage() . ' [' . $e->getHash() . ']', $e, false);
+                }
             }
 
             return $template;

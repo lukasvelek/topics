@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class SuggestionStatus implements IToStringConstant {
+class SuggestionStatus extends AConstant {
     public const OPEN = 1;
     public const RESOLVED = 2;
     public const MORE_INFORMATION_NEEDED = 3;
@@ -29,7 +29,7 @@ class SuggestionStatus implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::OPEN => self::toString(self::OPEN),
             self::RESOLVED => self::toString(self::RESOLVED),

@@ -1259,7 +1259,7 @@ class TopicsPresenter extends AUserPresenter {
             }
             $this->saveToPresenterCache('topic', $topic);
 
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [

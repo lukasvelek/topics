@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -29,6 +30,7 @@ class ManageBannedWordsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->contentRegulationRepository->composeQueryForBannedWords(), 'wordId');
+        $grid->setGridName(GridHelper::GRID_BANNED_WORDS);
 
         $grid->addColumnText('word', 'Word');
         $grid->addColumnUser('authorId', 'Author');

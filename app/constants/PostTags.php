@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class PostTags implements IToStringConstant {
+class PostTags extends AConstant {
     public const DISCUSSION = 'discussion';
     public const HELP_NEEDED = 'help_needed';
     public const SHOWCASE = 'showcase';
@@ -15,7 +15,7 @@ class PostTags implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::DISCUSSION => self::toString(self::DISCUSSION),
             self::HELP_NEEDED => self::toString(self::HELP_NEEDED),

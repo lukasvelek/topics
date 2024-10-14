@@ -2,16 +2,18 @@
 
 namespace App\UI\GridBuilder2;
 
-use App\Constants\IToStringConstant;
+use App\Constants\AConstant;
 use App\Core\AjaxRequestBuilder;
 use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\AComponent;
 use App\UI\HTML\HTML;
+use Error;
 use Exception;
 use QueryBuilder\QueryBuilder;
 
@@ -44,9 +46,11 @@ class GridBuilder extends AComponent {
     private array $columnLabels;
     private Table $table;
     private bool $enablePagination;
+    private bool $enableExport;
     private int $gridPage;
     private ?int $totalCount;
     private GridHelper $helper;
+    private string $gridName;
 
     /**
      * Methods called with parameters: DatabaseRow $row, Row $_row, HTML $rowHtml
@@ -78,12 +82,14 @@ class GridBuilder extends AComponent {
         $this->columns = [];
         $this->columnLabels = [];
         $this->enablePagination = true;
+        $this->enableExport = false;
         $this->gridPage = 0;
         $this->onRowRender = [];
         $this->actions = [];
         $this->totalCount = null;
         $this->filters = [];
         $this->activeFilters = [];
+        $this->gridName = 'MyGrid';
     }
 
     /**
@@ -104,6 +110,10 @@ class GridBuilder extends AComponent {
         $this->helper = $helper;
     }
 
+    public function setGridName(string $name) {
+        $this->gridName = $name;
+    }
+
     /**
      * Enables pagination
      */
@@ -116,6 +126,14 @@ class GridBuilder extends AComponent {
      */
     public function disablePagination() {
         $this->enablePagination = false;
+    }
+
+    public function enableExport() {
+        $this->enableExport = true;
+    }
+
+    public function disableExport() {
+        $this->enableExport = false;
     }
 
     public function addFilter(string $key, mixed $value, array $options) {
@@ -138,7 +156,19 @@ class GridBuilder extends AComponent {
             $result = null;
             try {
                 if(class_exists($enumClass)) {
-                    if(in_array(IToStringConstant::class, class_implements($enumClass))) {
+                    if(in_array(AConstant::class, class_parents($enumClass))) {
+                        $result = $enumClass::toString($value);
+                    }
+                }
+            } catch(Exception $e) {}
+
+            return $result;
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) use ($enumClass) {
+            $result = null;
+            try {
+                if(class_exists($enumClass)) {
+                    if(in_array(AConstant::class, class_parents($enumClass))) {
                         $result = $enumClass::toString($value);
                     }
                 }
@@ -185,7 +215,7 @@ class GridBuilder extends AComponent {
                 return DateTimeFormatHelper::formatDateToUserFriendly($value);
             };
 
-            $col->onExportColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
+            $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
                 return DateTimeFormatHelper::formatDateToUserFriendly($value);
             };
         } else if($type == self::COL_TYPE_USER) {
@@ -197,9 +227,18 @@ class GridBuilder extends AComponent {
                     return UserEntity::createUserProfileLink($user, false, 'grid-link');
                 }
             };
+
+            $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+                $user = $this->app->userManager->getUserById($value);
+                if($user === null) {
+                    return $value;
+                } else {
+                    return UserEntity::createUserProfileLink($user, false, 'grid-link');
+                }
+            };
         } else if($type == self::COL_TYPE_BOOLEAN) {
             $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
-                if($value == true) {
+                if($value === true) {
                     $el = HTML::el('span')
                             ->style('color', 'green')
                             ->text('&check;');
@@ -212,6 +251,14 @@ class GridBuilder extends AComponent {
                 }
 
                 return $cell;
+            };
+
+            $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+                if($value === true) {
+                    return 'True';
+                } else {
+                    return 'False';
+                }
             };
         }
 
@@ -443,14 +490,16 @@ class GridBuilder extends AComponent {
                 <div class="col-md-3">
                     ' . $this->createGridPagingControl() . '
                 </div>
-
+                
                 <div class="col-md">
+                    ' . $this->createGridPageInfo() . '
+                </div>
+                
+                <div class="col-md" ' . ($this->enableExport ? '' : ' id="right"') . '>
                     ' . $this->createGridRefreshControl() . '
                 </div>
 
-                <div class="col-md" id="right">
-                    ' . $this->createGridPageInfo() . '
-                </div>
+                ' . ($this->enableExport ? ('<div class="col-md" id="right">' . $this->createGridExportControl() . '</div>') : ('')) . '
             </div>
 
             <span>
@@ -562,7 +611,60 @@ class GridBuilder extends AComponent {
             ';
         }
 
+        // EXPORT MODAL
+        if($this->enableExport) {
+            $scripts[] = '
+                <script type="text/javascript">
+                    async function ' . $this->componentName . '_processExportModalOpen() {
+                        $("#grid-export-modal-inner")
+                            .css("height", "90%")
+                            .css("visibility", "visible")
+                            .css("width", "90%");
+                    }
+                </script>
+            ';
+        }
+
+        // EXPORT
+        if($this->enableExport) {
+            $arb = new AjaxRequestBuilder();
+
+            $headerParams = [];
+            $fArgs = [];
+            foreach($this->filters as $name => $filter) {
+                $hName = '_' . $name;
+                $headerParams[$name] = $hName;
+                $fArgs[] = $hName;
+            }
+
+            $arb->setMethod()
+                ->setComponentAction($this->presenter, $this->componentName . '-exportLimited')
+                ->setHeader($headerParams)
+                ->setFunctionName($this->componentName . '_exportLimited')
+                ->setFunctionArguments($fArgs)
+                ->addWhenDoneOperation('if(obj.file) {
+                    window.open(obj.file, "_blank");
+                }')
+            ;
+
+            $addScript($arb);
+
+            $arb->setMethod()
+                ->setComponentAction($this->presenter, $this->componentName . '-exportUnlimited')
+                ->setHeader($headerParams)
+                ->setFunctionName($this->componentName . '_exportUnlimited')
+                ->setFunctionArguments($fArgs)
+                ->addWhenDoneOperation('if(obj.success) { alert("Your export will be created asynchronously. You can find it in Grid export management section."); }')
+            ;
+
+            $addScript($arb);
+        }
+
         return implode('', $scripts);
+    }
+
+    private function createGridExportControl() {
+        return '<button type="button" onclick="' . $this->componentName . '_processExportModalOpen()">Export</button>';
     }
 
     private function createGridPageInfo() {
@@ -632,7 +734,7 @@ class GridBuilder extends AComponent {
             $page = $this->httpRequest->query['gridPage'];
         }
 
-        $page = $this->helper->getGridPage($this->componentName, $page);
+        $page = $this->helper->getGridPage($this->gridName, $page);
 
         return (int)$page;
     }
@@ -736,6 +838,39 @@ class GridBuilder extends AComponent {
         return ['grid' => $this->render()];
     }
 
+    public function actionExportLimited() {
+        $ds = clone $this->dataSource;
+        $ds = $this->processQueryBuilderDataSource($ds);
+
+        $geh = $this->createGridExportHandler($ds);
+
+        $result = [];
+        try {
+            [$file, $hash] = $geh->exportNow();
+            $result = ['file' => $file, 'hash' => $hash];
+        } catch(AException $e) {
+            $result = ['error' => 1, 'errorMsg' => $e->getMessage()];
+        }
+
+        return $result;
+    }
+
+    public function actionExportUnlimited() {
+        $ds = clone $this->dataSource;
+        $ds = $this->processQueryBuilderDataSource($ds);
+
+        $geh = $this->createGridExportHandler($ds);
+
+        try {
+            $hash = $geh->exportAsync();
+            $result = ['hash' => $hash];
+        } catch(AException $e) {
+            $result = ['error' => 1, 'errorMsg' => $e->getMessage()];
+        }
+
+        return $result;
+    }
+
     // FILTER MODAL COMPONENT
     protected function createComponentFilter() {
         $filter = GridFilter::createFromComponent($this);
@@ -745,6 +880,17 @@ class GridBuilder extends AComponent {
         $filter->setActiveFilters($this->activeFilters);
 
         return $filter;
+    }
+
+    // EXPORT MODAL COMPONENT
+    protected function createComponentExport() {
+        $gem = new GridExportModal($this);
+
+        $ds = clone $this->dataSource;
+        $ds = $this->processQueryBuilderDataSource($ds);
+        $gem->setDataSource($ds);
+
+        return $gem;
     }
 
     /**
@@ -759,6 +905,19 @@ class GridBuilder extends AComponent {
         $obj->setPresenter($component->presenter);
 
         return $obj;
+    }
+
+    private function createGridExportHandler(QueryBuilder $dataSource) {
+        return new GridExportHandler(
+            $dataSource,
+            $this->primaryKeyColName,
+            $this->columns,
+            $this->columnLabels,
+            $this->presenter->getUserId(),
+            $this->cfg,
+            $this->app,
+            $this->gridName
+        );
     }
 }
 

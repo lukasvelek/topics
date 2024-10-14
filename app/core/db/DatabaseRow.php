@@ -32,6 +32,16 @@ class DatabaseRow {
     public function getKeys() {
         return array_keys($this->values);
     }
+
+    public static function createFromDbRow($row) {
+        $obj = new self();
+
+        foreach($row as $k => $v) {
+            $obj->$k = $v;
+        }
+
+        return $obj;
+    }
 }
 
 ?>

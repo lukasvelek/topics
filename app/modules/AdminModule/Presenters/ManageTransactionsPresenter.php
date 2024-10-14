@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Cell;
 use App\UI\GridBuilder2\Row;
 
@@ -28,6 +29,7 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->transactionLogRepository->composeQueryForTransactions(), 'transactionId');
+        $grid->setGridName(GridHelper::GRID_TRANSACTION_LOG);
 
         $col = $grid->addColumnText('methodName', 'Method');
         $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, mixed $value) {
@@ -35,6 +37,8 @@ class ManageTransactionsPresenter extends AAdminPresenter {
         };
         $grid->addColumnUser('userId', 'User');
         $grid->addColumnDatetime('dateCreated', 'Date created');
+
+        $grid->enableExport();
         
         return $grid;
     }

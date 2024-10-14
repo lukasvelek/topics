@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class TopicMemberRole implements IToStringConstant {
+class TopicMemberRole extends AConstant {
     public const MEMBER = 1;
     public const VIP = 2;
     public const COMMUNITY_HELPER = 3;
@@ -29,7 +29,7 @@ class TopicMemberRole implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::MEMBER => self::toString(self::MEMBER),
             self::VIP => self::toString(self::VIP),

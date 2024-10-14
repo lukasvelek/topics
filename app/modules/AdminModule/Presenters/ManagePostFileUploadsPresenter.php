@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 
@@ -29,6 +30,7 @@ class ManagePostFileUploadsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->fileUploadRepository->composeQueryForFiles(), 'uploadId');
+        $grid->setGridName(GridHelper::GRID_POST_FILE_UPLOADS);
 
         $col = $grid->addColumnText('postId', 'Post');
         $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, HTML $html, mixed $value) {

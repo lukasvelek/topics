@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class SuggestionCategory implements IToStringConstant {
+class SuggestionCategory extends AConstant {
     public const BUG = 'bug';
     public const SECURITY = 'security';
     public const FUNCTION_REQUEST = 'functionRequest';
@@ -19,7 +19,7 @@ class SuggestionCategory implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::BUG => self::toString(self::BUG),
             self::SECURITY => self::toString(self::SECURITY),

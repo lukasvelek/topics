@@ -7,6 +7,7 @@ use App\Core\Caching\CacheNames;
 use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Option;
@@ -27,6 +28,7 @@ class ManageGroupsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->groupRepository->composeQueryForGroups(), 'groupId');
+        $grid->setGridName(GridHelper::GRID_GROUPS);
 
         $grid->addColumnText('title', 'Title');
         $grid->addColumnText('description', 'Description');

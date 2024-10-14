@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Constants\SystemStatus;
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder2\Cell;
@@ -30,6 +31,7 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->systemStatusRepository->composeQueryForStatuses(), 'systemId');
+        $grid->setGridName(GridHelper::GRID_SYSTEM_STATUSES);
 
         $grid->addColumnText('name', 'Name');
         $col = $grid->addColumnText('status', 'Status');

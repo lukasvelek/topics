@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class UserProsecutionType implements IToStringConstant {
+class UserProsecutionType extends AConstant {
     public const WARNING = 1;
     public const BAN = 2;
     public const PERMA_BAN = 3;
@@ -13,6 +13,14 @@ class UserProsecutionType implements IToStringConstant {
             self::BAN => 'Ban',
             self::PERMA_BAN => 'Permanent ban'
         };
+    }
+
+    public static function getAll(): array {
+        return [
+            self::WARNING => self::toString(self::WARNING),
+            self::BAN => self::toString(self::BAN),
+            self::PERMA_BAN => self::toString(self::PERMA_BAN)
+        ];
     }
 }
 

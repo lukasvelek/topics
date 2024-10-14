@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class ReportEntityType implements IToStringConstant {
+class ReportEntityType extends AConstant {
     public const TOPIC = 1;
     public const POST = 2;
     public const COMMENT = 3;
@@ -15,6 +15,15 @@ class ReportEntityType implements IToStringConstant {
             self::COMMENT => 'Comment',
             self::USER => 'User'
         };
+    }
+
+    public static function getAll(): array {
+        return [
+            self::TOPIC => self::toString(self::TOPIC),
+            self::POST => self::toString(self::POST),
+            self::COMMENT => self::toString(self::COMMENT),
+            self::USER => self::toString(self::USER)
+        ];
     }
 }
 

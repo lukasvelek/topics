@@ -38,6 +38,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->reportRepository->composeQueryForOpenReports(), 'reportId');
+        $grid->setGridName(GridHelper::GRID_REPORTS);
         
         $usersInReports = $this->app->reportRepository->getUsersInReports();
         $userEntitiesInReports = [];
@@ -60,7 +61,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         $grid->addColumnEnum('status', 'Status', ReportStatus::class);
         $grid->addColumnUser('userId', 'User');
 
-        $grid->addFilter('category', null, ReportCategory::getArray());
+        $grid->addFilter('category', null, ReportCategory::getAll());
         $grid->addFilter('status', null, ReportStatus::getAll());
 
         return $grid;

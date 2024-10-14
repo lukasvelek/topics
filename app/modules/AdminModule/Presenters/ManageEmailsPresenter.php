@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Core\DB\DatabaseRow;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
@@ -31,6 +32,7 @@ class ManageEmailsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->mailRepository->composeQueryForEmailQueue(), 'mailId');
+        $grid->setGridName(GridHelper::GRID_EMAIL_QUEUE);
 
         $grid->addColumnText('title', 'Title');
         $col = $grid->addColumnText('recipient', 'Recipient');

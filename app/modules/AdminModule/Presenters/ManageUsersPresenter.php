@@ -9,6 +9,7 @@ use App\Core\DB\DatabaseRow;
 use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -34,6 +35,7 @@ class ManageUsersPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->userRepository->composeQueryForUsers(), 'userId');
+        $grid->setGridName(GridHelper::GRID_USERS);
 
         $grid->addColumnText('username', 'Username');
         $grid->addColumnText('email', 'Email');

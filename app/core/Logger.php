@@ -247,7 +247,7 @@ class Logger implements ILoggerCallable {
      * @param string $text Log message
      */
     private function writeLog(string $text) {
-        $folder = $this->cfg['LOG_DIR'];
+        $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
 
         $date = new DateTime();
         $date->format('Y-m-d');

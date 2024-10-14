@@ -73,7 +73,9 @@ class Cache {
     public function save(mixed $key, callable $generator, array $generatorDependencies = []) {
         try {
             $result = $generator(...$generatorDependencies);
-        } catch(Exception) {}
+        } catch(Exception $e) {
+            return null;
+        }
 
         $this->data[$key] = $result;
 

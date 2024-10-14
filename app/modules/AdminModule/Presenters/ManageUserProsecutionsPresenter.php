@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Constants\UserProsecutionType;
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder2\Row;
@@ -29,6 +30,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->userProsecutionRepository->composeQueryForProsecutions(), 'prosecutionId');
+        $grid->setGridName(GridHelper::GRID_USER_PROSECUTIONS);
         
         $grid->addColumnUser('userId', 'User');
         $grid->addColumnText('type', 'Type');
@@ -117,6 +119,7 @@ class ManageUserProsecutionsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->userProsecutionRepository->composeQueryForProsecutionLogHistory(), 'historyId');
+        $grid->setGridName(GridHelper::GRID_USER_PROSECUTION_LOG);
 
         $grid->addColumnText('userId', 'User');
         $grid->addColumnText('commentText', 'Text');

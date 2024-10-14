@@ -5,6 +5,7 @@ namespace App\Modules\AdminModule;
 use App\Core\Datetypes\DateTime;
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
@@ -31,6 +32,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->systemServicesRepository->composeQueryForServices(), 'serviceId');
+        $grid->setGridName(GridHelper::GRID_SYSTEM_SERVICES);
 
         $grid->addColumnText('title', 'Title');
         $grid->addColumnDatetime('dateStarted', 'Date started');

@@ -9,6 +9,7 @@ use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -35,6 +36,7 @@ class FeedbackSuggestionsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->suggestionRepository->composeQueryForOpenSuggestions(), 'suggestionId');
+        $grid->setGridName(GridHelper::GRID_SUGGESTIONS);
 
         $usersInSuggestions = $this->app->suggestionRepository->getUsersInSuggestions();
         $userEntitiesInSuggestions = [];

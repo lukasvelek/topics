@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class ReportStatus implements IToStringConstant {
+class ReportStatus extends AConstant {
     public const OPEN = 1;
     public const RESOLVED = 2;
 
@@ -13,7 +13,7 @@ class ReportStatus implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::OPEN => self::toString(self::OPEN),
             self::RESOLVED => self::toString(self::RESOLVED)

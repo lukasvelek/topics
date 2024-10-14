@@ -113,6 +113,7 @@ class AjaxRequestBuilder {
         $presenter = $presenter->getCleanName();
 
         $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $action, 'do' => $componentActionName]);
+        $this->isComponent = true;
 
         return $this;
     }

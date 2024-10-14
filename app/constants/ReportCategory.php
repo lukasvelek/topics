@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class ReportCategory implements IToStringConstant {
+class ReportCategory extends AConstant {
     public const HARMFUL_CONTENT = 1;
     public const NUDITY = 2;
     public const SEXUAL_HARASSMENT = 3;
@@ -19,7 +19,7 @@ class ReportCategory implements IToStringConstant {
         };
     }
 
-    public static function getArray() {
+    public static function getAll(): array {
         return [
             self::HARMFUL_CONTENT => self::toString(self::HARMFUL_CONTENT),
             self::NUDITY => self::toString(self::NUDITY),

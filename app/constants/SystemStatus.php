@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class SystemStatus implements IToStringConstant {
+class SystemStatus extends AConstant {
     public const ONLINE = 1;
     public const OFFLINE = 2;
     public const MAINTENANCE = 3;
@@ -26,7 +26,7 @@ class SystemStatus implements IToStringConstant {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::ONLINE => self::toString(self::ONLINE),
             self::OFFLINE => self::toString(self::OFFLINE),
