@@ -2,6 +2,7 @@
 
 namespace App\UI\GridBuilder2;
 
+use App\Constants\IToStringConstant;
 use App\Core\AjaxRequestBuilder;
 use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
@@ -129,6 +130,24 @@ class GridBuilder extends AComponent {
         $this->actions[$name] = &$action;
 
         return $action;
+    }
+
+    public function addColumnEnum(string $name, ?string $label = null, string $enumClass) {
+        $col = $this->addColumn($name, self::COL_TYPE_TEXT, $label);
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) use ($enumClass) {
+            $result = null;
+            try {
+                if(class_exists($enumClass)) {
+                    if(in_array(IToStringConstant::class, class_implements($enumClass))) {
+                        $result = $enumClass::toString($value);
+                    }
+                }
+            } catch(Exception $e) {}
+
+            return $result;
+        };
+
+        return $col;
     }
 
     public function addColumnUser(string $name, ?string $label = null) {
@@ -292,6 +311,31 @@ class GridBuilder extends AComponent {
                         $content = '-';
 
                         $_cell->setContent($content);
+                    } else {
+                        if($content instanceof Cell) {
+                            $_cell = $content;
+                        } else {
+                            $_cell->setContent($content);
+                        }
+                    }
+
+                    $_row->addCell($_cell);
+                } else {
+                    $_cell = new Cell();
+                    $_cell->setName($name);
+
+                    $content = '-';
+
+                    if(!empty($this->columns[$name]->onRenderColumn)) {
+                        foreach($this->columns[$name]->onRenderColumn as $render) {
+                            try {
+                                $content = $render($row, $_row, $_cell, $_cell->html, $content);
+                            } catch(Exception $e) {}
+                        }
+                    }
+
+                    if($content === null) {
+                        $content = '-';
                     } else {
                         if($content instanceof Cell) {
                             $_cell = $content;

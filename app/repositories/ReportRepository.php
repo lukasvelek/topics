@@ -268,6 +268,16 @@ class ReportRepository extends ARepository {
 
         return $entities;
     }
+
+    public function composeQueryForOpenReports() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('reports')
+            ->where('status = ?', [ReportStatus::OPEN]);
+
+        return $qb;
+    }
 }
 
 ?>

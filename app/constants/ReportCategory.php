@@ -2,15 +2,15 @@
 
 namespace App\Constants;
 
-class ReportCategory {
+class ReportCategory implements IToStringConstant {
     public const HARMFUL_CONTENT = 1;
     public const NUDITY = 2;
     public const SEXUAL_HARASSMENT = 3;
     public const INAPPROPRIATE_CONTENT = 4;
     public const OTHER = 5;
 
-    public static function toString(int $key) {
-        return match($key) {
+    public static function toString($key): string {
+        return match((int)$key) {
             self::HARMFUL_CONTENT => 'Harmful content',
             self::NUDITY => 'Nudity',
             self::SEXUAL_HARASSMENT => 'Sexual harassment',

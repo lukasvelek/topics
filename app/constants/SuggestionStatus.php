@@ -2,15 +2,15 @@
 
 namespace App\Constants;
 
-class SuggestionStatus {
+class SuggestionStatus implements IToStringConstant {
     public const OPEN = 1;
     public const RESOLVED = 2;
     public const MORE_INFORMATION_NEEDED = 3;
     public const NOT_PLANNED = 4;
     public const PLANNED = 5;
 
-    public static function toString(int $status) {
-        return match($status) {
+    public static function toString($status): string {
+        return match((int)$status) {
             self::OPEN => 'Open',
             self::RESOLVED => 'Resolved',
             self::MORE_INFORMATION_NEEDED => 'More information needed',

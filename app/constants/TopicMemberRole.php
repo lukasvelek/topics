@@ -2,15 +2,15 @@
 
 namespace App\Constants;
 
-class TopicMemberRole {
+class TopicMemberRole implements IToStringConstant {
     public const MEMBER = 1;
     public const VIP = 2;
     public const COMMUNITY_HELPER = 3;
     public const MANAGER = 4;
     public const OWNER = 5;
 
-    public static function toString(int $key) {
-        return match($key) {
+    public static function toString($key): string {
+        return match((int)$key) {
             self::MEMBER => 'Member',
             self::VIP => 'VIP',
             self::COMMUNITY_HELPER => 'Community helper',

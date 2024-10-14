@@ -1650,7 +1650,7 @@ class TopicsPresenter extends AUserPresenter {
     }
 
     public function actionGetPostGrid() {
-        $topicId = $this->httpGet('topicId');
+        /*$topicId = $this->httpGet('topicId');
         $filter = $this->httpGet('filter');
 
         $gridPage = $this->httpGet('gridPage');
@@ -1747,7 +1747,8 @@ class TopicsPresenter extends AUserPresenter {
 
         $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
 
-        return ['grid' => $gb->build()];
+        return ['grid' => $gb->build()];*/
+        return ['error' => '1'];
     }
 
     public function handleUpdatePost() {
@@ -1828,7 +1829,7 @@ class TopicsPresenter extends AUserPresenter {
     }
 
     public function actionGetPostConceptsGrid() {
-        $topicId = $this->httpGet('topicId');
+        /*$topicId = $this->httpGet('topicId');
         $gridPage = $this->httpGet('gridPage');
         $filter = $this->httpGet('filter');
 
@@ -1861,7 +1862,8 @@ class TopicsPresenter extends AUserPresenter {
             return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
         });
 
-        return ['grid' => $grid->build()];
+        return ['grid' => $grid->build()];*/
+        return ['error' => '1'];
     }
 
     public function handleDeletePostConcept(?FormResponse $fr = null) {

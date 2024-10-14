@@ -16,11 +16,12 @@ class FormResponse {
     }
 
     public function __set(string $key, mixed $value) {
-        $this->__keys[$key] = $value;
+        $this->$key = $value;
+        $this->__keys[] = $key;
     }
 
     public function __get(string $key) {
-        return $this->__keys[$key];
+        return $key;
     }
 
     public static function createFormResponseFromPostData(array $postData, HttpRequest $httpRequest) {

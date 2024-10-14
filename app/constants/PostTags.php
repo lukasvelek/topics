@@ -2,13 +2,13 @@
 
 namespace App\Constants;
 
-class PostTags {
+class PostTags implements IToStringConstant {
     public const DISCUSSION = 'discussion';
     public const HELP_NEEDED = 'help_needed';
     public const SHOWCASE = 'showcase';
 
-    public static function toString(string $key) {
-        return match($key) {
+    public static function toString($key): string {
+        return match((string)$key) {
             self::DISCUSSION => 'Discussion',
             self::HELP_NEEDED => 'Help needed',
             self::SHOWCASE => 'Showcase'
