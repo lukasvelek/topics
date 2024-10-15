@@ -206,11 +206,17 @@ class GridExportHandler {
 
         $header = ['#'];
 
-        foreach($this->columns as $name => $column) {
-            if(array_key_exists($name, $this->columnLabels)) {
-                $header[] = $this->columnLabels[$name];
-            } else {
-                $header[] = $name;
+        if($this->hasProcessedColumns) {
+            foreach($this->columnLabels as $col) {
+                $header[] = $col;
+            }
+        } else {
+            foreach($this->columns as $name => $column) {
+                if(array_key_exists($name, $this->columnLabels)) {
+                    $header[] = $this->columnLabels[$name];
+                } else {
+                    $header[] = $name;
+                }
             }
         }
 
@@ -220,6 +226,9 @@ class GridExportHandler {
             $x = [$primaryKey];
 
             foreach($cols as $name => $value) {
+                if($value === null) {
+                    $value = '-';
+                }
                 $x[] = $value;
             }
 

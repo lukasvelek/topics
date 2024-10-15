@@ -241,7 +241,7 @@ class GridBuilder extends AComponent {
                 if($user === null) {
                     return $value;
                 } else {
-                    return UserEntity::createUserProfileLink($user, false, 'grid-link');
+                    return $user->getUsername();
                 }
             };
         } else if($type == self::COL_TYPE_BOOLEAN) {
