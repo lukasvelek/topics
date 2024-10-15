@@ -4,6 +4,11 @@ namespace App\UI\GridBuilder2;
 
 use App\UI\HTML\HTML;
 
+/**
+ * Class that represents a grid filter
+ * 
+ * @author Lukas Velek
+ */
 class Filter implements IHTMLOutput {
     public string $name;
     private array $values;
@@ -16,6 +21,13 @@ class Filter implements IHTMLOutput {
      */
     public array $onSqlExecute;
 
+    /**
+     * Class constructor
+     * 
+     * @param string $name Filter name
+     * @param mixed $currentValue Current selected value
+     * @param array $values Filter values
+     */
     public function __construct(string $name, mixed $currentValue = null, array $values = []) {
         $this->name = $name;
         $this->currentValue = $currentValue;
@@ -23,10 +35,20 @@ class Filter implements IHTMLOutput {
         $this->onSqlExecute = [];
     }
 
+    /**
+     * Injects mandatory parameters
+     * 
+     * @param string $componentName Component name
+     */
     public function inject(string $componentName) {
         $this->componentName = $componentName;
     }
 
+    /**
+     * Returns options available
+     * 
+     * @return array Options
+     */
     public function getOptions() {
         return $this->values;
     }
@@ -38,6 +60,11 @@ class Filter implements IHTMLOutput {
         return $el;
     }
 
+    /**
+     * Generates options code
+     * 
+     * @return string Options code
+     */
     private function prepareOptionsCode() {
         $options = [];
         foreach($this->values as $key => $value) {

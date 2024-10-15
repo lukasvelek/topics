@@ -16,6 +16,11 @@ use App\Exceptions\GridExportException;
 use Exception;
 use QueryBuilder\QueryBuilder;
 
+/**
+ * GridExportHandler is responsible for handling grid exports - synchronous or asynchronous
+ * 
+ * @author Lukas Velek
+ */
 class GridExportHandler {
     private QueryBuilder $dataSource;
     private string $primaryKey;
@@ -31,6 +36,17 @@ class GridExportHandler {
     private CacheFactory $cacheFactory;
     private Cache $exportDataCache;
 
+    /**
+     * Class constructor
+     * 
+     * @param QueryBuilder $dataSource QueryBuilder instance representing grid data source
+     * @param array $columns Grid columns
+     * @param array $columnLabels Grid column labels
+     * @param ?string $currentUserId Current user ID or null
+     * @param array $cfg Application configuration
+     * @param Application $app Application instance
+     * @param string $gridName Grid name
+     */
     public function __construct(
         QueryBuilder $dataSource,
         string $primaryKey,
@@ -55,18 +71,36 @@ class GridExportHandler {
         $this->exportDataCache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORTS);
     }
 
+    /**
+     * Destructs $this
+     */
     public function __destruct() {
         $this->cacheFactory->__destruct();
     }
 
+    /**
+     * Sets if columns have been processed (exported)
+     * 
+     * @param bool $hasProcessedColumns Has processed columns?
+     */
     public function setProcessedColumns(bool $hasProcessedColumns = true) {
         $this->hasProcessedColumns = $hasProcessedColumns;
     }
 
+    /**
+     * Sets the number of entries
+     * 
+     * @param int $entryCount
+     */
     public function setEntryCount(int $entryCount) {
         $this->exportedEntryCount = $entryCount;
     }
 
+    /**
+     * Processes asynchronous grid export
+     * 
+     * @return string Grid export hash
+     */
     public function exportAsync() {
         try {
             $hash = $this->getHash();
@@ -99,6 +133,12 @@ class GridExportHandler {
         }
     }
 
+    /**
+     * Processes synchronous export. If $hash is provided then it works with this grid export database entry.
+     * 
+     * @param ?string $hash Hash or null
+     * @return array Exported file path and hash
+     */
     public function exportNow(?string $hash = null) {
         try {
             $start = time();
@@ -142,14 +182,30 @@ class GridExportHandler {
         }
     }
 
+    /**
+     * Processes already processed data source
+     * 
+     * @return array Processed data source
+     */
     private function processProcessedDataSource() {
         return $this->columns;
     }
 
+    /**
+     * Returns generated grid export hash
+     * 
+     * @return string Grid export hash
+     */
     private function getHash() {
         return HashManager::createHash(16, false);
     }
 
+    /**
+     * Processes data source for unlimited export
+     * 
+     * @param QueryBuilder $ds Data source
+     * @return QueryBuilder Processed data source
+     */
     private function processDataSourceUnlimited(QueryBuilder $ds) {
         $ds->resetLimit();
         $ds->resetOffset();
@@ -157,6 +213,12 @@ class GridExportHandler {
         return $ds;
     }
 
+    /**
+     * Processes data source for limited export
+     * 
+     * @param bool $unlimited Is this unlimited export?
+     * @return array Processed data
+     */
     private function processDataSource(bool $unlimited = false) {
         $ds = clone $this->dataSource;
         
@@ -201,6 +263,12 @@ class GridExportHandler {
         return $data;
     }
 
+    /**
+     * Creates CSV file content
+     * 
+     * @param array $data Processed data source
+     * @return string CSV file content
+     */
     private function createCsvFileContent(array $data) {
         if(empty($data)) {
             throw new GridExportException('No data found.');
@@ -247,6 +315,12 @@ class GridExportHandler {
         return $content;
     }
 
+    /**
+     * Saves the exported data to file
+     * 
+     * @param string $fileContent CSV file content
+     * @return string Filename
+     */
     private function saveFile(string $fileContent) {
         $filename = 'GridExport_' . $this->currentUserId . '_' . date('Y-m-d_H-i-s') . '.csv';
 
@@ -265,6 +339,11 @@ class GridExportHandler {
         }
     }
 
+    /**
+     * Processes columns to be ready to be saved to cache. For asynchronous export only.
+     * 
+     * @return array $data Processed columns
+     */
     private function processColumnsForAsyncSaveToCache() {
         $ds = clone $this->dataSource;
         
@@ -308,6 +387,15 @@ class GridExportHandler {
         return $data;
     }
 
+    /**
+     * Creates a GridExportHandler that is called from the background service
+     * 
+     * @param array $data Data for export
+     * @param Application $app Application instance
+     * @param array $cfg Application configuration
+     * @param ?string $userId Current user ID
+     * @return self
+     */
     public static function createForAsync(array $data, Application $app, array $cfg, ?string $userId) {
         $dataSource = $data['dataSource'];
         $primaryKey = $data['primaryKey'];

@@ -51,6 +51,14 @@ abstract class AComponent extends AGUICore implements IRenderable {
      */
     abstract static function createFromComponent(AComponent $component);
 
+    /**
+     * Calls a method on $this
+     * 
+     * @param string $methodName Method name
+     * @param array $args Method arguments
+     * 
+     * @return mixed Method's result
+     */
     public function processMethod(string $methodName, array $args = []) {
         try {
             return $this->$methodName(...$args);

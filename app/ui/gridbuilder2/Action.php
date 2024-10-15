@@ -6,6 +6,11 @@ use App\Core\DB\DatabaseRow;
 use App\UI\HTML\HTML;
 use Exception;
 
+/**
+ * Grid action class representation
+ * 
+ * @author Lukas Velek
+ */
 class Action implements IHTMLOutput {
     public string $name;
     private string $title;
@@ -24,6 +29,12 @@ class Action implements IHTMLOutput {
     private HTML $html;
     private mixed $primaryKey;
 
+    /**
+     * Class constructor
+     * 
+     * @param string $name Action name
+     * @return self
+     */
     public function __construct(string $name) {
         $this->name = $name;
 
@@ -35,10 +46,20 @@ class Action implements IHTMLOutput {
         return $this;
     }
 
+    /**
+     * Destructs the action
+     */
     public function __destruct() {
         unset($this->name, $this->onCanRender, $this->onRender, $this->html, $this->name);
     }
 
+    /**
+     * Injects mandatory parameters
+     * 
+     * @param DatabaseRow $row DatabaseRow instance
+     * @param Row $_row Row instance
+     * @param mixed $primaryKey Primary key
+     */
     public function inject(DatabaseRow $row, Row $_row, mixed $primaryKey) {
         $this->row = $row;
         $this->_row = $_row;
@@ -57,10 +78,20 @@ class Action implements IHTMLOutput {
         return $this->html;
     }
 
+    /**
+     * Sets the title
+     * 
+     * @param string $title Action title
+     */
     public function setTitle(string $title) {
         $this->title = $title;
     }
 
+    /**
+     * Processes text displayed
+     * 
+     * @return string Text
+     */
     private function processText() {
         $result = '-';
 

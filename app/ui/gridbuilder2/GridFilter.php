@@ -6,6 +6,11 @@ use App\Core\Http\HttpRequest;
 use App\UI\AComponent;
 use App\UI\FormBuilder\FormBuilder;
 
+/**
+ * GridFilter class represents a filter modal
+ * 
+ * @author Lukas Velek
+ */
 class GridFilter extends AComponent {
     /**
      * @var array<string, Filter> $filters
@@ -15,6 +20,12 @@ class GridFilter extends AComponent {
     private array $gridColumns;
     private array $activeFilters;
 
+    /**
+     * Class constructor
+     * 
+     * @param HttpRequest $request HttpRequest instance
+     * @param array $cfg Application configuration
+     */
     public function __construct(HttpRequest $request, array $cfg) {
         parent::__construct($request, $cfg);
 
@@ -22,18 +33,38 @@ class GridFilter extends AComponent {
         $this->activeFilters = [];
     }
 
+    /**
+     * Sets the grid component name
+     * 
+     * @param string $gridComponentName Grid component name
+     */
     public function setGridComponentName(string $gridComponentName) {
         $this->gridComponentName = $gridComponentName;
     }
 
+    /**
+     * Sets all filters available for grid
+     * 
+     * @param array $filters Filters available
+     */
     public function setFilters(array $filters) {
         $this->filters = $filters;
     }
     
+    /**
+     * Sets grid columns
+     * 
+     * @param array $columns Grid columns
+     */
     public function setGridColumns(array $columns) {
         $this->gridColumns = $columns;
     }
 
+    /**
+     * Sets active filters
+     * 
+     * @param array $activeFilters Active filters
+     */
     public function setActiveFilters(array $activeFilters) {
         $this->activeFilters = $activeFilters;
     }
@@ -48,10 +79,20 @@ class GridFilter extends AComponent {
         return $template->render()->getRenderedContent();
     }
 
+    /**
+     * Creates code for a modal close button
+     * 
+     * @return string Modal close button HTML code
+     */
     private function createCloseButton() {
         return '<a class="grid-link" href="#" onclick="' . $this->componentName . '_closeModal()">&times;</a>';
     }
 
+    /**
+     * Creates code for all JS scripts
+     * 
+     * @return string HTML code for JS scripts
+     */
     private function createScripts() {
         $scripts = [];
         
@@ -85,6 +126,11 @@ class GridFilter extends AComponent {
         return implode('', $scripts);
     }
 
+    /**
+     * Creates a modal form
+     * 
+     * @return FormBuilder FormBuilder instance
+     */
     private function createForm() {
         $form = new FormBuilder();
 
@@ -97,6 +143,11 @@ class GridFilter extends AComponent {
         return $form;
     }
 
+    /**
+     * Processes filters
+     * 
+     * @param FormBuilder $form FormBuilder instance
+     */
     private function processFilters(FormBuilder &$form) {
         foreach($this->filters as $name => $filter) {
             $filterOptions = $filter->getOptions();
@@ -127,12 +178,7 @@ class GridFilter extends AComponent {
             $form->addSelect($name, $this->gridColumns[$name], $options);
         }
     }
-
-    /**
-     * Creates an instance of component from other component
-     * 
-     * @param AComponent $component Other component
-     */
+    
     public static function createFromComponent(AComponent $component) {
         $obj = new self($component->httpRequest, $component->cfg);
         $obj->setApplication($component->app);

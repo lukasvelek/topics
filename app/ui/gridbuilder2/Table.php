@@ -4,12 +4,20 @@ namespace App\UI\GridBuilder2;
 
 use App\UI\HTML\HTML;
 
+/**
+ * Class that represents the grid table
+ */
 class Table extends AElement {
     /**
      * @var array<Row> $rows
      */
     private array $rows;
 
+    /**
+     * Class constructor
+     * 
+     * @param array $rows Grid rows
+     */
     public function __construct(array $rows) {
         parent::__construct();
 
@@ -24,6 +32,11 @@ class Table extends AElement {
         return $table;
     }
 
+    /**
+     * Renders the grid content to HTML code
+     * 
+     * @return string HTML code
+     */
     private function processRender() {
         $content = '';
 
@@ -43,10 +56,6 @@ class Table extends AElement {
         $content .= '</tbody>';
 
         return $content;
-    }
-
-    public function export(): string {
-        return '';
     }
 }
 

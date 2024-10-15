@@ -2,9 +2,17 @@
 
 namespace App\UI\GridBuilder2;
 
-abstract class AElement implements IHTMLOutput, IExport {
+/**
+ * Common class for grid elements
+ * 
+ * @author Lukas Velek
+ */
+abstract class AElement implements IHTMLOutput {
     protected array $attributes;
 
+    /**
+     * Class constructor
+     */
     protected function __construct() {
         $this->attributes = [];
     }

@@ -10,12 +10,10 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\GridExportException;
-use App\Helpers\ArrayHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\AComponent;
 use App\UI\HTML\HTML;
-use Error;
 use Exception;
 use QueryBuilder\QueryBuilder;
 
@@ -29,6 +27,8 @@ use QueryBuilder\QueryBuilder;
  * - row actions (info, edit, delete, etc.)
  * - pagination
  * - refreshing
+ * - exporting
+ * - filtering
  * 
  * @author Lukas Velek
  * @version 2.0
@@ -112,6 +112,11 @@ class GridBuilder extends AComponent {
         $this->helper = $helper;
     }
 
+    /**
+     * Sets the grid name
+     * 
+     * @param string $name Grid name
+     */
     public function setGridName(string $name) {
         $this->gridName = $name;
     }
@@ -130,14 +135,28 @@ class GridBuilder extends AComponent {
         $this->enablePagination = false;
     }
 
+    /**
+     * Enables export
+     */
     public function enableExport() {
         $this->enableExport = true;
     }
 
+    /**
+     * Disables export
+     */
     public function disableExport() {
         $this->enableExport = false;
     }
 
+    /**
+     * Adds filter
+     * 
+     * @param string $key Grid column name
+     * @param mixed $value Current value
+     * @param array $options Options available for the filter
+     * @return Filter Filter instance
+     */
     public function addFilter(string $key, mixed $value, array $options) {
         $filter = new Filter($key, $value, $options);
         $this->filters[$key] = &$filter;
@@ -145,6 +164,12 @@ class GridBuilder extends AComponent {
         return $filter;
     }
 
+    /**
+     * Adds grid action
+     * 
+     * @param string $name Action name
+     * @return Action Action instance
+     */
     public function addAction(string $name) {
         $action = new Action($name);
         $this->actions[$name] = &$action;
@@ -152,26 +177,34 @@ class GridBuilder extends AComponent {
         return $action;
     }
 
-    public function addColumnEnum(string $name, ?string $label = null, string $enumClass) {
+    /**
+     * Adds a column with value taken from a class extending AConstant
+     * 
+     * @param string $name Colummn name
+     * @param ?string $label Column label
+     * @param string $constClass ::class of the constant
+     * @return Column Column instance
+     */
+    public function addColumnConst(string $name, ?string $label = null, string $constClass = '') {
         $col = $this->addColumn($name, self::COL_TYPE_TEXT, $label);
-        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) use ($enumClass) {
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) use ($constClass) {
             $result = null;
             try {
-                if(class_exists($enumClass)) {
-                    if(in_array(AConstant::class, class_parents($enumClass))) {
-                        $result = $enumClass::toString($value);
+                if(class_exists($constClass)) {
+                    if(in_array(AConstant::class, class_parents($constClass))) {
+                        $result = $constClass::toString($value);
                     }
                 }
             } catch(Exception $e) {}
 
             return $result;
         };
-        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) use ($enumClass) {
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) use ($constClass) {
             $result = null;
             try {
-                if(class_exists($enumClass)) {
-                    if(in_array(AConstant::class, class_parents($enumClass))) {
-                        $result = $enumClass::toString($value);
+                if(class_exists($constClass)) {
+                    if(in_array(AConstant::class, class_parents($constClass))) {
+                        $result = $constClass::toString($value);
                     }
                 }
             } catch(Exception $e) {}
@@ -182,22 +215,58 @@ class GridBuilder extends AComponent {
         return $col;
     }
 
+    /**
+     * Adds a column representing a user
+     * 
+     * @param string $name Column name
+     * @param ?string $label Column label
+     * @return Column Column instance
+     */
     public function addColumnUser(string $name, ?string $label = null) {
         return $this->addColumn($name, self::COL_TYPE_USER, $label);
     }
 
+    /**
+     * Adds a column representing a boolean value
+     * 
+     * @param string $name Column name
+     * @param ?string $label column label
+     * @return Column Column instance
+     */
     public function addColumnBoolean(string $name, ?string $label = null) {
         return $this->addColumn($name, self::COL_TYPE_BOOLEAN, $label);
     }
 
+    /**
+     * Adds a column representing a datetime
+     * 
+     * @param string $name Column name
+     * @param ?string $label column label
+     * @return Column Column instance
+     */
     public function addColumnDatetime(string $name, ?string $label = null) {
         return $this->addColumn($name, self::COL_TYPE_DATETIME, $label);
     }
 
+    /**
+     * Adds a general column
+     * 
+     * @param string $name Column name
+     * @param ?string $label column label
+     * @return Column Column instance
+     */
     public function addColumnText(string $name, ?string $label = null) {
         return $this->addColumn($name, self::COL_TYPE_TEXT, $label);
     }
 
+    /**
+     * Adds a column to the grid
+     * 
+     * @param string $name Column name
+     * @param string $type Column type
+     * @param ?string $label column label
+     * @return Column Column instance
+     */
     private function addColumn(string $name, string $type, ?string $label = null) {
         $col = new Column($name);
         $this->columns[$name] = &$col;
@@ -273,11 +342,23 @@ class GridBuilder extends AComponent {
         return $col;
     }
 
+    /**
+     * Creates grid data source from QueryBuilder instance
+     * 
+     * @param QueryBuilder $qb QueryBuilder instance
+     * @param string $primaryKeyColName Name of the column with primary key
+     */
     public function createDataSourceFromQueryBuilder(QueryBuilder $qb, string $primaryKeyColName) {
         $this->primaryKeyColName = $primaryKeyColName;
         $this->dataSource = $qb;
     }
 
+    /**
+     * Processes grid data source - applies paging and filtering
+     * 
+     * @param QueryBuilder $qb QueryBuilder instance
+     * @return QueryBuilder QueryBuilder instance
+     */
     private function processQueryBuilderDataSource(QueryBuilder $qb) {
         $gridSize = $this->cfg['GRID_SIZE'];
 
@@ -302,6 +383,11 @@ class GridBuilder extends AComponent {
         return $qb;
     }
 
+    /**
+     * Renders the grid and the template
+     * 
+     * @return string HTML code
+     */
     public function render() {
         $this->build();
 
@@ -315,6 +401,15 @@ class GridBuilder extends AComponent {
         return $template->render()->getRenderedContent();
     }
 
+    /**
+     * Builds the grid
+     *  - creates columns
+     *  - creates rows
+     *  - creates cells
+     *  - creates table
+     *  - processes data source
+     *  - creates actions
+     */
     private function build() {
         if($this->dataSource === null) {
             throw new GeneralException('No data source is set.');
@@ -491,6 +586,12 @@ class GridBuilder extends AComponent {
         $this->table = new Table($_tableRows);
     }
 
+    /**
+     * Creates a DatabaseRow instance from $row
+     * 
+     * @param mixed $row mysqli_result
+     * @return DatabaseRow DatabaseRow instance
+     */
     private function createDatabaseRow(mixed $row) {
         $r = new DatabaseRow();
 
@@ -501,6 +602,11 @@ class GridBuilder extends AComponent {
         return $r;
     }
 
+    /**
+     * Creates grid controls
+     * 
+     * @return string HTML code
+     */
     private function createGridControls() {
         if(!$this->enablePagination) {
             return '';
@@ -531,6 +637,11 @@ class GridBuilder extends AComponent {
         return $code;
     }
 
+    /**
+     * Creates necessary JS scripts
+     * 
+     * @return string HTML code
+     */
     private function createScripts() {
         $scripts = [];
 
@@ -684,10 +795,20 @@ class GridBuilder extends AComponent {
         return implode('', $scripts);
     }
 
+    /**
+     * Creates control for grid exporting
+     * 
+     * @return string HTML code
+     */
     private function createGridExportControl() {
         return '<button type="button" onclick="' . $this->componentName . '_processExportModalOpen()">Export</button>';
     }
 
+    /**
+     * Creates grid paging information
+     * 
+     * @return string Paging information
+     */
     private function createGridPageInfo() {
         $totalCount = $this->getTotalCount();
         $lastPage = (int)ceil($totalCount / $this->cfg['GRID_SIZE']);
@@ -700,6 +821,11 @@ class GridBuilder extends AComponent {
         return 'Page ' . ($this->gridPage + 1) . ' of ' . $lastPage . ' (' . ($this->cfg['GRID_SIZE'] * $this->gridPage) . ' - ' . $lastPageCount . ')';
     }
 
+    /**
+     * Creates grid refresh control
+     * 
+     * @return string HTML code
+     */
     private function createGridRefreshControl() {
         $args = [$this->getGridPage()];
 
@@ -712,6 +838,11 @@ class GridBuilder extends AComponent {
         return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . implode(', ', $args) . ')">Refresh &orarr;</a>';
     }
 
+    /**
+     * Creates grid paging control
+     * 
+     * @return string HTML code
+     */
     private function createGridPagingControl() {
         $totalCount = $this->getTotalCount();
         $lastPage = (int)ceil($totalCount / $this->cfg['GRID_SIZE']) - 1;
@@ -848,6 +979,11 @@ class GridBuilder extends AComponent {
         return ['grid' => $this->render()];
     }
 
+    /**
+     * Filters the grid data
+     * 
+     * @return array<string, string> Response
+     */
     public function actionFilter() {
         foreach($this->filters as $name => $filter) {
             if(isset($this->httpRequest->query[$name])) {
@@ -859,6 +995,11 @@ class GridBuilder extends AComponent {
         return ['grid' => $this->render()];
     }
 
+    /**
+     * Exports the limited entries
+     * 
+     * @return array<string, string> Response
+     */
     public function actionExportLimited() {
         $ds = clone $this->dataSource;
         $ds = $this->processQueryBuilderDataSource($ds);
@@ -875,6 +1016,11 @@ class GridBuilder extends AComponent {
         return $result;
     }
 
+    /**
+     * Queues asynchronous unlimited export
+     * 
+     * @return array<string, string|int> Response
+     */
     public function actionExportUnlimited() {
         $ds = clone $this->dataSource;
         $ds = $this->processQueryBuilderDataSource($ds);
@@ -892,6 +1038,11 @@ class GridBuilder extends AComponent {
     }
 
     // FILTER MODAL COMPONENT
+    /**
+     * Creates filter modal instance
+     * 
+     * @return GridFilter GridFilter instance
+     */
     protected function createComponentFilter() {
         $filter = GridFilter::createFromComponent($this);
         $filter->setFilters($this->filters);
@@ -903,6 +1054,11 @@ class GridBuilder extends AComponent {
     }
 
     // EXPORT MODAL COMPONENT
+    /**
+     * Creates export modal instance
+     * 
+     * @return GridExportModal GridExportModal instance
+     */
     protected function createComponentExport() {
         $gem = new GridExportModal($this);
 
@@ -927,6 +1083,12 @@ class GridBuilder extends AComponent {
         return $obj;
     }
 
+    /**
+     * Creates an instance of GridExportHandler
+     * 
+     * @param QueryBuilder $dataSource Grid data source
+     * @return GridExportHandler GridExportHandler instance
+     */
     private function createGridExportHandler(QueryBuilder $dataSource) {
         return new GridExportHandler(
             $dataSource,

@@ -4,6 +4,11 @@ namespace App\UI\GridBuilder2;
 
 use App\UI\HTML\HTML;
 
+/**
+ * Class that represents a row in grid table
+ * 
+ * @author Lukas Velek
+ */
 class Row extends AElement {
     private string|int|null $primaryKey;
     public HTML $html;
@@ -12,6 +17,9 @@ class Row extends AElement {
      */
     private array $cells;
 
+    /**
+     * Class constructor
+     */
     public function __construct() {
         parent::__construct();
 
@@ -19,10 +27,21 @@ class Row extends AElement {
         $this->html = HTML::el('tr');
     }
 
+    /**
+     * Sets the primary key
+     * 
+     * @param string|int|null $primaryKey Primary key
+     */
     public function setPrimaryKey(string|int|null $primaryKey) {
         $this->primaryKey = $primaryKey;
     }
 
+    /**
+     * Adds cell
+     * 
+     * @param Cell $cell Cell instance
+     * @param bool $prepend Should the cell be prepended?
+     */
     public function addCell(Cell $cell, bool $prepend = false) {
         if($prepend) {
             $this->cells = array_merge([$cell], $this->cells);
@@ -38,6 +57,11 @@ class Row extends AElement {
         return $this->html;
     }
 
+    /**
+     * Renders all cells in the row
+     * 
+     * @return string HTML code
+     */
     private function processRender() {
         $content = '';
 
@@ -48,10 +72,6 @@ class Row extends AElement {
         }
 
         return $content;
-    }
-
-    public function export(): string {
-        return '';
     }
 }
 

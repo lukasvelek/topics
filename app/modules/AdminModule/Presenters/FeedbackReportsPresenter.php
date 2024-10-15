@@ -57,8 +57,8 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             return ReportEntityType::toString($row->entityType) . ' report';
         };
 
-        $grid->addColumnEnum('category', 'Category', ReportCategory::class);
-        $grid->addColumnEnum('status', 'Status', ReportStatus::class);
+        $grid->addColumnConst('category', 'Category', ReportCategory::class);
+        $grid->addColumnConst('status', 'Status', ReportStatus::class);
         $grid->addColumnUser('userId', 'User');
 
         $grid->addFilter('category', null, ReportCategory::getAll());
