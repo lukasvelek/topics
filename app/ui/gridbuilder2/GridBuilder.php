@@ -234,6 +234,9 @@ class GridBuilder extends AComponent {
             };
 
             $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+                if($value === null) {
+                    return $value;
+                }
                 $user = $this->app->userManager->getUserById($value);
                 if($user === null) {
                     return $value;
@@ -356,6 +359,9 @@ class GridBuilder extends AComponent {
                     if(!empty($this->columns[$name]->onRenderColumn)) {
                         foreach($this->columns[$name]->onRenderColumn as $render) {
                             try {
+                                if($content === null) {
+                                    continue;
+                                }
                                 $content = $render($row, $_row, $_cell, $_cell->html, $content);
                             } catch(Exception $e) {}
                         }
@@ -383,6 +389,9 @@ class GridBuilder extends AComponent {
                     if(!empty($this->columns[$name]->onRenderColumn)) {
                         foreach($this->columns[$name]->onRenderColumn as $render) {
                             try {
+                                if($content === null) {
+                                    continue;
+                                }
                                 $content = $render($row, $_row, $_cell, $_cell->html, $content);
                             } catch(Exception $e) {}
                         }
@@ -874,7 +883,7 @@ class GridBuilder extends AComponent {
         try {
             $geh = $this->createGridExportHandler($ds);
             $hash = $geh->exportAsync();
-            $result = ['hash' => $hash];
+            $result = ['hash' => $hash, 'success' => 1];
         } catch(AException|Exception $e) {
             throw new GridExportException('Could not process unlimited export.', $e);
         }
