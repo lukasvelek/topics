@@ -207,6 +207,10 @@ class TopicManager extends AManager {
         return $this->trr->getTopicRulesForTopicId($topicId);
     }
 
+    public function composeQueryForTopicRules(string $topicId) {
+        return $this->trr->composeQueryForTopicRulesForTopicId($topicId);
+    }
+
     public function getTopicRulesForTopicId(string $topicId) {
         $entity = $this->getTopicRulesEntityForTopicId($topicId);
 

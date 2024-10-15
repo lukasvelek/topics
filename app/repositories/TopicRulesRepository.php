@@ -17,6 +17,16 @@ class TopicRulesRepository extends ARepository {
         $this->topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
     }
 
+    public function composeQueryForTopicRulesForTopicId(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_rules')
+            ->where('topicId = ?', [$topicId]);
+
+        return $qb;
+    }
+
     public function getTopicRulesForTopicId(string $topicId): TopicRulesEntity|null {
         $qb = $this->qb(__METHOD__);
 

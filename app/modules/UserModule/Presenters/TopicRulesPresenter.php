@@ -3,11 +3,15 @@
 namespace App\Modules\UserModule;
 
 use App\Core\AjaxRequestBuilder;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
 use App\UI\GridBuilder\GridBuilder;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class TopicRulesPresenter extends AUserPresenter {
@@ -22,7 +26,7 @@ class TopicRulesPresenter extends AUserPresenter {
     public function handleList() {
         $topicId = $this->httpGet('topicId', true);
 
-        $arb = new AjaxRequestBuilder();
+        /*$arb = new AjaxRequestBuilder();
 
         $arb->setMethod()
             ->setHeader(['topicId' => '_topicId'])
@@ -37,7 +41,7 @@ class TopicRulesPresenter extends AUserPresenter {
         }
 
         $this->addScript($arb);
-        $this->addScript('getTopicRules(\'' . $topicId . '\')');
+        $this->addScript('getTopicRules(\'' . $topicId . '\')');*/
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
@@ -58,6 +62,33 @@ class TopicRulesPresenter extends AUserPresenter {
 
     public function renderList() {
         $this->template->links = $this->loadFromPresenterCache('links');
+    }
+
+    protected function createComponentGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
+
+        $grid = $this->getGridBuilder();
+
+        $grid->createDataSourceFromQueryBuilder($this->app->topicManager->composeQueryForTopicRules($topicId), 'rulesetId');
+
+        $rules = [];
+        $col = $grid->addColumnText('rules', 'Rules');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) use (&$rules) {
+            $value = json_decode($value);
+
+            $code = '<ol>';
+
+            foreach($value as $v) {
+                $rules[] = $v;
+                $code .= '<li>' . $v . '</li>';
+            }
+
+            $code .= '</ol>';
+
+            return $code;
+        };
+
+        return $grid;
     }
 
     public function actionGetTopicRulesListForUser() {

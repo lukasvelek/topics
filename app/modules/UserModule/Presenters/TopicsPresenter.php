@@ -279,7 +279,7 @@ class TopicsPresenter extends AUserPresenter {
         }
 
         if($this->app->topicManager->hasTopicRules($topicId) || $this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId)) {
-            $links[] = LinkBuilder::createSimpleLink('Rules', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link');
+            //$links[] = LinkBuilder::createSimpleLink('Rules', ['page' => 'UserModule:TopicRules', 'action' => 'list', 'topicId' => $topicId], 'post-data-link');
         }
 
         if($this->app->actionAuthorizator->canSeeTopicCalendar($this->getUserId(), $topicId)) {
