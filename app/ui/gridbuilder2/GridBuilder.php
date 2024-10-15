@@ -359,9 +359,9 @@ class GridBuilder extends AComponent {
                     if(!empty($this->columns[$name]->onRenderColumn)) {
                         foreach($this->columns[$name]->onRenderColumn as $render) {
                             try {
-                                if($content === null) {
+                                /*if($content === null) {
                                     continue;
-                                }
+                                }*/
                                 $content = $render($row, $_row, $_cell, $_cell->html, $content);
                             } catch(Exception $e) {}
                         }

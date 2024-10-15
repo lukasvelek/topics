@@ -101,6 +101,7 @@ class GridExportHandler {
 
     public function exportNow(?string $hash = null) {
         try {
+            $start = time();
             if ($this->hasProcessedColumns) {
                 $data = $this->processProcessedDataSource();
             } else {
@@ -119,11 +120,14 @@ class GridExportHandler {
             }
 
             $filePath = str_replace('\\', '/', $filePath);
+            $end = time();
+            $diff = $end - $start;
 
             if(!$this->app->gridExportRepository->updateExportByHash($hash, [
                 'filename' => $filePath,
                 'entryCount' => $this->exportedEntryCount,
-                'dateFinished' => DateTime::now()
+                'dateFinished' => DateTime::now(),
+                'timeTaken' => $diff
             ])) {
                 throw new GridExportException('Could not update entry in the database.');
             }

@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
+use App\UI\GridBuilder2\Cell;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 
@@ -35,6 +36,16 @@ class ManageGridExportsPresenter extends AAdminPresenter {
         $grid->addColumnDatetime('dateCreated', 'Date started');
         $grid->addColumnDatetime('dateFinished', 'Date finished');
         $grid->addColumnText('entryCount', 'Entries');
+        $col = $grid->addColumnText('timeTaken', 'Seconds taken');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            if($value === null) {
+                $value = '0 s';
+            } else {
+                $value = $value . ' s';
+            }
+
+            return $value;
+        };
 
         $downloadFile = $grid->addAction('downloadFile');
         $downloadFile->setTitle('Download file');

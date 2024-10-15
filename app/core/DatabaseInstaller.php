@@ -302,7 +302,8 @@ class DatabaseInstaller {
                 'gridName' => 'VARCHAR(256) NOT NULL',
                 'entryCount' => 'INT(32) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'dateFinished' => 'DATETIME NULL'
+                'dateFinished' => 'DATETIME NULL',
+                'timeTaken' => 'INT(32) NULL'
             ],
             'topic_calendar_user_events' => [
                 'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
