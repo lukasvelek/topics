@@ -3,7 +3,10 @@
 namespace App\UI;
 
 use App\Core\Http\HttpRequest;
+use App\Exceptions\AException;
+use App\Exceptions\CallbackExecutionException;
 use App\Modules\AGUICore;
+use Exception;
 
 /**
  * Common class for interactive components
@@ -47,6 +50,14 @@ abstract class AComponent extends AGUICore implements IRenderable {
      * @param AComponent $component Other component
      */
     abstract static function createFromComponent(AComponent $component);
+
+    public function processMethod(string $methodName, array $args = []) {
+        try {
+            return $this->$methodName(...$args);
+        } catch(AException|Exception $e) {
+            throw new CallbackExecutionException($e, [$methodName], $e);
+        }
+    }
 }
 
 ?>

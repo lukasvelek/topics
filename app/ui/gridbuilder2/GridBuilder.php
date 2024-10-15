@@ -9,6 +9,8 @@ use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
+use App\Exceptions\GridExportException;
+use App\Helpers\ArrayHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\AComponent;
@@ -220,6 +222,9 @@ class GridBuilder extends AComponent {
             };
         } else if($type == self::COL_TYPE_USER) {
             $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+                if($value === null) {
+                    return $value;
+                }
                 $user = $this->app->userManager->getUserById($value);
                 if($user === null) {
                     return $value;
@@ -336,8 +341,10 @@ class GridBuilder extends AComponent {
 
         while($row = $cursor->fetchAssoc()) {
             $row = $this->createDatabaseRow($row);
+            $rowId = $row->{$this->primaryKeyColName};
+
             $_row = new Row();
-            $_row->setPrimaryKey($row->{$this->primaryKeyColName});
+            $_row->setPrimaryKey($rowId);
 
             foreach($this->columns as $name => $col) {
                 if(in_array($name, $row->getKeys())) {
@@ -408,16 +415,20 @@ class GridBuilder extends AComponent {
                 
                 $canRender = [];
                 foreach($this->actions as $actionName => $action) {
-                    foreach($action->onCanRender as $render) {
+                    $cAction = clone $action;
+
+                    foreach($cAction->onCanRender as $render) {
                         try {
                             $result = $render($row, $_row);
 
                             if($result === true) {
-                                $canRender[$actionName] = $action;
+                                $canRender[$actionName] = $cAction;
                             } else {
                                 $canRender[$actionName] = null;
                             }
-                        } catch(Exception $e) {}
+                        } catch(Exception $e) {
+                            $canRender[$actionName] = null;
+                        }
                     }
                 }
 
@@ -425,10 +436,11 @@ class GridBuilder extends AComponent {
 
                 foreach($canRender as $name => $action) {
                     if($action instanceof Action) {
-                        $action->inject($row, $_row, $row->{$this->primaryKeyColName});
+                        $cAction = clone $action;
+                        $cAction->inject($row, $_row, $rowId);
                         $_cell = new Cell();
                         $_cell->setName($name);
-                        $_cell->setContent($action->output());
+                        $_cell->setContent($cAction->output()->toString());
                         $_cell->setClass('grid-cell-action');
                     } else {
                         $_cell = new Cell();
@@ -842,14 +854,13 @@ class GridBuilder extends AComponent {
         $ds = clone $this->dataSource;
         $ds = $this->processQueryBuilderDataSource($ds);
 
-        $geh = $this->createGridExportHandler($ds);
-
         $result = [];
         try {
+            $geh = $this->createGridExportHandler($ds);
             [$file, $hash] = $geh->exportNow();
             $result = ['file' => $file, 'hash' => $hash];
         } catch(AException $e) {
-            $result = ['error' => 1, 'errorMsg' => $e->getMessage()];
+            throw new GridExportException('Could not process limited export.', $e);
         }
 
         return $result;
@@ -858,14 +869,14 @@ class GridBuilder extends AComponent {
     public function actionExportUnlimited() {
         $ds = clone $this->dataSource;
         $ds = $this->processQueryBuilderDataSource($ds);
-
-        $geh = $this->createGridExportHandler($ds);
-
+        
+        $result = [];
         try {
+            $geh = $this->createGridExportHandler($ds);
             $hash = $geh->exportAsync();
             $result = ['hash' => $hash];
-        } catch(AException $e) {
-            $result = ['error' => 1, 'errorMsg' => $e->getMessage()];
+        } catch(AException|Exception $e) {
+            throw new GridExportException('Could not process unlimited export.', $e);
         }
 
         return $result;

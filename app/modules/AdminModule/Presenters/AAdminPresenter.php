@@ -53,7 +53,7 @@ abstract class AAdminPresenter extends APresenter {
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
         $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
         $transactions = $this->checkPage('AdminModule:ManageTransactions');
-        //$gridExports = $this->checkPage('AdminModule:ManageGridExports');
+        $gridExports = $this->checkPage('AdminModule:ManageGridExports');
         $emails = $this->checkPage('AdminModule:ManageEmails');
 
         $sb = new Sidebar();
@@ -82,9 +82,9 @@ abstract class AAdminPresenter extends APresenter {
         if($this->app->sidebarAuthorizator->canManageTransactions($this->getUserId())) {
             $sb->addLink('Transactions', $this->createFullURL('AdminModule:ManageTransactions', 'list'), $transactions);
         }
-        /*if($this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
+        if($this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
             $sb->addLink('Grid exports', $this->createFullURL('AdminModule:ManageGridExports', 'list'), $gridExports);
-        }*/
+        }
         if($this->app->sidebarAuthorizator->canManageEmails($this->getUserId())) {
             $sb->addLink('Email queue', $this->createFullURL('AdminModule:ManageEmails', 'list'), $emails);
         }

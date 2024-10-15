@@ -5,8 +5,10 @@ namespace App\Modules;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
 use App\Core\Http\HttpRequest;
+use App\Exceptions\AException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Logger\Logger;
+use Exception;
 
 /**
  * The common module abstract class that every module must extend. It contains functions used for rendering the page content.
@@ -93,12 +95,16 @@ abstract class AModule extends AGUICore {
      * @return string Rendered page content
      */
     public function render(string $presenterTitle, string $actionTitle) {
-        $this->startup($presenterTitle, $actionTitle);
+        try {
+            $this->startup($presenterTitle, $actionTitle);
         
-        $this->renderPresenter();
-        $this->renderModule();
+            $this->renderPresenter();
+            $this->renderModule();
 
-        return $this->template->render()->getRenderedContent();
+            return $this->template->render()->getRenderedContent();
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
     }
 
     /**
@@ -110,7 +116,11 @@ abstract class AModule extends AGUICore {
      * Renders the presenter and fetches the TemplateObject instance. It also renders flash messages.
      */
     public function renderPresenter() {
-        $this->template = $this->presenter->render($this->title);
+        try {
+            $this->template = $this->presenter->render($this->title);
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
 
         if(!$this->isAjax) {
             $this->fillFlashMessages();

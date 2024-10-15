@@ -4,6 +4,7 @@ namespace App\Core\Caching;
 
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
+use App\Exceptions\CacheException;
 use Exception;
 
 /**
@@ -52,7 +53,7 @@ class Cache {
             try {
                 $result = $generator(...$generatorDependencies);
             } catch(Exception $e) {
-                return null;
+                throw new CacheException('Could not save data to cache.', $this->namespace, $e);
             }
 
             $this->data[$key] = $result;
@@ -74,7 +75,7 @@ class Cache {
         try {
             $result = $generator(...$generatorDependencies);
         } catch(Exception $e) {
-            return null;
+            throw new CacheException('Could not save data to cache.', $this->namespace, $e);
         }
 
         $this->data[$key] = $result;

@@ -8,11 +8,11 @@ class GridExportEntity extends AEntity {
     private string $hash;
     private ?string $filename;
     private string $gridName;
-    private int $entryCount;
+    private ?int $entryCount;
     private string $dateCreated;
     private ?string $dateFinished;
 
-    public function __construct(string $id, string $userId, string $hash, ?string $filename, string $gridName, int $entryCount, string $dateCreated, ?string $dateFinished) {
+    public function __construct(string $id, string $userId, string $hash, ?string $filename, string $gridName, ?int $entryCount, string $dateCreated, ?string $dateFinished) {
         $this->id = $id;
         $this->userId = $userId;
         $this->hash = $hash;
@@ -61,7 +61,7 @@ class GridExportEntity extends AEntity {
         }
 
         $row = self::createRow($row);
-        self::checkTypes($row, ['exportId' => 'string', 'userId' => 'string', 'hash' => 'string', 'filename' => '?string', 'gridName' => 'string', 'entryCount' => 'int', 'dateCreated' => 'string', 'dateFinished' => '?string']);
+        self::checkTypes($row, ['exportId' => 'string', 'userId' => 'string', 'hash' => 'string', 'filename' => '?string', 'gridName' => 'string', 'entryCount' => '?int', 'dateCreated' => 'string', 'dateFinished' => '?string']);
 
         return new self($row->exportId, $row->userId, $row->hash, $row->filename, $row->gridName, $row->entryCount, $row->dateCreated, $row->dateFinished);
     }

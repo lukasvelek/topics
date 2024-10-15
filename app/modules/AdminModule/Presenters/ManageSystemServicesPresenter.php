@@ -56,7 +56,7 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             return true;
         };
         $action->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
-            return LinkBuilder::createSimpleLink('Run', $this->createURL('run', ['serviceId' => $primaryKey]), 'grid-link');
+            return LinkBuilder::createSimpleLink('Run', $this->createURL('run', ['serviceId' => $row->serviceId]), 'grid-link');
         };
 
         return $grid;

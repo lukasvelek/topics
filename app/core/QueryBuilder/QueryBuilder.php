@@ -963,6 +963,24 @@ class QueryBuilder
             $this->logger->exception($e, $this->callingMethod);
         }
     }
+
+    public function export() {
+        return [
+            'params' => $this->params,
+            'queryData' => $this->queryData,
+            'queryType' => $this->queryType
+        ];
+    }
+
+    public function import(array $data) {
+        $this->queryData = $data['queryData'];
+        $this->queryData = $data['params'];
+        $this->queryType = $data['queryType'];
+
+        $this->currentState = self::STATE_DIRTY;
+
+        return $this;
+    }
 }
 
 ?>

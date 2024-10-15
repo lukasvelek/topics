@@ -29,14 +29,16 @@ class Table extends AElement {
 
         $first = true;
         foreach($this->rows as $row) {
+            $cRow = clone $row;
+            
             if($first) {
-                $content .= '<thead>' . $row->output()->toString() . '</thead>';
+                $content .= '<thead>' . $cRow->output()->toString() . '</thead>';
                 $first = false;
                 $content .= '<tbody>';
                 continue;
             }
             
-            $content .= $row->output()->toString();
+            $content .= $cRow->output()->toString();
         }
         $content .= '</tbody>';
 

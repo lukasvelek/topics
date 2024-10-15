@@ -14,7 +14,7 @@ class ArrayHelper {
                 $values[] = $callback();
             }
         } catch (Exception $e) {
-            throw new CallbackExecutionException($e, $e);
+            throw new CallbackExecutionException($e, [], $e);
         }
 
         return implode($separator, $values);
@@ -31,6 +31,28 @@ class ArrayHelper {
         }
 
         return $ok;
+    }
+
+    public static function cloneArray(array $array) {
+        $tmp = [];
+
+        foreach($array as $k => $v) {
+            if(is_object($k)) {
+                $k = clone $k;
+            }
+            if(is_object($v)) {
+                $v = clone $v;
+            }
+            if(is_array($k)) {
+                $k = self::cloneArray($k);
+            }
+            if(is_array($v)) {
+                $v = self::cloneArray($v);
+            }
+            $tmp[$k] = $v;
+        }
+
+        return $tmp;
     }
 }
 

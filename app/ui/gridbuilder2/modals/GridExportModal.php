@@ -2,9 +2,11 @@
 
 namespace App\UI\GridBuilder2;
 
+use App\Exceptions\AException;
 use App\UI\AComponent;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\ModalBuilder\ModalBuilder;
+use Exception;
 use QueryBuilder\QueryBuilder;
 
 class GridExportModal extends ModalBuilder {
@@ -51,7 +53,11 @@ class GridExportModal extends ModalBuilder {
     private function isOverLimit() {
         $ds = clone $this->dataSource;
 
-        $count = $ds->execute()->fetchAll()->num_rows;
+        try {
+            $count = $ds->execute()->fetchAll()->num_rows;
+        } catch(AException|Exception $e) {
+            $count = 0;
+        }
         
         return $count >= /*$this->cfg['MAX_GRID_EXPORT_SIZE']*/ 5;
     }

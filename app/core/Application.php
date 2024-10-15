@@ -57,6 +57,7 @@ use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
 use App\UI\GridBuilder\DefaultGridReducer;
+use Exception;
 use ReflectionClass;
 
 /**
@@ -248,7 +249,11 @@ class Application {
             $this->isAjaxRequest = true;
         }
 
-        echo $this->render();
+        try {
+            echo $this->render();
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
     }
 
     /**
@@ -319,7 +324,11 @@ class Application {
         $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
         $re->setAjax($this->isAjaxRequest);
-        return $re->render();
+        try {
+            return $re->render();
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
     }
 
     private function getRequest() {

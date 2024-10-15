@@ -32,6 +32,16 @@ class GridExportRepository extends ARepository {
         return $entities;
     }
 
+    public function composeQueryForExports() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('grid_exports')
+            ->orderBy('dateCreated', 'DESC');
+
+        return $qb;
+    }
+
     public function getExportsForGrid(int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -74,12 +84,12 @@ class GridExportRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getWaitingUnlimitedExports(int $maxCount) {
+    public function getWaitingUnlimitedExports() {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['hash'])
             ->from('grid_exports')
-            ->where('entryCount >= ?', [$maxCount])
+            ->where('entryCount IS NULL')
             ->andWhere('filename IS NULL')
             ->andWhere('dateFinished IS NULL')
             ->execute();

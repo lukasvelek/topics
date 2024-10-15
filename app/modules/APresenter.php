@@ -12,6 +12,7 @@ use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
 use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Helpers\GridHelper;
@@ -390,7 +391,11 @@ abstract class APresenter extends AGUICore {
      * @return string Presenter template content
      */
     public function render(string $moduleName) {
-        $contentTemplate = $this->beforeRender($moduleName);
+        try {
+            $contentTemplate = $this->beforeRender($moduleName);
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
         
         if(!$this->isAjax) {
             if($contentTemplate !== null && $this->template !== null) {
@@ -576,15 +581,23 @@ abstract class APresenter extends AGUICore {
                         try {
                             if(isset($this->httpRequest->query['isFormSubmit']) && $this->httpRequest->query['isFormSubmit'] == '1') {
                                 $fr = $this->createFormResponse();
-                                $result = $component->$methodName($this->httpRequest, $fr);
+                                $result = $component->processMethod($methodName, [$this->httpRequest, $fr]);
                             } else {
-                                $result = $component->$methodName($this->httpRequest);
+                                $result = $component->processMethod($methodName, [$this->httpRequest]);
                             }
                         } catch(AException|Exception $e) {
-                            return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                            if(!($e instanceof AException)) {
+                                try {
+                                    throw new GeneralException('Could not process component request. Reason: ' . $e->getMessage(), $e);
+                                } catch(AException $e) {
+                                    return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                                }
+                            }
+                            //return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                            throw $e;
                         }
                         return $result;
-                    }, '');
+                    }, $componentName . '::' . $methodName);
         
                     if($this->ajaxResponse !== null) {
                         return new TemplateObject($this->ajaxResponse);
@@ -633,6 +646,7 @@ abstract class APresenter extends AGUICore {
                 try {
                     $result = $this->$actionAction($this->httpRequest);
                 } catch(AException|Exception $e) {
+                    throw $e;
                     return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
                 }
                 return $result;

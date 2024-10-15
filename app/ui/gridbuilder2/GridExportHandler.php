@@ -21,11 +21,12 @@ class GridExportHandler {
     private string $primaryKey;
     private array $columns;
     private array $columnLabels;
-    private string $currentUserId;
+    private ?string $currentUserId;
     private array $cfg;
     private Application $app;
     private string $gridName;
     private int $exportedEntryCount;
+    private bool $hasProcessedColumns;
 
     private CacheFactory $cacheFactory;
     private Cache $exportDataCache;
@@ -35,7 +36,7 @@ class GridExportHandler {
         string $primaryKey,
         array $columns,
         array $columnLabels,
-        string $currentUserId,
+        ?string $currentUserId,
         array $cfg,
         Application $app,
         string $gridName
@@ -48,6 +49,7 @@ class GridExportHandler {
         $this->cfg = $cfg;
         $this->app = $app;
         $this->gridName = $gridName;
+        $this->hasProcessedColumns = false;
 
         $this->cacheFactory = new CacheFactory($this->cfg);
         $this->exportDataCache = $this->cacheFactory->getCache(CacheNames::GRID_EXPORTS);
@@ -55,6 +57,14 @@ class GridExportHandler {
 
     public function __destruct() {
         $this->cacheFactory->__destruct();
+    }
+
+    public function setProcessedColumns(bool $hasProcessedColumns = true) {
+        $this->hasProcessedColumns = $hasProcessedColumns;
+    }
+
+    public function setEntryCount(int $entryCount) {
+        $this->exportedEntryCount = $entryCount;
     }
 
     public function exportAsync() {
@@ -65,47 +75,71 @@ class GridExportHandler {
 
             $this->app->gridExportRepository->createNewExport($this->currentUserId, $hash, $this->gridName);
 
-            $this->exportDataCache->save($hash, function() {
+            $exportedDataSource = $this->dataSource->export();
+            $exportedColumns = $this->processColumnsForAsyncSaveToCache();
+
+            $this->exportDataCache->save($hash, function() use ($exportedDataSource, $exportedColumns) {
                 return [
-                    'dataSource' => $this->dataSource->getSQL()
+                    'dataSource' => $exportedDataSource,
+                    'primaryKey' => $this->primaryKey,
+                    'columns' => $exportedColumns,
+                    'columnLabels' => $this->columnLabels,
+                    'gridName' => $this->gridName,
+                    'exportedEntryCount' => $this->exportedEntryCount
                 ];
             });
 
             $this->app->gridExportRepository->commit($this->currentUserId, __METHOD__);
 
             return $hash;
-        } catch(AException $e) {
+        } catch(AException|Exception $e) {
             $this->app->gridExportRepository->rollback();
 
             throw new GridExportException(null, $e);
         }
     }
 
-    public function exportNow() {
+    public function exportNow(?string $hash = null) {
         try {
-            $data = $this->processDataSource();
+            if ($this->hasProcessedColumns) {
+                $data = $this->processProcessedDataSource();
+            } else {
+                $data = $this->processDataSource();
+            }
+
             $content = $this->createCsvFileContent($data);
             $filePath = $this->saveFile($content);
+            
+            $this->app->gridExportRepository->beginTransaction(__METHOD__);
 
-            $hash = $this->getHash();
+            if($hash === null) {
+                $hash = $this->getHash();
 
-            $this->app->gridExportRepository->beginTransaction();
+                $this->app->gridExportRepository->createNewExport($this->currentUserId, $hash, $this->gridName);
+            }
 
-            $this->app->gridExportRepository->createNewExport($this->currentUserId, $hash, $this->gridName);
-            $this->app->gridExportRepository->updateExportByHash($hash, [
+            $filePath = str_replace('\\', '/', $filePath);
+
+            if(!$this->app->gridExportRepository->updateExportByHash($hash, [
                 'filename' => $filePath,
                 'entryCount' => $this->exportedEntryCount,
                 'dateFinished' => DateTime::now()
-            ]);
+            ])) {
+                throw new GridExportException('Could not update entry in the database.');
+            }
 
             $this->app->gridExportRepository->commit($this->currentUserId, __METHOD__);
 
-            return ['file' => $filePath, 'hash' => $hash];
+            return [$filePath, $hash];
         } catch(AException $e) {
-            $this->app->gridExportRepository->rollback();
+            $this->app->gridExportRepository->rollback(__METHOD__);
 
             throw new GridExportException(null, $e);
         }
+    }
+
+    private function processProcessedDataSource() {
+        return $this->columns;
     }
 
     private function getHash() {
@@ -216,6 +250,67 @@ class GridExportHandler {
         } catch(AException $e) {
             throw $e;
         }
+    }
+
+    private function processColumnsForAsyncSaveToCache() {
+        $ds = clone $this->dataSource;
+        
+        $ds->resetLimit();
+        $ds->resetOffset();
+
+        $cursor = $ds->execute();
+
+        $data = [];
+        $i = 0;
+        while($row = $cursor->fetchAssoc()) {
+            $tmp = [];
+
+            $primaryKey = '';
+            foreach($row as $k => $v) {
+                $rowObj = DatabaseRow::createFromDbRow($row);
+
+                if(array_key_exists($k, $this->columns)) {
+                    $col = $this->columns[$k];
+
+                    if(!empty($col->onExportColumn)) {
+                        foreach($col->onExportColumn as $export) {
+                            try {
+                                $v = $export($rowObj, $v);
+                            } catch(Exception $e) {}
+                        }
+                    }
+
+                    $tmp[$k] = $v;
+                }
+
+                $primaryKey = $rowObj->{$this->primaryKey};
+            }
+
+            $data[$primaryKey] = $tmp;
+            $i++;
+        }
+
+        $this->exportedEntryCount = $i;
+
+        return $data;
+    }
+
+    public static function createForAsync(array $data, Application $app, array $cfg, ?string $userId) {
+        $dataSource = $data['dataSource'];
+        $primaryKey = $data['primaryKey'];
+        $columns = $data['columns'];
+        $columnLabels = $data['columnLabels'];
+        $gridName = $data['gridName'];
+        $exportedEntryCount = $data['exportedEntryCount'];
+
+        $qb = $app->gridExportRepository->getQb();
+        $qb = $qb->import($dataSource);
+
+        $obj = new self($qb, $primaryKey, $columns, $columnLabels, $userId, $cfg, $app, $gridName);
+        $obj->setProcessedColumns();
+        $obj->setEntryCount($exportedEntryCount);
+
+        return $obj;
     }
 }
 

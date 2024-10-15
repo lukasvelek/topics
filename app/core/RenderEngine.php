@@ -2,8 +2,10 @@
 
 namespace App\Core;
 
+use App\Exceptions\AException;
 use App\Logger\Logger;
 use App\Modules\AModule;
+use Exception;
 
 /**
  * Render engine class that takes care of page rendering
@@ -54,13 +56,17 @@ class RenderEngine {
      * @return string HTML page code or null
      */
     public function render() {
-        $this->beforeRender();
+        try {
+            $this->beforeRender();
 
-        if($this->renderedContent === null) {
-            $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle);
+            if($this->renderedContent === null) {
+                $this->renderedContent = $this->module->render($this->presenterTitle, $this->actionTitle);
+            }
+
+            return $this->renderedContent;
+        } catch(AException|Exception $e) {
+            throw $e;
         }
-
-        return $this->renderedContent;
     }
     
     /**

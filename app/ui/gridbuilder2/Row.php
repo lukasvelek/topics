@@ -42,7 +42,9 @@ class Row extends AElement {
         $content = '';
 
         foreach($this->cells as $cell) {
-            $content .= $cell->output()->toString();
+            $cCell = clone $cell;
+            
+            $content .= $cCell->output()->toString();
         }
 
         return $content;

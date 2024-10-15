@@ -35,6 +35,10 @@ class Action implements IHTMLOutput {
         return $this;
     }
 
+    public function __destruct() {
+        unset($this->name, $this->onCanRender, $this->onRender, $this->html, $this->name);
+    }
+
     public function inject(DatabaseRow $row, Row $_row, mixed $primaryKey) {
         $this->row = $row;
         $this->_row = $_row;
@@ -69,6 +73,10 @@ class Action implements IHTMLOutput {
                 }
             }
         } else {
+            $result = '-';
+        }
+
+        if($result === null) {
             $result = '-';
         }
 
