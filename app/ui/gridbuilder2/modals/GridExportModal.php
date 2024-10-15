@@ -59,7 +59,7 @@ class GridExportModal extends ModalBuilder {
             $count = 0;
         }
         
-        return $count >= /*$this->cfg['MAX_GRID_EXPORT_SIZE']*/ 5;
+        return $count >= $this->cfg['MAX_GRID_EXPORT_SIZE'];
     }
 }
 
