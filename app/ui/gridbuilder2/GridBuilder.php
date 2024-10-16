@@ -633,7 +633,7 @@ class GridBuilder extends AComponent {
 
         $code = '
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md">
                     ' . $this->createGridPagingControl() . '
                 </div>
                 
@@ -645,7 +645,7 @@ class GridBuilder extends AComponent {
                     ' . $this->createGridRefreshControl() . '
                 </div>
 
-                ' . ($this->enableExport ? ('<div class="col-md" id="right">' . $this->createGridExportControl() . '</div>') : ('')) . '
+                ' . ($this->enableExport ? ('<div class="col-md-2" id="right">' . $this->createGridExportControl() . '</div>') : ('')) . '
             </div>
 
             <span>
@@ -815,6 +815,15 @@ class GridBuilder extends AComponent {
                 $fArgs[] = $hName;
             }
 
+            if(!empty($this->queryDependencies)) {
+                foreach($this->queryDependencies as $k => $v) {
+                    $pK = '_' . $k;
+    
+                    $headerParams[$k] = $pK;
+                    $fArgs[] = $pK;
+                }
+            }
+
             $arb->setMethod()
                 ->setComponentAction($this->presenter, $this->componentName . '-exportLimited')
                 ->setHeader($headerParams)
@@ -847,7 +856,7 @@ class GridBuilder extends AComponent {
      * @return string HTML code
      */
     private function createGridExportControl() {
-        return '<button type="button" onclick="' . $this->componentName . '_processExportModalOpen()">Export</button>';
+        return '<button type="button" class="grid-control-button2" onclick="' . $this->componentName . '_processExportModalOpen()">Export</button>';
     }
 
     /**
@@ -1124,6 +1133,7 @@ class GridBuilder extends AComponent {
         $ds = clone $this->dataSource;
         $ds = $this->processQueryBuilderDataSource($ds);
         $gem->setDataSource($ds);
+        $gem->setGridQueryDependencies($this->queryDependencies);
 
         return $gem;
     }

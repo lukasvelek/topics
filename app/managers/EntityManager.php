@@ -43,6 +43,9 @@ class EntityManager extends AManager {
     public const TOPIC_BROADCAST_CHANNELS = 'topic_broadcast_channels';
     public const TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS = 'topic_broadcast_channel_subscribers';
     public const TOPIC_BROADCAST_CHANNEL_MESSAGES = 'topic_broadcast_channel_messages';
+    public const TOPIC_INVITES = 'topic_invites';
+
+    private const __MAX__ = 100;
 
     private ContentRepository $cr;
 
@@ -69,6 +72,7 @@ class EntityManager extends AManager {
         $run = true;
 
         $entityId = null;
+        $x = 0;
         while($run) {
             $entityId = HashManager::createEntityId();
 
@@ -76,7 +80,7 @@ class EntityManager extends AManager {
 
             $unique = $this->cr->checkIdIsUnique($category, $primaryKeyName, $entityId);
 
-            if($unique) {
+            if($unique || $x >= self::__MAX__) {
                 $run = false;
                 break;
             }
@@ -122,7 +126,8 @@ class EntityManager extends AManager {
             self::USER_CHAT_MESSAGES => 'messageId',
             self::TOPIC_BROADCAST_CHANNEL_MESSAGES => 'messageId',
             self::TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS => 'subscribeId',
-            self::TOPIC_BROADCAST_CHANNELS => 'channelId'
+            self::TOPIC_BROADCAST_CHANNELS => 'channelId',
+            self::TOPIC_INVITES => 'inviteId'
         };
     }
 }

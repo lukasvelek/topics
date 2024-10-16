@@ -215,6 +215,7 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_invites' => [
+                'inviteId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'topicId' => 'VARCHAR(256) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',

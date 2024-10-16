@@ -339,6 +339,12 @@ div[class^="fm-"], div[class*="fm-"] {
     margin-right: 5px;
 }
 
+.grid-control-button2, #grid-control-button2 {
+    border: 1px solid black;
+
+    border-radius: 5px;
+}
+
 .calendar-control-button {
     max-width: 150px;
 

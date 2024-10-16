@@ -103,6 +103,10 @@ class TopicMembershipManager extends AManager {
         return $this->topicMembershipRepository->getTopicMembersForGrid($topicId, $limit, $offset, $orderByRoleDesc);
     }
 
+    public function composeQueryForTopicMembers(string $topicId) {
+        return $this->topicMembershipRepository->composeQueryForTopicMembers($topicId);
+    }
+
     public function changeRole(string $topicId, string $userId, string $callingUserId, int $newRole) {
         if(!$this->checkFollow($topicId, $userId)) {
             throw new GeneralException('The selected user is not a member of this topic.');

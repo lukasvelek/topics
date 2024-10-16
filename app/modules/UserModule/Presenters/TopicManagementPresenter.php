@@ -3,34 +3,27 @@
 namespace App\Modules\UserModule;
 
 use App\Constants\TopicMemberRole;
-use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
-use App\Entities\TopicBannedWordEntity;
-use App\Entities\TopicInviteEntity;
-use App\Entities\TopicMemberEntity;
-use App\Entities\TopicPollEntity;
-use App\Entities\UserEntity;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
-use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 use Exception;
 
 class TopicManagementPresenter extends AUserPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('TopicManagementPresenter', 'Topic management');
     }
     
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleManageRoles() {
@@ -42,19 +35,6 @@ class TopicManagementPresenter extends AUserPresenter {
             $this->flashMessage($e->getMessage(), 'error');
             $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
         }
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setURL(['page' => 'UserModule:TopicManagement', 'action' => 'userRolesGrid'])
-            ->setMethod('GET')
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
-            ->setFunctionName('getUserRolesGrid')
-            ->setFunctionArguments(['_page', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getUserRolesGrid(-1, \'' . $topicId . '\')');
 
         $this->saveToPresenterCache('title', $topic->getTitle());
 
@@ -73,52 +53,43 @@ class TopicManagementPresenter extends AUserPresenter {
         $this->template->links = $links;
     }
 
-    public function actionUserRolesGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $this->app->getGridSize();
+    public function createComponentRolesGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_USER_TOPIC_ROLES, $gridPage, [$topicId]);
+        $grid = $this->getGridBuilder();
 
-        $members = $this->app->topicMembershipManager->getTopicMembers($topicId, $gridSize, ($page * $gridSize));
-        $allMembersCount = count($this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false));
-        $lastPage = ceil($allMembersCount / $gridSize);
+        $grid->createDataSourceFromQueryBuilder($this->app->topicMembershipManager->composeQueryForTopicMembers($topicId), 'membershipId');
 
-        $gb = $this->getGridBuilder();
+        $grid->addQueryDependency('topicId', $topicId);
 
-        $gb->addDataSource($members);
-        $gb->addColumns(['userId' => 'User', 'role' => 'Role']);
+        $grid->addColumnUser('userId', 'User');
+        $col = $grid->addColumnText('role', 'Role');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $el = HTML::el('span')
+                    ->text(TopicMemberRole::toString($value))
+                    ->style('color', TopicMemberRole::getColorByKey($value));
 
-        $gb->addOnColumnRender('role', function (Cell $cell, TopicMemberEntity $tme) {
-            $text = TopicMemberRole::toString($tme->getRole());
+            return $el;
+        };
+        $grid->addColumnDatetime('dateCreated', 'Member since');
 
-            $cell->setTextColor(TopicMemberRole::getColorByKey($tme->getRole()));
-            $cell->setValue($text);
+        $changeRole = $grid->addAction('changeRole');
+        $changeRole->setTitle('Change role');
+        $changeRole->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($topicId) {
+            return $this->app->actionAuthorizator->canChangeUserTopicRole($topicId, $this->getUserId(), $row->userId);
+        };
+        $changeRole->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Change role')
+                    ->href($this->createURLString('changeRoleForm', ['topicId' => $topicId, 'userId' => $row->userId]));
 
-            return $cell;
-        });
-        $gb->addAction(function(TopicMemberEntity $tme) {
-            $link = LinkBuilder::createSimpleLink('Change role', ['page' => 'UserModule:TopicManagement', 'action' => 'changeRoleForm', 'topicId' => $tme->getTopicId(), 'userId' => $tme->getUserId()], 'grid-link');
+            return $el;
+        };
 
-            if($this->app->actionAuthorizator->canChangeUserTopicRole($tme->getTopicId(), $this->getUserId(), $tme->getUserId())) {
-                return $link;
-            } else {
-                return '-';
-            }
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $allMembersCount, 'getUserRolesGrid', [$topicId]);
+        $grid->enableExport();
 
-        $gb->addOnExportRender('role', function(TopicMemberEntity $tme) {
-            $text = TopicMemberRole::toString($tme->getRole());
-
-            return $text;
-        });
-
-        $gb->addGridExport(function() use ($topicId) {
-            return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
-        }, GridHelper::GRID_USER_TOPIC_ROLES, $this->logger);
-
-        return ['grid' => $gb->build()];
+        return $grid;
     }
 
     public function handleChangeRoleForm() {
@@ -221,18 +192,6 @@ class TopicManagementPresenter extends AUserPresenter {
     public function handleListPolls() {
         $topicId = $this->httpGet('topicId');
 
-        $arb = new AjaxRequestBuilder();
-        $arb->setURL(['page' => 'UserModule:TopicManagement', 'action' => 'getPollGrid'])
-            ->setMethod()
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
-            ->setFunctionName('getPollGrid')
-            ->setFunctionArguments(['_page', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getPollGrid(-1, \'' . $topicId . '\');');
-
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
         ];
@@ -246,83 +205,90 @@ class TopicManagementPresenter extends AUserPresenter {
         $this->template->links = $links;
     }
 
-    public function actionGetPollGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
+    protected function createComponentPollsGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
-        $gridSize = $gridSize = $this->app->getGridSize();
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POLLS, $gridPage, [$topicId]);
+        $grid = $this->getGridBuilder();
 
         if($this->app->actionAuthorizator->canSeeAllTopicPolls($this->getUserId(), $topicId)) {
-            $polls = $this->app->topicPollRepository->getPollsForTopicForGrid($topicId, $gridSize, ($gridSize * $page));
-            $pollCount = count($this->app->topicPollRepository->getPollsForTopicForGrid($topicId, 0, 0));
-            $lastPage = ceil($pollCount / $gridSize);
+            $grid->createDataSourceFromQueryBuilder($this->app->topicPollRepository->composeQueryForTopicPolls($topicId), 'pollId');
         } else {
-            $polls = $this->app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $this->getUserId(), $gridSize, ($gridSize * $page));
-            $pollCount = count($this->app->topicPollRepository->getMyPollsForTopicForGrid($topicId, $this->getUserId(), 0, 0));
-            $lastPage = ceil($pollCount / $gridSize);
+            $grid->createDataSourceFromQueryBuilder($this->app->topicPollRepository->composeQueryForMyTopicPolls($topicId, $this->getUserId()), 'pollId');
         }
 
-        $gb = $this->getGridBuilder();
-        $gb->addColumns(['author' => 'Author', 'title' => 'Title', 'status' => 'Status', 'dateCreated' => 'Date created', 'dateValid' => 'Valid until', 'votes' => 'Votes']);
-        $gb->addDataSource($polls);
-        $gb->addOnColumnRender('author', function(Cell $cell, TopicPollEntity $tpe) {
-            try {
-                $user = $this->app->userManager->getUserById($tpe->getAuthorId());
+        $grid->addColumnUser('authorId', 'Author');
+        $grid->addColumnText('title', 'Title');
 
-                return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getID()], 'grid-link');
-            } catch(AException $e) {
-                return '-';
-            }
-        });
-        $gb->addOnColumnRender('dateCreated', function(Cell $cell, TopicPollEntity $tpe) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateCreated());
-        });
-        $gb->addOnColumnRender('status', function(Cell $cell, TopicPollEntity $tpe) {
-            if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
-                $cell->setTextColor('green');
-                $cell->setValue('Active');
+        $col = $grid->addColumnBoolean('status', 'Status');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $el = HTML::el('span');
+
+            if((isset($row->dateValid) && $row->dateValid === null) || !isset($row->dateValid) || strtotime($row->dateValid) > time()) {
+                $el->style('color', 'green')
+                    ->text('Active');
             } else {
-                $cell->setTextColor('red');
-                $cell->setValue('Inactive');
+                $el->style('color', 'red')
+                    ->text('Inactive');
             }
 
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicPollEntity $tpe) {
-            if($tpe->getDateValid() === null) {
-                return '-';
-            }
-
-            return DateTimeFormatHelper::formatDateToUserFriendly($tpe->getDateValid());
-        });
-        $gb->addOnColumnRender('votes', function(Cell $cell, TopicPollEntity $tpe) {
-            $votes = $this->app->topicPollRepository->getPollResponses($tpe->getId());
-
-            return count($votes);
-        });
-        $gb->addAction(function(TopicPollEntity $tpe) {
-            if($this->app->actionAuthorizator->canSeePollAnalytics($this->getUserId(), $tpe->getTopicId(), $tpe)) {
-                return LinkBuilder::createSimpleLink('Analytics', ['page' => 'UserModule:Topics', 'action' => 'pollAnalytics', 'pollId' => $tpe->getId(), 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $tpe->getTopicId()], 'grid-link');
+            return $el;
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+            if((isset($row->dateValid) && $row->dateValid === null) || !isset($row->dateValid) || strtotime($row->dateValid) > time()) {
+                return 'Active';
             } else {
-                return '-';
+                return 'Inactive';
             }
-        });
-        $gb->addAction(function(TopicPollEntity $tpe) {
-            if($this->app->actionAuthorizator->canDeactivePoll($this->getUserId(), $tpe->getTopicId(), $tpe)) {
-                if($tpe->getDateValid() === null || strtotime($tpe->getDateValid()) > time()) {
-                    return LinkBuilder::createSimpleLink('Deactivate', ['page' => 'UserModule:TopicManagement', 'action' => 'deactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'grid-link');
-                } else {
-                    return LinkBuilder::createSimpleLink('Reactivate for 24 hrs', ['page' => 'UserModule:TopicManagement', 'action' => 'reactivatePoll', 'pollId' => $tpe->getId(), 'topicId' => $tpe->getTopicId()], 'grid-link');
-                }
-            } else {
-                return '-';
-            }
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $pollCount, 'getPollGrid', [$topicId]);
+        };
+        
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnDatetime('dateValid', 'Date valid');
+        $col = $grid->addColumnText('votes', 'Votes');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $el = HTML::el('span');
 
-        return ['grid' => $gb->build()];
+            $votes = $this->app->topicPollRepository->getPollResponses($row->pollId);
+
+            $el->text(count($votes));
+
+            return $el;
+        };
+
+        $analytics = $grid->addAction('analytics');
+        $analytics->setTitle('Analytics');
+        $analytics->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($topicId) {
+            return $this->app->actionAuthorizator->canSeePollAnalytics($this->getUserId(), $topicId, $row->authorId);
+        };
+        $analytics->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Analytics')
+                    ->href($this->createFullURLString('UserModule:Topics', 'pollAnalytics', ['pollId' => $primaryKey, 'backPage' => 'UserModule:TopicManagement', 'backAction' => 'listPolls', 'topicId' => $topicId]));
+
+            return $el;
+        };
+
+        $activation = $grid->addAction('activation');
+        $activation->setTitle('Reactivate / Deactivate');
+        $activation->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($topicId) {
+            return $this->app->actionAuthorizator->canDeactivePoll($this->getUserId(), $topicId, $row->authorId);
+        };
+        $activation->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a');
+            $el->class('grid-link');
+
+            if((isset($row->dateValid) && $row->dateValid === null) || !isset($row->dateValid) || strtotime($row->dateValid) > time()) {
+                $el->href($this->createURLString('deactivatePoll', ['pollId' => $primaryKey, 'topicId' => $topicId]))
+                    ->text('Deactivate');
+            } else {
+                $el->href($this->createURLString('reactivatePoll', ['pollId' => $primaryKey, 'topicId' => $topicId]))
+                    ->text('Reactivate for 24 hrs');
+            }
+
+            return $el;
+        };
+
+        return $grid;
     }
 
     public function handleDeactivatePoll() {
@@ -374,17 +340,6 @@ class TopicManagementPresenter extends AUserPresenter {
     public function handleListInvites() {
         $topicId = $this->httpGet('topicId', true);
 
-        $arb = new AjaxRequestBuilder();
-        $arb->setURL(['page' => 'UserModule:TopicManagement', 'action' => 'getInvitesGrid'])
-            ->setMethod()
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
-            ->setFunctionName('getInvitesGrid')
-            ->setFunctionArguments(['_page', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid');
-
-        $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(-1, \'' . $topicId . '\')');
-
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link') . '&nbsp;',
             LinkBuilder::createSimpleLink('New invite', ['page' => 'UserModule:TopicManagement', 'action' => 'inviteForm', 'topicId' => $topicId], 'post-data-link')
@@ -399,47 +354,32 @@ class TopicManagementPresenter extends AUserPresenter {
         $this->template->links = $links;
     }
 
-    public function actionGetInvitesGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
+    protected function createComponentInvitesGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
+
+        $grid = $this->getGridBuilder();
+
+        $grid->createDataSourceFromQueryBuilder($this->app->topicInviteRepository->composeQueryForInvitesForTopic($topicId), 'inviteId');
+        $grid->addQueryDependency('topicId', $topicId);
+
+        $grid->addColumnUser('userId', 'User');
+        $grid->addColumnDatetime('dateValid', 'Valid until');
         
-        $gridSize = $gridSize = $this->app->getGridSize();
+        $remove = $grid->addAction('remove');
+        $remove->setTitle('Remove');
+        $remove->onCanRender[] = function() {
+            return true;
+        };
+        $remove->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Remove')
+                    ->href($this->createFullURLString('UserModule:TopicManagement', 'removeInvite', ['topicId' => $topicId, 'userId' => $row->userId]));
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES_ALL, $gridPage, [$topicId]);
+            return $el;
+        };
 
-        $invites = $this->app->topicInviteRepository->getInvitesForGrid($topicId, true, $gridSize, ($page * $gridSize));
-        $inviteCount = count($this->app->topicInviteRepository->getInvitesForGrid($topicId, true, 0, 0));
-
-        $lastPage = ceil($inviteCount / $gridSize);
-
-        $userIds = [];
-        foreach($invites as $invite) {
-            if(!in_array($invite->getUserId(), $userIds)) {
-                $userIds[] = $invite->getUserId();
-            }
-        }
-
-        $users = $this->app->userRepository->getUsersByIdBulk($userIds, true);
-
-        $gb = $this->getGridBuilder();
-        $gb->addDataSource($invites);
-        $gb->addColumns(['user' => 'User', 'dateValid' => 'Valid until']);
-        $gb->addOnColumnRender('user', function(Cell $cell, TopicInviteEntity $invite) use ($users) {
-            if(array_key_exists($invite->getUserId(), $users)) {
-                return $users[$invite->getUserId()]->getUsername();
-            } else {
-                return '-';
-            }
-        });
-        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicInviteEntity $invite) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($invite->getDateValid());
-        });
-        $gb->addAction(function(TopicInviteEntity $invite) {
-            return LinkBuilder::createSimpleLink('Remove invite', ['page' => 'UserModule:TopicManagement', 'action' => 'removeInvite', 'topicId' => $invite->getTopicId(), 'userId' => $invite->getUserId()], 'grid-link');
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $inviteCount, 'getInvitesGrid', [$topicId]);
-
-        return ['grid' => $gb->build()];
+        return $grid;
     }
 
     public function handleInviteForm() {
@@ -637,19 +577,6 @@ class TopicManagementPresenter extends AUserPresenter {
     public function handleFollowersList() {
         $topicId = $this->httpGet('topicId', true);
 
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setAction($this, 'getFollowersGrid')
-            ->setHeader(['topicId' => '_topicId', 'gridPage' => '_page'])
-            ->setFunctionName('getFollowersGrid')
-            ->setFunctionArguments(['_page', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getFollowersGrid(0, \'' . $topicId . '\')');
-
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
         ];
@@ -661,75 +588,39 @@ class TopicManagementPresenter extends AUserPresenter {
         $this->template->links = $this->loadFromPresenterCache('links');
     }
 
-    public function actionGetFollowersGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
-
-        $gridSize = $this->app->getGridSize();
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_FOLLOWERS, $gridPage, [$topicId]);
-
-        $offset = $page * $gridSize;
-
-        $members = $this->app->topicMembershipManager->getTopicMembers($topicId, $gridSize, $offset, false);
-        $totalCount = $this->app->topicMembershipManager->getTopicMemberCount($topicId);
-
-        $lastPage = ceil($totalCount / $gridSize);
+    protected function createComponentFollowersGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
         $grid = $this->getGridBuilder();
-        $grid->addColumns(['userId' => 'User', 'role' => 'Role', 'dateCreated' => 'Member from', 'daysMember' => 'Days of membership']);
-        $grid->addDataSource($members);
-        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getFollowersGrid', [$topicId]);
-        $grid->addOnColumnRender('role', function(Cell $cell, TopicMemberEntity $tme) {
-            $text = TopicMemberRole::toString($tme->getRole());
-            $color = TopicMemberRole::getColorByKey($tme->getRole());
-            
-            $cell->setTextColor($color);
-            $cell->setValue($text);
-            
-            return $cell;
-        });
-        $grid->addOnColumnRender('daysMember', function(Cell $cell, TopicMemberEntity $tme) {
-            $dateFrom = $tme->getDateCreated();
-            
-            $diff = time() - strtotime($dateFrom);
-            
-            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
-        });
-        $grid->addOnExportRender('role', function(TopicMemberEntity $tme) {
-            return TopicMemberRole::toString($tme->getRole());
-        });
-        $grid->addOnExportRender('daysMember', function(TopicMemberEntity $tme) {
-            $dateFrom = $tme->getDateCreated();
-            
-            $diff = time() - strtotime($dateFrom);
-            
-            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
-        });
-        
-        $grid->addGridExport(function() use ($topicId) {
-            return $this->app->topicMembershipManager->getTopicMembers($topicId, 0, 0, false);
-        }, GridHelper::GRID_TOPIC_FOLLOWERS, $this->logger);
-        
 
-        return ['grid' => $grid->build()];
+        $grid->createDataSourceFromQueryBuilder($this->app->topicMembershipManager->composeQueryForTopicMembers($topicId), 'membershipId');
+
+        $grid->addQueryDependency('topicId', $topicId);
+
+        $grid->addColumnUser('userId', 'User');
+        $col = $grid->addColumnText('role', 'Role');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $el = HTML::el('span')
+                    ->text(TopicMemberRole::toString($value))
+                    ->style('color', TopicMemberRole::getColorByKey($value));
+
+            return $el;
+        };
+        $grid->addColumnDatetime('dateCreated', 'Member since');
+        $col = $grid->addColumnText('daysMember', 'Days of membership');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $diff = time() - strtotime($row->dateCreated);
+
+            return DateTimeFormatHelper::formatSecondsToUserFriendly($diff, 'dHi');
+        };
+
+        $grid->enableExport();
+
+        return $grid;
     }
 
     public function handleBannedWordsList() {
         $topicId = $this->httpGet('topicId', true);
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setAction($this, 'getBannedWordsGrid')
-            ->setFunctionName('getBannedWordsGrid')
-            ->setFunctionArguments(['_page', '_topicId'])
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getBannedWordsGrid(0, \'' . $topicId . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link'),
@@ -743,42 +634,48 @@ class TopicManagementPresenter extends AUserPresenter {
         $this->template->links = $this->loadFromPresenterCache('links');
     }
 
-    public function actionGetBannedWordsGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_BANNED_WORDS, $gridPage, ['topicId' => $topicId]);
-
-        $gridSize = $this->app->getGridSize();
-
-        $bannedWords = $this->app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, $gridSize, ($page * $gridSize));
-        $bannedWordsTotalCount = count($this->app->topicContentRegulationRepository->getBannedWordsForTopicForGrid($topicId, 0, 0));
-
-        $lastPage = ceil($bannedWordsTotalCount / $gridSize);
+    protected function createComponentBannedWordsGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
         $grid = $this->getGridBuilder();
-        $grid->addColumns(['authorId' => 'Author', 'text' => 'Text', 'dateCreated' => 'Date created']);
-        $grid->addDataSource($bannedWords);
 
-        $grid->addOnColumnRender('authorId', function(Cell $cell, TopicBannedWordEntity $tbwe) {
-            try {
-                $user = $this->app->userManager->getUserById($tbwe->getAuthorId());
-                return UserEntity::createUserProfileLink($user);
-            } catch(AException $e) {
-                return '-';
-            }
-        });
+        $grid->createDataSourceFromQueryBuilder($this->app->topicContentRegulationRepository->composeQueryForBannedWordsForTopicId($topicId), 'wordId');
 
-        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
-            return LinkBuilder::createSimpleLink('Edit', $this->createURL('bannedWordForm', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
-        });
-        $grid->addAction(function(TopicBannedWordEntity $tbwe) {
-            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteBannedWord', ['topicId' => $tbwe->getTopicId(), 'wordId' => $tbwe->getId()]), 'grid-link');
-        });
+        $grid->addQueryDependency('topicId', $topicId);
 
-        $grid->addGridPaging($page, $lastPage, $gridSize, $bannedWordsTotalCount, 'getBannedWordsGrid', [$topicId]);
+        $grid->addColumnUser('authorId', 'Author');
+        $grid->addColumnText('word', 'Text');
+        $grid->addColumnDatetime('dateCreated', 'Date created');
 
-        return ['grid' => $grid->build()];
+        $edit = $grid->addAction('edit');
+        $edit->setTitle('Edit');
+        $edit->onCanRender[] = function() {
+            return true;
+        };
+        $edit->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Edit')
+                    ->href($this->createURLString('bannedWordForm', ['topicId' => $topicId, 'wordId' => $primaryKey]));
+
+            return $el;
+        };
+
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function() {
+            return true;
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Delete')
+                    ->href($this->createURLString('deleteBannedWord', ['topicId' => $topicId, 'wordId' => $primaryKey]));
+
+            return $el;
+        };
+
+        return $grid;
     }
 
     public function handleBannedWordForm(?FormResponse $fr = null) {

@@ -309,11 +309,11 @@ class ActionAuthorizator extends AAuthorizator {
      * 
      * @param string $userId User ID
      * @param string $topicId Topic ID
-     * @param TopicPollEntity $tpe TopicPollEntity instance
+     * @param string $pollAuthorId Poll's author ID
      * @return bool True if user is allowed to perform this action or false if not
      */
-    public function canSeePollAnalytics(string $userId, string $topicId, TopicPollEntity $tpe) {
-        if($tpe->getAuthorId() != $userId) {
+    public function canSeePollAnalytics(string $userId, string $topicId, string $pollAuthorId) {
+        if($pollAuthorId != $userId) {
             if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER)/* && (!$this->commonContentManagement($userId))*/) {
                 return false;
             }
@@ -327,11 +327,11 @@ class ActionAuthorizator extends AAuthorizator {
      * 
      * @param string $userId User ID
      * @param string $topicId Topic ID
-     * @param TopicPollEntity $tpe TopicPollEntity instance
+     * @param string $pollAuthorId Poll's author ID
      * @return bool True if user is allowed to perform this action or false if not
      */
-    public function canDeactivePoll(string $userId, string $topicId, TopicPollEntity $tpe) {
-        if($tpe->getAuthorId() != $userId) {
+    public function canDeactivePoll(string $userId, string $topicId, string $pollAuthorId) {
+        if($pollAuthorId != $userId) {
             if(($this->tpm->getFollowRole($topicId, $userId) < TopicMemberRole::MANAGER) && (!$this->commonContentManagement($userId))) {
                 return false;
             }

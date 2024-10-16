@@ -21,8 +21,21 @@ class DateTimeFormatHelper {
         return $date->getResult();
     }
 
-    public static function formatSecondsToUserFriendly(int $seconds) {
+    public static function formatSecondsToUserFriendly(int $seconds, string $format = 'dHis') {
         $tt = TimeTaken::createFromSeconds($seconds);
+
+        if(!str_contains($format, 'd')) {
+            $tt->hideDays();
+        }
+        if(!str_contains($format, 'H')) {
+            $tt->hideHours();
+        }
+        if(!str_contains($format, 'i')) {
+            $tt->hideMinutes();
+        }
+        if(!str_contains($format, 's')) {
+            $tt->hideSeconds();
+        }
 
         return $tt->toString();
     }

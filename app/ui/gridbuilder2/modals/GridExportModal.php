@@ -17,6 +17,7 @@ use QueryBuilder\QueryBuilder;
 class GridExportModal extends ModalBuilder {
     private QueryBuilder $dataSource;
     private string $gridComponentName;
+    private array $gridQueryDependencies;
 
     /**
      * Class constructor
@@ -30,6 +31,16 @@ class GridExportModal extends ModalBuilder {
         $this->setTitle('Grid export');
 
         $this->gridComponentName = $grid->componentName;
+        $this->gridQueryDependencies = [];
+    }
+
+    /**
+     * Sets the grid query dependencies
+     * 
+     * @param array $gridQueryDependencies Grid query dependencies
+     */
+    public function setGridQueryDependencies(array $gridQueryDependencies) {
+        $this->gridQueryDependencies = $gridQueryDependencies;
     }
 
     /**
@@ -66,15 +77,20 @@ class GridExportModal extends ModalBuilder {
      * @return FormBuilder FormBuilder instance
      */
     private function createForm() {
+        $args = [];
+        foreach($this->gridQueryDependencies as $gqd) {
+            $args[] = '\'' . $gqd . '\'';
+        }
+
         $fb = new FormBuilder();
 
         $fb->setMethod();
 
         if($this->isOverLimit()) {
-            $fb->addButton('Export to the limit', $this->gridComponentName . '_exportLimited()');
-            $fb->addButton('Export all', $this->gridComponentName . '_exportUnlimited()');
+            $fb->addButton('Export to the limit', $this->gridComponentName . '_exportLimited(' . implode(', ', $args) . ')', 'grid-control-button2');
+            $fb->addButton('Export all', $this->gridComponentName . '_exportUnlimited(' . implode(', ', $args) . ')', 'grid-control-button2');
         } else {
-            $fb->addButton('Export', $this->gridComponentName . '_exportLimited()');
+            $fb->addButton('Export', $this->gridComponentName . '_exportLimited(' . implode(', ', $args) . ')', 'grid-control-button2');
         }
 
         return $fb;

@@ -12,30 +12,50 @@ class TimeTaken {
     private int $minutes;
     private int $hours;
     private int $days;
+    private array $toHide;
 
     public function __construct() {
         $this->seconds = 0;
         $this->minutes = 0;
         $this->hours = 0;
         $this->days = 0;
+        $this->toHide = [];
+    }
+
+    public function hideDays() {
+        $this->toHide[] = 'days';
+    }
+
+    public function hideHours() {
+        $this->toHide[] = 'hours';
+    }
+
+    public function hideMinutes() {
+        $this->toHide[] = 'minutes';
+    }
+
+    public function hideSeconds() {
+        $this->toHide[] = 'seconds';
     }
 
     public function toString() {
         $parts = [];
 
-        if($this->days > 0) {
+        if($this->days > 0 && !in_array('days', $this->toHide)) {
             $parts[] = $this->days . ' days';
         }
 
-        if($this->hours > 0) {
+        if($this->hours > 0 && !in_array('hours', $this->toHide)) {
             $parts[] = $this->hours . 'h';
         }
 
-        if($this->minutes > 0) {
+        if($this->minutes > 0 && !in_array('minutes', $this->toHide)) {
             $parts[] = $this->minutes . 'm';
         }
 
-        $parts[] = $this->seconds . 's';
+        if(!in_array('seconds', $this->toHide)) {
+            $parts[] = $this->seconds . 's';
+        }
 
         return implode(' ', $parts);
     }
