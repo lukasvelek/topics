@@ -1,6 +1,6 @@
 <?php
 
-$cfg['APP_NAME'] = 'Topics';
+$cfg['APP_NAME'] = 'Topics'; // application name
 
 $cfg['LOG_LEVEL'] = 1; // 0 - nothing, 1 - errors, 2 - warnings, 3 - all, 4 - all with cache
 $cfg['SQL_LOG_LEVEL'] = 0; // 0 - off, 1 - on
@@ -8,13 +8,14 @@ $cfg['LOG_STOPWATCH'] = 0; // 0 - off, 1 - on
 $cfg['SQL_SEPARATE_LOGGING'] = 0; // 0 - off, 1 - on
 $cfg['LOG_CACHE'] = 0; // 0 - off, 1 - on
 
-$cfg['LOG_DIR'] = ''; // directory where log files will be saved
-$cfg['CACHE_DIR'] = ''; // directory where cache files will be saved
-$cfg['UPLOAD_DIR'] = ''; // directory where uploaded files will be saved
+$cfg['LOG_DIR'] = ''; // directory where log files will be saved - relative path
+$cfg['CACHE_DIR'] = ''; // directory where cache files will be saved - relative path
+$cfg['UPLOAD_DIR'] = ''; // directory where uploaded files will be saved - relative path
+$cfg['GRID_EXPORT_DIR'] = ''; // directory where grid export files will be saved - relative path
 
 $cfg['IS_DEV'] = false; // true if this version is development or false if not
 
-$cfg['APP_REAL_DIR'] = '';
+$cfg['APP_REAL_DIR'] = ''; // absolute path to the application root directory
 
 $cfg['DB_SERVER'] = ''; // database server address
 $cfg['DB_PORT'] = ''; // database server port

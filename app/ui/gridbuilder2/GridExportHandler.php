@@ -324,7 +324,7 @@ class GridExportHandler {
     private function saveFile(string $fileContent) {
         $filename = 'GridExport_' . $this->currentUserId . '_' . date('Y-m-d_H-i-s') . '.csv';
 
-        $filepath = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'];
+        $filepath = $this->cfg['APP_REAL_DIR'] . $this->cfg['GRID_EXPORT_DIR'];
 
         try {
             $result = FileManager::saveFile($filepath, $filename, $fileContent);
@@ -333,7 +333,7 @@ class GridExportHandler {
                 throw new FileWriteException($filepath . $filename);
             }
 
-            return $this->cfg['CACHE_DIR'] . $filename;
+            return $this->cfg['GRID_EXPORT_DIR'] . $filename;
         } catch(AException $e) {
             throw $e;
         }

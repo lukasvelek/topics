@@ -737,7 +737,7 @@ class PostsPresenter extends AUserPresenter {
             }
             $this->saveToPresenterCache('post', $post);
 
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [
@@ -798,7 +798,7 @@ class PostsPresenter extends AUserPresenter {
 
             $this->redirect(['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $comment->getPostId()]);
         } else {
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [

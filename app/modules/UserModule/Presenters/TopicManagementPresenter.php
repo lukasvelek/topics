@@ -209,6 +209,7 @@ class TopicManagementPresenter extends AUserPresenter {
         $topicId = $request->query['topicId'];
 
         $grid = $this->getGridBuilder();
+        $grid->addQueryDependency('topicId', $topicId);
 
         if($this->app->actionAuthorizator->canSeeAllTopicPolls($this->getUserId(), $topicId)) {
             $grid->createDataSourceFromQueryBuilder($this->app->topicPollRepository->composeQueryForTopicPolls($topicId), 'pollId');
