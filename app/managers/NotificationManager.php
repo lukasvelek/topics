@@ -3,6 +3,8 @@
 namespace App\Managers;
 
 use App\Constants\Notifications;
+use App\Core\Caching\Cache;
+use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Exceptions\GeneralException;
@@ -14,11 +16,16 @@ class NotificationManager extends AManager {
     private const LOG = true;
     
     private NotificationRepository $nr;
+    private Cache $cache;
 
     public function __construct(Logger $logger, NotificationRepository $nr, EntityManager $entityManager) {
         parent::__construct($logger, $entityManager);
 
         $this->nr = $nr;
+
+        $expiration = new DateTime();
+        $expiration->modify('+1i'); // 1 minute
+        $this->cache = $this->cacheFactory->getCache(CacheNames::NOTIFICATIONS, $expiration);
     }
 
     public function createNewUnlimitedGridExportNotification(string $userId, string $downloadLink) {
@@ -291,11 +298,27 @@ class NotificationManager extends AManager {
     }
 
     public function getUnseenNotificationsForUser(string $userId) {
-        return $this->nr->getNotificationsForUser($userId);
+        return $this->cache->load($userId, function() use ($userId) {
+            return $this->nr->getNotificationsForUser($userId);
+        });
     }
 
-    public function setNotificationAsSeen(string $notificationId) {
+    public function setNotificationAsSeen(string $notificationId, string $userId) {
+        $this->cache->invalidateKey($userId);
         return $this->nr->updateNotification($notificationId, ['dateSeen' => DateTime::now()]);
+    }
+
+    public function bulkSetNotificationsAsSeen(array $notifications, string $userId, bool $isArrayOfObjects = true) {
+        if($isArrayOfObjects) {
+            $tmp = [];
+            foreach($notifications as $notification) {
+                $tmp[] = $notification->getId();
+            }
+            $notifications = $tmp;
+        }
+
+        $this->cache->invalidateKey($userId);
+        return $this->nr->bulkUpdateNotifications($notifications, ['dateSeen' => DateTime::now()]);
     }
 
     public function getOldSeenNotifications(string $date) {

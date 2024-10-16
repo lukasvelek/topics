@@ -92,6 +92,17 @@ class Cache {
     }
 
     /**
+     * Invalidates a single key in cache
+     * 
+     * @param mixed $key Cache key
+     */
+    public function invalidateKey(mixed $key) {
+        if(array_key_exists($key, $this->data)) {
+            unset($this->data[$key]);
+        }
+    }
+
+    /**
      * Returns hash
      * 
      * @return string Hash

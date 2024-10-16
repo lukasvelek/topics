@@ -19,7 +19,7 @@ abstract class AUserPresenter extends APresenter {
             try {
                 $this->app->notificationRepository->beginTransaction();
 
-                $this->app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'));
+                $this->app->notificationManager->setNotificationAsSeen($this->httpGet('notificationId'), $this->getUserId());
 
                 $this->app->notificationRepository->commit($this->getUserId(), __METHOD__);
             } catch(AException $e) {

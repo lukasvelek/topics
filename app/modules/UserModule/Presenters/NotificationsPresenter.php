@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Core\AjaxRequestBuilder;
 use App\Exceptions\AException;
 use App\Exceptions\AjaxRequestException;
+use App\Exceptions\GeneralException;
 
 class NotificationsPresenter extends AUserPresenter {
     public function __construct() {
@@ -115,7 +116,7 @@ class NotificationsPresenter extends AUserPresenter {
         try {
             $this->app->notificationRepository->beginTransaction();
             
-            $this->app->notificationManager->setNotificationAsSeen($notificationId);
+            $this->app->notificationManager->setNotificationAsSeen($notificationId, $this->getUserId());
 
             $this->app->notificationRepository->commit($this->getUserId(), __METHOD__);
         } catch(AException $e) {
@@ -144,8 +145,8 @@ class NotificationsPresenter extends AUserPresenter {
         try {
             $this->app->notificationRepository->beginTransaction();
 
-            foreach($notifications as $notification) {
-                $this->app->notificationManager->setNotificationAsSeen($notification->getId());
+            if(!$this->app->notificationManager->bulkSetNotificationsAsSeen($notifications, $this->getUserId())) {
+                throw new GeneralException('Could not set notifications as seen.');
             }
 
             $this->app->notificationRepository->commit($this->getUserId(), __METHOD__);
