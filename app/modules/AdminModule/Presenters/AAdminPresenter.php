@@ -48,7 +48,6 @@ abstract class AAdminPresenter extends APresenter {
         $userProsecutions = $this->checkPage('AdminModule:ManageUserProsecutions');
         $systemStatus = $this->checkPage('AdminModule:ManageSystemStatus');
         $groups = $this->checkPage('AdminModule:ManageGroups');
-        //$deletedContent = $this->checkPage('AdminModule:ManageDeletedContent');
         $bannedWords = $this->checkPage('AdminModule:ManageBannedWords');
         $systemServices = $this->checkPage('AdminModule:ManageSystemServices');
         $postFileUploads = $this->checkPage('AdminModule:ManagePostFileUploads');
@@ -70,9 +69,6 @@ abstract class AAdminPresenter extends APresenter {
             $sb->addLink('System status', $this->createFullURL('AdminModule:ManageSystemStatus', 'list'), $systemStatus);
             $sb->addLink('System services', $this->createFullURL('AdminModule:ManageSystemServices', 'list'), $systemServices);
         }
-        /*if($this->app->sidebarAuthorizator->canManageDeletedContent($this->getUserId())) {
-            $sb->addLink('Deleted content', $this->createFullURL('AdminModule:ManageDeletedContent', 'list'), $deletedContent);
-        }*/
         if($this->app->sidebarAuthorizator->canManageBannedWords($this->getUserId())) {
             $sb->addLink('Banned words', $this->createFullURL('AdminModule:ManageBannedWords', 'list'), $bannedWords);
         }

@@ -17,8 +17,7 @@ use App\Exceptions\NoAjaxResponseException;
 use App\Exceptions\TemplateDoesNotExistException;
 use App\Helpers\GridHelper;
 use App\Logger\Logger;
-use App\UI\GridBuilder2\GridBuilder as GridBuilder2GridBuilder;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\GridBuilder;
 use Exception;
 
 /**
@@ -713,19 +712,8 @@ abstract class APresenter extends AGUICore {
         $this->cacheFactory->saveCaches();
     }
 
-    /**
-     * Returns an instance of GridBuilder
-     * 
-     * @param bool $applyReducer True if reducer should be applied
-     * @return \App\UI\GridBuilder\GridBuilder
-     * @deprecated
-     */
-    public function getGridBuilderX(bool $applyReducer = true) {
-        return new GridBuilder($this->app->getGridReducer(), $applyReducer);
-    }
-
     public function getGridBuilder() {
-        $grid = new GridBuilder2GridBuilder($this->httpRequest, $this->cfg);
+        $grid = new GridBuilder($this->httpRequest, $this->cfg);
         $helper = new GridHelper($this->logger, $this->getUserId());
         $grid->setHelper($helper);
         return $grid;

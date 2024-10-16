@@ -104,6 +104,9 @@ function getContainer() {
 function requireFiles(array $files, bool $createContainer) {
     $filesOrdered = [];
     $skipped = [];
+
+    $__MAX__ = 1000;
+    $x = 0;
     while(true) {
         if(empty($skipped)) {
             $files2 = $files;
@@ -114,7 +117,7 @@ function requireFiles(array $files, bool $createContainer) {
 
         foreach($files2 as $realPath => $file) {
             try {
-                require_once($realPath);
+                @require_once($realPath);
                 $filesOrdered[$realPath] = $file;
             } catch(Error $e) {
                 $skipped[$realPath] = $file;
@@ -124,6 +127,16 @@ function requireFiles(array $files, bool $createContainer) {
         if(empty($skipped)) {
             break;
         }
+
+        if($x >= $__MAX__) {
+            break;
+        }
+
+        $x++;
+    }
+
+    if(!empty($skipped)) {
+        throw new RuntimeException('Could not find these files: [' . implode(', ', $skipped) . '].', 9999);
     }
 
     if($createContainer) {

@@ -84,6 +84,8 @@ class EntityManager extends AManager {
                 $run = false;
                 break;
             }
+
+            $x++;
         }
 
         return $entityId;
