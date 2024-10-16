@@ -54,6 +54,15 @@ class ArrayHelper {
 
         return $tmp;
     }
+
+    public static function reverseArray(array $array) {
+        $tmp = [];
+        foreach($array as $k => $v) {
+            $tmp = array_merge([$k => $v], $tmp);
+        }
+
+        return $tmp;
+    }
 }
 
 ?>

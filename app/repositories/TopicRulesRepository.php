@@ -5,7 +5,7 @@ namespace App\Repositories;
 use App\Core\Caching\CacheNames;
 use App\Core\Caching\Cache;
 use App\Core\DatabaseConnection;
-use App\Entities\TopicRulesEntity;
+use App\Entities\TopicRuleEntity;
 use App\Logger\Logger;
 
 class TopicRulesRepository extends ARepository {
@@ -27,39 +27,57 @@ class TopicRulesRepository extends ARepository {
         return $qb;
     }
 
-    public function getTopicRulesForTopicId(string $topicId): TopicRulesEntity|null {
-        $qb = $this->qb(__METHOD__);
+    public function getTopicRulesForTopicId(string $topicId): array {
+        $qb = $this->composeQueryForTopicRulesForTopicId($topicId);
 
-        $qb ->select(['*'])
-            ->from('topic_rules')
-            ->where('topicId = ?', [$topicId]);
+        $qb->execute();
 
-        return $this->topicRulesCache->load($topicId, function() use ($qb) {
-            $qb->execute();
+        $entities = [];
+        while($row = $qb->fetchAssoc()) {
+            $entity = TopicRuleEntity::createEntityFromDbRow($row);
 
-            return TopicRulesEntity::createEntityFromDbRow($qb->fetch());
-        });
+            if($entity !== null) {
+                $entities[] = $entity;
+            }
+        }
+
+        return $entities;
     }
 
-    public function insertTopicRules(string $rulesetId, string $topicId, string $rulesJson, string $userId) {
+    public function createTopicRule(string $ruleId, string $topicId, string $ruleText, string $userId) {
         $qb = $this->qb(__METHOD__);
 
-        $qb ->insert('topic_rules', ['rulesetId', 'topicId', 'rules', 'lastUpdateUserId'])
-            ->values([$rulesetId, $topicId, $rulesJson, $userId])
+        $qb ->insert('topic_rules', ['ruleId', 'topicId', 'ruleText', 'lastUpdateUserId'])
+            ->values([$ruleId, $topicId, $ruleText, $userId])
             ->execute();
 
         return $qb->fetchBool();
     }
 
-    public function updateTopicRules(string $topicId, array $data) {
+    public function updateTopicRules(string $ruleId, array $data) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->update('topic_rules')
             ->set($data)
-            ->where('topicId = ?', [$topicId])
+            ->where('ruleId = ?', [$ruleId])
             ->execute();
         
         return $qb->fetchBool();
+    }
+
+    public function getTopicRuleById(string $ruleId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_rules')
+            ->where('ruleId = ?', [$ruleId])
+            ->execute();
+
+        return TopicRuleEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function deleteTopicRule(string $ruleId) {
+        return $this->deleteEntryById('topic_rules', 'ruleId', $ruleId);
     }
 }
 

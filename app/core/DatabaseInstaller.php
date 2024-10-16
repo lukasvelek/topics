@@ -287,9 +287,9 @@ class DatabaseInstaller {
                 'dateUpdated' => 'DATETIME NULL'
             ],
             'topic_rules' => [
-                'rulesetId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'ruleId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'topicId' => 'VARCHAR(256) NOT NULL',
-                'rules' => 'TEXT NOT NULL',
+                'ruleText' => 'TEXT NOT NULL',
                 'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateUpdated' => 'DATETIME NULL'

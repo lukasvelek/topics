@@ -114,7 +114,7 @@ class EntityManager extends AManager {
             self::USER_PROSECUTIONS => 'prosecutionId',
             self::TOPIC_POST_PINS => 'pinId',
             self::POST_CONCEPTS => 'conceptId',
-            self::TOPIC_RULES => 'rulesetId',
+            self::TOPIC_RULES => 'ruleId',
             self::GRID_EXPORTS => 'exportId',
             self::TOPIC_CALENDAR_USER_EVENTS => 'eventId',
             self::TOPIC_BANNED_WORDS => 'wordId',

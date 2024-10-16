@@ -10,6 +10,7 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\GridExportException;
+use App\Helpers\ArrayHelper;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\AComponent;
@@ -71,6 +72,8 @@ class GridBuilder extends AComponent {
     private array $filters;
     private array $activeFilters;
 
+    private array $queryDependencies;
+
     /**
      * Class constructor
      * 
@@ -92,6 +95,7 @@ class GridBuilder extends AComponent {
         $this->filters = [];
         $this->activeFilters = [];
         $this->gridName = 'MyGrid';
+        $this->queryDependencies = [];
     }
 
     /**
@@ -147,6 +151,16 @@ class GridBuilder extends AComponent {
      */
     public function disableExport() {
         $this->enableExport = false;
+    }
+
+    /**
+     * Adds a query dependency
+     * 
+     * @param mixed $key Dependency key
+     * @param mixed $value Dependency value
+     */
+    public function addQueryDependency(mixed $key, mixed $value) {
+        $this->queryDependencies[$key] = $value;
     }
 
     /**
@@ -437,12 +451,14 @@ class GridBuilder extends AComponent {
 
         $hasActionsCol = false;
 
+        $rowIndex = 0;
         while($row = $cursor->fetchAssoc()) {
             $row = $this->createDatabaseRow($row);
             $rowId = $row->{$this->primaryKeyColName};
 
             $_row = new Row();
             $_row->setPrimaryKey($rowId);
+            $_row->index = $rowIndex;
 
             foreach($this->columns as $name => $col) {
                 if(in_array($name, $row->getKeys())) {
@@ -528,7 +544,7 @@ class GridBuilder extends AComponent {
                             if($result === true) {
                                 $canRender[$actionName] = $cAction;
                             } else {
-                                $canRender[$actionName] = null;
+                                //$canRender[$actionName] = null;
                             }
                         } catch(Exception $e) {
                             $canRender[$actionName] = null;
@@ -537,6 +553,8 @@ class GridBuilder extends AComponent {
                 }
 
                 $isAtLeastOneDisplayed = !empty($canRender);
+
+                $canRender = ArrayHelper::reverseArray($canRender);
 
                 foreach($canRender as $name => $action) {
                     if($action instanceof Action) {
@@ -568,6 +586,7 @@ class GridBuilder extends AComponent {
             }
 
             $_tableRows[] = $_row;
+            $rowIndex++;
         }
 
         if(count($_tableRows) == 1) {
@@ -661,6 +680,15 @@ class GridBuilder extends AComponent {
             }
         }
 
+        if(!empty($this->queryDependencies)) {
+            foreach($this->queryDependencies as $k => $v) {
+                $pK = '_' . $k;
+
+                $refreshHeader[$k] = $pK;
+                $refreshArgs[] = $pK;
+            }
+        }
+
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
             ->setComponentAction($this->presenter, $this->componentName . '-refresh')
@@ -682,6 +710,15 @@ class GridBuilder extends AComponent {
 
                 $paginationHeader[$name] = $pName;
                 $paginationArgs[] = $pName;
+            }
+        }
+
+        if(!empty($this->queryDependencies)) {
+            foreach($this->queryDependencies as $k => $v) {
+                $pK = '_' . $k;
+
+                $paginationHeader[$k] = $pK;
+                $paginationArgs[] = $pK;
             }
         }
 
@@ -707,6 +744,15 @@ class GridBuilder extends AComponent {
                 $hName = '_' . $name;
                 $headerParams[$name] = $hName;
                 $fArgs[] = $hName;
+            }
+
+            if(!empty($this->queryDependencies)) {
+                foreach($this->queryDependencies as $k => $v) {
+                    $pK = '_' . $k;
+    
+                    $headerParams[$k] = $pK;
+                    $fArgs[] = $pK;
+                }
             }
 
             $arb->setMethod()
@@ -835,6 +881,12 @@ class GridBuilder extends AComponent {
             }
         }
 
+        if(!empty($this->queryDependencies)) {
+            foreach($this->queryDependencies as $k => $v) {
+                $args[] = '\'' . $v . '\'';
+            }
+        }
+
         return '<a class="post-data-link" href="#" onclick="' . $this->componentName . '_gridRefresh(' . implode(', ', $args) . ')">Refresh &orarr;</a>';
     }
 
@@ -865,9 +917,16 @@ class GridBuilder extends AComponent {
      */
     private function createPagingButtonCode(int $page, string $text, bool $disabled = false) {
         $args = [$page];
+
         if(!empty($this->activeFilters)) {
             foreach($this->activeFilters as $name => $value) {
                 $args[] = '\'' . $value . '\'';
+            }
+        }
+
+        if(!empty($this->queryDependencies)) {
+            foreach($this->queryDependencies as $k => $v) {
+                $args[] = '\'' . $v . '\'';
             }
         }
 

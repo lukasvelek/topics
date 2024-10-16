@@ -17,6 +17,8 @@ class Row extends AElement {
      */
     private array $cells;
 
+    public int $index;
+
     /**
      * Class constructor
      */
@@ -25,6 +27,7 @@ class Row extends AElement {
 
         $this->cells = [];
         $this->html = HTML::el('tr');
+        $this->index = 0;
     }
 
     /**
