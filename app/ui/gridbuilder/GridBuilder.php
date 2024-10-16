@@ -44,13 +44,13 @@ class GridBuilder {
 
     private ?GridControls $gridControls;
     private ?Table $prebuiltTable;
-    private IGridReducer $reducer;
+    private ?IGridReducer $reducer;
     private bool $applyReducer;
 
     /**
      * Grid builder constructor
      */
-    public function __construct(IGridReducer $gridReducer, bool $applyReducer) {
+    public function __construct(?IGridReducer $gridReducer, bool $applyReducer) {
         $this->reducer = $gridReducer;
         $this->applyReducer = $applyReducer;
 

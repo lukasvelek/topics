@@ -24,7 +24,7 @@ class CalendarBuilder implements IRenderable {
      * Class constructor
      */
     public function __construct() {
-        $this->grid = new GridBuilder();
+        $this->grid = new GridBuilder(null, false);
         $this->grid->setIdElement('gridbuilder-calendar');
 
         $this->year = date('Y');
