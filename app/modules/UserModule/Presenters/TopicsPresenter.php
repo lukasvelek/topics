@@ -9,8 +9,9 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Entities\PostConceptEntity;
-use App\Entities\PostEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
@@ -30,7 +31,9 @@ use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Label;
 use App\UI\FormBuilder\Select;
 use App\UI\FormBuilder\SubmitButton;
-use App\UI\GridBuilder\Cell;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
 use Exception;
@@ -1618,7 +1621,7 @@ class TopicsPresenter extends AUserPresenter {
 
     public function handleListPosts() {
         $topicId = $this->httpGet('topicId', true);
-        $filter = $this->httpGet('filter') ?? 'null';
+        /*$filter = $this->httpGet('filter') ?? 'null';
 
         $arb = new AjaxRequestBuilder();
         $arb->setMethod()
@@ -1630,7 +1633,7 @@ class TopicsPresenter extends AUserPresenter {
         ;
 
         $this->addScript($arb);
-        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');
+        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');*/
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
@@ -1649,34 +1652,59 @@ class TopicsPresenter extends AUserPresenter {
         $this->template->links = $links;
     }
 
+    public function createComponentPostGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
+
+        $grid = $this->getGridBuilder();
+
+        $grid->addQueryDependency('topicId', $topicId);
+        $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostsForTopic($topicId), 'postId');
+
+        $grid->addColumnText('title', 'Title');
+        $grid->addColumnUser('authorId', 'Author');
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnDatetime('dateAvailable', 'Available since');
+        $grid->addColumnBoolean('isSuggestable', 'Can be suggested?');
+        
+        $pinnedPostIds = $this->app->topicRepository->getPinnedPostIdsForTopicId($topicId);
+
+        $pin = $grid->addAction('pin');
+        $pin->setTitle('Pin');
+        $pin->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($pinnedPostIds) {
+            return (count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS']) && !in_array($row->postId, $pinnedPostIds);
+        };
+        $pin->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Pin')
+                    ->href($this->createURLString('updatePost', ['do' => 'pin', 'postId' => $primaryKey, 'topicId' => $topicId, 'returnGridPage' => 0]));
+
+            return $el;
+        };
+
+        $unpin = $grid->addAction('unpin');
+        $unpin->setTitle('Unpin');
+        $unpin->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($pinnedPostIds) {
+            return (count($pinnedPostIds) >= $this->cfg['MAX_TOPIC_POST_PINS']) || in_array($row->postId, $pinnedPostIds);
+        };
+        $unpin->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Unpin')
+                    ->href($this->createURLString('updatePost', ['do' => 'unpin', 'postId' => $primaryKey, 'topicId' => $topicId, 'returnGridPage' => 0]));
+
+            return $el;
+        };
+
+        return $grid;
+    }
+
     public function actionGetPostGrid() {
-        /*$topicId = $this->httpGet('topicId');
-        $filter = $this->httpGet('filter');
-
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $this->app->getGridSize();
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POSTS, $gridPage, [$topicId]);
-
-        $offset = $page * $gridSize;
-
-        if($filter == 'scheduled') {
-            $posts = $this->app->postRepository->getScheduledPostsForTopicForGrid($topicId, $gridSize, $offset);
-            $totalCount = count($this->app->postRepository->getScheduledPostsForTopicForGrid($topicId, 0, 0));
-        } else {
-            $posts = $this->app->postRepository->getPostsForTopicForGrid($topicId, $gridSize, $offset);
-            $totalCount = count($this->app->postRepository->getPostsForTopicForGrid($topicId, 0, 0));
-        }
-
-        $lastPage = ceil($totalCount / $gridSize);
-
+        /*
         $pinnedPostIds = $this->app->topicRepository->getPinnedPostIdsForTopicId($topicId);
 
         $canPinMore = count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS'];
 
-        $gb = $this->getGridBuilder();
-        $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
-        $gb->addDataSource($posts);
         $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
             $isPinned = in_array($post->getId(), $pinnedPostIds);
 
@@ -1705,34 +1733,7 @@ class TopicsPresenter extends AUserPresenter {
 
             return $cell;
         });
-        $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
-            return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
-        });
-        $gb->addOnColumnRender('author', function(Cell $cell, PostEntity $post) {
-            try {
-                $user = $this->app->userManager->getUserById($post->getAuthorId());
-
-                $link = UserEntity::createUserProfileLink($user, true);
-                $link->setClass('grid-link');
-                return $link;
-            } catch(AException $e) {
-                return '-';
-            }
-        });
-        $gb->addOnColumnRender('dateAvailable', function(Cell $cell, PostEntity $post) use ($filter) {
-            $date = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateAvailable());
-
-            $cell->setValue($date);
-
-            if(($post->getDateCreated() != $post->getDateAvailable()) && strtotime($post->getDateAvailable()) > time() && $filter != 'scheduled') { // if the post is scheduled and current filter does not limit posts to scheduled only
-                $cell->setTextColor('orange');
-            }
-            
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
-        });
+        
         $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page, $canPinMore) {
             if(in_array($post->getId(), $pinnedPostIds)) {
                 return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
@@ -1754,7 +1755,6 @@ class TopicsPresenter extends AUserPresenter {
     public function handleUpdatePost() {
         $postId = $this->httpGet('postId');
         $do = $this->httpGet('do');
-        $returnGridPage = $this->httpGet('returnGridPage');
         $topicId = $this->httpGet('topicId');
 
         $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
@@ -1784,7 +1784,7 @@ class TopicsPresenter extends AUserPresenter {
                     break;
 
                 case 'unpin':
-                    $app->topicManager->unpinPost($this->getUserId(), $topicId, $postId);
+                    $this->app->topicManager->unpinPost($this->getUserId(), $topicId, $postId);
                     $text = 'Post unpinned';
                     break;
 
@@ -1797,11 +1797,10 @@ class TopicsPresenter extends AUserPresenter {
             $this->flashMessage('Could not update post. Reason: ' . $e->getMessage(), 'error');
         }
 
-        $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
+        $this->redirect($this->createURL('listPosts', ['topicId' => $topicId]));
     }
 
     public function handleListPostConcepts() {
-        $filter = $this->httpGet('filter');
         $topicId = $this->httpGet('topicId');
 
         $links = [
@@ -1809,61 +1808,73 @@ class TopicsPresenter extends AUserPresenter {
         ];
 
         $this->saveToPresenterCache('links', $links);
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setAction($this, 'getPostConceptsGrid')
-            ->setHeader(['gridPage' => '_page', 'filter' => '_filter', 'topicId' => '_topicId'])
-            ->setFunctionName('getPostConceptsGrid')
-            ->setFunctionArguments(['_page', '_filter', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getPostConceptsGrid(-1, \'' . $filter . '\', \'' . $topicId . '\')');
     }
 
     public function renderListPostConcepts() {
         $this->template->links = $this->loadFromPresenterCache('links');
     }
 
-    public function actionGetPostConceptsGrid() {
-        /*$topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
-        $filter = $this->httpGet('filter');
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POST_CONCEPTS, $gridPage, [$filter]);
-
-        $gridSize = $this->app->getGridSize();
-
-        $postConcepts = [];
-        $totalCount = 0;
-
-        if($filter == 'my') {
-            $postConcepts = $this->app->postRepository->getPostConceptsForGrid($this->getUserId(), $topicId, $gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->postRepository->getPostConceptsForGrid($this->getUserId(), $topicId, 0, 0));
-        } else {
-            $postConcepts = $this->app->postRepository->getPostConceptsForGrid(null, $topicId, $gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->postRepository->getPostConceptsForGrid(null, $topicId, 0, 0));
-        }
-
-        $lastPage = ceil($totalCount / $gridSize);
+    protected function createComponentPostConceptsGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
         $grid = $this->getGridBuilder();
 
-        $grid->addDataSource($postConcepts);
-        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
-        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
-        $grid->addAction(function(PostConceptEntity $pce) {
-            return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
-        });
-        $grid->addAction(function(PostConceptEntity $pce) {
-            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
-        });
+        $grid->addQueryDependency('topicId', $topicId);
+        $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostConcepts($topicId), 'conceptId');
 
-        return ['grid' => $grid->build()];*/
-        return ['error' => '1'];
+        $grid->addColumnUser('authorId', 'Author');
+
+        $col = $grid->addColumnText('postData', 'Title');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $value = unserialize($value);
+
+            return $value['title'];
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+            $value = unserialize($value);
+
+            return $value['title'];
+        };
+
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnDatetime('dateUpdated', 'Date updated');
+
+        $edit = $grid->addAction('edit');
+        $edit->setTitle('Edit');
+        $edit->onCanRender[] = function() {
+            return true;
+        };
+        $edit->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Edit')
+                    ->href($this->createURLString('newPostForm', ['topicId' => $topicId, 'conceptId' => $primaryKey]))
+            ;
+
+            return $el;
+        };
+
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function() {
+            return true;
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Delete')
+                    ->href($this->createURLString('deletePostConcept', ['topicId' => $topicId, 'conceptId' => $primaryKey]))
+            ;
+
+            return $el;
+        };
+
+        $usersInConcepts = $this->app->postRepository->getUsersWithPostConceptsInTopic($topicId);
+        $users = $this->app->userRepository->getUsersByIdBulk($usersInConcepts, true, true);
+
+        $grid->addFilter('authorId', null, $users);
+
+        return $grid;
     }
 
     public function handleDeletePostConcept(?FormResponse $fr = null) {

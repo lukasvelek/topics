@@ -19,6 +19,7 @@ class GridFilter extends AComponent {
     private string $gridComponentName;
     private array $gridColumns;
     private array $activeFilters;
+    private array $queryDependencies;
 
     /**
      * Class constructor
@@ -31,6 +32,16 @@ class GridFilter extends AComponent {
 
         $this->filters = [];
         $this->activeFilters = [];
+        $this->queryDependencies = [];
+    }
+
+    /**
+     * Sets the grid query dependencies
+     * 
+     * @param array $queryDependencies Grid query dependencies
+     */
+    public function setQueryDependencies(array $queryDependencies) {
+        $this->queryDependencies = $queryDependencies;
     }
 
     /**
@@ -105,6 +116,9 @@ class GridFilter extends AComponent {
         foreach($this->filters as $name => $filter) {
             $script .= 'const _' . $name . ' = $("#' . $name . '").val();';
             $args[] = '_' . $name;
+        }
+        foreach($this->queryDependencies as $k => $v) {
+            $args[] = '\'' . $v . '\'';
         }
 
         $script .= '

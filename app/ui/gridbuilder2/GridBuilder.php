@@ -329,7 +329,7 @@ class GridBuilder extends AComponent {
             };
         } else if($type == self::COL_TYPE_BOOLEAN) {
             $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
-                if($value === true) {
+                if($value === true || $value == 1) {
                     $el = HTML::el('span')
                             ->style('color', 'green')
                             ->text('&check;');
@@ -783,7 +783,7 @@ class GridBuilder extends AComponent {
             $scripts[] = '
                 <script type="text/javascript">
                     function ' . $this->componentName . '_processFilterClear() {
-                        location.href = "' . $this->presenter->createURLString($this->presenter->getAction()) . '";
+                        location.href = "' . $this->presenter->createURLString($this->presenter->getAction(), $this->queryDependencies) . '";
                     }
                 </script>
             ';
@@ -1117,6 +1117,7 @@ class GridBuilder extends AComponent {
         $filter->setGridComponentName($this->componentName);
         $filter->setGridColumns($this->columnLabels);
         $filter->setActiveFilters($this->activeFilters);
+        $filter->setQueryDependencies($this->queryDependencies);
 
         return $filter;
     }

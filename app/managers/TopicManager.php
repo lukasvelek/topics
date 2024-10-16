@@ -4,10 +4,12 @@ namespace App\Managers;
 
 use App\Authorizators\VisibilityAuthorizator;
 use App\Constants\TopicMemberRole;
+use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
+use App\Exceptions\CacheException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
@@ -27,6 +29,8 @@ class TopicManager extends AManager {
     private TopicContentRegulationRepository $tcrr;
     private TopicCalendarEventRepository $tcer;
 
+    private Cache $pinnedPostsCache;
+
     public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr, TopicCalendarEventRepository $tcer) {
         parent::__construct($logger, $entityManager);
         
@@ -37,6 +41,8 @@ class TopicManager extends AManager {
         $this->trr = $trr;
         $this->tcrr = $tcrr;
         $this->tcer = $tcer;
+
+        $this->pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
     }
 
     public function getTopicById(string $topicId, string $userId) {
@@ -167,8 +173,9 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId);
 
-            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
-            $pinnedPostsCache->invalidate();
+            if(!$this->cacheFactory->invalidateCacheByCache($this->pinnedPostsCache)) {
+                throw new CacheException('Could not invalidate cache.', $this->pinnedPostsCache->getNamespace());
+            }
         } catch(AException $e) {
             throw $e;
         }
@@ -188,8 +195,10 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId, false);
 
-            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
-            $pinnedPostsCache->invalidate();
+            //$this->pinnedPostsCache->invalidate();
+            if(!$this->cacheFactory->invalidateCacheByCache($this->pinnedPostsCache)) {
+                throw new CacheException('Could not invalidate cache.', $this->pinnedPostsCache->getNamespace());
+            }
         } catch(AException $e) {
             throw $e;
         }

@@ -248,16 +248,14 @@ class TopicRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->orderBy('dateCreated', 'DESC');
 
-        return $this->pinnedPostsCache->load($topicId, function() use ($qb) {
-            $qb->execute();
+        $qb->execute();
 
-            $postIds = [];
-            while($row = $qb->fetchAssoc()) {
-                $postIds[] = $row['postId'];
-            }
+        $postIds = [];
+        while($row = $qb->fetchAssoc()) {
+            $postIds[] = $row['postId'];
+        }
 
-            return $postIds;
-        });
+        return $postIds;
     }
 }
 

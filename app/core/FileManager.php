@@ -129,19 +129,26 @@ class FileManager {
      */
     public static function deleteFolderRecursively(string $dirPath) {
         if(is_dir($dirPath)) {
+            $result = true;
             $objects = scandir($dirPath);
             
             foreach ($objects as $object) {
                 if ($object != "." && $object != "..") {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
-                        self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
+                        $r = self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
+                        if($r !== true && $result !== false) {
+                            $result = $r;
+                        }
                     } else {
-                        self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
+                        $r = self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
+                        if($r !== true && $result !== false) {
+                            $result = $r;
+                        }
                     }
                 }
             }
 
-            return rmdir($dirPath);
+            return rmdir($dirPath) && $result;
         }
 
         return false;

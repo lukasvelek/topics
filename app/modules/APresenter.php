@@ -559,6 +559,9 @@ abstract class APresenter extends AGUICore {
         if(isset($this->httpRequest->query['do'])) {
             $do = $this->httpRequest->query['do'];
             $doParts = explode('-', $do);
+            if(count($doParts) < 2) {
+                return;
+            }
             $componentName = $doParts[0];
             if($this->isAjax()) {
                 $methodName = 'action' . ucfirst($doParts[1]);

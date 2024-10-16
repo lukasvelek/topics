@@ -156,13 +156,17 @@ class UserRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getUsersByIdBulk(array $ids, bool $idAsKey = false) {
+    public function getUsersByIdBulk(array $ids, bool $idAsKey = false, bool $returnUsernameAsValue = false) {
         $users = [];
 
         foreach($ids as $id) {
             $result = $this->getUserById($id);
 
             if($result !== null) {
+                if($returnUsernameAsValue) {
+                    $result = $result->getUsername();
+                }
+                
                 if($idAsKey) {
                     $users[$id] = $result;
                 } else {

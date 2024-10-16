@@ -56,6 +56,15 @@ class Cell extends AElement {
     }
 
     /**
+     * Returns cell's name
+     * 
+     * @return string Cell's name
+     */
+    public function getName() {
+        return $this->name;
+    }
+
+    /**
      * Sets the cell content
      * 
      * @param string|HTML $content Cell content
