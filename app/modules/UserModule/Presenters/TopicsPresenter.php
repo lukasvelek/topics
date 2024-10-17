@@ -11,7 +11,6 @@ use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
-use App\Entities\PostConceptEntity;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
@@ -39,16 +38,12 @@ use App\UI\LinkBuilder;
 use Exception;
 
 class TopicsPresenter extends AUserPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
     }
     
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleProfile() {
@@ -505,6 +500,23 @@ class TopicsPresenter extends AUserPresenter {
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
             $shortenedText = $bwh->checkText($post->getShortenedText(100), $topicId);
+
+            // START OF POST DESCRIPTION HASH TAGS
+            $hashTagMatches = [];
+            preg_match_all("/[#]\w*/m", $shortenedText, $hashTagMatches);
+            $hashTagMatches = $hashTagMatches[0];
+
+            $hashTags = [];
+            foreach($hashTagMatches as $hashTagMatch) {
+                $hashTag = substr($hashTagMatch, 1);
+
+                $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
+            }
+
+            foreach($hashTags as $k => $v) {
+                $shortenedText = str_replace($k, $v, $shortenedText);
+            }
+            // END OF POST DESCRIPTION HASH TAGS
 
             if(!empty($bwh->getBannedWordsUsed())) {
                 try {
