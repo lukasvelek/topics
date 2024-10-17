@@ -544,7 +544,7 @@ class GridBuilder extends AComponent {
                             if($result === true) {
                                 $canRender[$actionName] = $cAction;
                             } else {
-                                //$canRender[$actionName] = null;
+                                $canRender[$actionName] = null;
                             }
                         } catch(Exception $e) {
                             $canRender[$actionName] = null;
@@ -556,6 +556,7 @@ class GridBuilder extends AComponent {
 
                 $canRender = ArrayHelper::reverseArray($canRender);
 
+                $cells = [];
                 foreach($canRender as $name => $action) {
                     if($action instanceof Action) {
                         $cAction = clone $action;
@@ -571,7 +572,7 @@ class GridBuilder extends AComponent {
                         $_cell->setClass('grid-cell-action');
                     }
 
-                    $_row->addCell($_cell, true);
+                    $cells[] = $_cell;
                 }
 
                 if($isAtLeastOneDisplayed && !$hasActionsCol) {
@@ -582,6 +583,12 @@ class GridBuilder extends AComponent {
                     $_headerCell->setSpan(count($canRender));
                     $_tableRows['header']->addCell($_headerCell, true);
                     $hasActionsCol = true;
+                }
+
+                if($isAtLeastOneDisplayed) {
+                    foreach($cells as $cell) {
+                        $_row->addCell($cell, true);
+                    }
                 }
             }
 
