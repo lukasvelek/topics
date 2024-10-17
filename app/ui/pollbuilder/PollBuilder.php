@@ -156,9 +156,13 @@ class PollBuilder implements IRenderable {
     private function build() {
         $fb = new FormBuilder();
 
+        $availableChoice = [
+            $this->userChoice => $this->choices[$this->userChoice]
+        ];
+
         $fb ->setAction($this->handlerUrl)
             ->setMethod('POST')
-            ->addRadios('choice', 'Choose:', $this->choices, $this->userChoice, true)
+            ->addRadios('choice', 'Choose:', $availableChoice, $this->userChoice, true)
         ;
 
         if($this->userChoice !== null) {
@@ -178,7 +182,11 @@ class PollBuilder implements IRenderable {
             }
         }
 
-        $fb->addSubmit('Submit', ($this->userChoice !== null), true);
+        if($this->userChoice !== null) {
+
+        } else {
+            $fb->addSubmit('Submit', ($this->userChoice !== null), true);
+        }
 
         return $fb->render();
     }
