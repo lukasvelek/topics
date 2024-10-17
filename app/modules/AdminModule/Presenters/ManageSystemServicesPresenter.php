@@ -72,6 +72,8 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         } catch(AException $e) {
             $this->flashMessage('Could not start service. Reason: ' . $e->getMessage(), 'error');
         }
+
+        sleep(1); // because the system services grid would load so fast, that the service didn't have time to start executing and thus the grid would look as if nothing happened and would need to be refreshed
         
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);
     }
