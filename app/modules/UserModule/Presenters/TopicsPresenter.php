@@ -518,6 +518,37 @@ class TopicsPresenter extends AUserPresenter {
             }
             // END OF POST DESCRIPTION HASH TAGS
 
+            // START OF POST DESCRIPTION USER MENTIONING
+            $usernameMatches = [];
+            preg_match_all("/[@]\w*/m", $shortenedText, $usernameMatches);
+
+            $usernameMatches = $usernameMatches[0];
+
+            $users = [];
+            foreach($usernameMatches as $usernameMatch) {
+                $username = substr($usernameMatch, 1);
+                $user = $this->app->userRepository->getUserByUsername($username);
+                if($user === null) {
+                    $users[$usernameMatch] = '@' . $username;
+                } else {
+                    $link = $this->app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                    
+                    $users[$usernameMatch] = $link;
+                }
+            }
+
+            foreach($users as $k => $v) {
+                $shortenedText = str_replace($k, $v, $shortenedText);
+            }
+            // END OF POST DESCRIPTION USER MENTIONING
+
+            // START OF POST DESCRIPTION LINKS
+            $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+            $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+            $shortenedText = preg_replace($pattern, $replacement, $shortenedText);
+            // END OF POST DESCRIPTION LINKS
+
             if(!empty($bwh->getBannedWordsUsed())) {
                 try {
                     foreach($bwh->getBannedWordsUsed() as $word) {

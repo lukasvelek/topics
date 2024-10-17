@@ -162,6 +162,37 @@ class PostsPresenter extends AUserPresenter {
         }
         // END OF POST DESCRIPTION HASH TAGS
 
+        // START OF POST DESCRIPTION USER MENTIONING
+        $usernameMatches = [];
+        preg_match_all("/[@]\w*/m", $postDescription, $usernameMatches);
+
+        $usernameMatches = $usernameMatches[0];
+
+        $users = [];
+        foreach($usernameMatches as $usernameMatch) {
+            $username = substr($usernameMatch, 1);
+            $user = $this->app->userRepository->getUserByUsername($username);
+            if($user === null) {
+                $users[$usernameMatch] = '@' . $username;
+            } else {
+                $link = $this->app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                
+                $users[$usernameMatch] = $link;
+            }
+        }
+
+        foreach($users as $k => $v) {
+            $postDescription = str_replace($k, $v, $postDescription);
+        }
+        // END OF POST DESCRIPTION USER MENTIONING
+
+        // START OF POST DESCRIPTION LINKS
+        $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+        $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+        $postDescription = preg_replace($pattern, $replacement, $postDescription);
+        // END OF POST DESCRIPTION LINKS
+
         if(!empty($bwh->getBannedWordsUsed())) {
             try {
                 foreach($bwh->getBannedWordsUsed() as $word) {
@@ -619,6 +650,24 @@ class PostsPresenter extends AUserPresenter {
             $bwh->cleanBannedWordsUsed();
         }
 
+        // START OF HASH TAGS
+        $hashTagMatches = [];
+        preg_match_all("/[#]\w*/m", $text, $hashTagMatches);
+        $hashTagMatches = $hashTagMatches[0];
+
+        $hashTags = [];
+        foreach($hashTagMatches as $hashTagMatch) {
+            $hashTag = substr($hashTagMatch, 1);
+
+            $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
+        }
+
+        foreach($hashTags as $k => $v) {
+            $text = str_replace($k, $v, $text);
+        }
+        // END OF HASH TAGS
+
+        // START OF USER MENTIONING
         $usernameMatches = [];
         preg_match_all("/[@]\w*/m", $text, $usernameMatches);
 
@@ -640,26 +689,14 @@ class PostsPresenter extends AUserPresenter {
         foreach($users as $k => $v) {
             $text = str_replace($k, $v, $text);
         }
+        // END OF USER MENTIONING
 
+        // START OF LINKS
         $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
         $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
 
         $text = preg_replace($pattern, $replacement, $text);
-
-        $hashTagMatches = [];
-        preg_match_all("/[#]\w*/m", $text, $hashTagMatches);
-        $hashTagMatches = $hashTagMatches[0];
-
-        $hashTags = [];
-        foreach($hashTagMatches as $hashTagMatch) {
-            $hashTag = substr($hashTagMatch, 1);
-
-            $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
-        }
-
-        foreach($hashTags as $k => $v) {
-            $text = str_replace($k, $v, $text);
-        }
+        // END OF LINKS
 
         $dateCreated = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated());
         $dateCreatedAtomic = DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT);
