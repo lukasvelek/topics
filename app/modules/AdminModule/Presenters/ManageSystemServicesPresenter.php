@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Constants\Systems;
 use App\Core\Datetypes\DateTime;
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
@@ -9,6 +10,7 @@ use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
+use Exception;
 
 class ManageSystemServicesPresenter extends AAdminPresenter {
     public function __construct() {
@@ -52,6 +54,14 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
             if($row->title == 'PostLikeEqualizer') {
                 return false;
             }
+
+            try {
+                if(!$this->app->systemStatusManager->isSystemOn(Systems::SYSTEM_SERVICES)) {
+                    if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                        return false;
+                    }
+                }
+            } catch(AException|Exception) {}
 
             return true;
         };

@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Constants\AdministratorGroups;
+use App\Constants\Systems;
 use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
@@ -567,12 +568,8 @@ class DatabaseInstaller {
     private function createSystems() {
         $this->logger->info('Creating systems.', __METHOD__);
 
-        $systems = [
-            'Core' => SystemStatus::ONLINE
-        ];
-
         $i = 0;
-        foreach($systems as $name => $status) {
+        foreach(Systems::getAll() as $name => $status) {
             $id = HashManager::createEntityId();
 
             $sql = 'INSERT INTO `system_status` (`systemId`, `name`, `status`)

@@ -5,6 +5,7 @@ namespace App\Core;
 use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
+use App\Authorizators\SystemStatusAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
@@ -23,6 +24,7 @@ use App\Managers\MailManager;
 use App\Managers\NotificationManager;
 use App\Managers\PostManager;
 use App\Managers\ReportManager;
+use App\Managers\SystemStatusManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
 use App\Managers\UserFollowingManager;
@@ -125,10 +127,12 @@ class Application {
     public ReportManager $reportManager;
     public ChatManager $chatManager;
     public PostManager $postManager;
+    public SystemStatusManager $systemStatusManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
     public VisibilityAuthorizator $visibilityAuthorizator;
+    public SystemStatusAuthorizator $systemStatusAuthorizator;
 
     /**
      * The Application constructor. It creates objects of all used classes.
@@ -176,9 +180,11 @@ class Application {
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
+        $this->systemStatusAuthorizator = new SystemStatusAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
 
         $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository, $this->topicContentRegulationRepository, $this->topicCalendarEventRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
+        $this->systemStatusManager = new SystemStatusManager($this->logger, $this->entityManager, $this->systemStatusRepository, $this->systemStatusAuthorizator);
 
         $this->isAjaxRequest = false;
 
@@ -401,15 +407,6 @@ class Application {
      */
     public function getIsDev() {
         return $this->cfg['IS_DEV'];
-    }
-
-    /**
-     * Returns DefaultGridReducer instance
-     * 
-     * @return DefaultGridReducer DefaultGridReducer instance
-     */
-    public function getGridReducer() {
-        return new DefaultGridReducer($this->userRepository, $this->topicRepository, $this->postRepository);
     }
 }
 
