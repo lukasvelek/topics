@@ -665,6 +665,16 @@ class PostRepository extends ARepository {
 
         return $this->createPostsArrayFromQb($qb);
     }
+
+    public function composeQueryForPostsWithHashtagsInDescription() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['description'])
+            ->from('posts')
+            ->where('description LIKE ?', ['% #%']);
+
+        return $qb;
+    }
 }
 
 ?>
