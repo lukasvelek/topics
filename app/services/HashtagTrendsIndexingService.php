@@ -57,7 +57,7 @@ class HashtagTrendsIndexingService extends AService {
                 }
             }
 
-            arsort($usages, SORT_NUMERIC);
+            //arsort($usages, SORT_NUMERIC);
 
             if(count($hashtags) > self::MAX_COUNT) {
                 $offset += self::MAX_COUNT;
@@ -68,6 +68,37 @@ class HashtagTrendsIndexingService extends AService {
 
             $x++;
         }
+
+        $offset = 0;
+        $x = 0;
+        while(true) {
+            if($x >= $maxRuns) {
+                break;
+            }
+
+            $hashtags = $this->pm->getListOfPostCommentsWithHashtags((self::MAX_COUNT + 1), $offset);
+
+            foreach($hashtags as $hashtag) {
+                if(!array_key_exists($hashtag, $usages)) {
+                    $usages[$hashtag] = 1;
+                } else {
+                    $usages[$hashtag] = $usages[$hashtag] + 1;
+                }
+            }
+
+            //arsort($usages, SORT_NUMERIC);
+
+            if(count($hashtags) > self::MAX_COUNT) {
+                $offset += self::MAX_COUNT;
+            }
+            if(count($hashtags) < self::MAX_COUNT) {
+                break;
+            }
+
+            $x++;
+        }
+
+        arsort($usages, SORT_NUMERIC);
 
         $tmp = [];
         $keys = array_keys($usages);

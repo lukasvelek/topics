@@ -667,11 +667,22 @@ class PostRepository extends ARepository {
     }
 
     public function composeQueryForPostsWithHashtagsInDescription() {
+        $qbTopics = $this->qb(__METHOD__);
+
+        $qbTopics ->select(['topicId'])
+            ->from('topics')
+            ->where('(isPrivate = 1 AND isVisible = 1)')
+        ;
+
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['description'])
             ->from('posts')
-            ->where('description LIKE ?', ['% #%']);
+            ->andWhere('description LIKE ?', ['% #%'])
+            ->andWhere('isSuggestable = 1')
+            ->andWhere('((isScheduled = 1 AND dateAvailable <= current_timestamp()) OR isScheduled = 0)')
+            ->andWhere('topicId IN (' . $qbTopics->getSQL() . ')')
+        ;
 
         return $qb;
     }

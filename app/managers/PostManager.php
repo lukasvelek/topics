@@ -58,6 +58,32 @@ class PostManager extends AManager {
 
         return $hashtags;
     }
+
+    public function getListOfPostCommentsWithHashtags(int $limit, int $offset) {
+        $query = $this->pcr->composeQueryForPostCommentsWithHashtags();
+
+        if($limit > 0) {
+            $query->limit($limit);
+        }
+        if($offset > 0) {
+            $query->offset($offset);
+        }
+
+        $query->execute();
+
+        $hashtags = [];
+        while($row = $query->fetchAssoc()) {
+            $hashtagsTmp = [];
+            preg_match_all("/[#]\w*/m", $row['commentText'], $hashtagsTmp);
+            $hashtagsTmp = $hashtagsTmp[0];
+
+            foreach($hashtagsTmp as $htmp) {
+                $hashtags[] = $htmp;
+            }
+        }
+
+        return $hashtags;
+    }
 }
 
 ?>

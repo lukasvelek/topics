@@ -791,7 +791,7 @@ class QueryBuilder
     private function createDeleteSQLQuery() {
         $sql = 'DELETE FROM ' . $this->queryData['table'];
 
-        if(str_contains($this->queryData['where'], 'WHERE')) {
+        if(str_starts_with($this->queryData['where'], 'WHERE')) {
             $sql .= ' ' . $this->queryData['where'];
         } else {
             $sql .= ' WHERE ' . $this->queryData['where'];
@@ -819,7 +819,7 @@ class QueryBuilder
 
         $sql .= implode(', ', $valArray) . ' ';
 
-        if(str_contains($this->queryData['where'], 'WHERE')) {
+        if(str_starts_with($this->queryData['where'], 'WHERE')) {
             // explicit
             $sql .= ' ' . $this->queryData['where'];
         } else {
@@ -884,7 +884,7 @@ class QueryBuilder
         }
 
         if(isset($this->queryData['where'])) {
-            if(str_contains($this->queryData['where'], 'WHERE')) {
+            if(str_starts_with($this->queryData['where'], 'WHERE')) {
                 // explicit
                 $sql .= ' ' . $this->queryData['where'];
             } else {

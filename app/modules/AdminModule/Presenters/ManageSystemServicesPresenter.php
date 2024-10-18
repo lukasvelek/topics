@@ -49,16 +49,28 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
                 $tr->style('background-color', 'orange');
             }
         };
+
+        $systemsOn = [];
         $action = $grid->addAction('run');
-        $action->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+        $action->onCanRender[] = function(DatabaseRow $row, Row $_row) use (&$systemsOn){
             if($row->title == 'PostLikeEqualizer') {
                 return false;
             }
 
             try {
-                if(!$this->app->systemStatusManager->isSystemOn(Systems::SYSTEM_SERVICES)) {
-                    if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
-                        return false;
+                if(array_key_exists(Systems::SYSTEM_SERVICES, $systemsOn)) {
+                    if($systemsOn[Systems::SYSTEM_SERVICES] === false) {
+                        if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                            return false;
+                        }
+                    }
+                } else {
+                    $systemsOn[Systems::SYSTEM_SERVICES] = $this->app->systemStatusManager->isSystemOn(Systems::SYSTEM_SERVICES);
+
+                    if($systemsOn[Systems::SYSTEM_SERVICES] === false) {
+                        if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                            return false;
+                        }
                     }
                 }
             } catch(AException|Exception) {}

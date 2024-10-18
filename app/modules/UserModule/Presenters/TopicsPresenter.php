@@ -1249,6 +1249,16 @@ class TopicsPresenter extends AUserPresenter {
             ';
         }
 
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
+        }
+
         return ['list' => implode('<br>', $codeArray)];
     }
 
@@ -1272,6 +1282,16 @@ class TopicsPresenter extends AUserPresenter {
                         ' . $cnt . ' ' . ($cnt > 1 ? 'posts' : 'post') . '
                     </div>
                 </div>';
+        }
+
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
         }
 
         return ['list' => implode('<br>', $codeArray)];
@@ -1302,6 +1322,16 @@ class TopicsPresenter extends AUserPresenter {
                         ' . $cnt . ' ' . ($cnt > 1 ? 'comments' : 'comment') . '
                     </div>
                 </div>';
+        }
+
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
         }
 
         return ['list' => implode('<br>', $codeArray)];
