@@ -354,6 +354,11 @@ class DatabaseInstaller {
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'message' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'hashtag_trends' => [
+                'entryId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'data' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
 

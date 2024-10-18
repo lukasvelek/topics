@@ -1210,12 +1210,46 @@ class TopicsPresenter extends AUserPresenter {
 
         $this->addScript($arb);
         $this->addScript('getTrendingPostsList()');
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getTrendingHashtagList')
+            ->setFunctionName('getTrendingHashtagList')
+            ->updateHTMLElement('trending-hashtag-list', 'list')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getTrendingHashtagList()');
     }
 
     public function renderTrending() {
         $trendingLinks = $this->loadFromPresenterCache('trendingLinks');
 
         $this->template->trending_links = $trendingLinks;
+    }
+
+    public function actionGetTrendingHashtagList() {
+        $data = $this->app->trendsManager->getLatestHashtagTrends();
+
+        $codeArray = [];
+        foreach($data as $name => $cnt) {
+            $name = '<span style="color: #003153">' . $name . '</span>';
+
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        ' . $name . '
+                    </div>
+
+                    <div class="col-md">
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'uses' : 'use') . '
+                    </div>
+                </div>
+            ';
+        }
+
+        return ['list' => implode('<br>', $codeArray)];
     }
 
     public function actionGetTrendingTopicsList() {
@@ -1235,7 +1269,7 @@ class TopicsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md">
-                        ' . $cnt . ' posts
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'posts' : 'post') . '
                     </div>
                 </div>';
         }
@@ -1265,7 +1299,7 @@ class TopicsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md">
-                        ' . $cnt . ' comments
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'comments' : 'comment') . '
                     </div>
                 </div>';
         }
@@ -1664,20 +1698,6 @@ class TopicsPresenter extends AUserPresenter {
 
     public function handleListPosts() {
         $topicId = $this->httpGet('topicId', true);
-        /*$filter = $this->httpGet('filter') ?? 'null';
-
-        $arb = new AjaxRequestBuilder();
-        $arb->setMethod()
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId', 'filter' => '_filter'])
-            ->setAction($this, 'getPostGrid')
-            ->setFunctionName('getPostGrid')
-            ->setFunctionArguments(['_page', '_topicId', '_filter'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');*/
-
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
             LinkBuilder::createSimpleLink('All', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link'),
@@ -1740,59 +1760,6 @@ class TopicsPresenter extends AUserPresenter {
         };
 
         return $grid;
-    }
-
-    public function actionGetPostGrid() {
-        /*
-        $pinnedPostIds = $this->app->topicRepository->getPinnedPostIdsForTopicId($topicId);
-
-        $canPinMore = count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS'];
-
-        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
-            $isPinned = in_array($post->getId(), $pinnedPostIds);
-
-            if($isPinned) {
-                if($post->isSuggestable()) {
-                    $cell->setTextColor('green');
-                    $cell->setValue('Yes');
-                } else {
-                    $cell->setTextColor('red');
-                    $cell->setValue('No');
-                }
-
-                $cell->setTitle('To change this value, the post must not be pinned.');
-            } else {
-                if($post->isSuggestable()) {
-                    $link = LinkBuilder::createSimpleLinkObject('Yes', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'disableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                    $link->setStyle('color: green');
-                } else {
-                    $link = LinkBuilder::createSimpleLinkObject('No', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'enableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                    $link->setStyle('color: red');
-                }
-
-                $cell->setValue($link->render());
-            }
-
-
-            return $cell;
-        });
-        
-        $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page, $canPinMore) {
-            if(in_array($post->getId(), $pinnedPostIds)) {
-                return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
-            } else {
-                if($canPinMore) {
-                    return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
-                } else {
-                    return '<span title="You have pinned the maximum number of posts">-</span>';
-                }
-            }
-        });
-
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
-
-        return ['grid' => $gb->build()];*/
-        return ['error' => '1'];
     }
 
     public function handleUpdatePost() {

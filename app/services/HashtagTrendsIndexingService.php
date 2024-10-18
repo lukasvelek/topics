@@ -6,17 +6,21 @@ use App\Core\ServiceManager;
 use App\Exceptions\AException;
 use App\Logger\Logger;
 use App\Managers\PostManager;
+use App\Managers\TrendsManager;
 use Exception;
 
 class HashtagTrendsIndexingService extends AService {
     private const MAX_COUNT = 1000;
+    private const SAVE_MAX_COUNT = 5;
 
     private PostManager $pm;
+    private TrendsManager $tm;
 
-    public function __construct(Logger $logger, ServiceManager $serviceManager, PostManager $pm) {
+    public function __construct(Logger $logger, ServiceManager $serviceManager, PostManager $pm, TrendsManager $tm) {
         parent::__construct('HashtagTrendsIndexing', $logger, $serviceManager);
 
         $this->pm = $pm;
+        $this->tm = $tm;
     }
 
     public function run() {
@@ -53,9 +57,7 @@ class HashtagTrendsIndexingService extends AService {
                 }
             }
 
-            rsort($usages, SORT_NUMERIC);
-
-            file_put_contents('__hashtags.txt', var_export($usages, true));
+            arsort($usages, SORT_NUMERIC);
 
             if(count($hashtags) > self::MAX_COUNT) {
                 $offset += self::MAX_COUNT;
@@ -65,6 +67,24 @@ class HashtagTrendsIndexingService extends AService {
             }
 
             $x++;
+        }
+
+        $tmp = [];
+        $keys = array_keys($usages);
+        for($i = 0; $i < self::SAVE_MAX_COUNT; $i++) {
+            if(count($keys) <= $i) {
+                break;
+            }
+
+            $tmp[$keys[$i]] = $usages[$keys[$i]];
+        }
+        
+        $usages = $tmp;
+
+        try {
+            $this->tm->createNewHashtagTrendsEntry(serialize($usages));
+        } catch(AException $e) {
+            throw $e;
         }
     }
 }

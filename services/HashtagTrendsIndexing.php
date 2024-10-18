@@ -8,7 +8,7 @@ require_once('CommonService.php');
 global $app;
 
 try {
-    $service = new HashtagTrendsIndexingService($app->logger, $app->serviceManager, $app->postManager);
+    $service = new HashtagTrendsIndexingService($app->logger, $app->serviceManager, $app->postManager, $app->trendsManager);
     $service->run();
 } catch(Exception $e) {
     throw new ServiceException($e->getMessage(), $e);

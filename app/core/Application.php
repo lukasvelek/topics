@@ -27,6 +27,7 @@ use App\Managers\ReportManager;
 use App\Managers\SystemStatusManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
+use App\Managers\TrendsManager;
 use App\Managers\UserFollowingManager;
 use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
@@ -38,6 +39,7 @@ use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
 use App\Repositories\GridExportRepository;
 use App\Repositories\GroupRepository;
+use App\Repositories\HashtagTrendsRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
@@ -111,6 +113,7 @@ class Application {
     public TopicCalendarEventRepository $topicCalendarEventRepository;
     public TopicContentRegulationRepository $topicContentRegulationRepository;
     public ChatRepository $chatRepository;
+    public HashtagTrendsRepository $hashtagTrendsRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -128,6 +131,7 @@ class Application {
     public ChatManager $chatManager;
     public PostManager $postManager;
     public SystemStatusManager $systemStatusManager;
+    public TrendsManager $trendsManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
@@ -176,6 +180,7 @@ class Application {
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
         $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
         $this->postManager = new PostManager($this->logger, $this->entityManager, $this->postRepository, $this->postCommentRepository);
+        $this->trendsManager = new TrendsManager($this->logger, $this->entityManager, $this->hashtagTrendsRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);

@@ -44,6 +44,7 @@ class EntityManager extends AManager {
     public const TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS = 'topic_broadcast_channel_subscribers';
     public const TOPIC_BROADCAST_CHANNEL_MESSAGES = 'topic_broadcast_channel_messages';
     public const TOPIC_INVITES = 'topic_invites';
+    public const HASHTAG_TRENDS = 'hashtag_trends';
 
     private const __MAX__ = 100;
 
@@ -129,7 +130,8 @@ class EntityManager extends AManager {
             self::TOPIC_BROADCAST_CHANNEL_MESSAGES => 'messageId',
             self::TOPIC_BROADCAST_CHANNEL_SUBSCRIBERS => 'subscribeId',
             self::TOPIC_BROADCAST_CHANNELS => 'channelId',
-            self::TOPIC_INVITES => 'inviteId'
+            self::TOPIC_INVITES => 'inviteId',
+            self::HASHTAG_TRENDS => 'entryId'
         };
     }
 }
