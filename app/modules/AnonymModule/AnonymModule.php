@@ -11,7 +11,7 @@ class AnonymModule extends AModule {
     }
 
     public function renderModule() {
-        $navbar = new Navbar($this->app->notificationManager);
+        $navbar = new Navbar($this->app->notificationManager, $this->app->systemStatusManager);
         $navbar->hideSearchBar();
         $navbar->setIsCurrentUserIsAdmin($this->app->currentUser?->isAdmin());
         

@@ -17,7 +17,7 @@ class ErrorModule extends AModule {
             $currentUserId = $this->app->currentUser->getId();
         }
 
-        $navbar = new Navbar($this->app->notificationManager, $currentUserId);
+        $navbar = new Navbar($this->app->notificationManager, $this->app->systemStatusManager, $currentUserId);
         $navbar->hideSearchBar();
         $navbar->setIsCurrentUserIsAdmin($this->app->currentUser?->isAdmin());
         
