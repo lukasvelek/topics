@@ -19,6 +19,7 @@ class Cache {
     private string $hash;
     private string $namespace;
     private ?DateTime $lastWriteDate;
+    private CacheFactory $cacheFactory;
 
     /**
      * Class constructor
@@ -28,12 +29,13 @@ class Cache {
      * @param ?DateTime $expirationDate Cache expiration date
      * @param ?DateTime $lastWriteDate Date of last write
      */
-    public function __construct(array $data,  string $namespace, ?DateTime $expirationDate = null, ?DateTime $lastWriteDate = null) {
+    public function __construct(array $data,  string $namespace, CacheFactory $cacheFactory, ?DateTime $expirationDate = null, ?DateTime $lastWriteDate = null) {
         $this->data = $data;
         $this->expirationDate = $expirationDate;
         $this->invalidated = false;
         $this->namespace = $namespace;
         $this->lastWriteDate = $lastWriteDate;
+        $this->cacheFactory = $cacheFactory;
 
         $this->hash = HashManager::createHash(256);
     }
@@ -89,6 +91,7 @@ class Cache {
     public function invalidate() {
         $this->data = [];
         $this->invalidated = true;
+        $this->cacheFactory->invalidateCacheByCache($this);
     }
 
     /**

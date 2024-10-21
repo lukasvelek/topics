@@ -61,7 +61,7 @@ class CacheFactory {
         $cacheData = $this->loadDataFromCache($namespace);
 
         if($cacheData === null) {
-            $cache = new Cache([], $namespace, $expiration, null);
+            $cache = new Cache([], $namespace, $this, $expiration, null);
             $this->persistentCaches[$cache->getHash()] = &$cache;
             return $cache;
         }
@@ -80,7 +80,7 @@ class CacheFactory {
             $lastWriteDate = new DateTime(strtotime($cacheData[self::I_NS_CACHE_LAST_WRITE_DATE]));
         }
 
-        $cache = new Cache($cacheData[self::I_NS_DATA], $namespace, $expirationDate, $lastWriteDate);
+        $cache = new Cache($cacheData[self::I_NS_DATA], $namespace, $this, $expirationDate, $lastWriteDate);
         $this->persistentCaches[$cache->getHash()] = &$cache;
         return $cache;
     }
