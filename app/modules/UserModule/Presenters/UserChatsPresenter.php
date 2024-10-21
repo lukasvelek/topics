@@ -2,6 +2,7 @@
 
 namespace App\Modules\UserModule;
 
+use App\Constants\Systems;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicBroadcastChannelMessageEntity;
@@ -27,6 +28,12 @@ class UserChatsPresenter extends AUserPresenter {
 
     public function startup() {
         parent::startup();
+
+        if(!$this->app->systemStatusManager->isSystemOn(Systems::CHATS) && !$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+            $statusMessage = $this->app->systemStatusManager->getStatusMessage(Systems::CHATS);
+            $this->flashMessage('Chats are currently not available. Please try again later.' . (($statusMessage !== null) ? (' Status message: ' . $statusMessage) : ''), 'error');
+            $this->redirect($this->createFullURL('UserModule:Home', 'dashboard'));
+        }
     }
 
     public function handleListTopicChannels() {

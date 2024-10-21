@@ -43,7 +43,7 @@ class SystemStatusManager extends AManager {
     }
 
     public function isSystemOn(string $systemName) {
-        $systemStatus = $this->ssr->getSystemStatusByName(Systems::toString($systemName));
+        $systemStatus = $this->ssr->getSystemStatusByName($systemName);
 
         if($systemStatus === null) {
             throw new NonExistingEntityException('System named \'' . $systemName . '\' does not exist.');
@@ -54,6 +54,12 @@ class SystemStatusManager extends AManager {
                 return true;
             }
         }
+    }
+
+    public function getStatusMessage(string $systemName) {
+        $message = $this->ssr->getSystemDescription($systemName);
+
+        return $message;
     }
 }
 

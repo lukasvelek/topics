@@ -71,6 +71,17 @@ class SystemStatusRepository extends ARepository {
 
         return SystemStatusEntity::createEntityFromDbRow($qb->fetch());
     }
+
+    public function getSystemDescription(string $name) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['description'])
+            ->from('system_status')
+            ->where('name = ?', [$name])
+            ->execute();
+
+        return $qb->fetch('description');
+    }
 }
 
 ?>
