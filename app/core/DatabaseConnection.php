@@ -2,7 +2,6 @@
 
 namespace App\Core;
 
-use App\Core\Datetypes\DateTime;
 use App\Exceptions\AException;
 use App\Exceptions\DatabaseConnectionException;
 use App\Logger\Logger;
@@ -29,7 +28,7 @@ class DatabaseConnection implements IDbQueriable {
 
         try {
             $dbPort = (empty($this->cfg['DB_PORT']) ? null : $this->cfg['DB_PORT']);
-            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $this->cfg['DB_PASS'], $this->cfg['DB_NAME'], $dbPort);
+            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], CryptManager::decrypt($this->cfg['DB_PASS']), $this->cfg['DB_NAME'], $dbPort);
         } catch(AException $e) {
             throw $e;
         }
@@ -94,17 +93,10 @@ class DatabaseConnection implements IDbQueriable {
 
     /**
      * Installs the database - creates tables and default values
-     * 
-     * @return bool True on success or false on failure
      */
     public function installDb() {
         $installer = new DatabaseInstaller($this, new Logger($this->cfg));
-
         $installer->install();
-        
-        $date = new DateTime();
-        
-        FileManager::saveFile($this->cfg['APP_REAL_DIR'] . 'app\\core\\', 'install', 'installed - ' . $date);
     }
 }
 

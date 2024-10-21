@@ -3,6 +3,7 @@
 namespace App\Managers;
 
 use App\Constants\MailTemplates;
+use App\Core\CryptManager;
 use App\Entities\EmailEntity;
 use App\Entities\TopicEntity;
 use App\Entities\UserEntity;
@@ -104,7 +105,7 @@ class MailManager extends AManager {
         $mail->Host = $this->cfg['MAIL_SERVER'];
         $mail->SMTPAuth = true;
         $mail->Username = $this->cfg['MAIL_USERNAME'];
-        $mail->Password = $this->cfg['MAIL_PASSWORD'];
+        $mail->Password = CryptManager::decrypt($this->cfg['MAIL_PASSWORD']);
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = $this->cfg['MAIL_SERVER_PORT'];
 

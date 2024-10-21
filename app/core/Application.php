@@ -197,7 +197,9 @@ class Application {
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
             try {
-                $this->db->installDb();
+                // Installer will now install the application
+                $installer = new Installer($this, $this->db);
+                $installer->install();
             } catch(AException $e) {
                 throw new GeneralException('Could not install database. Reason: ' . $e->getMessage(), $e);
             }

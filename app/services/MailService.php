@@ -71,7 +71,7 @@ class MailService extends AService {
                     try {
                         $this->mailManager->mailRepository->beginTransaction();
                         $this->mailManager->deleteEmailEntry($id);
-                        $this->mailManager->mailRepository->commit($this->mailManager->cfg['ID_SERVICE_USER'], __METHOD__);
+                        $this->mailManager->mailRepository->commit(null, __METHOD__);
                     } catch(AException|Exception $e) {
                         $this->mailManager->mailRepository->rollback();
                         $this->logError('Could not delete entry #' . $id . '. Reason: ' . $e->getMessage());
