@@ -28,7 +28,8 @@ class HomePresenter extends AUserPresenter {
         for($i = 0; $i < count($followedTopics); $i++) {
             $rand = rand(0, count($followedTopics));
 
-            $followedTopics2[$rand] = $followedTopics[$i];
+            $followedTopics2[$i] = $followedTopics[$rand];
+            unset($followedTopics[$rand]);
         }
         
         $followedTopics = $followedTopics2;
