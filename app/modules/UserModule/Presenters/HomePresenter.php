@@ -6,6 +6,8 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
+use App\Core\Datetypes\DateTime;
+use App\Entities\PostEntity;
 use App\Exceptions\AException;
 use App\Exceptions\AjaxRequestException;
 
@@ -24,7 +26,7 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = [];
         $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
-        $followedTopics2 = [];
+        /*$followedTopics2 = [];
         foreach($followedTopics as $ft) {
             $followedTopics2[$ft->getId()] = $ft;
         }
@@ -33,7 +35,35 @@ class HomePresenter extends AUserPresenter {
 
         $followedTopics = $followedTopics2;
 
-        $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
+        $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);*/
+
+        $query = $this->app->postRepository->composeQueryForPosts();
+        $query->andWhere($query->getColumnInValues('topicId', $topicIdsUserIsMemberOf))
+            ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
+            ->orderBy('likes', 'DESC')
+            ->orderBy('dateCreated', 'DESC')
+            ->orderBy('postId', 'ASC')
+            ->limit(500)
+        ;
+
+        $cursor = $query->execute();
+
+        $topicIdCount = [];
+        $posts = [];
+        while($row = $cursor->fetchAssoc()) {
+            $post = PostEntity::createEntityFromDbRow($row);
+            if(array_key_exists($post->getTopicId(), $topicIdCount)) {
+                if($topicIdCount[$post->getTopicId()] <= 2) {
+                    $posts[] = $post;
+                    $topicIdCount[$post->getTopicId()] = $topicIdCount[$post->getTopicId()] + 1;
+                }
+            } else {
+                $posts[] = $post;
+                $topicIdCount[$post->getTopicId()] = 0;
+            }
+        }
 
         $postLister = new PostLister($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository, $this->app->contentRegulationRepository, $this->app->fileUploadRepository, $this->app->fileUploadManager, $this->app->reportManager, $this->app->topicManager);
 
