@@ -75,6 +75,14 @@ class GridBuilder extends AComponent {
     private array $queryDependencies;
 
     /**
+     * Callbacks that modify the data source if no active filter is set.
+     * Methods are called with parameters: QueryBuilder &$qb
+     * 
+     * @var array<callback> $noFilterSqlConditions
+     */
+    public array $noFilterSqlConditions;
+
+    /**
      * Class constructor
      * 
      * @param HttpRequest $request HttpRequest instance
@@ -96,6 +104,7 @@ class GridBuilder extends AComponent {
         $this->activeFilters = [];
         $this->gridName = 'MyGrid';
         $this->queryDependencies = [];
+        $this->noFilterSqlConditions = [];
     }
 
     /**
@@ -390,6 +399,12 @@ class GridBuilder extends AComponent {
                     }
                 } else {
                     $qb->andWhere($name . ' = ?', [$value]);
+                }
+            }
+        } else {
+            if(!empty($this->noFilterSqlConditions)) {
+                foreach($this->noFilterSqlConditions as $sql) {
+                    $sql($qb);
                 }
             }
         }

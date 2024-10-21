@@ -94,6 +94,16 @@ class TopicInviteRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function composeQueryForUserInvites(string $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_invites')
+            ->where('userId = ?', [$userId]);
+
+        return $qb;
+    }
+
     public function getInvitesForUserForGrid(string $userId, int $limit, int $offset, bool $validOnly = true) {
         $qb = $this->qb(__METHOD__);
 
