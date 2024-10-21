@@ -6,6 +6,7 @@ use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Cell;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
@@ -29,6 +30,7 @@ class TopicInvitesPresenter extends AUserPresenter {
         $grid->noFilterSqlConditions[] = function(QueryBuilder &$qb) {
             $qb->andWhere('dateValid > ?', [time()]);
         };
+        $grid->setGridName(GridHelper::GRID_TOPIC_INVITES_ALL);
 
         $col = $grid->addColumnText('topic', 'Topic');
         $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {

@@ -5,7 +5,19 @@ namespace App\Helpers;
 use App\Exceptions\CallbackExecutionException;
 use Exception;
 
+/**
+ * ArrayHelper contains useful functions for working with arrays
+ * 
+ * @author Lukas Velek
+ */
 class ArrayHelper {
+    /**
+     * Creates an array from callbacks (runs every callback passed in $callbacks and saves it's value to an array) and then implodes it with given $separator and returns it.
+     * 
+     * @param string $separator Implode separator character
+     * @param array $callbacks Callbacks which values create the resulting array
+     * @return string Imploded array
+     */
     public static function implodeCallbackArray(string $separator, array $callbacks) {
         $values = [];
 
@@ -20,6 +32,13 @@ class ArrayHelper {
         return implode($separator, $values);
     }
 
+    /**
+     * Checks if given array of keys all exist in given array to check
+     * 
+     * @param array $keys Keys which existence should be checked
+     * @param array $arrayToCheck Array which will be used for checking
+     * @return bool True if all keys exist in the array or false if not
+     */
     public static function checkArrayKeysExistInArray(array $keys, array $arrayToCheck) {
         $ok = true;
 
@@ -33,6 +52,12 @@ class ArrayHelper {
         return $ok;
     }
 
+    /**
+     * Clones an array
+     * 
+     * @param array $array Array to be cloned
+     * @return array Cloned array
+     */
     public static function cloneArray(array $array) {
         $tmp = [];
 
@@ -55,6 +80,12 @@ class ArrayHelper {
         return $tmp;
     }
 
+    /**
+     * Reverses given array
+     * 
+     * @param array $array Array to reverse
+     * @return array Reversed array
+     */
     public static function reverseArray(array $array) {
         $tmp = [];
         foreach($array as $k => $v) {

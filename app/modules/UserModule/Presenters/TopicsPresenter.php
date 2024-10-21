@@ -1752,6 +1752,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $grid->addQueryDependency('topicId', $topicId);
         $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostsForTopic($topicId), 'postId');
+        $grid->setGridName(GridHelper::GRID_TOPIC_POSTS);
 
         $grid->addColumnText('title', 'Title');
         $grid->addColumnUser('authorId', 'Author');
@@ -1861,6 +1862,7 @@ class TopicsPresenter extends AUserPresenter {
 
         $grid->addQueryDependency('topicId', $topicId);
         $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostConcepts($topicId), 'conceptId');
+        $grid->setGridName(GridHelper::GRID_TOPIC_POST_CONCEPTS);
 
         $grid->addColumnUser('authorId', 'Author');
 

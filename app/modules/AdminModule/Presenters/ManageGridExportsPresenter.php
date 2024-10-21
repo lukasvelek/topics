@@ -3,6 +3,7 @@
 namespace App\Modules\AdminModule;
 
 use App\Core\DB\DatabaseRow;
+use App\Helpers\GridHelper;
 use App\UI\GridBuilder2\Cell;
 use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
@@ -31,6 +32,7 @@ class ManageGridExportsPresenter extends AAdminPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->gridExportRepository->composeQueryForExports(), 'exportId');
+        $grid->setGridName(GridHelper::GRID_GRID_EXPORTS);
         
         $grid->addColumnUser('userId', 'User');
         $grid->addColumnDatetime('dateCreated', 'Date started');

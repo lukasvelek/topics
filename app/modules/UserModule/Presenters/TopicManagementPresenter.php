@@ -8,6 +8,7 @@ use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
+use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
@@ -59,8 +60,8 @@ class TopicManagementPresenter extends AUserPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->topicMembershipManager->composeQueryForTopicMembers($topicId), 'membershipId');
-
         $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_USER_TOPIC_ROLES);
 
         $grid->addColumnUser('userId', 'User');
         $col = $grid->addColumnText('role', 'Role');
@@ -216,6 +217,7 @@ class TopicManagementPresenter extends AUserPresenter {
         } else {
             $grid->createDataSourceFromQueryBuilder($this->app->topicPollRepository->composeQueryForMyTopicPolls($topicId, $this->getUserId()), 'pollId');
         }
+        $grid->setGridName(GridHelper::GRID_TOPIC_POLLS);
 
         $grid->addColumnUser('authorId', 'Author');
         $grid->addColumnText('title', 'Title');
@@ -362,6 +364,7 @@ class TopicManagementPresenter extends AUserPresenter {
 
         $grid->createDataSourceFromQueryBuilder($this->app->topicInviteRepository->composeQueryForInvitesForTopic($topicId), 'inviteId');
         $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_TOPIC_INVITES_ALL);
 
         $grid->addColumnUser('userId', 'User');
         $grid->addColumnDatetime('dateValid', 'Valid until');
@@ -595,8 +598,8 @@ class TopicManagementPresenter extends AUserPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->topicMembershipManager->composeQueryForTopicMembers($topicId), 'membershipId');
-
         $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_TOPIC_FOLLOWERS);
 
         $grid->addColumnUser('userId', 'User');
         $col = $grid->addColumnText('role', 'Role');
@@ -641,8 +644,8 @@ class TopicManagementPresenter extends AUserPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->topicContentRegulationRepository->composeQueryForBannedWordsForTopicId($topicId), 'wordId');
-
         $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_TOPIC_BANNED_WORDS);
 
         $grid->addColumnUser('authorId', 'Author');
         $grid->addColumnText('word', 'Text');

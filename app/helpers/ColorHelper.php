@@ -2,7 +2,17 @@
 
 namespace App\Helpers;
 
+/**
+ * ColorHelper contains useful function for working with colors
+ * 
+ * @author Lukas Velek
+ */
 class ColorHelper {
+    /**
+     * Creates a color combination
+     * 
+     * @return array Color combination - contains two values -> foreground and background
+     */
     public static function createColorCombination() {
         $fg_r = rand(0, 255) - 100;
         $fg_g = rand(0, 255) - 100;

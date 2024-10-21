@@ -5,6 +5,7 @@ namespace App\Modules\UserModule;
 use App\Core\DB\DatabaseRow;
 use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\GridBuilder2\Cell;
@@ -45,8 +46,8 @@ class TopicRulesPresenter extends AUserPresenter {
         $grid = $this->getGridBuilder();
 
         $grid->createDataSourceFromQueryBuilder($this->app->topicManager->composeQueryForTopicRules($topicId), 'ruleId');
-
         $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_TOPIC_RULES);
 
         $col = $grid->addColumnText('index', '#');
         $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {

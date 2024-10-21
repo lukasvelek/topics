@@ -329,7 +329,7 @@ class UsersPresenter extends AUserPresenter {
         } else {
             $this->saveToPresenterCache('user', $user);
 
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [

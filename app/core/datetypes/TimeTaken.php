@@ -7,6 +7,11 @@ use App\Exceptions\TypeException;
 use App\Helpers\ArrayHelper;
 use App\Helpers\ValueHelper;
 
+/**
+ * This class contains information about how long did an action take
+ * 
+ * @author Lukas Velek
+ */
 class TimeTaken {
     private int $seconds;
     private int $minutes;
@@ -14,6 +19,9 @@ class TimeTaken {
     private int $days;
     private array $toHide;
 
+    /**
+     * Class constructor
+     */
     public function __construct() {
         $this->seconds = 0;
         $this->minutes = 0;
@@ -22,22 +30,39 @@ class TimeTaken {
         $this->toHide = [];
     }
 
+    /**
+     * Hides days
+     */
     public function hideDays() {
         $this->toHide[] = 'days';
     }
 
+    /**
+     * Hides hours
+     */
     public function hideHours() {
         $this->toHide[] = 'hours';
     }
 
+    /**
+     * Hides minutes
+     */
     public function hideMinutes() {
         $this->toHide[] = 'minutes';
     }
 
+    /**
+     * Hides seconds
+     */
     public function hideSeconds() {
         $this->toHide[] = 'seconds';
     }
 
+    /**
+     * Converts self to string and returns it
+     * 
+     * @return string To string representation of self
+     */
     public function toString() {
         $parts = [];
 
@@ -60,6 +85,11 @@ class TimeTaken {
         return implode(' ', $parts);
     }
 
+    /**
+     * Sets values from array
+     * 
+     * @param array $data Data array
+     */
     public function setFromArray(array $data) {
         if(!ArrayHelper::checkArrayKeysExistInArray(['seconds'], $data)) {
             throw new KeyInArrayDoesNotExistException('seconds', '$data');
@@ -96,6 +126,11 @@ class TimeTaken {
         }
     }
 
+    /**
+     * Calculates time from seconds
+     * 
+     * @param int $seconds Seconds
+     */
     private function recalculateFromSeconds(int $seconds) {
         while($seconds >= 60) {
             $seconds -= 60;
@@ -115,6 +150,12 @@ class TimeTaken {
         $this->seconds = $seconds;
     }
 
+    /**
+     * Creates a TimeTaken instance from seconds
+     * 
+     * @param int $seconds Seconds
+     * @return self
+     */
     public static function createFromSeconds(int $seconds) {
         $obj = new self();
         $obj->setFromArray(['seconds' => $seconds]);

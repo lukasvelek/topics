@@ -32,6 +32,8 @@ class GridHelper {
     public const GRID_TOPIC_INVITES_ALL = 'gridTopicInvitesAll';
     public const GRID_TOPIC_FOLLOWERS = 'gridTopicFollowers';
     public const GRID_TOPIC_BANNED_WORDS = 'gridTopicBannedWords';
+    /** UserModule:TopicRules */
+    public const GRID_TOPIC_RULES = 'gridTopicRules';
     /** UserModule:Topics */
     public const GRID_TOPIC_POSTS = 'gridTopicPosts';
     public const GRID_TOPIC_POST_CONCEPTS = 'gridTopicPostConcepts';
