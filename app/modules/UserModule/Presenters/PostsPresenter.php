@@ -935,11 +935,11 @@ class PostsPresenter extends AUserPresenter {
 
                 $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
-                $this->flashMessage('Comment #' . $commentId . ' has been deleted.', 'success');
+                $this->flashMessage('Comment has been deleted.', 'success');
             } catch(Exception $e) {
                 $this->app->postRepository->rollback();
 
-                $this->flashMessage('Comment #' . $commentId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+                $this->flashMessage('Comment could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
             
             $this->redirect(['action' => 'profile', 'postId' => $postId]);
@@ -989,11 +989,11 @@ class PostsPresenter extends AUserPresenter {
 
                 $this->app->postRepository->commit($this->getUserId(), __METHOD__);
 
-                $this->flashMessage('Post #' . $postId . ' has been deleted.', 'success');
+                $this->flashMessage('Post \'' . $post->getTitle() . '\' has been deleted.', 'success');
             } catch(Exception $e) {
                 $this->app->postRepository->rollback();
 
-                $this->flashMessage('Post #' . $postId . ' could not be deleted. Reason: ' . $e->getMessage(), 'error');
+                $this->flashMessage('Post \'' . $post->getTitle() . '\' could not be deleted. Reason: ' . $e->getMessage(), 'error');
             }
 
             $this->redirect(['action' => 'profile', 'postId' => $postId]);
