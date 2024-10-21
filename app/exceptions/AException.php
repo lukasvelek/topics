@@ -41,7 +41,7 @@ abstract class AException extends Exception {
             $script = $t['file'];
             $line = $t['line'];
             $function = $t['function'];
-            $args = $t['args'];
+            $args = $t['args'] ?? null;
             $argString = '';
 
             if(!is_array($args) || (count($args) > 1 && is_object($args[0]))) {

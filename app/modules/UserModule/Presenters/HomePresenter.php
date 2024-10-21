@@ -24,6 +24,15 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = [];
         $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
+        $followedTopics2 = [];
+        for($i = 0; $i < count($followedTopics); $i++) {
+            $rand = rand(0, count($followedTopics));
+
+            $followedTopics2[$rand] = $followedTopics[$i];
+        }
+        
+        $followedTopics = $followedTopics2;
+
         $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
 
         $postLister = new PostLister($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository, $this->app->contentRegulationRepository, $this->app->fileUploadRepository, $this->app->fileUploadManager, $this->app->reportManager, $this->app->topicManager);
