@@ -499,9 +499,8 @@ class DatabaseInstaller {
                 'user2Id',
                 'dateCreated'
             ],
-            'userChatMessages' => [
+            'user_chat_messages' => [
                 'chatId',
-                'message',
                 'dateCreated'
             ],
             'topic_broadcast_channels' => [
@@ -513,11 +512,9 @@ class DatabaseInstaller {
             ],
             'topic_broadcast_channel_messages' => [
                 'channelId',
-                'message',
                 'dateCreated'
             ],
             'hashtag_trends' => [
-                'data',
                 'dateCreated'
             ],
             'system_status' => [
