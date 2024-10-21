@@ -982,7 +982,7 @@ class TopicsPresenter extends AUserPresenter {
                 $this->app->topicMembershipManager->changeRole($topicId, $this->getUserId(), $this->getUserId(), TopicMemberRole::OWNER);
                 
                 if($isPrivate) {
-                    $this->app->topicRepository->updateTopic($topicId, ['isVisible' => '0']);
+                    $this->app->contentManager->updateTopic($topicId, ['isVisible' => '0']);
                 }
 
                 $cache = $this->cacheFactory->getCache(CacheNames::TOPICS);

@@ -15,6 +15,11 @@ use App\Repositories\TopicPollRepository;
 use App\Repositories\TopicRepository;
 use App\UI\LinkBuilder;
 
+/**
+ * ContentManager is responsible for managing content
+ * 
+ * @author Lukas Velek
+ */
 class ContentManager extends AManager {
     private const T_TOPIC = 1;
     private const T_POST = 2;
@@ -28,6 +33,18 @@ class ContentManager extends AManager {
 
     private bool $fullDelete;
 
+    /**
+     * Class constructor
+     * 
+     * @param TopicRepository $topicRepository TopicRepository instance
+     * @param PostRepository $postRepository PostRepository instance
+     * @param PostCommentRepository $postCommentRepository PostCommentRepository instance
+     * @param bool $full_delete True if the content should be deleted fully or false if it should just have isDeleted attribute set to 1
+     * @param Logger $logger Logger instance
+     * @param TopicMembershipManager $topicMembershipManager TopicMembershipManager instance
+     * @param TopicPollRepository $topicPollRepository TopicPollRepository instance
+     * @param EntityManager $entityManager EntityManager instance
+     */
     public function __construct(TopicRepository $topicRepository, PostRepository $postRepository, PostCommentRepository $postCommentRepository, bool $full_delete, Logger $logger, TopicMembershipManager $topicMembershipManager, TopicPollRepository $topicPollRepository, EntityManager $entityManager) {
         parent::__construct($logger, $entityManager);
         
@@ -40,6 +57,12 @@ class ContentManager extends AManager {
         $this->fullDelete = $full_delete;
     }
 
+    /**
+     * Deletes a topic
+     * 
+     * @param string $topicId Topic ID
+     * @param bool $deleteCache Delete cache?
+     */
     public function deleteTopic(string $topicId, bool $deleteCache = true) {
         // posts
         $posts = $this->postRepository->getLatestPostsForTopicId($topicId, 0);
@@ -61,11 +84,22 @@ class ContentManager extends AManager {
         $this->afterDelete(self::T_POST, $deleteCache);
     }
 
+    /**
+     * Deletes a poll
+     * 
+     * @param string $pollId Poll ID
+     */
     public function deletePoll(string $pollId) {
         $this->topicPollRepository->deletePollResponsesForPollId($pollId);
         $this->topicPollRepository->deletePoll($pollId);
     }
 
+    /**
+     * Deletes a post
+     * 
+     * @param string $postId Post ID
+     * @param bool $deleteCache Delete cache?
+     */
     public function deletePost(string $postId, bool $deleteCache = true) {
         $comments = $this->postCommentRepository->getCommentsForPostId($postId);
 
@@ -78,16 +112,33 @@ class ContentManager extends AManager {
         $this->afterDelete(self::T_POST, $deleteCache);
     }
 
+    /**
+     * Deletes a comment
+     * 
+     * @param string $commentId
+     * @param bool $deleteCache Delete cache?
+     */
     public function deleteComment(string $commentId, bool $deleteCache = true) {
         $this->postCommentRepository->deleteComment($commentId, $this->isHide());
 
         $this->afterDelete(self::T_COMMENT, $deleteCache);
     }
 
+    /**
+     * Returns if the content should be fully deleted or just hidden
+     * 
+     * @return bool True if the content should be just hidden or false if it should be fully deleted
+     */
     private function isHide() {
         return !$this->fullDelete;
     }
 
+    /**
+     * Processes operations after the entity has been deleted
+     * 
+     * @param int $type Entity type
+     * @param bool $deleteCache Delete cache?
+     */
     private function afterDelete(int $type, bool $deleteCache) {
         if($deleteCache) {
             switch($type) {
@@ -113,10 +164,24 @@ class ContentManager extends AManager {
         }
     }
 
+    /**
+     * Updates a topic
+     * 
+     * @param string $topicId Topic ID
+     * @param array $data Data
+     * @return bool True if the operation was successful or false if not
+     */
     public function updateTopic(string $topicId, array $data) {
         return $this->topicRepository->updateTopic($topicId, $data);
     }
 
+    /**
+     * Returns user action history list
+     * 
+     * @param string $userId User ID
+     * @param int $limit Limit of list entries
+     * @return string HTML code
+     */
     public function getUserActionHistory(string $userId, int $limit = 10) {
         $maxDate = new DateTime();
         $maxDate->modify('-7d');
@@ -232,10 +297,25 @@ class ContentManager extends AManager {
         return $code;
     }
 
+    /**
+     * Updates a post
+     * 
+     * @param string $postId Post ID
+     * @param array $data Data
+     * @return bool True if the operation was successful or false if not
+     */
     public function updatePost(string $postId, array $data) {
         return $this->postRepository->updatePost($postId, $data);
     }
 
+    /**
+     * Pins a post
+     * 
+     * @param string $topicId Topic ID
+     * @param string $postId Post ID
+     * @param bool $pin True if the post should be pinned or false if it should be unpinned
+     * @return void
+     */
     public function pinPost(string $topicId, string $postId, bool $pin = true) {
         $result = true;
         $data = [];

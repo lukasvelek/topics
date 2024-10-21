@@ -21,6 +21,9 @@ class TopicRepository extends ARepository {
         $this->pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
     }
 
+    /**
+     * @deprecated
+     */
     public function getTopicById(string $id): TopicEntity|null {
         $qb = $this->qb(__METHOD__);
 
@@ -103,7 +106,7 @@ class TopicRepository extends ARepository {
             ->where('topicId = ?', [$topicId])
             ->execute();
 
-        return $qb->fetch();
+        return $qb->fetchBool();
     }
 
     public function getTopicCount(bool $notDeletedOnly = true) {
