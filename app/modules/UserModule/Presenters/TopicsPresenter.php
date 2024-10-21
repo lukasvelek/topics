@@ -496,16 +496,21 @@ class TopicsPresenter extends AUserPresenter {
             $liked = in_array($post->getId(), $likedArray);
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
-            $shortenedText = $bwh->checkText($post->getShortenedText(100), $topicId);
+            $shortenedText = $bwh->checkText($post->getText(), $topicId);
 
             // START OF POST DESCRIPTION HASH TAGS
             $hashTagMatches = [];
-            preg_match_all("/[#]\w*/m", $shortenedText, $hashTagMatches);
+            preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $shortenedText, $hashTagMatches);
             $hashTagMatches = $hashTagMatches[0];
 
             $hashTags = [];
             foreach($hashTagMatches as $hashTagMatch) {
-                $hashTag = substr($hashTagMatch, 1);
+                $hashTag = trim($hashTagMatch);
+                if(str_contains($hashTag, '&')) {
+                    continue;
+                } else {
+                    $hashTag = substr($hashTag, 1);
+                }
 
                 $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
             }
@@ -545,6 +550,12 @@ class TopicsPresenter extends AUserPresenter {
 
             $shortenedText = preg_replace($pattern, $replacement, $shortenedText);
             // END OF POST DESCRIPTION LINKS
+
+            if(str_ends_with(substr($shortenedText, 0, 100), '&#')) {
+                $shortenedText = substr($shortenedText, 0, 98) . '...';
+            } else {
+                $shortenedText = substr($shortenedText, 0, 100) . '...';
+            }
 
             if(!empty($bwh->getBannedWordsUsed())) {
                 try {

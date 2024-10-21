@@ -26,17 +26,6 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = [];
         $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
-        /*$followedTopics2 = [];
-        foreach($followedTopics as $ft) {
-            $followedTopics2[$ft->getId()] = $ft;
-        }
-
-        ksort($followedTopics2);
-
-        $followedTopics = $followedTopics2;
-
-        $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);*/
-
         $query = $this->app->postRepository->composeQueryForPosts();
         $query->andWhere($query->getColumnInValues('topicId', $topicIdsUserIsMemberOf))
             ->andWhere('isDeleted = 0')
@@ -55,7 +44,7 @@ class HomePresenter extends AUserPresenter {
         while($row = $cursor->fetchAssoc()) {
             $post = PostEntity::createEntityFromDbRow($row);
             if(array_key_exists($post->getTopicId(), $topicIdCount)) {
-                if($topicIdCount[$post->getTopicId()] <= 2) {
+                if($topicIdCount[$post->getTopicId()] < 2) {
                     $posts[] = $post;
                     $topicIdCount[$post->getTopicId()] = $topicIdCount[$post->getTopicId()] + 1;
                 }

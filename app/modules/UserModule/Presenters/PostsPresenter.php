@@ -147,12 +147,17 @@ class PostsPresenter extends AUserPresenter {
 
         // START OF POST DESCRIPTION HASH TAGS
         $hashTagMatches = [];
-        preg_match_all("/[#]\w*/m", $postDescription, $hashTagMatches);
+        preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $postDescription, $hashTagMatches);
         $hashTagMatches = $hashTagMatches[0];
 
         $hashTags = [];
         foreach($hashTagMatches as $hashTagMatch) {
-            $hashTag = substr($hashTagMatch, 1);
+            $hashTag = trim($hashTagMatch);
+            if(str_contains($hashTag, '&')) {
+                continue;
+            } else {
+                $hashTag = substr($hashTag, 1);
+            }
 
             $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
         }
@@ -652,12 +657,17 @@ class PostsPresenter extends AUserPresenter {
 
         // START OF HASH TAGS
         $hashTagMatches = [];
-        preg_match_all("/[#]\w*/m", $text, $hashTagMatches);
+        preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $text, $hashTagMatches);
         $hashTagMatches = $hashTagMatches[0];
 
         $hashTags = [];
         foreach($hashTagMatches as $hashTagMatch) {
-            $hashTag = substr($hashTagMatch, 1);
+            $hashTag = trim($hashTagMatch);
+            if(str_contains($hashTag, '&')) {
+                continue;
+            } else {
+                $hashTag = substr($hashTag, 1);
+            }
 
             $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
         }
