@@ -4,7 +4,6 @@ namespace App\Core;
 
 use App\Constants\AdministratorGroups;
 use App\Constants\Systems;
-use App\Constants\SystemStatus;
 use App\Logger\Logger;
 
 /**
@@ -494,6 +493,36 @@ class DatabaseInstaller {
             'topic_banned_words' => [
                 'authorId',
                 'topicId'
+            ],
+            'user_chats' => [
+                'user1Id',
+                'user2Id',
+                'dateCreated'
+            ],
+            'userChatMessages' => [
+                'chatId',
+                'message',
+                'dateCreated'
+            ],
+            'topic_broadcast_channels' => [
+                'topicId'
+            ],
+            'topic_broadcast_channel_subscribers' => [
+                'channelId',
+                'userId'
+            ],
+            'topic_broadcast_channel_messages' => [
+                'channelId',
+                'message',
+                'dateCreated'
+            ],
+            'hashtag_trends' => [
+                'data',
+                'dateCreated'
+            ],
+            'system_status' => [
+                'name',
+                'status'
             ]
         ];
 
