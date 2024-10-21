@@ -25,13 +25,12 @@ class HomePresenter extends AUserPresenter {
         $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
         $followedTopics2 = [];
-        for($i = 0; $i < count($followedTopics); $i++) {
-            $rand = rand(0, count($followedTopics));
-
-            $followedTopics2[$i] = $followedTopics[$rand];
-            unset($followedTopics[$rand]);
+        foreach($followedTopics as $ft) {
+            $followedTopics2[$ft->getId()] = $ft;
         }
-        
+
+        ksort($followedTopics2);
+
         $followedTopics = $followedTopics2;
 
         $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
