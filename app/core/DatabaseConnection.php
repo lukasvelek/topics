@@ -88,7 +88,7 @@ class DatabaseConnection implements IDbQueriable {
     private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName, ?string $dbPort = null) {
         try {
             $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName, $dbPort);
-            if($this->conn !== true) {
+            if($this->conn === null) {
                 throw new DatabaseConnectionException('Could not connect to the database due to incorrect credentials.');
             }
         } catch (Exception $e) {
