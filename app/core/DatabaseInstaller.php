@@ -646,7 +646,7 @@ class DatabaseInstaller {
 
             $sql = "INSERT INTO `groups` (`groupId`, `title`, `description`)
                     SELECT '$id', '$title', '$description'
-                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = $id)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = '$id')";
 
             $this->db->query($sql);
         }
@@ -686,7 +686,7 @@ class DatabaseInstaller {
 
             $sql = "INSERT INTO `group_membership` (`membershipId`, `userId`, `groupId`)
                     SELECT '$membershipId', '$userId', '$groupId'
-                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE `membershipId` = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE userId = '$userId' AND groupId = '$groupId')";
 
             $this->db->query($sql);
         }
