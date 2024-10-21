@@ -29,10 +29,15 @@ class UserChatsPresenter extends AUserPresenter {
     public function startup() {
         parent::startup();
 
-        if(!$this->app->systemStatusManager->isSystemOn(Systems::CHATS) && !$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
-            $statusMessage = $this->app->systemStatusManager->getStatusMessage(Systems::CHATS);
-            $this->flashMessage('Chats are currently not available. Please try again later.' . (($statusMessage !== null) ? (' Status message: ' . $statusMessage) : ''), 'error');
-            $this->redirect($this->createFullURL('UserModule:Home', 'dashboard'));
+        if(!$this->app->systemStatusManager->isSystemOn(Systems::CHATS)) {
+            if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                $statusMessage = $this->app->systemStatusManager->getStatusMessage(Systems::CHATS);
+                $this->flashMessage('Chats are currently not available. Please try again later.' . (($statusMessage !== null) ? (' Status message: ' . $statusMessage) : ''), 'error');
+                $this->redirect($this->createFullURL('UserModule:Home', 'dashboard'));
+            } else {
+                //$text = $this->createCustomFlashMessage('warning', 'Chats are currently unavailable. You are super-administrator and thus it is visible but continue with caution.');
+                $this->permanentFlashMessage('Chats are currently unavailable. However you are super-administrator and thus it is visible, but continue with caution.', 'warning');
+            }
         }
     }
 

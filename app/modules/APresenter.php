@@ -51,6 +51,7 @@ abstract class APresenter extends AGUICore {
     private array $flashMessages;
     private array $specialRedirectUrlParams;
     private bool $isComponentAjax;
+    private array $permanentFlashMessages;
     
     public array $components;
 
@@ -87,6 +88,7 @@ abstract class APresenter extends AGUICore {
 
         $this->flashMessages = [];
         $this->specialRedirectUrlParams = [];
+        $this->permanentFlashMessages = [];
 
         $this->components = [];
     }
@@ -308,7 +310,7 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Saves a flash message to cache
+     * Saves a flash message to cache. Flash messages are automatically closed.
      * 
      * @param string $text Flash message text
      * @param string $type Flash message type
@@ -324,6 +326,29 @@ abstract class APresenter extends AGUICore {
         
         if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
             $this->specialRedirectUrlParams['_fm'] = $hash;
+        }
+    }
+
+    /**
+     * Saves a permanent flash message to presenter cache. Permanent flash messages are not automatically closed.
+     * 
+     * @param string $text Flash message text
+     * @param string $type Flash message type
+     */
+    protected function permanentFlashMessage(string $text, string $type = 'info') {
+        $this->permanentFlashMessages[] = $this->createFlashMessage($type, $text, count($this->permanentFlashMessages), false, true);
+    }
+
+    /**
+     * Returns HTML code of all permanent flash messages
+     * 
+     * @return string HTML code of all permanent flash messages
+     */
+    public function fillPermanentFlashMessages() {
+        if(!empty($this->permanentFlashMessages)) {
+            return implode('<br>', $this->permanentFlashMessages);
+        } else {
+            return '';
         }
     }
 
@@ -346,30 +371,6 @@ abstract class APresenter extends AGUICore {
         }
 
         $this->app->redirect($url);
-    }
-
-    /**
-     * Returns data from the $_SESSION by the key
-     * 
-     * @param string $key Data key
-     * @return mixed Data value or null
-     */
-    protected function httpSessionGet(string $key) {
-        if(isset($_SESSION[$key])) {
-            return $_SESSION[$key];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Sets a value to the $_SESSION
-     * 
-     * @param string $key Data key
-     * @param mixed $value Data value
-     */
-    protected function httpSessionSet(string $key, mixed $value) {
-        $_SESSION[$key] = $value;
     }
 
     /**
@@ -417,22 +418,7 @@ abstract class APresenter extends AGUICore {
                 }
             }
     
-            $date = new DateTime();
-            $date->format('Y');
-            $date = $date->getResult();
-    
-            if($this->template !== null) {
-                $this->template->sys_page_title = $this->title;
-                $this->template->sys_app_name = $this->cfg['APP_NAME'];
-                $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
-                $this->template->sys_scripts = $this->scripts->getAll();
-            
-                if($this->currentUser !== null) {
-                    $this->template->sys_user_id = $this->currentUser->getId();
-                } else {
-                    $this->template->sys_user_id = '';
-                }
-            }
+            $this->fillSystemAttributesToTemplate();
         } else {
             $this->template = $contentTemplate;
         }
@@ -440,6 +426,25 @@ abstract class APresenter extends AGUICore {
         $this->afterRender();
 
         return $this->template;
+    }
+
+    private function fillSystemAttributesToTemplate() {
+        $date = new DateTime();
+        $date->format('Y');
+        $date = $date->getResult();
+
+        if($this->template !== null) {
+            $this->template->sys_page_title = $this->title;
+            $this->template->sys_app_name = $this->cfg['APP_NAME'];
+            $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
+            $this->template->sys_scripts = $this->scripts->getAll();
+        
+            if($this->currentUser !== null) {
+                $this->template->sys_user_id = $this->currentUser->getId();
+            } else {
+                $this->template->sys_user_id = '';
+            }
+        }
     }
 
     /**
@@ -715,6 +720,11 @@ abstract class APresenter extends AGUICore {
         $this->cacheFactory->saveCaches();
     }
 
+    /**
+     * Returns a GridBuilder instance
+     * 
+     * @return GridBuilder GridBuilder instance
+     */
     public function getGridBuilder() {
         $grid = new GridBuilder($this->httpRequest, $this->cfg);
         $helper = new GridHelper($this->logger, $this->getUserId());

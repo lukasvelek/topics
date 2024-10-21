@@ -11,7 +11,6 @@ use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Helpers\TemplateHelper;
 use App\UI\AComponent;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\IRenderable;
 
 abstract class AGUICore {
     protected HttpRequest $httpRequest;
@@ -25,15 +24,16 @@ abstract class AGUICore {
      * @param string $text Flash message text
      * @param int $flashMessageCount Number of flash messages
      * @param bool $custom True if flash message has custom handler or false if not
+     * @param bool $permanent True if the flash message is permanent or false if not
      * @return string HTML code
      */
-    protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false) {
-        $fmc = $flashMessageCount . '-' . ($custom ? '-custom' : '');
+    protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false, bool $permanent = false) {
+        $fmc = $flashMessageCount . '-' . ($custom ? '-custom' : '') . ($permanent ? '-permanent' : '');
         $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . $fmc . '\')">&times;</p>';
 
         $jsAutoRemoveScript = '<script type="text/javascript">autoHideFlashMessage(\'fm-' . $fmc . '\')</script>';
 
-        $code = '<div id="fm-' . $fmc . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . ($custom ? '' : $removeLink) . '</div><div id="fm-' . $fmc . '-progress-bar" style="position: absolute; left: 0; bottom: 1%; border-bottom: 2px solid black"></div>' . ($custom ? '' : $jsAutoRemoveScript) . '</div>';
+        $code = '<div id="fm-' . $fmc . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . ($custom ? '' : ($permanent ? $removeLink : '')) . '</div><div id="fm-' . $fmc . '-progress-bar" style="position: absolute; left: 0; bottom: 1%; border-bottom: 2px solid black"></div>' . ($custom ? '' : ($permanent ? '' : $jsAutoRemoveScript)) . '</div>';
 
         return $code;
     }
@@ -211,6 +211,30 @@ abstract class AGUICore {
                 return null;
             }
         }
+    }
+
+    /**
+     * Returns data from the $_SESSION by the key
+     * 
+     * @param string $key Data key
+     * @return mixed Data value or null
+     */
+    protected function httpSessionGet(string $key) {
+        if(isset($_SESSION[$key])) {
+            return $_SESSION[$key];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Sets a value to the $_SESSION
+     * 
+     * @param string $key Data key
+     * @param mixed $value Data value
+     */
+    protected function httpSessionSet(string $key, mixed $value) {
+        $_SESSION[$key] = $value;
     }
 }
 

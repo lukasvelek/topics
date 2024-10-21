@@ -128,7 +128,7 @@ abstract class AModule extends AGUICore {
     }
 
     /**
-     * Fills the template with flash messages
+     * Fills the template with flash messages and also with permanent flash messages defined in the presenter
      */
     private function fillFlashMessages() {
         $fmCode = '';
@@ -136,6 +136,8 @@ abstract class AModule extends AGUICore {
         if(count($this->flashMessages) > 0) {
             $fmCode = implode('<br>', $this->flashMessages);
         }
+
+        $fmCode .= $this->presenter->fillPermanentFlashMessages();
         
         $this->template->sys_flash_messages = $fmCode;
     }
