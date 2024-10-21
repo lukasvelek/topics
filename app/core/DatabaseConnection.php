@@ -28,7 +28,11 @@ class DatabaseConnection implements IDbQueriable {
 
         try {
             $dbPort = (empty($this->cfg['DB_PORT']) ? null : $this->cfg['DB_PORT']);
-            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], CryptManager::decrypt($this->cfg['DB_PASS']), $this->cfg['DB_NAME'], $dbPort);
+            $dbPass = $this->cfg['DB_PASS'];
+            if(FileManager::fileExists(__DIR__ . '\\install')) {
+                $dbPass = CryptManager::decrypt($dbPass);
+            }
+            $this->establishConnection($this->cfg['DB_SERVER'], $this->cfg['DB_USER'], $dbPass, $this->cfg['DB_NAME'], $dbPort);
         } catch(AException $e) {
             throw $e;
         }
@@ -84,6 +88,9 @@ class DatabaseConnection implements IDbQueriable {
     private function establishConnection(string $dbServer, string $dbUser, string $dbPass, string $dbName, ?string $dbPort = null) {
         try {
             $this->conn = new \mysqli($dbServer, $dbUser, $dbPass, $dbName, $dbPort);
+            if($this->conn !== true) {
+                throw new DatabaseConnectionException('Could not connect to the database due to incorrect credentials.');
+            }
         } catch (Exception $e) {
             throw new DatabaseConnectionException($e->getMessage());
         } catch (mysqli_sql_exception $e) {
