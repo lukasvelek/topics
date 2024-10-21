@@ -574,11 +574,11 @@ class DatabaseInstaller {
         $this->logger->info('Creating systems.', __METHOD__);
 
         $i = 0;
-        foreach(Systems::getAll() as $name => $status) {
+        foreach(Systems::getAll() as $name => $userFriendlyName) {
             $id = HashManager::createEntityId();
 
             $sql = 'INSERT INTO `system_status` (`systemId`, `name`, `status`)
-                    SELECT \'' . $id . '\', \'' . $name . '\', \'' . $status . '\'
+                    SELECT \'' . $id . '\', \'' . $name . '\', 1
                     WHERE NOT EXISTS (SELECT 1 FROM `system_status` WHERE `name` = \'' . $name . '\')';
 
             $this->db->query($sql);

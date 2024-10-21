@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Constants\Systems;
 use App\Constants\SystemStatus;
 use App\Core\AjaxRequestBuilder;
 
@@ -24,11 +25,13 @@ class ManagePresenter extends AAdminPresenter {
                 $description = '<p style="font-size: 14px">' . $status->getDescription() . '</p>';
             }
 
+            $statusName = Systems::toString($status->getName());
+
             $statusCode[] = '
                 <div class="row">
                     <div class="col-md">
                         <div class="system-status-item">
-                            <span class="system-status-item-title" style="font-size: 20px; margin-right: 10px">' . $status->getName() . '</span>
+                            <span class="system-status-item-title" style="font-size: 20px; margin-right: 10px">' . $statusName . '</span>
                             <span style="font-size: 16px"><span style="color: ' . $color . '; font-size: 23px">&#x25cf;</span> ' . $statusText . '</span>
                             ' . $description . '
                         </div>

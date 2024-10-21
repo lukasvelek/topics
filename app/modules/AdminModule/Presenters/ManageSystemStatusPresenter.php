@@ -2,6 +2,7 @@
 
 namespace App\Modules\AdminModule;
 
+use App\Constants\Systems;
 use App\Constants\SystemStatus;
 use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
@@ -33,10 +34,20 @@ class ManageSystemStatusPresenter extends AAdminPresenter {
         $grid->createDataSourceFromQueryBuilder($this->app->systemStatusRepository->composeQueryForStatuses(), 'systemId');
         $grid->setGridName(GridHelper::GRID_SYSTEM_STATUSES);
 
-        $grid->addColumnText('name', 'Name');
+        $col = $grid->addColumnText('name', 'Name');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            return Systems::toString($value);
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+            return Systems::toString($value);
+        };
+
         $col = $grid->addColumnText('status', 'Status');
         $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
             $html->style('color', SystemStatus::getColorByCode($value));
+            return SystemStatus::toString($value);
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
             return SystemStatus::toString($value);
         };
 
