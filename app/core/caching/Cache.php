@@ -20,6 +20,7 @@ class Cache {
     private string $namespace;
     private ?DateTime $lastWriteDate;
     private CacheFactory $cacheFactory;
+    private CacheLogger $logger;
 
     /**
      * Class constructor
@@ -29,13 +30,14 @@ class Cache {
      * @param ?DateTime $expirationDate Cache expiration date
      * @param ?DateTime $lastWriteDate Date of last write
      */
-    public function __construct(array $data,  string $namespace, CacheFactory $cacheFactory, ?DateTime $expirationDate = null, ?DateTime $lastWriteDate = null) {
+    public function __construct(array $data,  string $namespace, CacheFactory $cacheFactory, CacheLogger $logger, ?DateTime $expirationDate = null, ?DateTime $lastWriteDate = null) {
         $this->data = $data;
         $this->expirationDate = $expirationDate;
         $this->invalidated = false;
         $this->namespace = $namespace;
         $this->lastWriteDate = $lastWriteDate;
         $this->cacheFactory = $cacheFactory;
+        $this->logger = $logger;
 
         $this->hash = HashManager::createHash(256);
     }
@@ -50,6 +52,7 @@ class Cache {
      */
     public function load(mixed $key, callable $generator, array $generatorDependencies = []) {
         if(array_key_exists($key, $this->data)) {
+            $this->logger->logHitMiss($key, $this->namespace, true, __METHOD__);
             return $this->data[$key];
         } else {
             try {
@@ -57,6 +60,8 @@ class Cache {
             } catch(Exception $e) {
                 throw new CacheException('Could not save data to cache.', $this->namespace, $e);
             }
+
+            $this->logger->logHitMiss($key, $this->namespace, false, __METHOD__);
 
             $this->data[$key] = $result;
             $this->lastWriteDate = new DateTime();
@@ -92,6 +97,7 @@ class Cache {
         $this->data = [];
         $this->invalidated = true;
         $this->cacheFactory->invalidateCacheByCache($this);
+        $this->logger->logCacheInvalidated($this->namespace, __METHOD__);
     }
 
     /**
