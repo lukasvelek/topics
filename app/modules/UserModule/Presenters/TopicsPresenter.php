@@ -551,10 +551,12 @@ class TopicsPresenter extends AUserPresenter {
             $shortenedText = preg_replace($pattern, $replacement, $shortenedText);
             // END OF POST DESCRIPTION LINKS
 
-            if(str_ends_with(substr($shortenedText, 0, 100), '&#')) {
-                $shortenedText = substr($shortenedText, 0, 98) . '...';
-            } else {
-                $shortenedText = substr($shortenedText, 0, 100) . '...';
+            if(strlen($shortenedText) > 100) {
+                if(str_ends_with(substr($shortenedText, 0, 100), '&#')) {
+                    $shortenedText = substr($shortenedText, 0, 98) . '...';
+                } else {
+                    $shortenedText = substr($shortenedText, 0, 100) . '...';
+                }
             }
 
             if(!empty($bwh->getBannedWordsUsed())) {
@@ -1278,7 +1280,12 @@ class TopicsPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($data as $topicId => $cnt) {
-            $topic = $this->app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
+            } catch(AException $e) {
+                continue;
+            }
+
             $link = TopicEntity::createTopicProfileLink($topic);
             $codeArray[] = '
                 <div class="row">
@@ -1459,7 +1466,12 @@ class TopicsPresenter extends AUserPresenter {
 
             $this->saveToPresenterCache('form', $fb);
 
-            $topic = $this->app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect($this->createURL('profile', ['topicId' => $topicId]));
+            }
             $topicTitle = ($topic !== null) ? $topic->getTitle() : '';
 
             $this->saveToPresenterCache('topic_title', $topicTitle);

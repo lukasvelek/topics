@@ -78,22 +78,7 @@ class PostLister {
         $loops = 3;
 
         for($j = 0; $j < $loops; $j++) {
-            $tmp = [];
-            $used = [];
-
-            $i = 0;
-            while($i < count($this->posts)) {
-                $r = rand(0, count($this->posts) - 1);
-
-                
-                if(!in_array($this->posts[$r]->getId(), $used)) {
-                    $tmp[] = $this->posts[$r];
-                    $used[] = $this->posts[$r]->getId();
-                    $i++;
-                }
-            }
-
-            $this->posts = $tmp;
+            shuffle($this->posts);
         }
     }
 

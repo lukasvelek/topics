@@ -26,6 +26,8 @@ class HomePresenter extends AUserPresenter {
         $topicIdsUserIsMemberOf = [];
         $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
 
+        shuffle($followedTopics);
+
         $query = $this->app->postRepository->composeQueryForPosts();
         $query->andWhere($query->getColumnInValues('topicId', $topicIdsUserIsMemberOf))
             ->andWhere('isDeleted = 0')
@@ -33,8 +35,6 @@ class HomePresenter extends AUserPresenter {
             ->andWhere('isSuggestable = 1')
             ->orderBy('likes', 'DESC')
             ->orderBy('dateCreated', 'DESC')
-            ->orderBy('postId', 'ASC')
-            ->limit(500)
         ;
 
         $cursor = $query->execute();
