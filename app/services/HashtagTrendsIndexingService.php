@@ -43,11 +43,13 @@ class HashtagTrendsIndexingService extends AService {
         $x = 0;
         $maxRuns = 1000;
         while(true) {
+            $this->logInfo('Starting post hashtags batch #' . ($x + 1));
             if($x >= $maxRuns) {
                 break;
             }
 
             $hashtags = $this->pm->getListOfPostsWithHashtagsInDescriptions((self::MAX_COUNT + 1), $offset);
+            $this->logInfo('Found ' . count($hashtags) . ' hashtags.');
 
             foreach($hashtags as $hashtag) {
                 if(!array_key_exists($hashtag, $usages)) {
@@ -56,8 +58,6 @@ class HashtagTrendsIndexingService extends AService {
                     $usages[$hashtag] = $usages[$hashtag] + 1;
                 }
             }
-
-            //arsort($usages, SORT_NUMERIC);
 
             if(count($hashtags) > self::MAX_COUNT) {
                 $offset += self::MAX_COUNT;
@@ -72,11 +72,13 @@ class HashtagTrendsIndexingService extends AService {
         $offset = 0;
         $x = 0;
         while(true) {
+            $this->logInfo('Starting comment hashtags batch #' . ($x + 1));
             if($x >= $maxRuns) {
                 break;
             }
 
             $hashtags = $this->pm->getListOfPostCommentsWithHashtags((self::MAX_COUNT + 1), $offset);
+            $this->logInfo('Found ' . count($hashtags) . ' hashtags.');
 
             foreach($hashtags as $hashtag) {
                 if(!array_key_exists($hashtag, $usages)) {
@@ -85,8 +87,6 @@ class HashtagTrendsIndexingService extends AService {
                     $usages[$hashtag] = $usages[$hashtag] + 1;
                 }
             }
-
-            //arsort($usages, SORT_NUMERIC);
 
             if(count($hashtags) > self::MAX_COUNT) {
                 $offset += self::MAX_COUNT;
@@ -97,6 +97,8 @@ class HashtagTrendsIndexingService extends AService {
 
             $x++;
         }
+
+        $this->logInfo('In total ' . count($usages) . ' hashtags were found.');
 
         arsort($usages, SORT_NUMERIC);
 

@@ -48,11 +48,15 @@ class PostManager extends AManager {
         $hashtags = [];
         while($row = $query->fetchAssoc()) {
             $hashtagsTmp = [];
-            preg_match_all("/[#]\w*/m", $row['description'], $hashtagsTmp);
+            preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $row['description'], $hashtagsTmp);
             $hashtagsTmp = $hashtagsTmp[0];
 
             foreach($hashtagsTmp as $htmp) {
-                $hashtags[] = $htmp;
+                if(str_contains($htmp, '&')) {
+                    continue;
+                } else {
+                    $hashtags[] = $htmp;
+                }
             }
         }
 
@@ -74,11 +78,15 @@ class PostManager extends AManager {
         $hashtags = [];
         while($row = $query->fetchAssoc()) {
             $hashtagsTmp = [];
-            preg_match_all("/[#]\w*/m", $row['commentText'], $hashtagsTmp);
+            preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $row['commentText'], $hashtagsTmp);
             $hashtagsTmp = $hashtagsTmp[0];
 
             foreach($hashtagsTmp as $htmp) {
-                $hashtags[] = $htmp;
+                if(str_contains($htmp, '&')) {
+                    continue;
+                } else {
+                    $hashtags[] = $htmp;
+                }
             }
         }
 

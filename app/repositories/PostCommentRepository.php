@@ -379,7 +379,7 @@ class PostCommentRepository extends ARepository {
 
         $qbTopics ->select(['topicId'])
             ->from('topics')
-            ->where('(isPrivate = 1 AND isVisible = 1)')
+            //->where('(isPrivate = 1 AND isVisible = 1)')
         ;
 
         $qbPosts = $this->qb(__METHOD__);

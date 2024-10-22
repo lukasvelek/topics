@@ -671,7 +671,7 @@ class PostRepository extends ARepository {
 
         $qbTopics ->select(['topicId'])
             ->from('topics')
-            ->where('(isPrivate = 1 AND isVisible = 1)')
+            //->where('(isPrivate = 1 AND isVisible = 1)')
         ;
 
         $qb = $this->qb(__METHOD__);
