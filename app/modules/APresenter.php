@@ -315,14 +315,14 @@ abstract class APresenter extends AGUICore {
      * @param string $text Flash message text
      * @param string $type Flash message type
      */
-    protected function flashMessage(string $text, string $type = 'info') {
+    protected function flashMessage(string $text, string $type = 'info', int $autoCloseLengthInSeconds = 5) {
         if(empty($this->flashMessages)) {
             $hash = HashManager::createHash(8, false);
         } else {
             $hash = $this->flashMessages[0]['hash'];
         }
 
-        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash];
+        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash, 'autoClose' => $autoCloseLengthInSeconds];
         
         if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
             $this->specialRedirectUrlParams['_fm'] = $hash;

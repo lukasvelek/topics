@@ -5,13 +5,12 @@ namespace App\Modules\AnonymModule;
 use App\Core\HashManager;
 use App\Exceptions\AException;
 use App\Exceptions\UserRegistrationException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
 use Exception;
 
-class RegisterPresenter extends APresenter {
+class RegisterPresenter extends AAnonymPresenter {
     public function __construct() {
         parent::__construct('RegisterPresenter', 'Register');
     }

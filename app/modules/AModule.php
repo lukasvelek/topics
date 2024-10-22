@@ -208,7 +208,12 @@ abstract class AModule extends AGUICore {
             }
 
             foreach($flashMessages as $flashMessage) {
-                $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages));
+                $autoCloseLength = 5;
+                if(isset($flashMessage['autoClose'])) {
+                    $autoCloseLength = $flashMessage['autoClose'];
+                }
+
+                $this->flashMessages[] = $this->createFlashMessage($flashMessage['type'], $flashMessage['text'], count($this->flashMessages), false, false, $autoCloseLength);
             }
 
             $cache->invalidate();

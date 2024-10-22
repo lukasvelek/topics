@@ -27,11 +27,11 @@ abstract class AGUICore {
      * @param bool $permanent True if the flash message is permanent or false if not
      * @return string HTML code
      */
-    protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false, bool $permanent = false) {
+    protected function createFlashMessage(string $type, string $text, int $flashMessageCount, bool $custom = false, bool $permanent = false, int $autoCloseLengthInSeconds = 5) {
         $fmc = $flashMessageCount . '-' . ($custom ? '-custom' : '') . ($permanent ? '-permanent' : '');
         $removeLink = '<p class="fm-text fm-link" style="cursor: pointer" onclick="closeFlashMessage(\'fm-' . $fmc . '\')">&times;</p>';
 
-        $jsAutoRemoveScript = '<script type="text/javascript">autoHideFlashMessage(\'fm-' . $fmc . '\')</script>';
+        $jsAutoRemoveScript = '<script type="text/javascript">autoHideFlashMessage(\'fm-' . $fmc . '\', ' . $autoCloseLengthInSeconds . ')</script>';
 
         $code = '<div id="fm-' . $fmc . '" class="row fm-' . $type . '"><div class="col-md"><p class="fm-text">' . $text . '</p></div><div class="col-md-1" id="right">' . ($custom ? '' : ($permanent ? $removeLink : '')) . '</div><div id="fm-' . $fmc . '-progress-bar" style="position: absolute; left: 0; bottom: 1%; border-bottom: 2px solid black"></div>' . ($custom ? '' : ($permanent ? '' : $jsAutoRemoveScript)) . '</div>';
 

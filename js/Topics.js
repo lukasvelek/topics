@@ -37,8 +37,8 @@ function hideNewCommentForm(_commentId, _userId, _postId) {
     $(linkId).html("Add comment");
 }
 
-async function autoHideFlashMessage(_divId) {
-    const sleepLength = 500; // 5s
+async function autoHideFlashMessage(_divId, _length) {
+    const sleepLength = (_length * 100); // 5s
 
     for(var s = 1; s <= sleepLength; s++) {
         $("#" + _divId + "-progress-bar").css("width", "" + (100 / sleepLength * s) + "%")
