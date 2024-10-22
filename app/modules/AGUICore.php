@@ -12,6 +12,11 @@ use App\Helpers\TemplateHelper;
 use App\UI\AComponent;
 use App\UI\FormBuilder\FormResponse;
 
+/**
+ * AGUICore is the lowest level UI element. It is implemented by Modules, Presenters and Components - all UI elements
+ * 
+ * @author Lukas Velek
+ */
 abstract class AGUICore {
     protected HttpRequest $httpRequest;
     protected Application $app;
