@@ -60,7 +60,6 @@ use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
-use App\UI\GridBuilder\DefaultGridReducer;
 use Exception;
 use ReflectionClass;
 
@@ -344,6 +343,11 @@ class Application {
         }
     }
 
+    /**
+     * Creates a HttpRequest instance that contains all query variables
+     * 
+     * @return HttpRequest HttpRequest instance
+     */
     private function getRequest() {
         $request = new HttpRequest();
 
