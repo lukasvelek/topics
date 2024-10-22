@@ -583,7 +583,7 @@ class GridBuilder extends AComponent {
                     } else {
                         $_cell = new Cell();
                         $_cell->setName($name);
-                        $_cell->setContent('-');
+                        $_cell->setContent('');
                         $_cell->setClass('grid-cell-action');
                     }
 
