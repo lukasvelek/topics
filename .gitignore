@@ -1,4 +1,4 @@
-config.local.php
+config.php
 logs/
 cache/
 grid_exports/
