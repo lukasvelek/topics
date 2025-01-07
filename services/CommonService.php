@@ -4,8 +4,8 @@ use App\Core\Application;
 use App\Exceptions\AException;
 use App\Exceptions\ServiceException;
 
-require_once('app/app_loader.php');
 require_once('config.local.php');
+require_once('app/app_loader.php');
 
 try {
     $app = new Application();

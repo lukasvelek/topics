@@ -2,8 +2,10 @@
 
 namespace App\Components\Navbar;
 
+use App\Constants\Systems;
 use App\Helpers\LinkHelper;
 use App\Managers\NotificationManager;
+use App\Managers\SystemStatusManager;
 use App\Modules\TemplateObject;
 use App\UI\IRenderable;
 
@@ -15,17 +17,25 @@ class Navbar implements IRenderable {
     private NotificationManager $notificationManager;
     private ?string $currentUserId;
     private bool $isCurrentUserAdmin;
+    private array $hideLinks;
+    private SystemStatusManager $ssm;
 
-    public function __construct(NotificationManager $notificationManager, ?string $currentUserId = null) {
+    public function __construct(NotificationManager $notificationManager, SystemStatusManager $ssm, ?string $currentUserId = null) {
         $this->links = [];
         $this->template = new TemplateObject(file_get_contents(__DIR__ . '\\template.html'));
         $this->hideSearchBar = false;
         $this->hasCustomLinks = false;
         $this->notificationManager = $notificationManager;
+        $this->ssm = $ssm;
         $this->currentUserId = $currentUserId;
         $this->isCurrentUserAdmin = false;
+        $this->hideLinks = [];
 
         $this->getLinks();
+    }
+
+    public function hideLink(string $title) {
+        $this->hideLinks[] = $title;
     }
 
     public function setIsCurrentUserIsAdmin(?bool $isCurrentUserAdmin = true) {
@@ -49,11 +59,21 @@ class Navbar implements IRenderable {
         $this->links = NavbarLinks::toArray();
     }
 
+    private function processSystems() {
+        if(!$this->ssm->isSystemOn(Systems::CHATS) && !$this->ssm->isUserSuperAdministrator($this->currentUserId)) {
+            $this->hideLink('chats');
+        }
+    }
+
     private function beforeRender() {
         $linksCode = '';
+        
+        $this->processSystems();
 
         foreach($this->links as $title => $link) {
-            $linksCode .= $this->createLink($link, $title);
+            if(!in_array($title, $this->hideLinks)) {
+                $linksCode .= $this->createLink($link, $title);
+            }
         }
 
         if($this->hasCustomLinks !== true && $this->isCurrentUserAdmin) {
@@ -68,7 +88,16 @@ class Navbar implements IRenderable {
 
             $notificationLink = $this->createNotificationsLink();
 
-            $this->template->user_info = [$this->createLink(NavbarLinks::USER_CHATS, 'chats'), $notificationLink, $this->createLink(NavbarLinks::USER_INVITES, 'invites'), $this->createLink($profileLinkArray, 'me'), $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];
+            $userInfoLinks = ['chats' => $this->createLink(NavbarLinks::USER_CHATS, 'chats'), 'notifications' => $notificationLink, 'invites' => $this->createLink(NavbarLinks::USER_INVITES, 'invites'), 'me' => $this->createLink($profileLinkArray, 'me'), 'logout' => $this->createLink(NavbarLinks::USER_LOGOUT, 'logout')];;
+
+            $userInfo = '';
+            foreach($userInfoLinks as $title => $link) {
+                if(!in_array($title, $this->hideLinks)) {
+                    $userInfo .= $link;
+                }
+            }
+
+            $this->template->user_info = $userInfo;
         } else {
             $this->template->user_info = '';
         }

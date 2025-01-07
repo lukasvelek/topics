@@ -2,12 +2,15 @@
 
 namespace App\Modules\UserModule;
 
-use App\Core\AjaxRequestBuilder;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
+use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class TopicRulesPresenter extends AUserPresenter {
@@ -15,25 +18,12 @@ class TopicRulesPresenter extends AUserPresenter {
         parent::__construct('TopicRulesPresenter', 'Topic rules');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleList() {
         $topicId = $this->httpGet('topicId', true);
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setHeader(['topicId' => '_topicId'])
-            ->setAction($this, 'getTopicRulesListForUser')
-            ->setFunctionName('getTopicRules')
-            ->setFunctionArguments(['_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId) && ($this->httpGet('userList') === null)) {
-            $arb->setAction($this, 'getTopicRulesList');
-        }
-
-        $this->addScript($arb);
-        $this->addScript('getTopicRules(\'' . $topicId . '\')');
 
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId], 'post-data-link')
@@ -41,12 +31,6 @@ class TopicRulesPresenter extends AUserPresenter {
 
         if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId)) {
             $links[] = LinkBuilder::createSimpleLink('New rule', ['page' => 'UserModule:TopicRules', 'action' => 'newRuleForm', 'topicId' => $topicId], 'post-data-link');
-
-            if($this->httpGet('userList') !== null) {
-                $links[] = LinkBuilder::createSimpleLink('Admin\'s perspective', $this->createURL('list', ['topicId' => $topicId]), 'post-data-link');
-            } else {
-                $links[] = LinkBuilder::createSimpleLink('User\'s perspective', $this->createURL('list', ['topicId' => $topicId, 'userList' => '1']), 'post-data-link');
-            }
         }
 
         $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
@@ -56,77 +40,51 @@ class TopicRulesPresenter extends AUserPresenter {
         $this->template->links = $this->loadFromPresenterCache('links');
     }
 
-    public function actionGetTopicRulesListForUser() {
-        $topicId = $this->httpGet('topicId');
+    protected function createComponentGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
-        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
+        $grid = $this->getGridBuilder();
 
-        $code = ['<ol>'];
+        $grid->createDataSourceFromQueryBuilder($this->app->topicManager->composeQueryForTopicRules($topicId), 'ruleId');
+        $grid->addQueryDependency('topicId', $topicId);
+        $grid->setGridName(GridHelper::GRID_TOPIC_RULES);
 
-        $i = 0;
-        foreach($rules as $rule) {
-            $code[] = '<li>' . $rule . '</li>';
+        $col = $grid->addColumnText('index', '#');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            return ($_row->index + 1) . '.';
+        };
 
-            $i++;
-        }
+        $grid->addColumnText('ruleText', 'Rule');
 
-        $code[] = '</ol>';
+        $edit = $grid->addAction('edit');
+        $edit->setTitle('Edit');
+        $edit->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($topicId) {
+            return $this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId);
+        };
+        $edit->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->href($this->createURLString('editRuleForm', ['ruleId' => $primaryKey, 'topicId' => $topicId]))
+                    ->class('grid-link')
+                    ->text('Edit');
 
-        return ['grid' => implode('', $code)];
-    }
+            return $el;
+        };
 
-    public function actionGetTopicRulesList() {
-        $topicId = $this->httpGet('topicId');
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($topicId) {
+            return $this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId);
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->href($this->createURLString('deleteRuleForm', ['ruleId' => $primaryKey, 'topicId' => $topicId]))
+                    ->class('grid-link')
+                    ->text('Delete');
 
-        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
+            return $el;
+        };
 
-        $grid = new GridBuilder();
-
-        $grid->addColumns(['index' => 'No', 'text' => 'Rule']);
-        $grid->addOnColumnRender('index', function(Cell $cell, object $obj) {
-            return '#' . ($obj->getIndex() + 1);
-        });
-        $grid->addDataSourceCallback(function() use ($rules) {
-            $entity = function(string $text, int $index) {
-                return new class($text, $index) {
-                    private int $index;
-                    private string $text;
-
-                    public function __construct(string $text, int $index) {
-                        $this->text = $text;
-                        $this->index = $index;
-                    }
-
-                    public function getText() {
-                        return $this->text;
-                    }
-
-                    public function getIndex() {
-                        return $this->index;
-                    }
-                };
-            };
-
-            $tmp = [];
-            $i = 0;
-            foreach($rules as $rule) {
-                $tmp[] = $entity($rule, $i);
-                $i++;
-            }
-
-            return $tmp;
-        });
-    
-        if($this->app->actionAuthorizator->canManageTopicRules($this->getUserId(), $topicId)) {
-            $grid->addAction(function(object $obj) use ($topicId) {
-                return LinkBuilder::createSimpleLink('Edit', $this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
-            });
-            $grid->addAction(function(object $obj) use ($topicId) {
-                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteRuleForm', ['topicId' => $topicId, 'index' => $obj->getIndex()]), 'grid-link');
-            });
-        }
-
-        return ['grid' => $grid->build()];
+        return $grid;
     }
 
     public function handleNewRuleForm(?FormResponse $fr = null) {
@@ -177,16 +135,9 @@ class TopicRulesPresenter extends AUserPresenter {
 
     public function handleEditRuleForm(?FormResponse $fr = null) {
         $topicId = $this->httpGet('topicId', true);
-        $index = $this->httpGet('index', true);
+        $ruleId = $this->httpGet('ruleId', true);
 
-        $rules = $this->app->topicManager->getTopicRulesForTopicId($topicId);
-
-        if($index > (count($rules) - 1) || $rules < 0) {
-            $this->flashMessage('Incorrect rule selected.', 'error');
-            $this->redirect($this->createURL('list', ['topicId' => $topicId]));
-        }
-
-        $rule = $rules[$index];
+        $rule = $this->app->topicManager->getTopicRuleById($ruleId);
 
         if($this->httpGet('isFormSubmit') == '1') {
             $ruleText = $fr->ruleText;
@@ -194,7 +145,7 @@ class TopicRulesPresenter extends AUserPresenter {
             try {
                 $this->app->topicRulesRepository->beginTransaction();
 
-                $this->app->topicManager->updateTopicRule($topicId, $this->getUserId(), $index, $ruleText);
+                $this->app->topicManager->updateTopicRule($this->getUserId(), $ruleId, $ruleText);
 
                 $this->app->topicRulesRepository->commit($this->getUserId(), __METHOD__);
 
@@ -217,8 +168,8 @@ class TopicRulesPresenter extends AUserPresenter {
 
             $form
                 ->setMethod()
-                ->setAction($this->createURL('editRuleForm', ['topicId' => $topicId, 'index' => $index]))
-                ->addTextArea('ruleText', 'Rule text:', $rule, true, 2)
+                ->setAction($this->createURL('editRuleForm', ['topicId' => $topicId, 'ruleId' => $ruleId]))
+                ->addTextArea('ruleText', 'Rule text:', $rule->getText(), true, 2)
                 ->addSubmit('Save', false, true)
             ;
 
@@ -233,13 +184,13 @@ class TopicRulesPresenter extends AUserPresenter {
 
     public function handleDeleteRuleForm(?FormResponse $fr = null) {
         $topicId = $this->httpGet('topicId', true);
-        $index = $this->httpGet('index', true);
+        $ruleId = $this->httpGet('ruleId', true);
 
         if($this->httpGet('isFormSubmit') == '1') {
             try {
                 $this->app->topicRulesRepository->beginTransaction();
 
-                $this->app->topicManager->deleteTopicRule($topicId, $this->getUserId(), $index);
+                $this->app->topicManager->deleteTopicRule($ruleId, $this->getUserId());
 
                 $this->app->topicRulesRepository->commit($this->getUserId(), __METHOD__);
 
@@ -260,10 +211,10 @@ class TopicRulesPresenter extends AUserPresenter {
 
             $form
                 ->setMethod()
-                ->setAction($this->createURL('deleteRuleForm', ['topicId' => $topicId, 'index' => $index]))
-                ->addLabel('Delete topic rule #' . ($index + 1) . '?')
+                ->setAction($this->createURL('deleteRuleForm', ['topicId' => $topicId, 'ruleId' => $ruleId]))
+                ->addLabel('Delete topic rule ?')
                 ->addSubmit('Delete', false, false)
-                ->addButton('Go back', 'location.href = \'?page=UserModule:TopicRules&action=list&topicId=' . $topicId . '\'', 'formSubmit')
+                ->addButton('Go back', 'location.href = \'?page=UserModule:TopicRules&action=list&topicId=' . $topicId . '&ruleId=' . $ruleId . '\'', 'formSubmit')
             ;
 
             $this->saveToPresenterCache('form', $form);

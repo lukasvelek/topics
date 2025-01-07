@@ -71,8 +71,8 @@ class HomePresenter extends AAdminPresenter {
             $resultData = [];
 
             foreach($posts as $postId => $commentCount) {
-                $post = $this->app->postRepository->getPostById($postId);
                 try {
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
                     $topic = $this->app->topicManager->getTopicById($post->getTopicId(), $this->getUserId());
                 } catch(AException $e) {
                     continue;
@@ -94,7 +94,11 @@ class HomePresenter extends AAdminPresenter {
             $resultData = [];
 
             foreach($users as $userId => $commentCount) {
-                $user = $this->app->userRepository->getUserById($userId);
+                try {
+                    $user = $this->app->userManager->getUserById($userId);
+                } catch(AException $e) {
+                    continue;
+                }
 
                 $labels[] = $user->getUsername();
                 $resultData[] = $commentCount;

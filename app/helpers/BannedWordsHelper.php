@@ -5,6 +5,11 @@ namespace App\Helpers;
 use App\Repositories\ContentRegulationRepository;
 use App\Repositories\TopicContentRegulationRepository;
 
+/**
+ * BannedWordsHelper contains useful functions for banned words
+ * 
+ * @author Lukas Velek
+ */
 class BannedWordsHelper {
     private ContentRegulationRepository $crr;
     private ?TopicContentRegulationRepository $tcrr;
@@ -12,6 +17,12 @@ class BannedWordsHelper {
     private bool $isListFilled;
     private array $bannedWordsUsed;
 
+    /**
+     * Class constructor
+     * 
+     * @param ContentRegulationReposiory $crr ContentRegulationRepository instance
+     * @param null|TopicContentRegulationRepository $tcrr TopicContentRegulationRepository instance or null
+     */
     public function __construct(ContentRegulationRepository $crr, ?TopicContentRegulationRepository $tcrr = null) {
         $this->crr = $crr;
         $this->tcrr = $tcrr;
@@ -20,6 +31,13 @@ class BannedWordsHelper {
         $this->bannedWordsUsed = [];
     }
 
+    /**
+     * Checks given text if it contains globally banned words and/or topic banned words
+     * 
+     * @param string $text Text to check
+     * @param null|string $topicId Topic ID
+     * @return string Checked text
+     */
     public function checkText(string $text, ?string $topicId = null) {
         if(!$this->isListFilled) {
             $this->bannedWordsList = $this->getBannedWordList();
@@ -49,6 +67,11 @@ class BannedWordsHelper {
         return $text;
     }
 
+    /**
+     * Returns a list of globally banned words
+     * 
+     * @return array Globally banned words
+     */
     private function getBannedWordList() {
         $bannedWords = $this->crr->getBannedWordsForGrid(0, 0);
 
@@ -60,6 +83,12 @@ class BannedWordsHelper {
         return $tmp;
     }
 
+    /**
+     * Returns a list of topic banned words
+     * 
+     * @param string $topicId Topic ID
+     * @return array Topic banned words
+     */
     private function getTopicBannedWordList(string $topicId) {
         $bannedWords = $this->tcrr->getBannedWordsForTopicForGrid($topicId, 0, 0);
 
@@ -71,10 +100,18 @@ class BannedWordsHelper {
         return $tmp;
     }
 
+    /**
+     * Returns the list of banned words that have been used when checking text
+     * 
+     * @return array Used banned words
+     */
     public function getBannedWordsUsed() {
         return $this->bannedWordsUsed;
     }
 
+    /**
+     * Cleans the list of banned words that have been used when checking text
+     */
     public function cleanBannedWordsUsed() {
         $this->bannedWordsUsed = [];
     }

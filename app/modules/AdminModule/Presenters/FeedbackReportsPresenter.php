@@ -6,21 +6,19 @@ use App\Constants\ReportCategory;
 use App\Constants\ReportEntityType;
 use App\Constants\ReportStatus;
 use App\Constants\UserProsecutionType;
-use App\Core\AjaxRequestBuilder;
-use App\Entities\ReportEntity;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Exceptions\AException;
 use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class FeedbackReportsPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('FeedbackReportsPresenter', 'Reports');
     }
@@ -32,269 +30,42 @@ class FeedbackReportsPresenter extends AAdminPresenter {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Feedback', 'action' => 'dashboard']);
         }
-
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
-    public function actionReportGrid() {
-        $gridPage = $this->httpGet('gridPage');
-        $filterType = $this->httpGet('filterType');
-        $filterKey = $this->httpGet('filterKey');
+    public function createComponentGrid(HttpRequest $request) {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_REPORTS, $gridPage, [$filterType]);
+        $grid->createDataSourceFromQueryBuilder($this->app->reportRepository->composeQueryForOpenReports(), 'reportId');
+        $grid->setGridName(GridHelper::GRID_REPORTS);
+        
+        $usersInReports = $this->app->reportRepository->getUsersInReports();
+        $userEntitiesInReports = [];
+        foreach($usersInReports as $userId) {
+            try {
+                $user = $this->app->userManager->getUserById($userId);
 
-        $gridSize = $this->app->getGridSize();
-
-        $reports = [];
-        $reportCount = 0;
-
-        switch($filterType) {
-            case 'null':
-                $reports = $this->app->reportRepository->getOpenReportsForList($gridSize, ($page * $gridSize));
-                $reportCount = count($this->app->reportRepository->getOpenReportsForList(0, 0));
-                break;
-    
-            case 'user':
-                $reports = $this->app->reportRepository->getOpenReportsForListFilterUser($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($this->app->reportRepository->getOpenReportsForListFilterUser($filterKey, 0, 0));
-                break;
-    
-            case 'category':
-                $reports = $this->app->reportRepository->getOpenReportsForListFilterCategory($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($this->app->reportRepository->getOpenReportsForListFilterCategory($filterKey, 0, 0));
-                break;
-    
-            case 'status':
-                $reports = $this->app->reportRepository->getReportsForListFilterStatus($filterKey, $gridSize, ($page * $gridSize));
-                $reportCount = count($this->app->reportRepository->getReportsForListFilterStatus($filterKey, 0, 0));
-                break;
+                $userEntitiesInReports[$userId] = $user->getUsername();
+            } catch(AException $e) {
+                continue;
+            }
         }
 
-        $lastPage = ceil($reportCount / $gridSize);
+        $col = $grid->addColumnText('title', 'Title');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            return ReportEntityType::toString($row->entityType) . ' report';
+        };
 
-        $gb = new GridBuilder();
+        $grid->addColumnConst('category', 'Category', ReportCategory::class);
+        $grid->addColumnConst('status', 'Status', ReportStatus::class);
+        $grid->addColumnUser('userId', 'User');
 
-        $gb->addDataSource($reports);
-        $gb->addColumns(['title' => 'Title', 'category' => 'Category', 'status' => 'Status', 'user' => 'User']);
-        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
-            return ReportEntityType::toString($re->getEntityType()) . ' report';
-        });
-        $gb->addOnColumnRender('category', function(Cell $cell, ReportEntity $re) {
-            $a = HTML::a();
+        $grid->addFilter('category', null, ReportCategory::getAll());
+        $grid->addFilter('status', null, ReportStatus::getAll());
 
-            $a->href('#')
-                ->onClick('getReportGrid(-1, \'category\', \'' . $re->getCategory() . '\')')
-                ->text(ReportCategory::toString($re->getCategory()))
-                ->class('grid-link')
-            ;
-
-            return $a->render();
-        });
-        $gb->addOnColumnRender('status', function(Cell $cell, ReportEntity $re) {
-            $a = HTML::a();
-
-            $a->href('#')
-                ->text(ReportStatus::toString($re->getStatus()))
-                ->onClick('getReportGrid(-1, \'status\', \'' . $re->getStatus() . '\')')
-                ->class('grid-link')
-            ;
-
-            return $a->render();
-        });
-        $gb->addOnColumnRender('user', function(Cell $cell, ReportEntity $re) {
-            $user = $this->app->userRepository->getUserById($re->getUserId());
-
-            $a = HTML::a();
-
-            $a->href('#')
-                ->text($user->getUsername())
-                ->onClick('getReportGrid(-1, \'user\', \'' . $user->getId() . '\')')
-                ->class('grid-link')
-            ;
-
-            return $a->render();
-        });
-        $gb->addOnColumnRender('title', function(Cell $cell, ReportEntity $re) {
-            $a = HTML::a();
-
-            $a->href($this->createURLString('profile', ['reportId' => $re->getId()]))
-                ->text(ReportEntityType::toString($re->getEntityType()) . ' report')
-                ->class('grid-link')
-            ;
-
-            return $a->render();
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $reportCount, 'getReportGrid', [$filterType, $filterKey]);
-
-        $filterControl = '';
-        if($filterType != 'null') {
-            /** FILTER CATEGORIES */
-            $filterCategories = [
-                'all' => 'All',
-                'category' => 'Category',
-                'status' => 'Status',
-                'user' => 'User'
-            ];
-            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
-            foreach($filterCategories as $k => $v) {
-                if($k == $filterType) {
-                    $filterCategoriesSelect .= '<option value="' . $k . '" selected>' . $v . '</option>';
-                } else {
-                    $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
-                }
-            }
-            $filterCategoriesSelect .= '</select>';
-            /** END OF FILTER CATEGORIES */
-
-            /** FILTER SUBCATEGORIES */
-            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory">';
-
-            $options = [];
-            switch($filterType) {
-                case 'category':
-                    foreach(ReportCategory::getArray() as $k => $v) {
-                        if($filterKey == $k) {
-                            $options[] = '<option value="' . $k . '" selected>' . $v . '</option>';
-                        } else {
-                            $options[] = '<option value="' . $k . '">' . $v . '</option>';
-                        }
-                    }
-                    break;
-    
-                case 'status':
-                    if($filterKey == ReportStatus::OPEN) {
-                        $options[] = '<option value="' . ReportStatus::OPEN . '" selected>' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
-                        $options[] = '<option value="' . ReportStatus::RESOLVED . '">' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
-                    } else {
-                        $options[] = '<option value="' . ReportStatus::OPEN . '">' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
-                        $options[] = '<option value="' . ReportStatus::RESOLVED . '" selected>' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
-                    }
-
-                    break;
-    
-                case 'user':
-                    $usersInReports = $this->app->reportRepository->getUsersInReports();
-                    $users = $this->app->userRepository->getUsersByIdBulk($usersInReports);
-    
-                    foreach($users as $user) {
-                        if($user->getId() == $filterKey) {
-                            $options[] = '<option value="' . $user->getId() . '" selected>'. $user->getUsername() . '</option>';
-                        } else {
-                            $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
-                        }
-                    }
-    
-                    break;
-            }
-
-            $filterSubcategoriesSelect .= implode('', $options);
-
-            $filterSubcategoriesSelect .= '</select>';
-            /** END OF FILTER SUBCATEGORIES */
-
-            /** FILTER SUBMIT */
-            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
-            /** END OF FILTER SUBMIT */
-
-            /** FILTER CLEAR */
-            $filterClear = '<button type="button" id="filter-clear" onclick="handleGridFilterClear()" style="border: 1px solid black">Clear filter</button>';
-            /** END OF FILTER CLEAR */
-
-            $filterForm = '
-                <div>
-                    ' . $filterCategoriesSelect . '
-                    ' . $filterSubcategoriesSelect . '
-                    ' . $filterSubmit . '
-                    ' . $filterClear . '
-                </div>
-            ';
-
-            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script>';
-        } else {
-            /** FILTER CATEGORIES */
-            $filterCategories = [
-                'all' => 'All',
-                'category' => 'Category',
-                'status' => 'Status',
-                'user' => 'User'
-            ];
-            $filterCategoriesSelect = '<select name="filter-category" id="filter-category" onchange="handleFilterCategoryChange()">';
-            foreach($filterCategories as $k => $v) {
-                $filterCategoriesSelect .= '<option value="' . $k . '">' . $v . '</option>';
-            }
-            $filterCategoriesSelect .= '</select>';
-            /** END OF FILTER CATEGORIES */
-
-            /** FILTER SUBCATEGORIES */
-            $filterSubcategoriesSelect = '<select name="filter-subcategory" id="filter-subcategory"></select>';
-            /** END OF FILTER SUBCATEGORIES */
-
-            /** FILTER SUBMIT */
-            $filterSubmit = '<button type="button" id="filter-submit" onclick="handleGridFilterChange()" style="border: 1px solid black">Apply filter</button>';
-            /** END OF FILTER SUBMIT */
-
-            $filterForm = '
-                <div>
-                    ' . $filterCategoriesSelect . '
-                    ' . $filterSubcategoriesSelect . '
-                    ' . $filterSubmit . '
-                </div>
-            ';
-
-            $filterControl = $filterForm . '<script type="text/javascript" src="js/FeedbackReportsFilterHandler.js"></script><script type="text/javascript">$("#filter-subcategory").hide();$("#filter-submit").hide();</script>';
-        }
-
-        return ['grid' => $gb->build(), 'filterControl' => $filterControl];
+        return $grid;
     }
 
-    public function actionGetFilterCategorySuboptions() {
-        $category = $this->httpGet('category');
-
-        $options = [];
-        switch($category) {
-            case 'category':
-                foreach(ReportCategory::getArray() as $k => $v) {
-                    $options[] = '<option value="' . $k . '">' . $v . '</option>';
-                }
-                break;
-
-            case 'status':
-                $options[] = '<option value="' . ReportStatus::OPEN . '">' . ReportStatus::toString(ReportStatus::OPEN) . '</option>';
-                $options[] = '<option value="' . ReportStatus::RESOLVED . '">' . ReportStatus::toString(ReportStatus::RESOLVED) . '</option>';
-                break;
-
-            case 'user':
-                $usersInReports = $this->app->reportRepository->getUsersInReports();
-                $users = $this->app->userRepository->getUsersByIdBulk($usersInReports);
-
-                foreach($users as $user) {
-                    $options[] = '<option value="' . $user->getId() . '">'. $user->getUsername() . '</option>';
-                }
-
-                break;
-        }
-
-        return ['options' => $options, 'empty' => (empty($options))];
-    }
-
-    public function handleList() {
-        $filterType = $this->httpGet('filterType') ?? 'null';
-        $filterKey = $this->httpGet('filterKey') ?? 'null';
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setURL(['page' => 'AdminModule:FeedbackReports', 'action' => 'reportGrid'])
-            ->setMethod('GET')
-            ->setHeader(['gridPage' => '_page', 'filterType' => '_filterType', 'filterKey' => '_filterKey'])
-            ->setFunctionName('getReportGrid')
-            ->setFunctionArguments(['_page', '_filterType', '_filterKey'])
-            ->updateHTMLElement('grid-content', 'grid')
-            ->updateHTMLElement('grid-filter-control', 'filterControl')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getReportGrid(-1, \'' . $filterType . '\', \'' . $filterKey . '\')');
-    }
+    public function handleList() {}
 
     public function renderList() {}
 
@@ -304,7 +75,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
 
         $this->saveToPresenterCache('report', $report);
 
-        $author = $this->app->userRepository->getUserById($report->getUserId());
+        try {
+            $author = $this->app->userManager->getUserById($report->getUserId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
+        }
         $authorLink = '<a class="post-data-link" href="?page=UserModule:Users&action=profile&userId=' . $report->getUserId() . '">' . $author->getUsername() . '</a>';
         $entityTypeText = ReportEntityType::toString($report->getEntityType());
         $entityLink = '<a class="post-data-link" href="?page=UserModule:';
@@ -312,13 +88,27 @@ class FeedbackReportsPresenter extends AAdminPresenter {
         switch($report->getEntityType()) {
             case ReportEntityType::COMMENT:
                 $comment = $this->app->postCommentRepository->getCommentById($report->getEntityId());
-                $post = $this->app->postRepository->getPostById($comment->getPostId());
-                $author = $this->app->userRepository->getUserById($comment->getAuthorId());
+                $tmp = '';
+                try {
+                    $tmp = 'post';
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+
+                    $tmp = 'user';
+                    $author = $this->app->userManager->getUserById($comment->getAuthorId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find ' . $tmp . '. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Posts&action=profile&postId=' . $comment->getPostId() . '">Comment on post \'' . $post->getTitle() . '\' from user \'' . $author->getUsername() . '\' created on \'' . DateTimeFormatHelper::formatDateToUserFriendly($comment->getDateCreated()) .'\'</a>';
                 break;
 
             case ReportEntityType::POST:
-                $post = $this->app->postRepository->getPostById($report->getEntityId());
+                try {
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $report->getEntityId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Posts&action=profile&postId=' . $post->getId() . '">' . $post->getTitle() . '</a>';
                 break;
 
@@ -326,14 +116,19 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                 try {
                     $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                 } catch(AException $e) {
-                    $this->flashMessage($e->getMessage(), 'error');
+                    $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
                     $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
                 }
                 $entityLink .= 'Topics&action=profile&topicId=' . $topic->getId() . '">' . $topic->getTitle() . '</a>';
                 break;
 
             case ReportEntityType::USER:
-                $reportUser = $this->app->userRepository->getUserById($report->getEntityId());
+                try {
+                    $reportUser = $this->app->userManager->getUserById($report->getEntityId());
+                } catch(AException $e) {
+                    $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+                    $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                }
                 $entityLink .= 'Users&action=profile&userId=' . $report->getEntityId() . '">' . $reportUser->getUsername() . '</a>';
                 break;
         }
@@ -393,7 +188,12 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     break;
 
                 case ReportEntityType::POST:
-                    $post = $this->app->postRepository->getPostById($report->getEntityId());
+                    try {
+                        $post = $this->app->postManager->getPostById($this->getUserId(), $report->getEntityId());
+                    } catch(AException $e) {
+                        $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                        $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
+                    }
 
                     if($post->isDeleted() !== true) {
                         $adminLinks[] = LinkBuilder::createSimpleLink('Delete post', ['page' => 'AdminModule:ManagePosts', 'action' => 'deletePost', 'postId' => $report->getEntityId(), 'reportId' => $report->getId(), 'isFeedback' => '1'], 'post-data-link');
@@ -405,7 +205,7 @@ class FeedbackReportsPresenter extends AAdminPresenter {
                     try {
                         $topic = $this->app->topicManager->getTopicById($report->getEntityId(), $this->getUserId());
                     } catch(AException $e) {
-                        $this->flashMessage($e->getMessage(), 'error');
+                        $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
                         $this->redirect(['page' => 'AdminModule:FeedbackReports', 'action' => 'list']);
                     }
 

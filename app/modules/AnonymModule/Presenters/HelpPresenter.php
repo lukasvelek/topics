@@ -5,14 +5,13 @@ namespace App\Modules\AnonymModule;
 use App\Constants\SuggestionCategory;
 use App\Exceptions\AException;
 use App\Managers\EntityManager;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\ElementDuo;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Label;
 use App\UI\FormBuilder\Select;
 
-class HelpPresenter extends APresenter {
+class HelpPresenter extends AAnonymPresenter {
     public function __construct() {
         parent::__construct('HelpPresenter', 'Help');
     }

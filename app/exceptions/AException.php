@@ -16,7 +16,7 @@ abstract class AException extends Exception {
     protected function __construct(string $name, string $message, ?Throwable $previous = null, bool $createFile = true) {
         $this->hash = HashManager::createHash(8, false);
         
-        parent::__construct($message . ' [' . $this->hash . ']', 9999, $previous);
+        parent::__construct($message /*. ' [' . $this->hash . ']'*/, 9999, $previous);
 
         $this->html = $this->createHTML($name, $message);
 
@@ -41,7 +41,7 @@ abstract class AException extends Exception {
             $script = $t['file'];
             $line = $t['line'];
             $function = $t['function'];
-            $args = $t['args'];
+            $args = $t['args'] ?? null;
             $argString = '';
 
             if(!is_array($args) || (count($args) > 1 && is_object($args[0]))) {
@@ -50,14 +50,14 @@ abstract class AException extends Exception {
                 if(count($args) > 1) {
                     $tmp = [];
                     foreach($args as $arg) {
-                        $tmp[] = var_export($arg, true);
+                        $tmp[] = @var_export($arg, true);
                     }
                     $args = $tmp;
-                    $argString = '[\'' . implode('\', \'', $args) . '\']';
+                    //$argString = '[\'' . implode('\', \'', $args) . '\']';
                 }
             }
 
-            $line = '#' . $i . ' Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '() with args ' . $argString;
+            $line = '#' . $i . ' Script: \'' . $script . '\' on line ' . $line . ' - method: ' . $function . '()';
 
             $callstack .= $line . "<br>";
 
@@ -88,7 +88,7 @@ abstract class AException extends Exception {
 
         $filePath = 'exception_' . $date . '_' . $this->hash . '.html';
 
-        FileManager::saveFile($app->cfg['LOG_DIR'], $filePath, $this->html);
+        FileManager::saveFile($app->cfg['APP_REAL_DIR'] . $app->cfg['LOG_DIR'], $filePath, $this->html);
     }
 }
 

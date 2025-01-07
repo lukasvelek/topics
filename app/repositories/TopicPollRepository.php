@@ -146,6 +146,17 @@ class TopicPollRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function composeQueryForTopicPolls(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->orderBy('pollId', 'DESC');
+
+        return $qb;
+    }
+
     public function getPollsForTopicForGrid(string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -196,6 +207,18 @@ class TopicPollRepository extends ARepository {
         }
 
         return $polls;
+    }
+
+    public function composeQueryForMyTopicPolls(string $topicId, string $userId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_polls')
+            ->where('topicId = ?', [$topicId])
+            ->andWhere('authorId = ?', [$userId])
+            ->orderBy('pollId', 'DESC');
+
+        return $qb;
     }
 
     public function getPollCreatedByUserOrderedByDateDesc(string $userId, int $limit) {

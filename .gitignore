@@ -1,6 +1,7 @@
-config.local.php
+config.php
 logs/
 cache/
+grid_exports/
 app/core/install
 web.config
 upload/

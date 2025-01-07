@@ -12,7 +12,7 @@ class AdminModule extends AModule {
     }
 
     public function renderModule() {
-        $navbar = new Navbar($this->app->notificationManager, $this->app->currentUser->getId());
+        $navbar = new Navbar($this->app->notificationManager, $this->app->systemStatusManager, $this->app->currentUser->getId());
         $navbar->setCustomLinks(NavbarAdminLinks::toArray());
         $navbar->hideSearchBar();
         $navbar->setIsCurrentUserIsAdmin($this->app->currentUser?->isAdmin());

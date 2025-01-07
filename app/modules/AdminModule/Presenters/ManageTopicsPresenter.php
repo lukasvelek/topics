@@ -8,7 +8,6 @@ use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use Exception;
 
 class ManageTopicsPresenter extends AAdminPresenter {
     public function __construct() {

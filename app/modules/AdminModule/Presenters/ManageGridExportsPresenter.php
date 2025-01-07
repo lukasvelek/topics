@@ -2,140 +2,69 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Core\AjaxRequestBuilder;
-use App\Entities\GridExportEntity;
-use App\Helpers\DateTimeFormatHelper;
+use App\Core\DB\DatabaseRow;
 use App\Helpers\GridHelper;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\DefaultGridReducer;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
 use App\UI\HTML\HTML;
-use App\UI\LinkBuilder;
 
 class ManageGridExportsPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageGridExportsPresenter', 'Manage grid exports');
     }
 
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-    }
 
-    public function handleList() {
-        $filter = $this->httpGet('filter');
-
-        if($filter === null) {
-            $filter = 'all';
+        if(!$this->app->sidebarAuthorizator->canManageGridExports($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
-
-        $activeAll = ($filter == 'all');
-
-        $links = [
-            ($activeAll ? '<b>' : '') . LinkBuilder::createSimpleLink('All', $this->createURL('list', ['filter' => 'all']), 'post-data-link') . ($activeAll ? '</b>' : ''),
-            ($activeAll ? '' : '<b>') . LinkBuilder::createSimpleLink('My', $this->createURL('list', ['filter' => 'my']), 'post-data-link') . ($activeAll ? '' : '</b>')
-        ];
-
-        $this->saveToPresenterCache('links', implode('&nbsp;&nbsp;', $links));
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setAction($this, 'getGrid')
-            ->setHeader(['gridPage' => '_page', 'gridFilter' => '_filter'])
-            ->setFunctionName('getGrid')
-            ->setFunctionArguments(['_page', '_filter'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getGrid(0, \'' . $filter . '\')');
     }
+
+    public function handleList() {}
 
     public function renderList() {
-        $this->template->links = $this->loadFromPresenterCache('links');
+        $this->template->links = [];
     }
 
-    public function actionGetGrid() {
-        $gridPage = $this->httpGet('gridPage', true);
-        $filter = $this->httpGet('gridFilter', true);
+    protected function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $gridSize = $this->app->getGridSize();
-
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_GRID_EXPORTS, $gridPage, [$filter]);
-
-        $exports = [];
-        $totalCount = 0;
-        if($filter == 'all') {
-            $exports = $this->app->gridExportRepository->getExportsForGrid($gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->gridExportRepository->getExportsForGrid(0, 0));
-        } else {
-            $exports = $this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), $gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), 0, 0));
-        }
-
-        $lastPage = ceil($totalCount / $gridSize);
-
-        $gb = new GridBuilder();
-
-        $gb->setIdElement('gridbuilder-grid');
-
-        $columns = [
-            'gridName' => 'Grid',
-            'dateCreated' => 'Date created',
-            'dateFinished' => 'Date finished',
-            'entryCount' => 'Count'
-        ];
-
-        if($filter == 'all') {
-            $columns = array_merge(['userId' => 'User'], $columns);
-        }
-
-        $gb->addColumns($columns);
-        $gb->addDataSource($exports);
+        $grid->createDataSourceFromQueryBuilder($this->app->gridExportRepository->composeQueryForExports(), 'exportId');
+        $grid->setGridName(GridHelper::GRID_GRID_EXPORTS);
         
-        $gd = new DefaultGridReducer($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository);
-        $gd->applyReducer($gb);
-
-        $gb->addOnColumnRender('dateCreated', function(Cell $cell, GridExportEntity $gee) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateFinished', function(Cell $cell, GridExportEntity $gee) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($gee->getDateFinished(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-
-        $gb->addAction(function(GridExportEntity $gee) {
-            if($gee->getFilename() !== null) {
-                $lb = new LinkBuilder();
-                $lb->setHref($gee->getFilename())
-                    ->setClass('grid-link')
-                    ->setText('Download')
-                ;
-
-                return $lb->render();
+        $grid->addColumnUser('userId', 'User');
+        $grid->addColumnDatetime('dateCreated', 'Date started');
+        $grid->addColumnDatetime('dateFinished', 'Date finished');
+        $grid->addColumnText('entryCount', 'Entries');
+        $col = $grid->addColumnText('timeTaken', 'Seconds taken');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            if($value === null) {
+                $value = '0 s';
             } else {
-                return '-';
+                $value = $value . ' s';
             }
-        });
 
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getGrid', [$filter]);
-        
-        $gb->addGridExport(function() use ($filter) {
-            if($filter == 'all') {
-                return $this->app->gridExportRepository->getExportsForGrid(0, 0);
-            } else {
-                return $this->app->gridExportRepository->getUserExportsForGrid($this->getUserId(), 0, 0);
-            }
-        }, GridHelper::GRID_GRID_EXPORTS, $this->logger);
+            return $value;
+        };
 
-        return ['grid' => $gb->build()];
+        $downloadFile = $grid->addAction('downloadFile');
+        $downloadFile->setTitle('Download file');
+        $downloadFile->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            return $row->dateFinished !== null;
+        };
+        $downloadFile->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            $el = HTML::el('a')
+                    ->href($row->filename)
+                    ->text('Download')
+                    ->class('grid-link')
+                    ->addAtribute('target', '_blank');
+
+            return $el;
+        };
+
+        return $grid;
     }
 }
 

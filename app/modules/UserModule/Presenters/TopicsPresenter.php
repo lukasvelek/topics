@@ -9,12 +9,13 @@ use App\Constants\TopicMemberRole;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
-use App\Entities\PostConceptEntity;
-use App\Entities\PostEntity;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
 use App\Entities\TopicEntity;
 use App\Entities\TopicTagEntity;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 use App\Exceptions\GeneralException;
 use App\Helpers\BannedWordsHelper;
 use App\Helpers\ColorHelper;
@@ -29,23 +30,20 @@ use App\UI\FormBuilder\FormResponse;
 use App\UI\FormBuilder\Label;
 use App\UI\FormBuilder\Select;
 use App\UI\FormBuilder\SubmitButton;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\IRenderable;
 use App\UI\LinkBuilder;
 use Exception;
 
 class TopicsPresenter extends AUserPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('TopicsPresenter', 'Topics');
     }
     
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
     }
 
     public function handleProfile() {
@@ -147,24 +145,20 @@ class TopicsPresenter extends AUserPresenter {
             $finalFollowLink = ($isMember ? $unFollowLink : $followLink);
         }
 
-        $reportLink = '';
+        $managementLinks = [];
 
         if(!$topic->isDeleted() && $this->app->actionAuthorizator->canReportTopic($this->getUserId(), $topicId)) {
-            $reportLink = '<div class="col-md col-lg" id="center"><a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center"><a class="post-data-link" href="?page=UserModule:Topics&action=reportForm&topicId=' . $topicId . '">Report topic</a></p></div>';
         }
-
-        $deleteLink = '';
 
         if($this->app->actionAuthorizator->canDeleteTopic($this->getUserId(), $topic->getId()) && !$topic->isDeleted()) {
-            $deleteLink = '<div class="col-md col-lg" id="center"><p class="post-data"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center"><a class="post-data-link" href="?page=UserModule:Topics&action=deleteTopic&topicId=' . $topicId . '">Delete topic</a></p></div>';
         } else if($topic->isDeleted()) {
-            $deleteLink = '<div class="col-md col-lg" id="center"><p class="post-data">Topic deleted</p></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center">Topic deleted</p></div>';
         }
 
-        $roleManagementLink = '';
-
         if($this->app->actionAuthorizator->canManageTopicRoles($topicId, $this->getUserId()) && !$topic->isDeleted()) {
-            $roleManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center"><a class="post-data-link" href="?page=UserModule:TopicManagement&action=manageRoles&topicId=' . $topicId . '">Manage roles</a></div>';
         }
 
         $tags = $topic->getTags();
@@ -192,26 +186,34 @@ class TopicsPresenter extends AUserPresenter {
 
         $tagCode .= '</div>';
 
-        $inviteManagementLink = '';
         if($topic->isPrivate() && $this->app->actionAuthorizator->canManageTopicInvites($this->getUserId(), $topicId)) {
-            $inviteManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center">' . LinkBuilder::createSimpleLink('Manage invites', ['page' => 'UserModule:TopicManagement', 'action' => 'listInvites', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
-        $privacyManagementLink = '';
         if($this->app->actionAuthorizator->canManageTopicPrivacy($this->getUserId(), $topicId)) {
-            $privacyManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center">' . LinkBuilder::createSimpleLink('Manage privacy', ['page' => 'UserModule:TopicManagement', 'action' => 'managePrivacy', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
-        $contentRegulationManagementLink = '';
         if($this->app->actionAuthorizator->canManageContentRegulation($this->getUserId(), $topicId)) {
-            $contentRegulationManagementLink = '<div class="col-md col-lg" id="center"><p class="post-data">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
+            $managementLinks[] = '<div class="col-md col-lg"><p class="post-data" id="center">' . LinkBuilder::createSimpleLink('Manage banned words', ['page' => 'UserModule:TopicManagement', 'action' => 'bannedWordsList', 'topicId' => $topicId], 'post-data-link') . '</p></div>';
         }
 
         $followersLink = 'Followers';
-        
         if($this->app->actionAuthorizator->canManageTopicFollowers($this->getUserId(), $topicId)) {
             $followersLink = LinkBuilder::createSimpleLink('Followers', ['page' => 'UserModule:TopicManagement', 'action' => 'followersList', 'topicId' => $topicId], 'post-data-link');
         }
+
+        $managementLinksCode = '<div class="row">';
+        for($i = 0; $i < count($managementLinks); $i++) {
+            $link = $managementLinks[$i];
+
+            if(($i % 3) == 0 && $i > 0) {
+                $managementLinksCode .= '</div><br><div class="row">';
+            }
+
+            $managementLinksCode .= '<div class="col-md col-lg" id="center">' . $link . '</div>';
+        }
+        $managementLinksCode .= '</div>';
 
         $code = '
             <div>
@@ -231,14 +233,7 @@ class TopicsPresenter extends AUserPresenter {
                     </div>
                 </div>
 
-                <div class="row">
-                    ' . $reportLink . '
-                    ' . $deleteLink . '
-                    ' . $roleManagementLink . '
-                    ' . $inviteManagementLink . '
-                    ' . $privacyManagementLink . '
-                    ' . $contentRegulationManagementLink . '
-                </div>
+                ' . $managementLinksCode . '
             </div>
         ';
 
@@ -346,7 +341,7 @@ class TopicsPresenter extends AUserPresenter {
         } catch(AException $e) {
             $this->app->postRepository->rollback();
 
-            $this->flashMessage('Post could not be ' . $liked ? 'liked' : 'unliked' . '. Reason: ' . $e->getMessage(), 'error');
+            throw new AjaxRequestException('Could not ' . $liked ? 'like' : 'unlike' . ' post.', $e);
         }
  
         $likes = $this->app->postRepository->getLikes($postId);
@@ -362,8 +357,7 @@ class TopicsPresenter extends AUserPresenter {
         try {
             $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
         } catch(AException $e) {
-            $this->flashMessage($e->getMessage(), 'error');
-            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'discover']);
+            throw new AjaxRequestException('Could not find topic.', $e);
         }
 
         $isMember = $this->app->topicMembershipManager->checkFollow($topicId, $this->getUserId());
@@ -393,7 +387,11 @@ class TopicsPresenter extends AUserPresenter {
             
             $pinnedPostObjects = [];
             foreach($pinnedPosts as $pp) {
-                $post = $this->app->postRepository->getPostById($pp);
+                try {
+                    $post = $this->app->postManager->getPostById($this->getUserId(), $pp);
+                } catch(AException $e) {
+                    continue;
+                }
                 $post->setIsPinned();
 
                 $pinnedPostObjects[] = $post;
@@ -474,11 +472,10 @@ class TopicsPresenter extends AUserPresenter {
 
         $postCode = [];
         foreach($posts as $post) {
-            $author = $this->app->userRepository->getUserById($post->getAuthorId());
-
-            if($author !== null) {
+            try {
+                $author = $this->app->userManager->getUserById($post->getAuthorId());
                 $userProfileLink = $this->app->topicMembershipManager->createUserProfileLinkWithRole($author, $post->getTopicId());
-            } else {
+            } catch(AException $e) {
                 $userProfileLink = '-';
             }
     
@@ -499,7 +496,68 @@ class TopicsPresenter extends AUserPresenter {
             $liked = in_array($post->getId(), $likedArray);
             $likeLink = '<a class="post-like" style="cursor: pointer" onclick="likePost(\'' . $post->getId() . '\', ' . ($liked ? 'false' : 'true') . ')">' . ($liked ? 'Unlike' : 'Like') . '</a>';
     
-            $shortenedText = $bwh->checkText($post->getShortenedText(100), $topicId);
+            $shortenedText = $bwh->checkText($post->getText(), $topicId);
+
+            // START OF POST DESCRIPTION HASH TAGS
+            $hashTagMatches = [];
+            preg_match_all("/[&]*[#][a-zA-Z0-1]\w*[;]*/m", $shortenedText, $hashTagMatches);
+            $hashTagMatches = $hashTagMatches[0];
+
+            $hashTags = [];
+            foreach($hashTagMatches as $hashTagMatch) {
+                $hashTag = trim($hashTagMatch);
+                if(str_contains($hashTag, '&')) {
+                    continue;
+                } else {
+                    $hashTag = substr($hashTag, 1);
+                }
+
+                $hashTags[$hashTagMatch] = '<span style="color: #003153">#' . $hashTag . '</span>';
+            }
+
+            foreach($hashTags as $k => $v) {
+                $shortenedText = str_replace($k, $v, $shortenedText);
+            }
+            // END OF POST DESCRIPTION HASH TAGS
+
+            // START OF POST DESCRIPTION USER MENTIONING
+            $usernameMatches = [];
+            preg_match_all("/[@]\w*/m", $shortenedText, $usernameMatches);
+
+            $usernameMatches = $usernameMatches[0];
+
+            $users = [];
+            foreach($usernameMatches as $usernameMatch) {
+                $username = substr($usernameMatch, 1);
+                $user = $this->app->userRepository->getUserByUsername($username);
+                if($user === null) {
+                    $users[$usernameMatch] = '@' . $username;
+                } else {
+                    $link = $this->app->topicMembershipManager->createUserProfileLinkWithRole($user, $post->getTopicId(), '@');
+                    
+                    $users[$usernameMatch] = $link;
+                }
+            }
+
+            foreach($users as $k => $v) {
+                $shortenedText = str_replace($k, $v, $shortenedText);
+            }
+            // END OF POST DESCRIPTION USER MENTIONING
+
+            // START OF POST DESCRIPTION LINKS
+            $pattern = "/\[(.*?),\s*(https?:\/\/[^\]]+)\]/";
+            $replacement = '<a class="post-text-link" href="$2" target="_blank">$1</a>';
+
+            $shortenedText = preg_replace($pattern, $replacement, $shortenedText);
+            // END OF POST DESCRIPTION LINKS
+
+            if(strlen($shortenedText) > 100) {
+                if(str_ends_with(substr($shortenedText, 0, 100), '&#')) {
+                    $shortenedText = substr($shortenedText, 0, 98) . '...';
+                } else {
+                    $shortenedText = substr($shortenedText, 0, 100) . '...';
+                }
+            }
 
             if(!empty($bwh->getBannedWordsUsed())) {
                 try {
@@ -934,7 +992,7 @@ class TopicsPresenter extends AUserPresenter {
                 $this->app->topicMembershipManager->changeRole($topicId, $this->getUserId(), $this->getUserId(), TopicMemberRole::OWNER);
                 
                 if($isPrivate) {
-                    $this->app->topicRepository->updateTopic($topicId, ['isVisible' => '0']);
+                    $this->app->contentManager->updateTopic($topicId, ['isVisible' => '0']);
                 }
 
                 $cache = $this->cacheFactory->getCache(CacheNames::TOPICS);
@@ -1162,12 +1220,56 @@ class TopicsPresenter extends AUserPresenter {
 
         $this->addScript($arb);
         $this->addScript('getTrendingPostsList()');
+
+        $arb = new AjaxRequestBuilder();
+
+        $arb->setMethod()
+            ->setAction($this, 'getTrendingHashtagList')
+            ->setFunctionName('getTrendingHashtagList')
+            ->updateHTMLElement('trending-hashtag-list', 'list')
+        ;
+
+        $this->addScript($arb);
+        $this->addScript('getTrendingHashtagList()');
     }
 
     public function renderTrending() {
         $trendingLinks = $this->loadFromPresenterCache('trendingLinks');
 
         $this->template->trending_links = $trendingLinks;
+    }
+
+    public function actionGetTrendingHashtagList() {
+        $data = $this->app->trendsManager->getLatestHashtagTrends();
+
+        $codeArray = [];
+        foreach($data as $name => $cnt) {
+            $name = '<span style="color: #003153">' . $name . '</span>';
+
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        ' . $name . '
+                    </div>
+
+                    <div class="col-md">
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'uses' : 'use') . '
+                    </div>
+                </div>
+            ';
+        }
+
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
+        }
+
+        return ['list' => implode('<br>', $codeArray)];
     }
 
     public function actionGetTrendingTopicsList() {
@@ -1178,7 +1280,12 @@ class TopicsPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($data as $topicId => $cnt) {
-            $topic = $this->app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
+            } catch(AException $e) {
+                continue;
+            }
+
             $link = TopicEntity::createTopicProfileLink($topic);
             $codeArray[] = '
                 <div class="row">
@@ -1187,9 +1294,19 @@ class TopicsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md">
-                        ' . $cnt . ' posts
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'posts' : 'post') . '
                     </div>
                 </div>';
+        }
+
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
         }
 
         return ['list' => implode('<br>', $codeArray)];
@@ -1202,7 +1319,11 @@ class TopicsPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($data as $postId => $cnt) {
-            $post = $this->app->postRepository->getPostById($postId);
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+            } catch(AException $e) {
+                continue;
+            }
 
             $link = LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $postId], 'post-data-link');
             
@@ -1213,9 +1334,19 @@ class TopicsPresenter extends AUserPresenter {
                     </div>
 
                     <div class="col-md">
-                        ' . $cnt . ' comments
+                        ' . $cnt . ' ' . ($cnt > 1 ? 'comments' : 'comment') . '
                     </div>
                 </div>';
+        }
+
+        if(empty($codeArray)) {
+            $codeArray[] = '
+                <div class="row">
+                    <div class="col-md">
+                        No data found
+                    </div>
+                </div>
+            ';
         }
 
         return ['list' => implode('<br>', $codeArray)];
@@ -1253,7 +1384,7 @@ class TopicsPresenter extends AUserPresenter {
             }
             $this->saveToPresenterCache('topic', $topic);
 
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [
@@ -1335,7 +1466,12 @@ class TopicsPresenter extends AUserPresenter {
 
             $this->saveToPresenterCache('form', $fb);
 
-            $topic = $this->app->topicRepository->getTopicById($topicId);
+            try {
+                $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not find topic. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect($this->createURL('profile', ['topicId' => $topicId]));
+            }
             $topicTitle = ($topic !== null) ? $topic->getTitle() : '';
 
             $this->saveToPresenterCache('topic_title', $topicTitle);
@@ -1612,20 +1748,6 @@ class TopicsPresenter extends AUserPresenter {
 
     public function handleListPosts() {
         $topicId = $this->httpGet('topicId', true);
-        $filter = $this->httpGet('filter') ?? 'null';
-
-        $arb = new AjaxRequestBuilder();
-        $arb->setMethod()
-            ->setHeader(['gridPage' => '_page', 'topicId' => '_topicId', 'filter' => '_filter'])
-            ->setAction($this, 'getPostGrid')
-            ->setFunctionName('getPostGrid')
-            ->setFunctionArguments(['_page', '_topicId', '_filter'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getPostGrid(-1, \'' . $topicId .'\', \'' . $filter . '\')');
-
         $links = [
             LinkBuilder::createSimpleLink('&larr; Back', $this->createURL('profile', ['topicId' => $topicId]), 'post-data-link'),
             LinkBuilder::createSimpleLink('All', $this->createURL('listPosts', ['topicId' => $topicId]), 'post-data-link'),
@@ -1643,108 +1765,57 @@ class TopicsPresenter extends AUserPresenter {
         $this->template->links = $links;
     }
 
-    public function actionGetPostGrid() {
-        $topicId = $this->httpGet('topicId');
-        $filter = $this->httpGet('filter');
+    public function createComponentPostGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $this->app->getGridSize();
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POSTS, $gridPage, [$topicId]);
+        $grid->addQueryDependency('topicId', $topicId);
+        $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostsForTopic($topicId), 'postId');
+        $grid->setGridName(GridHelper::GRID_TOPIC_POSTS);
 
-        $offset = $page * $gridSize;
-
-        if($filter == 'scheduled') {
-            $posts = $this->app->postRepository->getScheduledPostsForTopicForGrid($topicId, $gridSize, $offset);
-            $totalCount = count($this->app->postRepository->getScheduledPostsForTopicForGrid($topicId, 0, 0));
-        } else {
-            $posts = $this->app->postRepository->getPostsForTopicForGrid($topicId, $gridSize, $offset);
-            $totalCount = count($this->app->postRepository->getPostsForTopicForGrid($topicId, 0, 0));
-        }
-
-        $lastPage = ceil($totalCount / $gridSize);
-
+        $grid->addColumnText('title', 'Title');
+        $grid->addColumnUser('authorId', 'Author');
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnDatetime('dateAvailable', 'Available since');
+        $grid->addColumnBoolean('isSuggestable', 'Can be suggested?');
+        
         $pinnedPostIds = $this->app->topicRepository->getPinnedPostIdsForTopicId($topicId);
 
-        $canPinMore = count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS'];
+        $pin = $grid->addAction('pin');
+        $pin->setTitle('Pin');
+        $pin->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($pinnedPostIds) {
+            return (count($pinnedPostIds) < $this->cfg['MAX_TOPIC_POST_PINS']) && !in_array($row->postId, $pinnedPostIds);
+        };
+        $pin->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Pin')
+                    ->href($this->createURLString('updatePost', ['do' => 'pin', 'postId' => $primaryKey, 'topicId' => $topicId, 'returnGridPage' => 0]));
 
-        $gb = new GridBuilder();
-        $gb->addColumns(['title' => 'Title', 'author' => 'Author', 'dateAvailable' => 'Available from', 'dateCreated' => 'Date created', 'isSuggestable' => 'Is suggested']);
-        $gb->addDataSource($posts);
-        $gb->addOnColumnRender('isSuggestable', function(Cell $cell, PostEntity $post) use ($page, $pinnedPostIds) {
-            $isPinned = in_array($post->getId(), $pinnedPostIds);
+            return $el;
+        };
 
-            if($isPinned) {
-                if($post->isSuggestable()) {
-                    $cell->setTextColor('green');
-                    $cell->setValue('Yes');
-                } else {
-                    $cell->setTextColor('red');
-                    $cell->setValue('No');
-                }
+        $unpin = $grid->addAction('unpin');
+        $unpin->setTitle('Unpin');
+        $unpin->onCanRender[] = function(DatabaseRow $row, Row $_row) use ($pinnedPostIds) {
+            return (count($pinnedPostIds) >= $this->cfg['MAX_TOPIC_POST_PINS']) || in_array($row->postId, $pinnedPostIds);
+        };
+        $unpin->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Unpin')
+                    ->href($this->createURLString('updatePost', ['do' => 'unpin', 'postId' => $primaryKey, 'topicId' => $topicId, 'returnGridPage' => 0]));
 
-                $cell->setTitle('To change this value, the post must not be pinned.');
-            } else {
-                if($post->isSuggestable()) {
-                    $link = LinkBuilder::createSimpleLinkObject('Yes', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'disableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                    $link->setStyle('color: green');
-                } else {
-                    $link = LinkBuilder::createSimpleLinkObject('No', $this->createURL('updatePost', ['postId' => $post->getId(), 'do' => 'enableSuggestion', 'returnGridPage' => $page, 'topicId' => $post->getTopicId()]), 'grid-link');
-                    $link->setStyle('color: red');
-                }
+            return $el;
+        };
 
-                $cell->setValue($link->render());
-            }
-
-
-            return $cell;
-        });
-        $gb->addOnColumnRender('title', function(Cell $cell, PostEntity $post) {
-            return LinkBuilder::createSimpleLink($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'grid-link');
-        });
-        $gb->addOnColumnRender('author', function(Cell $cell, PostEntity $post) {
-            $user = $this->app->userRepository->getUserById($post->getAuthorId());
-
-            $link = UserEntity::createUserProfileLink($user, true);
-            $link->setClass('grid-link');
-
-            return $link->render();
-        });
-        $gb->addOnColumnRender('dateAvailable', function(Cell $cell, PostEntity $post) use ($filter) {
-            $date = DateTimeFormatHelper::formatDateToUserFriendly($post->getDateAvailable());
-
-            $cell->setValue($date);
-
-            if(($post->getDateCreated() != $post->getDateAvailable()) && strtotime($post->getDateAvailable()) > time() && $filter != 'scheduled') { // if the post is scheduled and current filter does not limit posts to scheduled only
-                $cell->setTextColor('orange');
-            }
-            
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateCreated', function(Cell $cell, PostEntity $post) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($post->getDateCreated());
-        });
-        $gb->addAction(function(PostEntity $post) use ($pinnedPostIds, $page, $canPinMore) {
-            if(in_array($post->getId(), $pinnedPostIds)) {
-                return LinkBuilder::createSimpleLink('Unpin', $this->createURL('updatePost', ['do' => 'unpin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
-            } else {
-                if($canPinMore) {
-                    return LinkBuilder::createSimpleLink('Pin', $this->createURL('updatePost', ['do' => 'pin', 'postId' => $post->getId(), 'topicId' => $post->getTopicId(), 'returnGridPage' => $page]), 'grid-link');
-                } else {
-                    return '<span title="You have pinned the maximum number of posts">-</span>';
-                }
-            }
-        });
-
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostGrid', [$topicId]);
-
-        return ['grid' => $gb->build()];
+        return $grid;
     }
 
     public function handleUpdatePost() {
         $postId = $this->httpGet('postId');
         $do = $this->httpGet('do');
-        $returnGridPage = $this->httpGet('returnGridPage');
         $topicId = $this->httpGet('topicId');
 
         $cache = $this->cacheFactory->getCache(CacheNames::POSTS);
@@ -1774,7 +1845,7 @@ class TopicsPresenter extends AUserPresenter {
                     break;
 
                 case 'unpin':
-                    $app->topicManager->unpinPost($this->getUserId(), $topicId, $postId);
+                    $this->app->topicManager->unpinPost($this->getUserId(), $topicId, $postId);
                     $text = 'Post unpinned';
                     break;
 
@@ -1787,11 +1858,10 @@ class TopicsPresenter extends AUserPresenter {
             $this->flashMessage('Could not update post. Reason: ' . $e->getMessage(), 'error');
         }
 
-        $this->redirect($this->createURL('listPosts', ['gridPage' => $returnGridPage, 'topicId' => $topicId]));
+        $this->redirect($this->createURL('listPosts', ['topicId' => $topicId]));
     }
 
     public function handleListPostConcepts() {
-        $filter = $this->httpGet('filter');
         $topicId = $this->httpGet('topicId');
 
         $links = [
@@ -1799,68 +1869,77 @@ class TopicsPresenter extends AUserPresenter {
         ];
 
         $this->saveToPresenterCache('links', $links);
-
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod()
-            ->setAction($this, 'getPostConceptsGrid')
-            ->setHeader(['gridPage' => '_page', 'filter' => '_filter', 'topicId' => '_topicId'])
-            ->setFunctionName('getPostConceptsGrid')
-            ->setFunctionArguments(['_page', '_filter', '_topicId'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb);
-        $this->addScript('getPostConceptsGrid(-1, \'' . $filter . '\', \'' . $topicId . '\')');
     }
 
     public function renderListPostConcepts() {
         $this->template->links = $this->loadFromPresenterCache('links');
     }
 
-    public function actionGetPostConceptsGrid() {
-        $topicId = $this->httpGet('topicId');
-        $gridPage = $this->httpGet('gridPage');
-        $filter = $this->httpGet('filter');
+    protected function createComponentPostConceptsGrid(HttpRequest $request) {
+        $topicId = $request->query['topicId'];
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_POST_CONCEPTS, $gridPage, [$filter]);
+        $grid = $this->getGridBuilder();
 
-        $gridSize = $this->app->getGridSize();
+        $grid->addQueryDependency('topicId', $topicId);
+        $grid->createDataSourceFromQueryBuilder($this->app->postRepository->composeQueryForPostConcepts($topicId), 'conceptId');
+        $grid->setGridName(GridHelper::GRID_TOPIC_POST_CONCEPTS);
 
-        $postConcepts = [];
-        $totalCount = 0;
+        $grid->addColumnUser('authorId', 'Author');
 
-        if($filter == 'my') {
-            $postConcepts = $this->app->postRepository->getPostConceptsForGrid($this->getUserId(), $topicId, $gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->postRepository->getPostConceptsForGrid($this->getUserId(), $topicId, 0, 0));
-        } else {
-            $postConcepts = $this->app->postRepository->getPostConceptsForGrid(null, $topicId, $gridSize, ($page * $gridSize));
-            $totalCount = count($this->app->postRepository->getPostConceptsForGrid(null, $topicId, 0, 0));
-        }
+        $col = $grid->addColumnText('postData', 'Title');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            $value = unserialize($value);
 
-        $lastPage = ceil($totalCount / $gridSize);
+            return $value['title'];
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+            $value = unserialize($value);
 
-        $grid = new GridBuilder();
+            return $value['title'];
+        };
 
-        $grid->addDataSource($postConcepts);
-        $grid->addColumns(['topicId' => 'Topic', 'dateCreated' => 'Date created', 'dateUpdated' => 'Date updated']);
-        $grid->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getPostConceptsGrid', [$filter, $topicId]);
-        $grid->addAction(function(PostConceptEntity $pce) {
-            return LinkBuilder::createSimpleLink('Edit', $this->createURL('newPostForm', ['topicId' => $pce->getTopicId(), 'conceptId' => $pce->getConceptId()]), 'grid-link');
-        });
-        $grid->addAction(function(PostConceptEntity $pce) {
-            return LinkBuilder::createSimpleLink('Delete', $this->createURL('deletePostConcept', ['conceptId' => $pce->getConceptId(), 'topicId' => $pce->getTopicId()]), 'grid-link');
-        });
+        $grid->addColumnDatetime('dateCreated', 'Date created');
+        $grid->addColumnDatetime('dateUpdated', 'Date updated');
 
-        $reducer = $this->getGridReducer();
-        $reducer->applyReducer($grid);
+        $edit = $grid->addAction('edit');
+        $edit->setTitle('Edit');
+        $edit->onCanRender[] = function() {
+            return true;
+        };
+        $edit->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Edit')
+                    ->href($this->createURLString('newPostForm', ['topicId' => $topicId, 'conceptId' => $primaryKey]))
+            ;
 
-        return ['grid' => $grid->build()];
+            return $el;
+        };
+
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function() {
+            return true;
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) use ($topicId) {
+            $el = HTML::el('a')
+                    ->class('grid-link')
+                    ->text('Delete')
+                    ->href($this->createURLString('deletePostConcept', ['topicId' => $topicId, 'conceptId' => $primaryKey]))
+            ;
+
+            return $el;
+        };
+
+        $usersInConcepts = $this->app->postRepository->getUsersWithPostConceptsInTopic($topicId);
+        $users = $this->app->userRepository->getUsersByIdBulk($usersInConcepts, true, true);
+
+        $grid->addFilter('authorId', null, $users);
+
+        return $grid;
     }
 
     public function handleDeletePostConcept(?FormResponse $fr = null) {
-        ;
-
         $conceptId = $this->httpGet('conceptId', true);
         $topicId = $this->httpGet('topicId', true);
 

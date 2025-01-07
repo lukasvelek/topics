@@ -136,6 +136,15 @@ class UserRepository extends ARepository {
         return $this->createUsersArrayFromQb($qb);
     }
 
+    public function composeQueryForUsers() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('users');
+
+        return $qb;
+    }
+
     public function updateUser(string $id, array $data) {
         $qb = $this->qb(__METHOD__);
 
@@ -147,13 +156,17 @@ class UserRepository extends ARepository {
         return $qb->fetchBool();
     }
 
-    public function getUsersByIdBulk(array $ids, bool $idAsKey = false) {
+    public function getUsersByIdBulk(array $ids, bool $idAsKey = false, bool $returnUsernameAsValue = false) {
         $users = [];
 
         foreach($ids as $id) {
             $result = $this->getUserById($id);
 
             if($result !== null) {
+                if($returnUsernameAsValue) {
+                    $result = $result->getUsername();
+                }
+                
                 if($idAsKey) {
                     $users[$id] = $result;
                 } else {

@@ -3,23 +3,29 @@
 namespace App\Modules\AnonymModule;
 
 use App\Exceptions\AException;
-use App\Exceptions\DatabaseExecutionException;
-use App\Modules\APresenter;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
 
-class LoginPresenter extends APresenter {
+class LoginPresenter extends AAnonymPresenter {
     public function __construct() {
         parent::__construct('LoginPresenter', 'Login');
     }
 
     public function handleCheckLogin() {
+        $fm = $this->httpGet('_fm');
+
         if(is_null($this->httpSessionGet('userId'))) {
-            $this->redirect(['page' => 'AnonymModule:Home']);
+            $url = ['page' => 'AnonymModule:Home'];
         } else {
-            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+            $url = ['page' => 'UserModule:Home', 'action' => 'dashboard'];
         }
+
+        if($fm !== null) {
+            $url['_fm'] = $fm;
+        }
+
+        $this->redirect($url);
     }
 
     public function handleLoginForm(?FormResponse $fr = null) {
@@ -29,12 +35,9 @@ class LoginPresenter extends APresenter {
                 
                 $this->app->logger->info('Logged in user #' . $this->httpSessionGet('userId') . '.', __METHOD__);
                 $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
-            } catch (DatabaseExecutionException $e) {
-                $this->flashMessage('Could not log in due to internal error. [' . $e->getHash() . ']', 'error');
-                $this->redirect();
-            } catch (AException $e) {
-                $this->flashMessage($e->getMessage(), 'error');
-                $this->redirect();
+            } catch(AException $e) {
+                $this->flashMessage('Could not log in due to internal error. Reason: ' . $e->getMessage(), 'error', 15);
+                $this->redirect($this->createURL('loginForm'));
             }
         } else {
             $fb = new FormBuilder();

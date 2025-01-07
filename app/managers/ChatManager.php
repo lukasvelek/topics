@@ -234,6 +234,13 @@ class ChatManager extends AManager {
         return $subscribeId;
     }
 
+    /**
+     * Removes a topic broadcast channel subscription
+     * 
+     * @param string $channelId Channel ID
+     * @param string $userId User ID
+     * @return true
+     */
     public function removeTopicBroadcastChannelSubscribe(string $channelId, string $userId) {
         if(!$this->cr->removeTopicBroadcastChannelSubscribe($channelId, $userId)) {
             throw new GeneralException('Could not remove subscription from the topic broadcast channel.');

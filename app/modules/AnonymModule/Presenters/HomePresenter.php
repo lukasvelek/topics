@@ -2,9 +2,7 @@
 
 namespace App\Modules\AnonymModule;
 
-use App\Modules\APresenter;
-
-class HomePresenter extends APresenter {
+class HomePresenter extends AAnonymPresenter {
     public function __construct() {
         parent::__construct('HomePresenter', 'Topics');
 

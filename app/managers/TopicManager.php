@@ -4,10 +4,12 @@ namespace App\Managers;
 
 use App\Authorizators\VisibilityAuthorizator;
 use App\Constants\TopicMemberRole;
+use App\Core\Caching\Cache;
 use App\Core\Caching\CacheNames;
 use App\Core\Datetypes\DateTime;
 use App\Entities\TopicEntity;
 use App\Exceptions\AException;
+use App\Exceptions\CacheException;
 use App\Exceptions\GeneralException;
 use App\Exceptions\NonExistingEntityException;
 use App\Exceptions\TopicVisibilityException;
@@ -27,6 +29,8 @@ class TopicManager extends AManager {
     private TopicContentRegulationRepository $tcrr;
     private TopicCalendarEventRepository $tcer;
 
+    private Cache $pinnedPostsCache;
+
     public function __construct(Logger $logger, TopicRepository $topicRepository, TopicMembershipManager $tmm, VisibilityAuthorizator $va, ContentManager $com, EntityManager $entityManager, TopicRulesRepository $trr, TopicContentRegulationRepository $tcrr, TopicCalendarEventRepository $tcer) {
         parent::__construct($logger, $entityManager);
         
@@ -37,6 +41,8 @@ class TopicManager extends AManager {
         $this->trr = $trr;
         $this->tcrr = $tcrr;
         $this->tcer = $tcer;
+
+        $this->pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
     }
 
     public function getTopicById(string $topicId, string $userId) {
@@ -167,8 +173,9 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId);
 
-            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
-            $pinnedPostsCache->invalidate();
+            if(!$this->cacheFactory->invalidateCacheByCache($this->pinnedPostsCache)) {
+                throw new CacheException('Could not invalidate cache.', $this->pinnedPostsCache->getNamespace());
+            }
         } catch(AException $e) {
             throw $e;
         }
@@ -188,8 +195,10 @@ class TopicManager extends AManager {
         try {
             $this->com->pinPost($topicId, $postId, false);
 
-            $pinnedPostsCache = $this->cacheFactory->getCache(CacheNames::PINNED_POSTS);
-            $pinnedPostsCache->invalidate();
+            //$this->pinnedPostsCache->invalidate();
+            if(!$this->cacheFactory->invalidateCacheByCache($this->pinnedPostsCache)) {
+                throw new CacheException('Could not invalidate cache.', $this->pinnedPostsCache->getNamespace());
+            }
         } catch(AException $e) {
             throw $e;
         }
@@ -203,18 +212,26 @@ class TopicManager extends AManager {
         return in_array($postId, $pinnedPostIds);
     }
 
-    private function getTopicRulesEntityForTopicId(string $topicId) {
+    private function getTopicRuleEntitiesForTopicId(string $topicId) {
         return $this->trr->getTopicRulesForTopicId($topicId);
     }
 
-    public function getTopicRulesForTopicId(string $topicId) {
-        $entity = $this->getTopicRulesEntityForTopicId($topicId);
+    public function composeQueryForTopicRules(string $topicId) {
+        return $this->trr->composeQueryForTopicRulesForTopicId($topicId);
+    }
+
+    public function getTopicRuleById(string $ruleId) {
+        $entity = $this->trr->getTopicRuleById($ruleId);
 
         if($entity === null) {
-            return [];
+            throw new NonExistingEntityException('Could not find rule.');
         }
 
-        return $entity->getRules();
+        return $entity;
+    }
+
+    public function getTopicRulesForTopicId(string $topicId) {
+        return $this->getTopicRuleEntitiesForTopicId($topicId);
     }
 
     public function hasTopicRules(string $topicId) {
@@ -224,29 +241,11 @@ class TopicManager extends AManager {
     }
 
     public function addRuleTextToTopicRules(string $topicId, string $ruleText, string $userId) {
-        $entity = $this->getTopicRulesEntityForTopicId($topicId);
-
         try {
-            if($entity === null) {
-                // create new
-    
-                $rulesetId = $this->trr->createEntityId(EntityManager::TOPIC_RULES);
-    
-                $rulesJson = json_encode([$ruleText]);
-    
-                if(!$this->trr->insertTopicRules($rulesetId, $topicId, $rulesJson, $userId)) {
-                    throw new GeneralException('Could not insert new topic rules.');
-                }
-            } else {
-                // update
-    
-                $rules = $entity->getRules();
-                $rules[] = $ruleText;
-                $rulesJson = json_encode($rules);
-    
-                if(!$this->trr->updateTopicRules($topicId, ['rules' => $rulesJson, 'lastUpdateUserId' => $userId, 'dateUpdated' => DateTime::now()])) {
-                    throw new GeneralException('Could not update topic rules.');
-                }
+            $ruleId = $this->trr->createEntityId(EntityManager::TOPIC_RULES);
+
+            if(!$this->trr->createTopicRule($ruleId, $topicId, $ruleText, $userId)) {
+                throw new GeneralException('Could not create new topic rule.');
             }
             
             $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
@@ -256,21 +255,9 @@ class TopicManager extends AManager {
         }
     }
 
-    public function updateTopicRule(string $topicId, string $userId, int $ruleIndex, string $newText) {
-        $entity = $this->getTopicRulesEntityForTopicId($topicId);
-
+    public function updateTopicRule(string $userId, string $ruleId, string $newText) {
         try {
-            if($entity === null) {
-                throw new GeneralException('Topic has no rules.');
-            }
-
-            $rules = $entity->getRules();
-
-            $rules[$ruleIndex] = $newText;
-
-            $rulesJson = json_encode($rules);
-
-            if(!$this->trr->updateTopicRules($topicId, ['rules' => $rulesJson, 'lastUpdateUserId' => $userId, 'dateUpdated' => DateTime::now()])) {
+            if(!$this->trr->updateTopicRules($ruleId, ['ruleText' => $newText, 'lastUpdateUserId' => $userId, 'dateUpdated' => DateTime::now()])) {
                 throw new GeneralException('Could not update topic rule.');
             }
 
@@ -281,26 +268,11 @@ class TopicManager extends AManager {
         }
     }
 
-    public function deleteTopicRule(string $topicId, string $userId, int $ruleIndex) {
-        $entity = $this->getTopicRulesEntityForTopicId($topicId);
-
+    public function deleteTopicRule(string $ruleId, string $userId) {
         try {
-            if($entity === null) {
-                throw new GeneralException('Topic has no rules.');
-            }
-
-            $rules = $entity->getRules();
-
-            unset($rules[$ruleIndex]);
-
-            $rulesJson = json_encode($rules);
-
-            if(!$this->trr->updateTopicRules($topicId, ['rules' => $rulesJson, 'lastUpdateUserId' => $userId, 'dateUpdated' => DateTime::now()])) {
+            if(!$this->trr->deleteTopicRule($ruleId)) {
                 throw new GeneralException('Could not update topic rule.');
             }
-
-            $topicRulesCache = $this->cacheFactory->getCache(CacheNames::TOPIC_RULES);
-            $topicRulesCache->invalidate();
         } catch(AException $e) {
             throw $e;
         }
@@ -308,6 +280,15 @@ class TopicManager extends AManager {
 
     public function getTopicOwner(string $topicId) {
         return $this->tmm->getTopicOwnerId($topicId);
+    }
+
+    public function getFollowedTopics(string $userId, array &$topicIdsUserIsMemberOf) {
+        $topicIdsUserIsMemberOf = $this->getTopicIdsUserIsMemberOf($userId);
+        return $this->getTopicsByIdArray($topicIdsUserIsMemberOf, $userId);
+    }
+
+    public function getTopicIdsUserIsMemberOf(string $userId) {
+        return $this->tmm->getUserMembershipsInTopics($userId);
     }
 }
 

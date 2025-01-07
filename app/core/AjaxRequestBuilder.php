@@ -21,6 +21,7 @@ class AjaxRequestBuilder {
     private array $customArgs;
     private array $elements;
     private bool $useLoadingAnimation;
+    private bool $isComponent;
 
     /**
      * Class constructor
@@ -38,6 +39,19 @@ class AjaxRequestBuilder {
         $this->customArgs = [];
         $this->elements = [];
         $this->useLoadingAnimation = true;
+        $this->isComponent = false;
+
+        return $this;
+    }
+
+    /**
+     * Sets whether the call is coming from a component
+     * 
+     * @param bool $component True if the call is coming from a component or false if not
+     * @return self
+     */
+    public function setComponent(bool $component = true) {
+        $this->isComponent = $component;
 
         return $this;
     }
@@ -89,6 +103,17 @@ class AjaxRequestBuilder {
         $presenter = $presenter->getCleanName();
 
         $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $actionName]);
+
+        return $this;
+    }
+
+    public function setComponentAction(APresenter $presenter, string $componentActionName) {
+        $module = $presenter->moduleName;
+        $action = $presenter->getAction();
+        $presenter = $presenter->getCleanName();
+
+        $this->url = $this->composeURLFromArray(['page' => $module . ':' . $presenter, 'action' => $action, 'do' => $componentActionName]);
+        $this->isComponent = true;
 
         return $this;
     }
@@ -279,9 +304,15 @@ class AjaxRequestBuilder {
             $code[] = 'try {';
             $code[] = 'const obj = JSON.parse(data);';
 
+            $code[] = 'if(obj.error && obj.error == 1) {';
+            $code[] = 'if(obj.errorMsg) { alert(obj.errorMsg); }';
+            $code[] = '} else {';
+
             foreach($this->whenDoneOperations as $wdo) {
                 $code[] = $wdo;
             }
+
+            $code[] = '}';
 
             $code[] = '} catch (error) {';
             $code[] = 'alert("Could not load data. See console for more information.");';
@@ -304,6 +335,10 @@ class AjaxRequestBuilder {
     private function processHeadParams() {
         if(!array_key_exists('isAjax', $this->headerParams)) {
             $this->headerParams['isAjax'] = 1;
+        }
+
+        if($this->isComponent) {
+            $this->headerParams['isComponent'] = 1;
         }
 
         $json = json_encode($this->headerParams);
@@ -347,7 +382,7 @@ class AjaxRequestBuilder {
      */
     private function createLoadingAnimation() {
         foreach($this->elements as $element) {
-            if($element == 'grid-content') {
+            if($element == 'grid-content' || $element == 'grid') {
                 $code = '
                     $("#' . $element . '").html(\'<div id="center"><img src="resources/loading.gif" width="64"><br>Loading...</div>\');
                 ';
@@ -357,6 +392,23 @@ class AjaxRequestBuilder {
         }
 
         $this->addBeforeAjaxOperation('await sleep(100);');
+    }
+
+    /**
+     * Explicitly enables loading animation
+     * 
+     * @param string $element Element name
+     * @param bool $isRaw True if the element name is raw or false if not
+     * @return self
+     */
+    public function enableLoadingAnimation(string $element, bool $isRaw = false) {
+        $code = '
+            $(' . ($isRaw ? '' : '"#') . $element . ($isRaw ? '' : '"') . ').html(\'<div id="center"><img src="resources/loading.gif" width="64"><br>Loading...</div>\');
+        ';
+
+        $this->addBeforeAjaxOperation($code);
+
+        return $this;
     }
 }
 

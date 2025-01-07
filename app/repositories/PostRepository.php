@@ -258,6 +258,7 @@ class PostRepository extends ARepository {
         return $qb->fetch();
     }
 
+    /** @deprecated */
     public function getPostById(string $postId): PostEntity|null {
         $qb = $this->qb(__METHOD__);
 
@@ -381,6 +382,18 @@ class PostRepository extends ARepository {
         $qb->execute();
 
         return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function composeQueryForPostsForTopic(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('posts')
+            ->where('isDeleted = 0')
+            ->andWhere('topicId = ?', [$topicId])
+            ->orderBy('dateCreated');
+
+        return $qb;
     }
 
     public function getPostsForTopicForGrid(string $topicId, int $limit, int $offset) {
@@ -568,6 +581,32 @@ class PostRepository extends ARepository {
         return $qb->fetchBool();
     }
 
+    public function composeQueryForPostConcepts(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('post_concepts')
+            ->where('topicId = ?', [$topicId]);
+
+        return $qb;
+    }
+
+    public function getUsersWithPostConceptsInTopic(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb->select(['authorId'])
+            ->from('post_concepts')
+            ->where('topicId = ?', [$topicId])
+            ->execute();
+
+        $ids = [];
+        while($row = $qb->fetchAssoc()) {
+            $ids[] = $row['authorId'];
+        }
+
+        return $ids;
+    }
+
     public function getPostConceptsForGrid(?string $userId, string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 
@@ -625,6 +664,27 @@ class PostRepository extends ARepository {
             ->execute();
 
         return $this->createPostsArrayFromQb($qb);
+    }
+
+    public function composeQueryForPostsWithHashtagsInDescription() {
+        $qbTopics = $this->qb(__METHOD__);
+
+        $qbTopics ->select(['topicId'])
+            ->from('topics')
+            //->where('(isPrivate = 1 AND isVisible = 1)')
+        ;
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['description'])
+            ->from('posts')
+            ->andWhere('description LIKE ?', ['% #%'])
+            ->andWhere('isSuggestable = 1')
+            ->andWhere('((isScheduled = 1 AND dateAvailable <= current_timestamp()) OR isScheduled = 0)')
+            ->andWhere('topicId IN (' . $qbTopics->getSQL() . ')')
+        ;
+
+        return $qb;
     }
 }
 

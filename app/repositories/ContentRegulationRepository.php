@@ -11,6 +11,15 @@ class ContentRegulationRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
+    public function composeQueryForBannedWords() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('banned_words');
+
+        return $qb;
+    }
+
     public function getBannedWordsForGrid(int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 

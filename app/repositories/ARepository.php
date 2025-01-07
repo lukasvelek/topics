@@ -11,12 +11,23 @@ use App\Managers\EntityManager;
 use QueryBuilder\ExpressionBuilder;
 use QueryBuilder\QueryBuilder;
 
+/**
+ * Common class for all repositories
+ * 
+ * @author Lukas Velek
+ */
 abstract class ARepository {
     private DatabaseConnection $conn;
     protected Logger $logger;
     private TransactionLogRepository $tlr;
     protected CacheFactory $cacheFactory;
 
+    /**
+     * Class constructor
+     * 
+     * @param DatabaseConnection $conn Database connection instance
+     * @param Logger $logger Logger instance
+     */
     protected function __construct(DatabaseConnection $conn, Logger $logger) {
         $this->conn = $conn;
         $this->logger = $logger;
@@ -25,30 +36,60 @@ abstract class ARepository {
         $this->tlr = new TransactionLogRepository($this->conn, $this->logger);
     }
 
+    /**
+     * Returns a new instance of QueryBuilder
+     * 
+     * @param string $method Method name
+     * @return QueryBuilder New QueryBuilder instance
+     */
     protected function qb(string $method = __METHOD__) {
         return new QueryBuilder($this->conn, $this->logger, $method);
     }
 
+    /**
+     * Returns a new instance of ExpressionBuilder
+     * 
+     * @return ExpressionBuilder New ExpressionBuilder instance
+     */
     protected function xb() {
         return new ExpressionBuilder();
     }
 
-    public function beginTransaction() {
+    /**
+     * Begins a database transaction
+     * 
+     * @param ?string $method Method name
+     * @return bool True on success or false on failure
+     */
+    public function beginTransaction(?string $method = null) {
         $result = $this->conn->beginTransaction();
         if($result) {
-            $this->logger->warning('Transaction begun.', __METHOD__);
+            $this->logger->warning('Transaction begun.', $method ?? __METHOD__);
         }
         return $result;
     }
 
-    public function rollback() {
+    /**
+     * Rolls back current database transaction
+     * 
+     * @param ?string $method Method name
+     * @return bool True on success or false on failure
+     */
+    public function rollback(?string $method = null) {
         $result = $this->conn->rollback();
         if($result) {
-            $this->logger->warning('Transaction rolled back.', __METHOD__);
+            $this->logger->warning('Transaction rolled back.', $method ?? __METHOD__);
         }
         return $result;
     }
 
+    /**
+     * Commits current database transaction
+     * 
+     * @param ?string $userId Calling user ID
+     * @param string $method Method name
+     * @return bool True on success or false on failure
+     */
     public function commit(?string $userId, string $method) {
         $result = $this->conn->commit();
         if($result) {

@@ -194,42 +194,50 @@ class Logger implements ILoggerCallable {
      * @param string $method Calling method
      * @param string $text Text
      * @param string $type Message type
+     * @return bool True on success or false on failure
      */
-    private function log(string $method, string $text, string $type = self::LOG_INFO) {
+    protected function log(string $method, string $text, string $type = self::LOG_INFO) {
         $date = new DateTime();
         $text = '[' . $date . '] [' . strtoupper($type) . '] ' . $method . '(): ' . $text;
 
+        $result = false;
         switch($type) {
             case self::LOG_STOPWATCH:
                 if($this->stopwatchLogLevel >= 1) {
-                    $this->writeLog($text);
+                    $result = $this->writeLog($text);
                 }
                 break;
 
             case self::LOG_CACHE:
                 if($this->logLevel >= 4 && $this->cfg['LOG_CACHE'] == 1) {
-                    $this->writeLog($text);
+                    $result = $this->writeLog($text);
                 }
                 break;
 
             case self::LOG_INFO:
                 if($this->logLevel >= 3) {
-                    $this->writeLog($text);
+                    $result = $this->writeLog($text);
                 }
                 break;
 
             case self::LOG_WARNING:
                 if($this->logLevel >= 2) {
-                    $this->writeLog($text);
+                    $result = $this->writeLog($text);
                 }
                 break;
             
             case self::LOG_ERROR:
                 if($this->logLevel >= 1) {
-                    $this->writeLog($text);
+                    $result = $this->writeLog($text);
                 }
                 break;
+
+            default:
+                $result = false;
+                break;
         }
+
+        return $result;
     }
 
     /**
@@ -245,9 +253,10 @@ class Logger implements ILoggerCallable {
      * Saves log message to the file
      * 
      * @param string $text Log message
+     * @return bool True on success or false on failure
      */
     private function writeLog(string $text) {
-        $folder = $this->cfg['LOG_DIR'];
+        $folder = $this->cfg['APP_REAL_DIR'] . $this->cfg['LOG_DIR'];
 
         $date = new DateTime();
         $date->format('Y-m-d');
@@ -262,32 +271,13 @@ class Logger implements ILoggerCallable {
             FileManager::createFolder($folder);
         }
 
-        FileManager::saveFile($folder, $file, $text . "\r\n");
-    }
+        $result = FileManager::saveFile($folder, $file, $text . "\r\n", false, true);
 
-    /**
-     * Logs whether cache call was a hit or a miss
-     * 
-     * @param string $method Calling method
-     * @param bool $hit True if the cache call was a hit or false if it was a miss
-     */
-    public function logCache(string $method, bool $hit) {
-        $text = 'Cache ' . ($hit ? 'hit' : 'miss') . '.';
-
-        $this->log($method, $text, self::LOG_CACHE);
-    }
-
-    /**
-     * Logs that key $key has been saved to the cache namespace $namespace
-     * 
-     * @param string $method Calling method
-     * @param mixed $key Cache key
-     * @param string $namespace Cache namespace
-     */
-    public function logCacheSave(string $method, mixed $key, string $namespace) {
-        $text = 'Cache key \'' . $key . '\' saved to namespace \'' . $namespace . '\'.';
-
-        $this->log($method, $text, self::LOG_CACHE);
+        if($result !== false) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

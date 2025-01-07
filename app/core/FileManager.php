@@ -4,8 +4,6 @@ namespace App\Core;
 
 use App\Exceptions\AException;
 use App\Exceptions\FileDoesNotExistException;
-use App\Exceptions\FileLockException;
-use App\Exceptions\FileLockHandleObtainException;
 use App\Exceptions\FileWriteException;
 
 /**
@@ -14,12 +12,6 @@ use App\Exceptions\FileWriteException;
  * @author Lukas Velek
  */
 class FileManager {
-    private FileLockManager $flm;
-
-    private function __construct() {
-        $this->flm = new FileLockManager();
-    }
-
     /**
      * Checks if file exists
      * 
@@ -42,33 +34,7 @@ class FileManager {
             throw new FileDoesNotExistException($filePath);
         }
 
-        $obj = new self();
-
-        $locked = $obj->flm->lock($filePath);
-
-        $success = true;
-
-        if($locked) {
-            $handle = $obj->flm->getHandle($filePath);
-        
-            if($handle === null) {
-                $success = false;
-            }
-
-            if(filesize($filePath) == 0) {
-                $success = false;
-            }
-
-            if($success) {
-                $content = fread($handle, filesize($filePath));
-
-                $obj->flm->unlock($filePath);
-            }
-        }
-
-        if(!$locked || !$success) {
-            $content = file_get_contents($filePath);
-        }
+        $content = file_get_contents($filePath);
 
         return $content;
     }
@@ -138,38 +104,7 @@ class FileManager {
         }
 
         if($overwrite === false) {
-            $result = true;
-            try {
-                $fm = new self();
-                if(!$fm->flm->lock($path . $filename)) {
-                    throw new FileLockException($path . $filename);
-                }
-
-                $handle = $fm->flm->getHandle($path . $filename);
-
-                if($handle === null) {
-                    throw new FileLockHandleObtainException($path . $filename);
-                }
-
-                if(fwrite($handle, $fileContent) === false) {
-                    throw new FileWriteException($path . $filename);
-                }
-
-                $fm->flm->unlock($path . $filename);
-            } catch(AException $e) {
-                $result = false;
-
-                try {
-                    if(file_put_contents($path . $filename, $fileContent, FILE_APPEND) === false) {
-                        throw new FileWriteException($path . $filename);
-                    }
-                    $result = true;
-                } catch(AException $e) {
-                    $result = false;
-                }
-            }
-            
-            return $result;
+            return file_put_contents($path . $filename, $fileContent, FILE_APPEND);
         } else {
             return file_put_contents($path . $filename, $fileContent);
         }
@@ -194,19 +129,26 @@ class FileManager {
      */
     public static function deleteFolderRecursively(string $dirPath) {
         if(is_dir($dirPath)) {
+            $result = true;
             $objects = scandir($dirPath);
             
             foreach ($objects as $object) {
                 if ($object != "." && $object != "..") {
                     if (is_dir($dirPath . DIRECTORY_SEPARATOR . $object) && !is_link($dirPath . "/" . $object)) {
-                        self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
+                        $r = self::deleteFolderRecursively($dirPath. DIRECTORY_SEPARATOR .$object);
+                        if($r !== true && $result !== false) {
+                            $result = $r;
+                        }
                     } else {
-                        self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
+                        $r = self::deleteFile($dirPath . DIRECTORY_SEPARATOR . $object);
+                        if($r !== true && $result !== false) {
+                            $result = $r;
+                        }
                     }
                 }
             }
 
-            return rmdir($dirPath);
+            return rmdir($dirPath) && $result;
         }
 
         return false;

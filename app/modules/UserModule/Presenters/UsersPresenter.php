@@ -15,9 +15,18 @@ class UsersPresenter extends AUserPresenter {
         parent::__construct('UsersPresenter', 'Users');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleProfile() {
         $userId = $this->httpGet('userId');
-        $user = $this->app->userRepository->getUserById($userId);
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         $this->saveToPresenterCache('user', $user);
 
@@ -149,12 +158,17 @@ class UsersPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($followers as $follower) {
-            $user = $this->app->userRepository->getUserById($follower->getAuthorId());
+            try {
+                $user = $this->app->userManager->getUserById($follower->getAuthorId());
+                $link = LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link');
+            } catch(AException $e) {
+                $link = '-';
+            }
 
             $codeArray[] = '
                 <div class="row">
                     <div class="col-md col-lg" id="center">
-                        ' . LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link') . '
+                        ' . $link . '
                     </div>
                 </div>
             ';
@@ -212,12 +226,17 @@ class UsersPresenter extends AUserPresenter {
 
         $codeArray = [];
         foreach($followers as $follower) {
-            $user = $this->app->userRepository->getUserById($follower->getUserId());
+            try {
+                $user = $this->app->userManager->getUserById($follower->getAuthorId());
+                $link = LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link');
+            } catch(AException $e) {
+                $link = '-';
+            }
 
             $codeArray[] = '
                 <div class="row">
                     <div class="col-md col-lg" id="center">
-                        ' . LinkBuilder::createSimpleLink($user->getUsername(), $this->createURL('profile', ['userId' => $user->getId()]), 'user-list-link') . '
+                        ' . $link . '
                     </div>
                 </div>
             ';
@@ -279,7 +298,13 @@ class UsersPresenter extends AUserPresenter {
 
     public function handleReportUser(?FormResponse $fr = null) {
         $userId = $this->httpGet('userId', true);
-        $user = $this->app->userRepository->getUserById($userId);
+        //$user = $this->app->userRepository->getUserById($userId);
+        try {
+            $user = $this->app->userManager->getUserById($userId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
+        }
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
             $category = $fr->category;
@@ -304,7 +329,7 @@ class UsersPresenter extends AUserPresenter {
         } else {
             $this->saveToPresenterCache('user', $user);
 
-            $categories = ReportCategory::getArray();
+            $categories = ReportCategory::getAll();
             $categoryArray = [];
             foreach($categories as $k => $v) {
                 $categoryArray[] = [

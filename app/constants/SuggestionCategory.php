@@ -2,15 +2,15 @@
 
 namespace App\Constants;
 
-class SuggestionCategory {
+class SuggestionCategory extends AConstant {
     public const BUG = 'bug';
     public const SECURITY = 'security';
     public const FUNCTION_REQUEST = 'functionRequest';
     public const OTHER = 'other';
-    public const PERFORMANCE = 'Performance';
+    public const PERFORMANCE = 'performance';
 
-    public static function toString(string $key) {
-        return match($key) {
+    public static function toString($key): string {
+        return match((string)$key) {
             self::BUG => 'Bug',
             self::SECURITY => 'Security',
             self::FUNCTION_REQUEST => 'Function request',
@@ -19,7 +19,7 @@ class SuggestionCategory {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::BUG => self::toString(self::BUG),
             self::SECURITY => self::toString(self::SECURITY),

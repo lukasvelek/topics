@@ -3,11 +3,9 @@
 namespace App\Core;
 
 use App\Constants\SystemServiceStatus;
-use App\Exceptions\AException;
 use App\Exceptions\FileDoesNotExistException;
 use App\Exceptions\ServiceException;
 use App\Repositories\SystemServicesRepository;
-use Exception;
 
 /**
  * Service manager allows running background services

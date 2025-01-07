@@ -85,6 +85,13 @@ class DateTime {
         $this->internalModify($func, $count, $type);
     }
 
+    /**
+     * Processes modification on values
+     * 
+     * @param bool $add True if time should be added or false if it should be substracted
+     * @param int $count Count to add or substract
+     * @param string $type Type of count to add or substract
+     */
     private function internalModify(bool $add, int $count, string $type) {
         $m = 1;
 
@@ -113,10 +120,21 @@ class DateTime {
         }
     }
 
+    /**
+     * Converts self to string
+     * 
+     * @return string String representation of self
+     */
     public function __toString() {
         return $this->getResult();
     }
 
+    /**
+     * Returns current timestamp in the standard format (Y-m-d H:i:s).
+     * Alias of time().
+     * 
+     * @return string Current timestamp
+     */
     public static function now() {
         $now = new self();
 

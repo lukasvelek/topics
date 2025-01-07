@@ -4,6 +4,7 @@ namespace App\Modules\AdminModule;
 
 use App\Constants\ReportCategory;
 use App\Entities\UserEntity;
+use App\Exceptions\AException;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
 use App\UI\LinkBuilder;
@@ -33,7 +34,12 @@ class ManagePostsPresenter extends AAdminPresenter {
         $reportId = $this->httpGet('reportId');
         
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {
-            $post = $this->app->postRepository->getPostById($comment->getPostId());
+            try {
+                $post = $this->app->postManager->getPostById($this->getUserId(), $comment->getPostId());
+            } catch(AException $e) {
+                $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+                $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+            }
             $postLink = LinkBuilder::createSimpleLinkObject($post->getTitle(), ['page' => 'UserModule:Posts', 'action' => 'profile', 'postId' => $post->getId()], 'post-data-link');
             $userLink = UserEntity::createUserProfileLink($this->getUser(), true);
             
@@ -81,7 +87,12 @@ class ManagePostsPresenter extends AAdminPresenter {
 
     public function handleDeletePost(?FormResponse $fr = null) {
         $postId = $this->httpGet('postId', true);
-        $post = $this->app->postRepository->getPostById($postId);
+        try {
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
+        } catch(AException $e) {
+            $this->flashMessage('Could not find post. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'AdminModule:Home', 'action' => 'dashboard']);
+        }
         $reportId = $this->httpGet('reportId');
 
         if($this->httpGet('isSubmit') !== null && $this->httpGet('isSubmit') == '1') {

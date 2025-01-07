@@ -139,6 +139,19 @@ class QueryBuilder
     }
 
     /**
+     * Resets OFFSET
+     * 
+     * @return self
+     */
+    public function resetOffset() {
+        if(isset($this->queryData['offset'])) {
+            unset($this->queryData['offset']);
+        }
+
+        return $this;
+    }
+
+    /**
      * Appends DELETE
      * 
      * @return self
@@ -459,6 +472,19 @@ class QueryBuilder
     }
 
     /**
+     * Resets LIMIT
+     * 
+     * @return self
+     */
+    public function resetLimit() {
+        if(isset($this->queryData['limit'])) {
+            unset($this->queryData['limit']);
+        }
+
+        return $this;
+    }
+
+    /**
      * Sets parameters
      * 
      * @param array $params Parameters
@@ -765,7 +791,7 @@ class QueryBuilder
     private function createDeleteSQLQuery() {
         $sql = 'DELETE FROM ' . $this->queryData['table'];
 
-        if(str_contains($this->queryData['where'], 'WHERE')) {
+        if(str_starts_with($this->queryData['where'], 'WHERE')) {
             $sql .= ' ' . $this->queryData['where'];
         } else {
             $sql .= ' WHERE ' . $this->queryData['where'];
@@ -793,7 +819,7 @@ class QueryBuilder
 
         $sql .= implode(', ', $valArray) . ' ';
 
-        if(str_contains($this->queryData['where'], 'WHERE')) {
+        if(str_starts_with($this->queryData['where'], 'WHERE')) {
             // explicit
             $sql .= ' ' . $this->queryData['where'];
         } else {
@@ -858,7 +884,7 @@ class QueryBuilder
         }
 
         if(isset($this->queryData['where'])) {
-            if(str_contains($this->queryData['where'], 'WHERE')) {
+            if(str_starts_with($this->queryData['where'], 'WHERE')) {
                 // explicit
                 $sql .= ' ' . $this->queryData['where'];
             } else {
@@ -936,6 +962,24 @@ class QueryBuilder
         if($this->logger !== null) {
             $this->logger->exception($e, $this->callingMethod);
         }
+    }
+
+    public function export() {
+        return [
+            'params' => $this->params,
+            'queryData' => $this->queryData,
+            'queryType' => $this->queryType
+        ];
+    }
+
+    public function import(array $data) {
+        $this->queryData = $data['queryData'];
+        $this->queryData = $data['params'];
+        $this->queryType = $data['queryType'];
+
+        $this->currentState = self::STATE_DIRTY;
+
+        return $this;
     }
 }
 

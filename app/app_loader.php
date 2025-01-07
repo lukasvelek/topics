@@ -78,9 +78,11 @@ function sortFilesByPriority(array &$files) {
  * Creates a "container" -> a list of all files saved to a tmp file
  */
 function createContainer($files) {
+    global $cfg;
+
     $data = serialize(['files' => $files, 'created_on' => date('Y-m-d H:i:s')]);
 
-    file_put_contents('cache\\Container_' . md5(date('Y-m-d')) . '.tmp', $data);
+    file_put_contents($cfg['CACHE_DIR'] . 'Container_' . md5(date('Y-m-d')) . '.tmp', $data);
 }
 
 /**
@@ -89,8 +91,10 @@ function createContainer($files) {
  * @return array File array
  */
 function getContainer() {
-    if(file_exists('cache\\Container_' . md5(date('Y-m-d')) . '.tmp')) {
-        return unserialize(file_get_contents('cache\\Container_' . md5(date('Y-m-d')) . '.tmp'))['files'];
+    global $cfg;
+
+    if(file_exists($cfg['CACHE_DIR'] . 'Container_' . md5(date('Y-m-d')) . '.tmp')) {
+        return unserialize(file_get_contents($cfg['CACHE_DIR'] . 'Container_' . md5(date('Y-m-d')) . '.tmp'))['files'];
     } else {
         return [];
     }
@@ -104,6 +108,9 @@ function getContainer() {
 function requireFiles(array $files, bool $createContainer) {
     $filesOrdered = [];
     $skipped = [];
+
+    $__MAX__ = 1000;
+    $x = 0;
     while(true) {
         if(empty($skipped)) {
             $files2 = $files;
@@ -114,7 +121,7 @@ function requireFiles(array $files, bool $createContainer) {
 
         foreach($files2 as $realPath => $file) {
             try {
-                require_once($realPath);
+                @require_once($realPath);
                 $filesOrdered[$realPath] = $file;
             } catch(Error $e) {
                 $skipped[$realPath] = $file;
@@ -124,12 +131,36 @@ function requireFiles(array $files, bool $createContainer) {
         if(empty($skipped)) {
             break;
         }
+
+        if($x >= $__MAX__) {
+            break;
+        }
+
+        $x++;
+    }
+
+    if(!empty($skipped)) {
+        throw new RuntimeException('Could not find these files: [' . implode(', ', $skipped) . '].', 9999);
     }
 
     if($createContainer) {
         createContainer($filesOrdered);
     }
 }
+
+/**
+ * Principle of loading application files:
+ * 
+ * 1. The loader tries to obtain a "container" that contains a sorted list of paths to found necessary files
+ * 2A. If the "container" does not exist, the loader search for all files (except for folders, files or file extensions defined)
+ * 2A2. The loader sorts these files as: Interfacers, Abstract classes and Classes
+ *          - the Classes are sorted accordingly to the extending classes
+ *                  - e.g.: class A extends class B -> class B is loaded before class A
+ * 
+ * 2B. The container is found and the sorted files are loaded as an array
+ * 3. Files are looped through and "required"
+ * (4. If the container didn't exist in the first place, it is also created)
+ */
 
 $files = getContainer();
 

@@ -2,20 +2,20 @@
 
 namespace App\Constants;
 
-class PostTags {
+class PostTags extends AConstant {
     public const DISCUSSION = 'discussion';
     public const HELP_NEEDED = 'help_needed';
     public const SHOWCASE = 'showcase';
 
-    public static function toString(string $key) {
-        return match($key) {
+    public static function toString($key): string {
+        return match((string)$key) {
             self::DISCUSSION => 'Discussion',
             self::HELP_NEEDED => 'Help needed',
             self::SHOWCASE => 'Showcase'
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::DISCUSSION => self::toString(self::DISCUSSION),
             self::HELP_NEEDED => self::toString(self::HELP_NEEDED),

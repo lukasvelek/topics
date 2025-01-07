@@ -2,23 +2,13 @@
 
 namespace App\Repositories;
 
-use App\Core\Caching\Cache;
-use App\Core\Caching\CacheNames;
 use App\Core\DatabaseConnection;
-use App\Core\Datetypes\DateTime;
 use App\Entities\NotificationEntity;
 use App\Logger\Logger;
 
 class NotificationRepository extends ARepository {
-    private Cache $cache;
-
     public function __construct(DatabaseConnection $db, Logger $logger) {
         parent::__construct($db, $logger);
-
-        $expiration = new DateTime();
-        $expiration->modify('+1i'); // 1 minute
-
-        $this->cache = $this->cacheFactory->getCache(CacheNames::NOTIFICATIONS);
     }
 
     public function createNotification(string $notificationId, string $userId, int $type, string $title, string $message) {
@@ -44,16 +34,14 @@ class NotificationRepository extends ARepository {
 
         $qb ->orderBy('dateCreated', 'DESC');
 
-        return $this->cache->load($userId, function() use ($qb) {
-            $qb->execute();
+        $qb->execute();
 
-            $notifications = [];
-            while($row = $qb->fetchAssoc()) {
-                $notifications[] = NotificationEntity::createEntityFromDbRow($row);
-            }
+        $notifications = [];
+        while($row = $qb->fetchAssoc()) {
+            $notifications[] = NotificationEntity::createEntityFromDbRow($row);
+        }
 
-            return $notifications;
-        });
+        return $notifications;
     }
 
     public function updateNotification(string $notificationId, array $data) {
@@ -62,6 +50,17 @@ class NotificationRepository extends ARepository {
         $qb ->update('notifications')
             ->set($data)
             ->where('notificationId = ?', [$notificationId])
+            ->execute();
+
+        return $qb->fetchBool();
+    }
+
+    public function bulkUpdateNotifications(array $notificationIds, array $data) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->update('notifications')
+            ->set($data)
+            ->where($qb->getColumnInValues('notificationId', $notificationIds))
             ->execute();
 
         return $qb->fetchBool();

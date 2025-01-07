@@ -3,7 +3,7 @@
 namespace App\Core;
 
 use App\Constants\AdministratorGroups;
-use App\Constants\SystemStatus;
+use App\Constants\Systems;
 use App\Logger\Logger;
 
 /**
@@ -215,6 +215,7 @@ class DatabaseInstaller {
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ],
             'topic_invites' => [
+                'inviteId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'topicId' => 'VARCHAR(256) NOT NULL',
                 'userId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
@@ -287,9 +288,9 @@ class DatabaseInstaller {
                 'dateUpdated' => 'DATETIME NULL'
             ],
             'topic_rules' => [
-                'rulesetId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'ruleId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
                 'topicId' => 'VARCHAR(256) NOT NULL',
-                'rules' => 'TEXT NOT NULL',
+                'ruleText' => 'TEXT NOT NULL',
                 'lastUpdateUserId' => 'VARCHAR(256) NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
                 'dateUpdated' => 'DATETIME NULL'
@@ -302,7 +303,8 @@ class DatabaseInstaller {
                 'gridName' => 'VARCHAR(256) NOT NULL',
                 'entryCount' => 'INT(32) NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()',
-                'dateFinished' => 'DATETIME NULL'
+                'dateFinished' => 'DATETIME NULL',
+                'timeTaken' => 'INT(32) NULL'
             ],
             'topic_calendar_user_events' => [
                 'eventId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
@@ -350,6 +352,11 @@ class DatabaseInstaller {
                 'channelId' => 'VARCHAR(256) NOT NULL',
                 'authorId' => 'VARCHAR(256) NOT NULL',
                 'message' => 'TEXT NOT NULL',
+                'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
+            ],
+            'hashtag_trends' => [
+                'entryId' => 'VARCHAR(256) NOT NULL PRIMARY KEY',
+                'data' => 'TEXT NOT NULL',
                 'dateCreated' => 'DATETIME NOT NULL DEFAULT current_timestamp()'
             ]
         ];
@@ -486,6 +493,33 @@ class DatabaseInstaller {
             'topic_banned_words' => [
                 'authorId',
                 'topicId'
+            ],
+            'user_chats' => [
+                'user1Id',
+                'user2Id',
+                'dateCreated'
+            ],
+            'user_chat_messages' => [
+                'chatId',
+                'dateCreated'
+            ],
+            'topic_broadcast_channels' => [
+                'topicId'
+            ],
+            'topic_broadcast_channel_subscribers' => [
+                'channelId',
+                'userId'
+            ],
+            'topic_broadcast_channel_messages' => [
+                'channelId',
+                'dateCreated'
+            ],
+            'hashtag_trends' => [
+                'dateCreated'
+            ],
+            'system_status' => [
+                'name',
+                'status'
             ]
         ];
 
@@ -565,16 +599,12 @@ class DatabaseInstaller {
     private function createSystems() {
         $this->logger->info('Creating systems.', __METHOD__);
 
-        $systems = [
-            'Core' => SystemStatus::ONLINE
-        ];
-
         $i = 0;
-        foreach($systems as $name => $status) {
+        foreach(Systems::getAll() as $name => $userFriendlyName) {
             $id = HashManager::createEntityId();
 
             $sql = 'INSERT INTO `system_status` (`systemId`, `name`, `status`)
-                    SELECT \'' . $id . '\', \'' . $name . '\', \'' . $status . '\'
+                    SELECT \'' . $id . '\', \'' . $name . '\', 1
                     WHERE NOT EXISTS (SELECT 1 FROM `system_status` WHERE `name` = \'' . $name . '\')';
 
             $this->db->query($sql);
@@ -616,7 +646,7 @@ class DatabaseInstaller {
 
             $sql = "INSERT INTO `groups` (`groupId`, `title`, `description`)
                     SELECT '$id', '$title', '$description'
-                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = $id)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `groups` WHERE `groupId` = '$id')";
 
             $this->db->query($sql);
         }
@@ -656,7 +686,7 @@ class DatabaseInstaller {
 
             $sql = "INSERT INTO `group_membership` (`membershipId`, `userId`, `groupId`)
                     SELECT '$membershipId', '$userId', '$groupId'
-                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE `membershipId` = '$membershipId' AND userId = '$userId' AND groupId = $groupId)";
+                    WHERE NOT EXISTS (SELECT 1 FROM `group_membership` WHERE userId = '$userId' AND groupId = '$groupId')";
 
             $this->db->query($sql);
         }
@@ -677,7 +707,8 @@ class DatabaseInstaller {
             'Mail' => 'MailService.php',
             'OldRegistrationConfirmationLinkRemoving' => 'OldRegistrationRemoving.php',
             'OldGridExportCacheRemoving' => 'OldGridExportCacheRemoving.php',
-            'UnlimitedGridExport' => 'UnlimitedGridExport.php'
+            'UnlimitedGridExport' => 'UnlimitedGridExport.php',
+            'HashtagTrendsIndexing' => 'HashtagTrendsIndexing.php'
         ];
 
         foreach($services as $title => $path) {

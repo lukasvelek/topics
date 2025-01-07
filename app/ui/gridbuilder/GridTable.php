@@ -5,6 +5,9 @@ namespace App\UI\GridBuilder;
 use App\Helpers\RenderableElementHelper;
 use App\UI\IRenderable;
 
+/**
+ * @deprecated
+ */
 class Table implements IRenderable {
     private array $rows;
     private ?Row $headerRow;

@@ -70,6 +70,17 @@ class TopicMembershipRepository extends ARepository {
         return $qb->fetch('role');
     }
 
+    public function composeQueryForTopicMembers(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_membership')
+            ->where('topicId = ?', [$topicId])
+            ->orderBy('role', 'DESC');
+
+        return $qb;
+    }
+
     public function getTopicMembersForGrid(string $topicId, int $limit, int $offset, bool $orderByRoleDesc) {
         $qb = $this->qb(__METHOD__);
 

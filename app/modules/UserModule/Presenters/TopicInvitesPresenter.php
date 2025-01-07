@@ -2,111 +2,104 @@
 
 namespace App\Modules\UserModule;
 
-use App\Core\AjaxRequestBuilder;
-use App\Core\Datetypes\DateTime;
-use App\Entities\TopicInviteEntity;
+use App\Core\DB\DatabaseRow;
+use App\Core\Http\HttpRequest;
+use App\Entities\TopicEntity;
 use App\Exceptions\AException;
-use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
-use App\UI\LinkBuilder;
+use App\UI\GridBuilder2\Cell;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
+use QueryBuilder\QueryBuilder;
 
 class TopicInvitesPresenter extends AUserPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('TopicInvitesPresenter', 'Topic invites');
     }
     
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-    }
-
-    public function handleList() {
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setAction($this, 'getInvitesGrid')
-            ->setMethod()
-            ->setHeader(['gridPage' => '_page'])
-            ->setFunctionArguments(['_page'])
-            ->setFunctionName('getInvitesGrid')
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getInvitesGrid(-1)');
     }
 
     public function renderList() {}
 
-    public function actionGetInvitesGrid() {
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $this->app->getGridSize();
+    public function createComponentGrid(HttpRequest $request) {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_TOPIC_INVITES, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->topicInviteRepository->composeQueryForUserInvites($this->getUserId()), 'inviteId');
+        $grid->noFilterSqlConditions[] = function(QueryBuilder &$qb) {
+            $qb->andWhere('dateValid > ?', [time()]);
+        };
+        $grid->setGridName(GridHelper::GRID_TOPIC_INVITES_ALL);
 
-        $validOnly = true;
+        $col = $grid->addColumnText('topic', 'Topic');
+        $col->onRenderColumn[] = function(DatabaseRow $row, Row $_row, Cell $cell, HTML $html, mixed $value) {
+            try {
+                $topic = $this->app->topicManager->getTopicById($value, $this->getUserId());
 
-        $invites = $this->app->topicInviteRepository->getInvitesForUserForGrid($this->getUserId(), $gridSize, ($gridSize * $page), $validOnly);
-        $totalInviteCount = count($this->app->topicInviteRepository->getInvitesForUserForGrid($this->getUserId(), 0, 0, $validOnly));
-
-        $lastPage = ceil($totalInviteCount / $gridSize);
-
-        $topicIds = $this->app->topicInviteRepository->getAllTopicsInUserInvites($this->getUserId(), $validOnly);
-        $topics = $this->app->topicRepository->bulkGetTopicsByIds($topicIds, true);
-
-        $gb = new GridBuilder();
-
-        $gb->addDataSource($invites);
-        $gb->addColumns(['topic' => 'Topic', 'dateValid' => 'Valid until']);
-        $gb->addOnColumnRender('topic', function(Cell $cell, TopicInviteEntity $tie) use ($topics) {
-            if(array_key_exists($tie->getTopicId(), $topics)) {
-                $topic = $topics[$tie->getTopicId()];
-
-                return LinkBuilder::createSimpleLink($topic->getTitle(), ['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topic->getId()], 'grid-link');
-            } else {
-                return '-';
+                return TopicEntity::createTopicProfileLink($topic, false, 'grid-link');
+            } catch(AException $e) {
+                return null;
             }
-        });
-        $gb->addOnColumnRender('dateValid', function(Cell $cell, TopicInviteEntity $tie) {
-            return DateTimeFormatHelper::formatDateToUserFriendly($tie->getDateValid());
-        });
-        $gb->addAction(function(TopicInviteEntity $tie) {
-            $now = new DateTime();
-            $now = $now->getResult();
+        };
+        $col->onExportColumn[] = function(DatabaseRow $row, mixed $value) {
+            try {
+                $topic = $this->app->topicManager->getTopicById($value, $this->getUserId());
 
-            if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Accept', $this->createURL('acceptInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
-            } else {
-                return '-';
+                return TopicEntity::createTopicProfileLink($topic, false, 'grid-link');
+            } catch(AException $e) {
+                return null;
             }
-        });
-        $gb->addAction(function(TopicInviteEntity $tie) {
-            $now = new DateTime();
-            $now = $now->getResult();
+        };
 
-            if(strtotime($tie->getDateValid()) > strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Reject', $this->createURL('rejectInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
-            } else {
-                return '-';
-            }
-        });
-        $gb->addAction(function(TopicInviteEntity $tie) {
-            $now = new DateTime();
-            $now = $now->getResult();
+        $grid->addColumnDatetime('dateValid', 'Valid until');
 
-            if(strtotime($tie->getDateValid()) <= strtotime($now)) {
-                return LinkBuilder::createSimpleLink('Delete', $this->createURL('deleteInvite', ['topicId' => $tie->getTopicId()]), 'grid-link');
-            } else {
-                return '-';
-            }
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalInviteCount, 'getInvitesGrid');
+        $accept = $grid->addAction('accept');
+        $accept->setTitle('Accept');
+        $accept->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            return strtotime($row->dateValid) > time();
+        };
+        $accept->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            $el = HTML::el('a')
+                ->class('grid-link')
+                ->text('Accept')
+                ->href($this->createURLString('acceptInvite', ['topicId' => $row->topicId]))
+            ;
 
-        return ['grid' => $gb->build()];
+            return $el;
+        };
+
+        $reject = $grid->addAction('reject');
+        $reject->setTitle('Reject');
+        $reject->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            return strtotime($row->dateValid) > time();
+        };
+        $reject->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            $el = HTML::el('a')
+                ->class('grid-link')
+                ->text('Reject')
+                ->href($this->createURLString('rejectInvite', ['topicId' => $row->topicId]))
+            ;
+
+            return $el;
+        };
+
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function(DatabaseRow $row, Row $_row) {
+            return strtotime($row->dateValid) <= time();
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            $el = HTML::el('a')
+                ->class('grid-link')
+                ->text('Delete')
+                ->href($this->createURLString('deleteInvite', ['topicId' => $row->topicId]))
+            ;
+
+            return $el;
+        };
+
+        return $grid;
     }
 
     public function handleAcceptInvite() {

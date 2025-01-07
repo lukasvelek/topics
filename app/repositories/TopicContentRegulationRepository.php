@@ -11,6 +11,16 @@ class TopicContentRegulationRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
+    public function composeQueryForBannedWordsForTopicId(string $topicId) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('topic_banned_words')
+            ->where('topicId = ?', [$topicId]);
+
+        return $qb;
+    }
+
     public function getBannedWordsForTopicForGrid(string $topicId, int $limit, int $offset) {
         $qb = $this->qb(__METHOD__);
 

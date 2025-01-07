@@ -63,8 +63,8 @@ class FileUploadRepository extends ARepository {
         return $this->createEntitiesFromQb($qb);
     }
 
-    private function composeQueryForFiles(string $method = __METHOD__) {
-        $qb = $this->qb($method);
+    public function composeQueryForFiles() {
+        $qb = $this->qb(__METHOD__);
 
         $qb ->select(['*'])
             ->from('post_file_uploads');

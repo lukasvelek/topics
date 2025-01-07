@@ -2,14 +2,14 @@
 
 namespace App\Constants;
 
-class SystemStatus {
+class SystemStatus extends AConstant {
     public const ONLINE = 1;
     public const OFFLINE = 2;
     public const MAINTENANCE = 3;
     public const ISSUES_REPORTED = 4;
 
-    public static function toString(int $code) {
-        return match($code) {
+    public static function toString($key): string {
+        return match((int)$key) {
             self::ONLINE => 'Online',
             self::OFFLINE => 'Offline',
             self::MAINTENANCE => 'Ongoing maintenance',
@@ -26,7 +26,7 @@ class SystemStatus {
         };
     }
 
-    public static function getAll() {
+    public static function getAll(): array {
         return [
             self::ONLINE => self::toString(self::ONLINE),
             self::OFFLINE => self::toString(self::OFFLINE),

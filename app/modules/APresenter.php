@@ -11,11 +11,14 @@ use App\Core\Datetypes\DateTime;
 use App\Core\HashManager;
 use App\Entities\UserEntity;
 use App\Exceptions\ActionDoesNotExistException;
+use App\Exceptions\AException;
+use App\Exceptions\GeneralException;
 use App\Exceptions\NoAjaxResponseException;
-use App\Exceptions\RequiredAttributeIsNotSetException;
 use App\Exceptions\TemplateDoesNotExistException;
+use App\Helpers\GridHelper;
 use App\Logger\Logger;
-use App\UI\FormBuilder\FormResponse;
+use App\UI\GridBuilder2\GridBuilder;
+use Exception;
 
 /**
  * Common presenter class that all presenters must extend. It contains useful methods and most importantly rendering functionality.
@@ -34,7 +37,6 @@ abstract class APresenter extends AGUICore {
     public ?string $moduleName;
     private bool $isAjax;
     private bool $lock;
-    protected ?Application $app;
     private ?UserEntity $currentUser;
 
     protected ?TemplateObject $template;
@@ -48,6 +50,10 @@ abstract class APresenter extends AGUICore {
 
     private array $flashMessages;
     private array $specialRedirectUrlParams;
+    private bool $isComponentAjax;
+    private array $permanentFlashMessages;
+    
+    public array $components;
 
     /**
      * The class constructor
@@ -67,8 +73,8 @@ abstract class APresenter extends AGUICore {
         $this->moduleName = null;
         $this->isAjax = false;
         $this->lock = false;
-        $this->app = null;
         $this->currentUser = null;
+        $this->isComponentAjax = false;
 
         $this->presenterCache = new ArrayList();
         $this->presenterCache->setStringKeyType();
@@ -82,6 +88,9 @@ abstract class APresenter extends AGUICore {
 
         $this->flashMessages = [];
         $this->specialRedirectUrlParams = [];
+        $this->permanentFlashMessages = [];
+
+        $this->components = [];
     }
 
     /**
@@ -124,7 +133,7 @@ abstract class APresenter extends AGUICore {
      * @param Application $app Application instance
      */
     public function setApplication(Application $app) {
-        $this->app = $app;
+        parent::setApplication($app);
 
         $this->procesApplicationSet();
     }
@@ -263,6 +272,12 @@ abstract class APresenter extends AGUICore {
         $this->logger = $logger;
     }
 
+    private function processHttpRequest() {
+        if(isset($this->httpRequest->query['isComponent']) && $this->httpRequest->query['isComponent'] == 1) {
+            $this->isComponentAjax = true;
+        }
+    }
+
     /**
      * Creates a custom flash message but instead of saving it to cache, it returns its HTML code.
      * 
@@ -295,19 +310,19 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Saves a flash message to cache
+     * Saves a flash message to cache. Flash messages are automatically closed.
      * 
      * @param string $text Flash message text
      * @param string $type Flash message type
      */
-    protected function flashMessage(string $text, string $type = 'info') {
+    protected function flashMessage(string $text, string $type = 'info', int $autoCloseLengthInSeconds = 5) {
         if(empty($this->flashMessages)) {
             $hash = HashManager::createHash(8, false);
         } else {
             $hash = $this->flashMessages[0]['hash'];
         }
 
-        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash];
+        $this->flashMessages[] = ['type' => $type, 'text' => $text, 'hash' => $hash, 'autoClose' => $autoCloseLengthInSeconds];
         
         if(!array_key_exists('_fm', $this->specialRedirectUrlParams)) {
             $this->specialRedirectUrlParams['_fm'] = $hash;
@@ -315,40 +330,25 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Returns escaped value from $_GET array. It can also throw an exception if the value is not provided.
+     * Saves a permanent flash message to presenter cache. Permanent flash messages are not automatically closed.
      * 
-     * @param string $key Array key
-     * @param bool $throwException True if exception should be thrown or false if not
-     * @return mixed Escaped value or null
+     * @param string $text Flash message text
+     * @param string $type Flash message type
      */
-    protected function httpGet(string $key, bool $throwException = false) {
-        if(isset($_GET[$key])) {
-            return htmlspecialchars($_GET[$key]);
-        } else {
-            if($throwException) {
-                throw new RequiredAttributeIsNotSetException($key, '$_GET');
-            } else {
-                return null;
-            }
-        }
+    protected function permanentFlashMessage(string $text, string $type = 'info') {
+        $this->permanentFlashMessages[] = $this->createFlashMessage($type, $text, count($this->permanentFlashMessages), false, true);
     }
 
     /**
-     * Returns escaped value from $_POST array. It can also throw an exception if the value is not provided.
+     * Returns HTML code of all permanent flash messages
      * 
-     * @param string $key Array key
-     * @param bool $throwException True if exception should be thrown or false if not
-     * @return mixed Escaped value or null
+     * @return string HTML code of all permanent flash messages
      */
-    protected function httpPost(string $key, bool $throwException = false) {
-        if(isset($_POST[$key])) {
-            return htmlspecialchars($_POST[$key]);
+    public function fillPermanentFlashMessages() {
+        if(!empty($this->permanentFlashMessages)) {
+            return implode('<br>', $this->permanentFlashMessages);
         } else {
-            if($throwException) {
-                throw new RequiredAttributeIsNotSetException($key, '$_POST');
-            } else {
-                return null;
-            }
+            return '';
         }
     }
 
@@ -357,7 +357,7 @@ abstract class APresenter extends AGUICore {
      * 
      * @param array $url URL params
      */
-    protected function redirect(array $url = []) {
+    public function redirect(array $url = []) {
         if(!empty($url)) {
             if(!array_key_exists('page', $url)) {
                 $url['page'] = $this->httpGet('page');
@@ -371,30 +371,6 @@ abstract class APresenter extends AGUICore {
         }
 
         $this->app->redirect($url);
-    }
-
-    /**
-     * Returns data from the $_SESSION by the key
-     * 
-     * @param string $key Data key
-     * @return mixed Data value or null
-     */
-    protected function httpSessionGet(string $key) {
-        if(isset($_SESSION[$key])) {
-            return $_SESSION[$key];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Sets a value to the $_SESSION
-     * 
-     * @param string $key Data key
-     * @param mixed $value Data value
-     */
-    protected function httpSessionSet(string $key, mixed $value) {
-        $_SESSION[$key] = $value;
     }
 
     /**
@@ -415,7 +391,11 @@ abstract class APresenter extends AGUICore {
      * @return string Presenter template content
      */
     public function render(string $moduleName) {
-        $contentTemplate = $this->beforeRender($moduleName);
+        try {
+            $contentTemplate = $this->beforeRender($moduleName);
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
         
         if(!$this->isAjax) {
             if($contentTemplate !== null && $this->template !== null) {
@@ -438,22 +418,7 @@ abstract class APresenter extends AGUICore {
                 }
             }
     
-            $date = new DateTime();
-            $date->format('Y');
-            $date = $date->getResult();
-    
-            if($this->template !== null) {
-                $this->template->sys_page_title = $this->title;
-                $this->template->sys_app_name = $this->cfg['APP_NAME'];
-                $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
-                $this->template->sys_scripts = $this->scripts->getAll();
-            
-                if($this->currentUser !== null) {
-                    $this->template->sys_user_id = $this->currentUser->getId();
-                } else {
-                    $this->template->sys_user_id = '';
-                }
-            }
+            $this->fillSystemAttributesToTemplate();
         } else {
             $this->template = $contentTemplate;
         }
@@ -461,6 +426,25 @@ abstract class APresenter extends AGUICore {
         $this->afterRender();
 
         return $this->template;
+    }
+
+    private function fillSystemAttributesToTemplate() {
+        $date = new DateTime();
+        $date->format('Y');
+        $date = $date->getResult();
+
+        if($this->template !== null) {
+            $this->template->sys_page_title = $this->title;
+            $this->template->sys_app_name = $this->cfg['APP_NAME'];
+            $this->template->sys_copyright = (($date > 2024) ? ('2024-' . $date) : ($date));
+            $this->template->sys_scripts = $this->scripts->getAll();
+        
+            if($this->currentUser !== null) {
+                $this->template->sys_user_id = $this->currentUser->getId();
+            } else {
+                $this->template->sys_user_id = '';
+            }
+        }
     }
 
     /**
@@ -491,6 +475,15 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
+     * Returns the current action that the presenter will perform
+     * 
+     * @return string Action name
+     */
+    public function getAction() {
+        return $this->action;
+    }
+
+    /**
      * Sets the page content template
      * 
      * @param null|TemplateObject $template Template or null
@@ -513,7 +506,7 @@ abstract class APresenter extends AGUICore {
         $handleAction = 'handle' . ucfirst($this->action);
         $renderAction = 'render' . ucfirst($this->action);
 
-        if($this->isAjax) {
+        if($this->isAjax && !$this->isComponentAjax) {
             $result = $this->processAction($moduleName);
             if($result !== null) {
                 return $result;
@@ -537,7 +530,7 @@ abstract class APresenter extends AGUICore {
             return new TemplateObject($handleResult);
         }
 
-        if(method_exists($this, $renderAction) && !$this->isAjax) {
+        if(method_exists($this, $renderAction)) {
             $ok = true;
             $templatePath = __DIR__ . '\\' . $this->params['module'] . '\\Presenters\\templates\\' . $this->name . '\\' . $this->action . '.html';
 
@@ -545,11 +538,11 @@ abstract class APresenter extends AGUICore {
                 throw new TemplateDoesNotExistException($this->action, $templatePath);
             }
 
-            $templateContent = new TemplateObject(file_get_contents($templatePath));
+            $templateContent = $this->getTemplate($templatePath);
         }
 
         if($ok === false) {
-            if($this->isAjax) {
+            if($this->isAjax && !$this->isComponentAjax) {
                 if($this->cfg['IS_DEV']) {
                     throw new ActionDoesNotExistException($this->action);
                 } else {
@@ -564,6 +557,64 @@ abstract class APresenter extends AGUICore {
                     throw new ActionDoesNotExistException($handleAction . '\' or \'' . $renderAction);
                 } else {
                     $this->redirect(['page' => 'ErrorModule:E404', 'reason' => 'ActionDoesNotExist']);
+                }
+            }
+        }
+
+        if(isset($this->httpRequest->query['do'])) {
+            $do = $this->httpRequest->query['do'];
+            $doParts = explode('-', $do);
+            if(count($doParts) < 2) {
+                return;
+            }
+            $componentName = $doParts[0];
+            if($this->isAjax()) {
+                $methodName = 'action' . ucfirst($doParts[1]);
+            } else {
+                $methodName = 'handle' . ucfirst($doParts[1]);
+            }
+            $methodArgs = [];
+            if(count($doParts) > 2) {
+                for($i = 2; $i < count($doParts); $i++) {
+                    $methodArgs[] = $doParts[$i];
+                }
+            }
+
+            $component = $templateContent->getComponent($componentName);
+
+            if($component !== null) {
+                if(method_exists($component, $methodName)) {
+                    $result = $this->logger->stopwatch(function() use ($component, $methodName) {
+                        try {
+                            if(isset($this->httpRequest->query['isFormSubmit']) && $this->httpRequest->query['isFormSubmit'] == '1') {
+                                $fr = $this->createFormResponse();
+                                $result = $component->processMethod($methodName, [$this->httpRequest, $fr]);
+                            } else {
+                                $result = $component->processMethod($methodName, [$this->httpRequest]);
+                            }
+                        } catch(AException|Exception $e) {
+                            if(!($e instanceof AException)) {
+                                try {
+                                    throw new GeneralException('Could not process component request. Reason: ' . $e->getMessage(), $e);
+                                } catch(AException $e) {
+                                    return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                                }
+                            }
+                            //return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                            throw $e;
+                        }
+                        return $result;
+                    }, $componentName . '::' . $methodName);
+        
+                    if($this->ajaxResponse !== null) {
+                        return new TemplateObject($this->ajaxResponse);
+                    } else if($result !== null) {
+                        return new TemplateObject(json_encode($result));
+                    } else {
+                        throw new NoAjaxResponseException();
+                    }
+                } else {
+                    throw new ActionDoesNotExistException('Method \'' . $component::class . '::' . $methodName . '()\' does not exist.');
                 }
             }
         }
@@ -599,7 +650,13 @@ abstract class APresenter extends AGUICore {
 
         if(method_exists($this, $actionAction)) {
             $result = $this->logger->stopwatch(function() use ($actionAction) {
-                return $this->$actionAction();
+                try {
+                    $result = $this->$actionAction($this->httpRequest);
+                } catch(AException|Exception $e) {
+                    throw $e;
+                    return ['error' => '1', 'errorMsg' => 'Error: ' . $e->getMessage()];
+                }
+                return $result;
             }, 'App\\Modules\\' . $moduleName . '\\' . $this->title . '::' . $actionAction);
 
             if($this->ajaxResponse !== null) {
@@ -638,57 +695,6 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Returns all query params -> the $_GET array but without the 'page' and 'action' parameters.
-     * 
-     * @return array Query parameters
-     */
-    private function getQueryParams() {
-        $keys = array_keys($_GET);
-
-        $values = [];
-        foreach($keys as $key) {
-            if($key == 'page' || $key == 'action') {
-                continue;
-            }
-
-            $values[$key] = $this->httpGet($key);
-        }
-
-        return $values;
-    }
-
-    /**
-     * Returns all post params -> the $_POST array
-     * 
-     * @return array POST parameters
-     */
-    private function getPostParams() {
-        $keys = array_keys($_POST);
-
-        $values = [];
-        foreach($keys as $key) {
-            $values[$key] = $this->httpPost($key);
-        }
-
-        return $values;
-    }
-
-    /**
-     * Creates a form response object
-     * 
-     * @return null|FormResponse FormResponse or null
-     */
-    private function createFormResponse() {
-        if(!empty($_POST)) {
-            $values = $this->getPostParams();
-
-            return FormResponse::createFormResponseFromPostData($values);
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Sets configuration
      * 
      * @param array $cfg
@@ -715,12 +721,15 @@ abstract class APresenter extends AGUICore {
     }
 
     /**
-     * Returns DefaultGridReducer instance
+     * Returns a GridBuilder instance
      * 
-     * @return \App\UI\GridBuilder\DefaultGridReducer DefaultGridReducer instance
+     * @return GridBuilder GridBuilder instance
      */
-    public function getGridReducer() {
-        return $this->app->getGridReducer();
+    public function getGridBuilder() {
+        $grid = new GridBuilder($this->httpRequest, $this->cfg);
+        $helper = new GridHelper($this->logger, $this->getUserId());
+        $grid->setHelper($helper);
+        return $grid;
     }
 }
 

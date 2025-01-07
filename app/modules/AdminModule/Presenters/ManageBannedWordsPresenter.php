@@ -2,86 +2,63 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Core\AjaxRequestBuilder;
-use App\Entities\BannedWordEntity;
+use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
-use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
 use App\Managers\EntityManager;
 use App\UI\FormBuilder\FormBuilder;
 use App\UI\FormBuilder\FormResponse;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
 
 class ManageBannedWordsPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageBannedWordsPresenter', 'Banned words management');
     }
 
     public function startup() {
         parent::startup();
-        
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
+
+        if(!$this->app->sidebarAuthorizator->canManageBannedWords($this->getUserId())) {
+            $this->flashMessage('You are not authorized to visit this section.');
+            $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
+        }
     }
 
-    public function actionGridList() {
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $this->app->getGridSize();
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_BANNED_WORDS, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->contentRegulationRepository->composeQueryForBannedWords(), 'wordId');
+        $grid->setGridName(GridHelper::GRID_BANNED_WORDS);
 
-        $data = $this->app->contentRegulationRepository->getBannedWordsForGrid($gridSize, ($page * $gridSize));
-        $totalCount = $this->app->contentRegulationRepository->getBannedWordsCount();
-        $lastPage = ceil($totalCount / $gridSize);
+        $grid->addColumnText('word', 'Word');
+        $grid->addColumnUser('authorId', 'Author');
+        $grid->addColumnDatetime('dateCreated', 'Date');
 
-        $gb = new GridBuilder();
-        $gb->addColumns(['text' => 'Word', 'author' => 'Author', 'date' => 'Date']);
-        $gb->addDataSource($data);
-        $gb->addOnColumnRender('author', function(Cell $cell, BannedWordEntity $bwe) {
-            $user = $this->app->userRepository->getUserById($bwe->getAuthorId());
-            return LinkBuilder::createSimpleLink($user->getUsername(), ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], 'grid-link');
-        });
-        $gb->addOnColumnRender('date', function(Cell $cell, BannedWordEntity $bwe) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($bwe->getDateCreated(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-        $gb->addAction(function(BannedWordEntity $bwe) {
-            return LinkBuilder::createSimpleLink('Delete', ['page' => 'AdminModule:ManageBannedWords', 'action' => 'delete', 'wordId' => $bwe->getId()], 'grid-link');
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $totalCount, 'getBannedWordsGrid');
+        $delete = $grid->addAction('delete');
+        $delete->setTitle('Delete');
+        $delete->onCanRender[] = function() {
+            return true;
+        };
+        $delete->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            return LinkBuilder::createSimpleLink('Delete', $this->createURL('delete', ['wordId' => $primaryKey]), 'grid-link');
+        };
 
-        return ['grid' => $gb->build()];
+        return $grid;
     }
 
     public function handleList() {
-        $arb = new AjaxRequestBuilder();
-
-        $arb->setMethod('GET')
-            ->setURL(['page' => 'AdminModule:ManageBannedWords', 'action' => 'gridList'])
-            ->updateHTMLElement('grid-content', 'grid')
-            ->setHeader(['gridPage' => '_page'])
-            ->setFunctionName('getBannedWordsGrid')
-            ->setFunctionArguments(['_page']);
-
-        $this->addScript($arb->build());
-        $this->addScript('getBannedWordsGrid(-1)');
-
         $links = [
-            '<a class="post-data-link" href="?page=AdminModule:ManageBannedWords&action=newForm">Add word</a>'
+            LinkBuilder::createSimpleLink('Add word', $this->createURL('newForm'), 'post-data-link')
         ];
 
         $this->saveToPresenterCache('links', $links);
     }
 
     public function renderList() {
-        $grid = $this->loadFromPresenterCache('grid');
         $links = $this->loadFromPresenterCache('links');
 
-        $this->template->grid_script = $grid;
         $this->template->links = $links;
     }
 

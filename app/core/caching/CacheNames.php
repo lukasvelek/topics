@@ -2,6 +2,11 @@
 
 namespace App\Core\Caching;
 
+/**
+ * CacheNames contains the list of all cache namespaces used
+ * 
+ * @author Lukas Velek
+ */
 class CacheNames {
     public const USERS = 'users';
     public const USERS_USERNAME_TO_ID_MAPPING = 'usersUsernameToIdMapping';

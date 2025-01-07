@@ -75,7 +75,7 @@ class PostCommentRepository extends ARepository {
         return $qb->fetch();
     }
 
-    public function getCommentCountForPostId(string $postId, bool $deletedOnly = true) {
+    public function getCommentCountForPostId(string $postId, bool $notDeletedOnly = true) {
         $qb = $this->qb(__METHOD__);
 
         $qb ->select(['COUNT(commentId) AS cnt'])
@@ -83,7 +83,7 @@ class PostCommentRepository extends ARepository {
             ->where('postId = ?', [$postId])
             ->andWhere('parentCommentId IS NULL');
 
-        if($deletedOnly) {
+        if($notDeletedOnly) {
             $qb->andWhere('isDeleted = 0');
         }
 
@@ -372,6 +372,33 @@ class PostCommentRepository extends ARepository {
         }
 
         return $data;
+    }
+
+    public function composeQueryForPostCommentsWithHashtags() {
+        $qbTopics = $this->qb(__METHOD__);
+
+        $qbTopics ->select(['topicId'])
+            ->from('topics')
+            //->where('(isPrivate = 1 AND isVisible = 1)')
+        ;
+
+        $qbPosts = $this->qb(__METHOD__);
+
+        $qbPosts ->select(['postId'])
+            ->from('posts')
+            ->andWhere('isSuggestable = 1')
+            ->andWhere('((isScheduled = 1 AND dateAvailable <= current_timestamp()) OR isScheduled = 0)')
+            ->andWhere('topicId IN (' . $qbTopics->getSQL() . ')')
+        ;
+
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['commentText'])
+            ->from('post_comments')
+            ->where('WHERE postId IN (' . $qbPosts->getSQL() . ')')
+        ;
+
+        return $qb;
     }
 }
 

@@ -4,7 +4,6 @@ namespace App\Core\Caching;
 
 use App\Core\Caching\Cache;
 use App\Core\Datetypes\DateTime;
-use App\Core\FileLockManager;
 use App\Core\FileManager;
 
 /**
@@ -18,6 +17,7 @@ class CacheFactory {
     private const I_NS_CACHE_LAST_WRITE_DATE = '_cacheLastWriteDate';
 
     private array $cfg;
+    private CacheLogger $cacheLogger;
 
     /** @var array<Cache> */
     private array $persistentCaches;
@@ -25,11 +25,13 @@ class CacheFactory {
     /**
      * Class constructor
      * 
-     * @param array $cfg Cofiguration
+     * @param Logger $logger Logger instance
      */
     public function __construct(array $cfg) {
         $this->cfg = $cfg;
         $this->persistentCaches = [];
+
+        $this->cacheLogger = new CacheLogger($this->cfg);
     }
 
     /**
@@ -39,6 +41,14 @@ class CacheFactory {
         $this->saveCaches();
 
         $this->persistentCaches = [];
+    }
+
+    public function invalidateCacheByCache(Cache $cache) {
+        return $this->invalidateCacheByNamespace($cache->getNamespace());
+    }
+
+    public function invalidateCacheByNamespace(string $namespace) {
+        return $this->deleteCache($namespace);
     }
 
     /**
@@ -54,7 +64,8 @@ class CacheFactory {
         $cacheData = $this->loadDataFromCache($namespace);
 
         if($cacheData === null) {
-            $cache = new Cache([], $namespace, $expiration, null);
+            $this->cacheLogger->logCacheCreateOrGet($namespace, true, __METHOD__);
+            $cache = new Cache([], $namespace, $this, $this->cacheLogger, $expiration, null);
             $this->persistentCaches[$cache->getHash()] = &$cache;
             return $cache;
         }
@@ -68,12 +79,26 @@ class CacheFactory {
             $expirationDate = $expiration;
         }
 
+        if($expirationDate !== null && strtotime($expirationDate) < time()) {
+            // cache has expired
+            $cacheData = null;
+            $expiration = null;
+            $expirationDate = null;
+
+            $this->cacheLogger->logCacheCreateOrGet($namespace, true, __METHOD__);
+            $cache = new Cache([], $namespace, $this, $this->cacheLogger, $expiration, null);
+            $this->persistentCaches[$cache->getHash()] = &$cache;
+            return $cache;
+        }
+
         $lastWriteDate = null;
         if(isset($cacheData[self::I_NS_CACHE_LAST_WRITE_DATE])) {
             $lastWriteDate = new DateTime(strtotime($cacheData[self::I_NS_CACHE_LAST_WRITE_DATE]));
         }
 
-        $cache = new Cache($cacheData[self::I_NS_DATA], $namespace, $expirationDate, $lastWriteDate);
+        $this->cacheLogger->logCacheCreateOrGet($namespace, false, __METHOD__);
+
+        $cache = new Cache($cacheData[self::I_NS_DATA], $namespace, $this, $this->cacheLogger, $expirationDate, $lastWriteDate);
         $this->persistentCaches[$cache->getHash()] = &$cache;
         return $cache;
     }
@@ -85,7 +110,7 @@ class CacheFactory {
      * @return mixed|null Loaded content or null
      */
     private function loadDataFromCache(string $namespace) {
-        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
         $date->format('Y-m-d');
@@ -131,7 +156,14 @@ class CacheFactory {
     public function saveCaches() {
         foreach($this->persistentCaches as $cache) {
             if($cache->isInvalidated()) {
-                $this->deleteCache($cache->getNamespace());
+                //$this->deleteCache($cache->getNamespace());
+                $tmp = [
+                    self::I_NS_DATA => [],
+                    self::I_NS_CACHE_EXPIRATION => $cache->getExpirationDate()?->getResult(),
+                    self::I_NS_CACHE_LAST_WRITE_DATE => $cache->getLastWriteDate()?->getResult()
+                ];
+
+                $this->saveDataToCache($cache->getNamespace(), $tmp);
             } else {
                 $tmp = [
                     self::I_NS_DATA => $cache->getData(),
@@ -152,7 +184,7 @@ class CacheFactory {
      * @return int|false Number of bytes written or false if error occured
      */
     private function saveDataToCache(string $namespace, array $data) {
-        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
         
         $date = new DateTime();
         $date->format('Y-m-d');
@@ -160,19 +192,7 @@ class CacheFactory {
         $filename = $date . $namespace;
         $filename = md5($filename);
 
-        $flm = new FileLockManager();
-        $flm->lock($path . $filename);
-
-        $handle = $flm->getHandle($path . $filename);
-
-        $result = false;
-        if($handle === null) {
-            $result = FileManager::saveFile($path, $filename, serialize($data));
-        } else {
-            $result = fputs($handle, serialize($data));
-
-            $flm->unlock($path . $filename);
-        }
+        $result = FileManager::saveFile($path, $filename, serialize($data), true, false);
 
         return $result !== false;
     }
@@ -184,7 +204,9 @@ class CacheFactory {
      * @return bool True on success or false on failure
      */
     private function deleteCache(string $namespace) {
-        $path = $this->cfg['CACHE_DIR'] . $namespace . '\\';
+        $path = $this->cfg['APP_REAL_DIR'] . $this->cfg['CACHE_DIR'] . $namespace . '\\';
+
+        $this->cacheLogger->logCacheNamespaceDeleted($namespace, __METHOD__);
 
         return FileManager::deleteFolderRecursively($path);
     }

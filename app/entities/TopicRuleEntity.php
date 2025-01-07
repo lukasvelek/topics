@@ -2,33 +2,33 @@
 
 namespace App\Entities;
 
-class TopicRulesEntity extends AEntity {
-    private string $rulesetId;
+class TopicRuleEntity extends AEntity {
+    private string $ruleId;
     private string $topicId;
-    private array $rules;
+    private string $ruleText;
     private string $lastUpdateUserId;
     private string $dateCreated;
     private ?string $dateUpdated;
 
-    public function __construct(string $rulesetId, string $topicId, array $rules, string $lastUpdateUserId, string $dateCreated, ?string $dateUpdated) {
-        $this->rulesetId = $rulesetId;
+    public function __construct(string $ruleId, string $topicId, string $ruleText, string $lastUpdateUserId, string $dateCreated, ?string $dateUpdated) {
+        $this->ruleId = $ruleId;
         $this->topicId = $topicId;
-        $this->rules = $rules;
+        $this->ruleText = $ruleText;
         $this->lastUpdateUserId = $lastUpdateUserId;
         $this->dateCreated = $dateCreated;
         $this->dateUpdated = $dateUpdated;
     }
 
     public function getId() {
-        return $this->rulesetId;
+        return $this->ruleId;
     }
 
     public function getTopicId() {
         return $this->topicId;
     }
 
-    public function getRules() {
-        return $this->rules;
+    public function getText() {
+        return $this->ruleText;
     }
 
     public function getLastUpdateUserId() {
@@ -49,10 +49,9 @@ class TopicRulesEntity extends AEntity {
         }
 
         $row = self::createRow($row);
-        $row->rules = json_decode($row->rules);
-        self::checkTypes($row, ['rulesetId' => 'string', 'topicId' => 'string', 'rules' => 'array', 'lastUpdateUserId' => 'string', 'dateCreated' => 'string', 'dateUpdated' => '?string']);
+        self::checkTypes($row, ['ruleId' => 'string', 'topicId' => 'string', 'ruleText' => 'string', 'lastUpdateUserId' => 'string', 'dateCreated' => 'string', 'dateUpdated' => '?string']);
 
-        return new self($row->rulesetId, $row->topicId, $row->rules, $row->lastUpdateUserId, $row->dateCreated, $row->dateUpdated);
+        return new self($row->ruleId, $row->topicId, $row->ruleText, $row->lastUpdateUserId, $row->dateCreated, $row->dateUpdated);
     }
 }
 

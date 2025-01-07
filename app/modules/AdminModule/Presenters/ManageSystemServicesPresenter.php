@@ -2,148 +2,86 @@
 
 namespace App\Modules\AdminModule;
 
-use App\Constants\SystemServiceStatus;
-use App\Core\AjaxRequestBuilder;
+use App\Constants\Systems;
 use App\Core\Datetypes\DateTime;
-use App\Entities\SystemServiceEntity;
+use App\Core\DB\DatabaseRow;
 use App\Exceptions\AException;
-use App\Helpers\DateTimeFormatHelper;
 use App\Helpers\GridHelper;
-use App\UI\GridBuilder\Cell;
-use App\UI\GridBuilder\GridBuilder;
-use App\UI\GridBuilder\Row;
+use App\UI\GridBuilder2\Row;
+use App\UI\HTML\HTML;
 use App\UI\LinkBuilder;
+use Exception;
 
 class ManageSystemServicesPresenter extends AAdminPresenter {
-    private GridHelper $gridHelper;
-
     public function __construct() {
         parent::__construct('ManageSystemServicesPresenter', 'Manage system services');
     }
 
     public function startup() {
         parent::startup();
-
-        $this->gridHelper = new GridHelper($this->logger, $this->getUserId());
-
+        
         if(!$this->app->sidebarAuthorizator->canManageSystemStatus($this->getUserId())) {
             $this->flashMessage('You are not authorized to visit this section.');
             $this->redirect(['page' => 'AdminModule:Manage', 'action' => 'dashboard']);
         }
     }
 
-    public function handleList() {
-        $arb = new AjaxRequestBuilder();
-        $arb->setURL(['page' => 'AdminModule:ManageSystemServices', 'action' => 'loadServicesGrid'])
-            ->setMethod('GET')
-            ->setHeader(['gridPage' => '_page'])
-            ->setFunctionName('getServicesGrid')
-            ->setFunctionArguments(['_page'])
-            ->updateHTMLElement('grid-content', 'grid')
-        ;
-
-        $this->addScript($arb->build());
-        $this->addScript('getServicesGrid(-1)');
-    }
+    public function handleList() {}
 
     public function renderList() {}
 
-    public function actionLoadServicesGrid() {
-        $gridPage = $this->httpGet('gridPage');
-        $gridSize = $gridSize = $this->app->getGridSize();
+    public function createComponentGrid() {
+        $grid = $this->getGridBuilder();
 
-        $page = $this->gridHelper->getGridPage(GridHelper::GRID_SYSTEM_SERVICES, $gridPage);
+        $grid->createDataSourceFromQueryBuilder($this->app->systemServicesRepository->composeQueryForServices(), 'serviceId');
+        $grid->setGridName(GridHelper::GRID_SYSTEM_SERVICES);
 
-        $services = $this->app->systemServicesRepository->getAllServices();
-        $count = count($services);
-        $lastPage = ceil($count / $gridSize);
+        $grid->addColumnText('title', 'Title');
+        $grid->addColumnDatetime('dateStarted', 'Date started');
+        $grid->addColumnDatetime('dateEnded', 'Date ended');
 
-        $gb = new GridBuilder();
-        $gb->addColumns(['title' => 'Title', 'dateStarted' => 'Date started', 'dateEnded' => 'Date finished', 'runTime' => 'Time run', 'status' => 'Status']);
-        $gb->addDataSource($services);
-        $gb->addOnColumnRender('status', function(Cell $cell, SystemServiceEntity $sse) {
-            $cell->setValue(SystemServiceStatus::toString($sse->getStatus()));
-
-            if($sse->getStatus() == SystemServiceStatus::RUNNING) {
-                $cell->setTextColor('green');
-            } else {
-                $cell->setTextColor('red');
-            }
-
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateStarted', function(Cell $cell, SystemServiceEntity $sse) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateStarted(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-        $gb->addOnColumnRender('dateEnded', function(Cell $cell, SystemServiceEntity $sse) {
-            $cell->setValue(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded()));
-            $cell->setTitle(DateTimeFormatHelper::formatDateToUserFriendly($sse->getDateEnded(), DateTimeFormatHelper::ATOM_FORMAT));
-            return $cell;
-        });
-        $gb->addOnColumnRender('runTime', function(Cell $cell, SystemServiceEntity $sse) {
-            $text = '-';
-            $color = 'black';
-            $title = '';
-
-            if($sse->getStatus() == SystemServiceStatus::RUNNING) {
-                if($sse->getDateStarted() !== null) {
-                    $end = time();
-                    $start = strtotime($sse->getDateStarted());
-
-                    $diff = $end - $start;
-
-                    try {
-                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
-                        $color = 'orange';
-                        $title = 'As of now';
-                    } catch(AException $e) {}
-                }
-            } else {
-                if($sse->getDateStarted() !== null && $sse->getDateEnded() !== null) {
-                    $end = strtotime($sse->getDateEnded());
-                    $start = strtotime($sse->getDateStarted());
-
-                    $diff = $end - $start;
-
-                    try {
-                        $text = DateTimeFormatHelper::formatSecondsToUserFriendly($diff);
-                    } catch(AException $e) {}
-                }
-            }
-
-            $cell->setTextColor($color);
-            $cell->setValue($text);
-            $cell->setTitle($title);
-
-            return $cell;
-        });
-        $gb->addAction(function(SystemServiceEntity $sse) {
-            $text = '-';
-
-            if($sse->getStatus() == SystemServiceStatus::NOT_RUNNING && $sse->getTitle() != 'PostLikeEqualizer') {
-                $text = LinkBuilder::createSimpleLink('Run', ['page' => 'AdminModule:ManageSystemServices', 'action' => 'run', 'serviceId' => $sse->getId()], 'grid-link');
-            }
-
-            return $text;
-        });
-        $gb->addGridPaging($page, $lastPage, $gridSize, $count, 'getServicesGrid');
-
-        foreach($services as $service) {
+        $grid->onRowRender[] = function(DatabaseRow $row, Row $_row, HTML $tr) {
             $date = new DateTime();
             $date->modify('-2d');
-            
-            if($service->getStatus() == SystemServiceStatus::NOT_RUNNING && strtotime($service->getDateEnded()) < strtotime($date->getResult())) {
-                $gb->addOnRowRender($service->getId(), function(Row $row) {
-                    $row->setBackgroundColor('orange');
-                    $row->setDescription('This service has not run in 2 days or more.');
-                    return $row;
-                });
-            }
-        }
+            $date = $date->getResult();
 
-        return ['grid' => $gb->build()];
+            if($row->dateEnded === null || strtotime($row->dateEnded) <= strtotime($date)) {
+                $tr->style('background-color', 'orange');
+            }
+        };
+
+        $systemsOn = [];
+        $action = $grid->addAction('run');
+        $action->onCanRender[] = function(DatabaseRow $row, Row $_row) use (&$systemsOn){
+            if($row->title == 'PostLikeEqualizer') {
+                return false;
+            }
+
+            try {
+                if(array_key_exists(Systems::SYSTEM_SERVICES, $systemsOn)) {
+                    if($systemsOn[Systems::SYSTEM_SERVICES] === false) {
+                        if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                            return false;
+                        }
+                    }
+                } else {
+                    $systemsOn[Systems::SYSTEM_SERVICES] = $this->app->systemStatusManager->isSystemOn(Systems::SYSTEM_SERVICES);
+
+                    if($systemsOn[Systems::SYSTEM_SERVICES] === false) {
+                        if(!$this->app->systemStatusManager->isUserSuperAdministrator($this->getUserId())) {
+                            return false;
+                        }
+                    }
+                }
+            } catch(AException|Exception) {}
+
+            return true;
+        };
+        $action->onRender[] = function(mixed $primaryKey, DatabaseRow $row, Row $_row, HTML $html) {
+            return LinkBuilder::createSimpleLink('Run', $this->createURL('run', ['serviceId' => $row->serviceId]), 'grid-link');
+        };
+
+        return $grid;
     }
 
     public function handleRun() {
@@ -156,6 +94,8 @@ class ManageSystemServicesPresenter extends AAdminPresenter {
         } catch(AException $e) {
             $this->flashMessage('Could not start service. Reason: ' . $e->getMessage(), 'error');
         }
+
+        sleep(1); // because the system services grid would load so fast, that the service didn't have time to start executing and thus the grid would look as if nothing happened and would need to be refreshed
         
         $this->redirect(['page' => 'AdminModule:ManageSystemServices', 'action' => 'list']);
     }

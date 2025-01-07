@@ -2,6 +2,9 @@
 
 namespace App\Helpers;
 
+/**
+ * @deprecated
+ */
 class RenderableElementHelper {
     public static function implodeAndRender(string $separator, array $renderableElements) {
         $callbacks = [];

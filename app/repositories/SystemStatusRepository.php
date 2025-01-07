@@ -11,6 +11,15 @@ class SystemStatusRepository extends ARepository {
         parent::__construct($db, $logger);
     }
 
+    public function composeQueryForStatuses() {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('system_status');
+
+        return $qb;
+    }
+
     public function getAllStatuses() {
         $qb = $this->qb(__METHOD__);
 
@@ -50,6 +59,28 @@ class SystemStatusRepository extends ARepository {
             ->execute();
 
         return true;
+    }
+
+    public function getSystemStatusByName(string $name) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['*'])
+            ->from('system_status')
+            ->where('name = ?', [$name])
+            ->execute();
+
+        return SystemStatusEntity::createEntityFromDbRow($qb->fetch());
+    }
+
+    public function getSystemDescription(string $name) {
+        $qb = $this->qb(__METHOD__);
+
+        $qb ->select(['description'])
+            ->from('system_status')
+            ->where('name = ?', [$name])
+            ->execute();
+
+        return $qb->fetch('description');
     }
 }
 

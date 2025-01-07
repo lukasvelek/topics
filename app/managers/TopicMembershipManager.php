@@ -103,6 +103,10 @@ class TopicMembershipManager extends AManager {
         return $this->topicMembershipRepository->getTopicMembersForGrid($topicId, $limit, $offset, $orderByRoleDesc);
     }
 
+    public function composeQueryForTopicMembers(string $topicId) {
+        return $this->topicMembershipRepository->composeQueryForTopicMembers($topicId);
+    }
+
     public function changeRole(string $topicId, string $userId, string $callingUserId, int $newRole) {
         if(!$this->checkFollow($topicId, $userId)) {
             throw new GeneralException('The selected user is not a member of this topic.');
@@ -131,11 +135,9 @@ class TopicMembershipManager extends AManager {
             return $user->getUsername() . ' (Ex-user)';
         }
 
-        $span = HTML::span();
-        $span->setColor(TopicMemberRole::getColorByKey($role))
-            ->setText(TopicMemberRole::toString($role));
+        $span = HTML::el('span')->text(TopicMemberRole::toString($role))->style('color', TopicMemberRole::getColorByKey($role));
 
-        $text = $namePrefix . $user->getUsername() . ' (' . $span->render() . ')';
+        $text = $namePrefix . $user->getUsername() . ' (' . $span->toString() . ')';
 
         return LinkBuilder::createSimpleLink($text, ['page' => 'UserModule:Users', 'action' => 'profile', 'userId' => $user->getId()], $class);
     }

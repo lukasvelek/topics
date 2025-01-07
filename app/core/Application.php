@@ -5,9 +5,11 @@ namespace App\Core;
 use App\Authenticators\UserAuthenticator;
 use App\Authorizators\ActionAuthorizator;
 use App\Authorizators\SidebarAuthorizator;
+use App\Authorizators\SystemStatusAuthorizator;
 use App\Authorizators\VisibilityAuthorizator;
 use App\Core\Caching\CacheFactory;
 use App\Core\Caching\CacheNames;
+use App\Core\Http\HttpRequest;
 use App\Entities\UserEntity;
 use App\Exceptions\AException;
 use App\Exceptions\GeneralException;
@@ -20,9 +22,12 @@ use App\Managers\EntityManager;
 use App\Managers\FileUploadManager;
 use App\Managers\MailManager;
 use App\Managers\NotificationManager;
+use App\Managers\PostManager;
 use App\Managers\ReportManager;
+use App\Managers\SystemStatusManager;
 use App\Managers\TopicManager;
 use App\Managers\TopicMembershipManager;
+use App\Managers\TrendsManager;
 use App\Managers\UserFollowingManager;
 use App\Managers\UserManager;
 use App\Managers\UserProsecutionManager;
@@ -34,6 +39,7 @@ use App\Repositories\ContentRepository;
 use App\Repositories\FileUploadRepository;
 use App\Repositories\GridExportRepository;
 use App\Repositories\GroupRepository;
+use App\Repositories\HashtagTrendsRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PostCommentRepository;
 use App\Repositories\PostRepository;
@@ -54,7 +60,7 @@ use App\Repositories\UserProsecutionRepository;
 use App\Repositories\UserRegistrationRepository;
 use App\Repositories\UserRepository;
 use App\Rpeositories\MailRepository;
-use App\UI\GridBuilder\DefaultGridReducer;
+use Exception;
 use ReflectionClass;
 
 /**
@@ -106,6 +112,7 @@ class Application {
     public TopicCalendarEventRepository $topicCalendarEventRepository;
     public TopicContentRegulationRepository $topicContentRegulationRepository;
     public ChatRepository $chatRepository;
+    public HashtagTrendsRepository $hashtagTrendsRepository;
 
     public UserProsecutionManager $userProsecutionManager;
     public ContentManager $contentManager;
@@ -121,10 +128,14 @@ class Application {
     public EntityManager $entityManager;
     public ReportManager $reportManager;
     public ChatManager $chatManager;
+    public PostManager $postManager;
+    public SystemStatusManager $systemStatusManager;
+    public TrendsManager $trendsManager;
 
     public SidebarAuthorizator $sidebarAuthorizator;
     public ActionAuthorizator $actionAuthorizator;
     public VisibilityAuthorizator $visibilityAuthorizator;
+    public SystemStatusAuthorizator $systemStatusAuthorizator;
 
     /**
      * The Application constructor. It creates objects of all used classes.
@@ -167,13 +178,17 @@ class Application {
         $this->userManager = new UserManager($this->logger, $this->userRepository, $this->mailManager, $this->groupRepository, $this->entityManager);
         $this->reportManager = new ReportManager($this->logger, $this->entityManager, $this->reportRepository, $this->userManager);
         $this->chatManager = new ChatManager($this->logger, $this->entityManager, $this->chatRepository, $this->userRepository);
+        $this->postManager = new PostManager($this->logger, $this->entityManager, $this->postRepository, $this->postCommentRepository);
+        $this->trendsManager = new TrendsManager($this->logger, $this->entityManager, $this->hashtagTrendsRepository);
         
         $this->sidebarAuthorizator = new SidebarAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository);
         $this->visibilityAuthorizator = new VisibilityAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
         $this->actionAuthorizator = new ActionAuthorizator($this->db, $this->logger, $this->userRepository, $this->groupRepository, $this->topicMembershipManager, $this->postRepository);
+        $this->systemStatusAuthorizator = new SystemStatusAuthorizator($this->db, $this->logger, $this->groupRepository, $this->userRepository);
 
         $this->topicManager = new TopicManager($this->logger, $this->topicRepository, $this->topicMembershipManager, $this->visibilityAuthorizator, $this->contentManager, $this->entityManager, $this->topicRulesRepository, $this->topicContentRegulationRepository, $this->topicCalendarEventRepository);
         $this->fileUploadManager = new FileUploadManager($this->logger, $this->fileUploadRepository, $this->cfg, $this->actionAuthorizator, $this->entityManager,);
+        $this->systemStatusManager = new SystemStatusManager($this->logger, $this->entityManager, $this->systemStatusRepository, $this->systemStatusAuthorizator);
 
         $this->isAjaxRequest = false;
 
@@ -181,7 +196,9 @@ class Application {
         
         if(!FileManager::fileExists(__DIR__ . '\\install')) {
             try {
-                $this->db->installDb();
+                // Installer will now install the application
+                $installer = new Installer($this, $this->db);
+                $installer->install();
             } catch(AException $e) {
                 throw new GeneralException('Could not install database. Reason: ' . $e->getMessage(), $e);
             }
@@ -244,7 +261,11 @@ class Application {
             $this->isAjaxRequest = true;
         }
 
-        echo $this->render();
+        try {
+            echo $this->render();
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
     }
 
     /**
@@ -309,12 +330,36 @@ class Application {
         $this->logger->info('Creating module.', __METHOD__);
         $moduleObject = $this->moduleManager->createModule($this->currentModule);
         $moduleObject->setLogger($this->logger);
+        $moduleObject->setHttpRequest($this->getRequest());
 
         $this->logger->info('Initializing render engine.', __METHOD__);
         $re = new RenderEngine($this->logger, $moduleObject, $this->currentPresenter, $this->currentAction, $this);
         $this->logger->info('Rendering page content.', __METHOD__);
         $re->setAjax($this->isAjaxRequest);
-        return $re->render();
+        try {
+            return $re->render();
+        } catch(AException|Exception $e) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Creates a HttpRequest instance that contains all query variables
+     * 
+     * @return HttpRequest HttpRequest instance
+     */
+    private function getRequest() {
+        $request = new HttpRequest();
+
+        foreach($_GET as $k => $v) {
+            if($k == 'isAjax') {
+                $request->isAjax = true;
+            } else {
+                $request->query[$k] = $v;
+            }
+        }
+
+        return $request;
     }
 
     /**
@@ -373,15 +418,6 @@ class Application {
      */
     public function getIsDev() {
         return $this->cfg['IS_DEV'];
-    }
-
-    /**
-     * Returns DefaultGridReducer instance
-     * 
-     * @return DefaultGridReducer DefaultGridReducer instance
-     */
-    public function getGridReducer() {
-        return new DefaultGridReducer($this->userRepository, $this->topicRepository, $this->postRepository);
     }
 }
 

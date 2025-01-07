@@ -59,6 +59,16 @@ class SystemServicesRepository extends ARepository {
 
         return $qb->fetchBool();
     }
+
+    public function composeQueryForServices() {
+        $qb = $this->qb(__METHOD__);
+        
+        $qb ->select(['*'])
+            ->from('system_services')
+            ->orderBy('dateStarted', 'DESC');
+
+        return $qb;
+    }
 }
 
 ?>

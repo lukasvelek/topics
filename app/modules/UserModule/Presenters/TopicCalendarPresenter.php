@@ -19,15 +19,12 @@ class TopicCalendarPresenter extends AUserPresenter {
         parent::__construct('TopicCalendarPresenter', 'Topic calendar');
     }
 
+    public function startup() {
+        parent::startup();
+    }
+
     public function handleCalendar() {
         $topicId = $this->httpGet('topicId', true);
-
-        try {
-            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
-        } catch(AException $e) {
-            $this->flashMessage($e->getMessage(), 'error');
-            $this->redirect(['page' => 'UserModule:Home', 'action' => 'dashboard']);
-        }
 
         $arb = new AjaxRequestBuilder();
 
@@ -162,7 +159,12 @@ class TopicCalendarPresenter extends AUserPresenter {
 
         $dateRange = DateTimeFormatHelper::formatDateToUserFriendly($event->getDateFrom()) . ' - ' . DateTimeFormatHelper::formatDateToUserFriendly($event->getDateTo());
 
-        $author = $this->app->userRepository->getUserById($event->getUserId());
+        try {
+            $author = $this->app->userManager->getUserById($event->getUserId());
+        } catch(AException $e) {
+            $this->flashMessage('Could not find user. Reason: ' . $e->getMessage(), 'error');
+            $this->redirect(['page' => 'UserModule:Topics', 'action' => 'profile', 'topicId' => $topicId]);
+        }
 
         if($author !== null) {
             $author = UserEntity::createUserProfileLink($author);
@@ -206,8 +208,6 @@ class TopicCalendarPresenter extends AUserPresenter {
         $eventId = $this->httpGet('eventId', true);
 
         try {
-            $topic = $this->app->topicManager->getTopicById($topicId, $this->getUserId());
-
             $event = $this->app->topicCalendarEventRepository->getEventById($eventId);
 
             if($event === null) {

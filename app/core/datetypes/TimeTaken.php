@@ -7,39 +7,89 @@ use App\Exceptions\TypeException;
 use App\Helpers\ArrayHelper;
 use App\Helpers\ValueHelper;
 
+/**
+ * This class contains information about how long did an action take
+ * 
+ * @author Lukas Velek
+ */
 class TimeTaken {
     private int $seconds;
     private int $minutes;
     private int $hours;
     private int $days;
+    private array $toHide;
 
+    /**
+     * Class constructor
+     */
     public function __construct() {
         $this->seconds = 0;
         $this->minutes = 0;
         $this->hours = 0;
         $this->days = 0;
+        $this->toHide = [];
     }
 
+    /**
+     * Hides days
+     */
+    public function hideDays() {
+        $this->toHide[] = 'days';
+    }
+
+    /**
+     * Hides hours
+     */
+    public function hideHours() {
+        $this->toHide[] = 'hours';
+    }
+
+    /**
+     * Hides minutes
+     */
+    public function hideMinutes() {
+        $this->toHide[] = 'minutes';
+    }
+
+    /**
+     * Hides seconds
+     */
+    public function hideSeconds() {
+        $this->toHide[] = 'seconds';
+    }
+
+    /**
+     * Converts self to string and returns it
+     * 
+     * @return string To string representation of self
+     */
     public function toString() {
         $parts = [];
 
-        if($this->days > 0) {
+        if($this->days > 0 && !in_array('days', $this->toHide)) {
             $parts[] = $this->days . ' days';
         }
 
-        if($this->hours > 0) {
+        if($this->hours > 0 && !in_array('hours', $this->toHide)) {
             $parts[] = $this->hours . 'h';
         }
 
-        if($this->minutes > 0) {
+        if($this->minutes > 0 && !in_array('minutes', $this->toHide)) {
             $parts[] = $this->minutes . 'm';
         }
 
-        $parts[] = $this->seconds . 's';
+        if(!in_array('seconds', $this->toHide)) {
+            $parts[] = $this->seconds . 's';
+        }
 
         return implode(' ', $parts);
     }
 
+    /**
+     * Sets values from array
+     * 
+     * @param array $data Data array
+     */
     public function setFromArray(array $data) {
         if(!ArrayHelper::checkArrayKeysExistInArray(['seconds'], $data)) {
             throw new KeyInArrayDoesNotExistException('seconds', '$data');
@@ -76,6 +126,11 @@ class TimeTaken {
         }
     }
 
+    /**
+     * Calculates time from seconds
+     * 
+     * @param int $seconds Seconds
+     */
     private function recalculateFromSeconds(int $seconds) {
         while($seconds >= 60) {
             $seconds -= 60;
@@ -95,6 +150,12 @@ class TimeTaken {
         $this->seconds = $seconds;
     }
 
+    /**
+     * Creates a TimeTaken instance from seconds
+     * 
+     * @param int $seconds Seconds
+     * @return self
+     */
     public static function createFromSeconds(int $seconds) {
         $obj = new self();
         $obj->setFromArray(['seconds' => $seconds]);

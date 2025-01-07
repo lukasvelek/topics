@@ -3,9 +3,8 @@
 namespace App\Modules\AnonymModule;
 
 use App\Constants\SystemStatus;
-use App\Modules\APresenter;
 
-class StatusCheckPresenter extends APresenter {
+class StatusCheckPresenter extends AAnonymPresenter {
     public function __construct() {
         parent::__construct('StatusCheckPresenter', 'Status check');
     }

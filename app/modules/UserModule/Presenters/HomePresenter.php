@@ -6,7 +6,10 @@ use App\Components\PostLister\PostLister;
 use App\Constants\UserProsecutionType;
 use App\Core\AjaxRequestBuilder;
 use App\Core\Caching\CacheNames;
+use App\Core\Datetypes\DateTime;
+use App\Entities\PostEntity;
 use App\Exceptions\AException;
+use App\Exceptions\AjaxRequestException;
 
 class HomePresenter extends AUserPresenter {
     public function __construct() {
@@ -15,11 +18,41 @@ class HomePresenter extends AUserPresenter {
         $this->setDefaultAction('dashboard');
     }
 
-    public function handleDashboard() {
-        $topicIdsUserIsMemberOf = $this->app->topicMembershipManager->getUserMembershipsInTopics($this->getUserId());
-        $followedTopics = $this->app->topicRepository->bulkGetTopicsByIds($topicIdsUserIsMemberOf);
+    public function startup() {
+        parent::startup();
+    }
 
-        $posts = $this->app->postRepository->getLatestMostLikedPostsForTopicIds($topicIdsUserIsMemberOf, 500);
+    public function handleDashboard() {
+        $topicIdsUserIsMemberOf = [];
+        $followedTopics = $this->app->topicManager->getFollowedTopics($this->getUserId(), $topicIdsUserIsMemberOf);
+
+        shuffle($followedTopics);
+
+        $query = $this->app->postRepository->composeQueryForPosts();
+        $query->andWhere($query->getColumnInValues('topicId', $topicIdsUserIsMemberOf))
+            ->andWhere('isDeleted = 0')
+            ->andWhere('dateAvailable <= ?', [DateTime::now()])
+            ->andWhere('isSuggestable = 1')
+            ->orderBy('likes', 'DESC')
+            ->orderBy('dateCreated', 'DESC')
+        ;
+
+        $cursor = $query->execute();
+
+        $topicIdCount = [];
+        $posts = [];
+        while($row = $cursor->fetchAssoc()) {
+            $post = PostEntity::createEntityFromDbRow($row);
+            if(array_key_exists($post->getTopicId(), $topicIdCount)) {
+                if($topicIdCount[$post->getTopicId()] < 2) {
+                    $posts[] = $post;
+                    $topicIdCount[$post->getTopicId()] = $topicIdCount[$post->getTopicId()] + 1;
+                }
+            } else {
+                $posts[] = $post;
+                $topicIdCount[$post->getTopicId()] = 0;
+            }
+        }
 
         $postLister = new PostLister($this->app->userRepository, $this->app->topicRepository, $this->app->postRepository, $this->app->contentRegulationRepository, $this->app->fileUploadRepository, $this->app->fileUploadManager, $this->app->reportManager, $this->app->topicManager);
 
@@ -98,13 +131,13 @@ class HomePresenter extends AUserPresenter {
             $cache->invalidate();
 
             $this->app->postRepository->commit($userId, __METHOD__);
+
+            $post = $this->app->postManager->getPostById($this->getUserId(), $postId);
         } catch(AException $e) {
             $this->app->postRepository->rollback();
 
-            $this->flashMessage('Could not like post. Reason: ' . $e->getMessage(), 'error');
+            throw new AjaxRequestException('Could not like post.', $e);
         }
-
-        $post = $this->app->postRepository->getPostById($postId);
 
         return ['likes' => $post->getLikes(), 'link' => $link];
     }
