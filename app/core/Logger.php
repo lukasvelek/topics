@@ -200,6 +200,7 @@ class Logger implements ILoggerCallable {
         $date = new DateTime();
         $text = '[' . $date . '] [' . strtoupper($type) . '] ' . $method . '(): ' . $text;
 
+        $result = false;
         switch($type) {
             case self::LOG_STOPWATCH:
                 if($this->stopwatchLogLevel >= 1) {
